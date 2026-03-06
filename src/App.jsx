@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 // Se define la constante para la API Key. En este entorno, se deja vacía según el flujo de trabajo.
-const apiKey = "AIzaSyCNMc8tAKNo3uebiRaUqvsme2YFwpwXlLg";
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 const App = () => {
   const [step, setStep] = useState('upload'); 
@@ -163,7 +163,7 @@ const App = () => {
       };
 
      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-     
+
       const result = await fetchWithRetry(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
