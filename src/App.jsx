@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Activity } from 'lucide-react'; // Agregar al import existente
 import { 
   Upload, Zap, BarChart3, MessageSquare, 
-  RotateCcw, BrainCircuit, Eye, Target, 
-  ShieldCheck, Send, Bot, X, 
-  Activity, TrendingUp, AlertCircle, ListChecks,
+  RotateCcw, Eye, Target, 
+  Send, Bot, X, 
+  Activity, AlertCircle, ListChecks,
   Compass, Microscope
 } from 'lucide-react';
 
