@@ -209,6 +209,35 @@ const App = () => {
         <div className="absolute top-[-5%] left-[-5%] w-[45%] h-[45%] bg-purple-600/[0.04] blur-[120px] rounded-full" />
         <div className="absolute bottom-[-5%] right-[-5%] w-[45%] h-[45%] bg-blue-600/[0.04] blur-[120px] rounded-full" />
       </div>
+      
+  {/* 🟢 CONTADOR VISUAL */}
+      <div className="fixed top-6 right-6 z-50 flex flex-col items-end gap-2">
+        {!isLoadingCount && (
+          <>
+            <div className="flex items-center gap-2 bg-black/60 border border-white/10 px-4 py-2 rounded-full backdrop-blur-md">
+              <Activity className="w-4 h-4 text-green-400" />
+              <span className="text-sm font-black italic tracking-tight">
+                {userCount}/500 usuarios
+              </span>
+            </div>
+
+            <div className="w-64 h-2 bg-white/5 border border-white/10 rounded-full overflow-hidden shadow-lg">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  userCount >= 500 
+                    ? 'bg-gradient-to-r from-green-400 to-green-600' 
+                    : 'bg-gradient-to-r from-green-500 to-emerald-500'
+                }`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+
+            {userCount >= 500 && (
+              <div className="text-2xl animate-bounce">🎉</div>
+            )}
+          </>
+        )}
+      </div>
 
       <header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
         <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
@@ -237,7 +266,7 @@ const App = () => {
               <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
                 Sin juicios. Sin amabilidad. Solo la verdad técnica <br/>sobre tu probabilidad de éxito.
               </p>
-            </div>
+            </div>  
 
             <div className="max-w-3xl mx-auto">
               <label className="group relative block border-2 border-dashed border-white/10 hover:border-purple-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
