@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Activity } from 'lucide-react'; // Agregar al import existente
 import { 
   Upload, Zap, BarChart3, MessageSquare, 
-  RotateCcw, Eye, Target, 
-  Send, Bot, X, 
-  Activity, AlertCircle, ListChecks,
+  RotateCcw, BrainCircuit, Eye, Target, 
+  ShieldCheck, Send, Bot, X, 
+  Activity, TrendingUp, AlertCircle, ListChecks,
   Compass, Microscope
 } from 'lucide-react';
 
-// Se define la constante para la API Key. En este entorno, se deja vacía según el flujo de trabajo.
+// Se define la constante para la API Key. En este entorno, se deja vacía según el flujo de trabajo. <ListChecks className="text-green-500" />
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 const App = () => {
@@ -356,7 +355,7 @@ const App = () => {
 
               <div className="bg-white/[0.02] border border-white/5 p-10 rounded-[3.5rem] space-y-8">
                 <div className="flex items-center gap-4">
-                  <ListChecks className="text-green-500" />
+                    <CheckCircle className="text-green-500" />
                   <h3 className="text-2xl font-black italic uppercase tracking-tighter">Hoja de Ruta</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
