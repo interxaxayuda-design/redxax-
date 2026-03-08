@@ -53,15 +53,14 @@ const App = () => {
         localStorage.setItem('redxax_user_id', userId);
       }
 
-      // Verificar si este usuario ya fue contado
-      const { data: existingUser, error: checkError } = await supabase
+      // Verificar si este usuario ya fue contado (SIN .single())
+      const { data: existingUsers } = await supabase
         .from('app_stats')
         .select('id')
-        .eq('user_id', userId)
-        .single();
+        .eq('user_id', userId);
 
       // Si el usuario YA EXISTE, no sumar
-      if (existingUser) {
+      if (existingUsers && existingUsers.length > 0) {
         const { data } = await supabase
           .from('app_stats')
           .select('total_users')
