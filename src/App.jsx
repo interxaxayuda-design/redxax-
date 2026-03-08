@@ -43,40 +43,70 @@ const App = () => {
   }, [chatMessages, isTyping]);
 
  useEffect(() => {
-    const fetchAndUpdateCounter = async () => {
-      try {
-        // Obtener el contador actual
-        const { data, error } = await supabase
+  const fetchAndUpdateCounter = async () => {
+    try {
+      // Generar o recuperar ID único del usuario
+      const storedUserId = localStorage.getItem('redxax_user_id');
+      const userId = storedUserId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      if (!storedUserId) {
+        localStorage.setItem('redxax_user_id', userId);
+      }
+
+      // Verificar si este usuario ya fue contado
+      const { data: existingUser, error: checkError } = await supabase
+        .from('app_stats')
+        .select('id')
+        .eq('user_id', userId)
+        .single();
+
+      // Si el usuario YA EXISTE, no sumar
+      if (existingUser) {
+        const { data } = await supabase
           .from('app_stats')
           .select('total_users')
           .eq('id', 1)
           .single();
-
-        if (error) throw error;
-
-        const currentCount = data?.total_users || 0;
-        const newCount = Math.min(currentCount + 1, 500);
-
-        // Actualizar el contador en Supabase
-        const { error: updateError } = await supabase
-          .from('app_stats')
-          .update({ total_users: newCount })
-          .eq('id', 1);
-
-        if (updateError) throw updateError;
-
-        setUserCount(newCount);
-      } catch (error) {
-        console.error('Error:', error);
-        setUserCount(1);
-      } finally {
+        setUserCount(data?.total_users || 0);
         setIsLoadingCount(false);
+        return;
       }
-    };
 
-    fetchAndUpdateCounter();
-  }, []);
-  
+      // Si NO existe, sumar +1
+      const { data, error } = await supabase
+        .from('app_stats')
+        .select('total_users')
+        .eq('id', 1)
+        .single();
+
+      if (error) throw error;
+
+      const currentCount = data?.total_users || 0;
+      const newCount = Math.min(currentCount + 1, 500);
+
+      // Actualizar el contador
+      await supabase
+        .from('app_stats')
+        .update({ total_users: newCount })
+        .eq('id', 1);
+
+      // Registrar este usuario para evitar contar dos veces
+      await supabase
+        .from('app_stats')
+        .insert({ user_id: userId });
+
+      setUserCount(newCount);
+    } catch (error) {
+      console.error('Error:', error);
+      setUserCount(1);
+    } finally {
+      setIsLoadingCount(false);
+    }
+  };
+
+  fetchAndUpdateCounter();
+}, []);
+
   // Implementación de fetch con reintentos y backoff exponencial para estabilidad
   const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
     try {
