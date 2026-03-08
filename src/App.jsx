@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Activity } from 'lucide-react'; // Agregar al import existente
 import { 
   Upload, Zap, BarChart3, MessageSquare, 
   RotateCcw, BrainCircuit, Eye, Target, 
@@ -15,6 +16,9 @@ const App = () => {
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [aiResult, setAiResult] = useState(null);
+  // Estado para el contador de usuarios
+  const [userCount, setUserCount] = useState(0);
+  const [isLoadingCount, setIsLoadingCount] = useState(true);
   const [statusText, setStatusText] = useState("");
   
   const [showChat, setShowChat] = useState(false);
@@ -30,6 +34,25 @@ const App = () => {
   useEffect(() => {
     if (showChat) scrollToBottom();
   }, [chatMessages, isTyping]);
+
+  // ⬇️ AQUÍ VA EL NUEVO useEffect (agregar DESPUÉS del anterior)
+  useEffect(() => {
+    const initializeCounter = async () => {
+      try {
+        const result = await window.storage.get('user_counter');
+        const currentCount = result ? parseInt(result.value) : 0;
+        const newCount = Math.min(currentCount + 1, 500);
+        await window.storage.set('user_counter', newCount.toString(), true);
+        setUserCount(newCount);
+      } catch (error) {
+        console.log('Contador inicializado en 1');
+        setUserCount(1);
+      } finally {
+        setIsLoadingCount(false);
+      }
+    };
+    initializeCounter();
+  }, []);
 
   // Implementación de fetch con reintentos y backoff exponencial para estabilidad
   const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
@@ -177,6 +200,9 @@ const App = () => {
     }
   };
 
+  // ⬇️ AQUÍ VA
+  const progressPercent = (userCount / 500) * 100;
+
   return (
     <div className="min-h-screen bg-[#020203] text-white font-sans selection:bg-purple-500/50 overflow-x-hidden">
       {/* Background Glows */}
@@ -257,7 +283,7 @@ const App = () => {
                   <div className="mt-4 inline-block bg-purple-600/20 text-purple-400 px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-500/30">
                     Escenario: {aiResult.performanceScenario}
                   </div>
-                </div>
+                </div>  
                 
                 <div className="pt-8 border-t border-white/5">
                   <div className="flex items-center gap-2 mb-3">
