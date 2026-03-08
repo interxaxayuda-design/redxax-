@@ -7,6 +7,14 @@ import {
   Compass, Microscope
 } from 'lucide-react';
 
+import { createClient } from '@supabase/supabase-js';
+
+// Inicializar Supabase
+const supabase = createClient(
+  'https://mvmilbpraefwprexgnpz.supabase.co',
+  'sb_publishable_us-Tbuike3PH_Z2P-y8e4w_i0wYopmr'
+);
+
 // Se define la constante para la API Key. En este entorno, se deja vacía según el flujo de trabajo. <ListChecks className="text-green-500" />
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -34,25 +42,41 @@ const App = () => {
     if (showChat) scrollToBottom();
   }, [chatMessages, isTyping]);
 
-  // ⬇️ AQUÍ VA EL NUEVO useEffect (agregar DESPUÉS del anterior)
-  useEffect(() => {
-    const initializeCounter = async () => {
+ useEffect(() => {
+    const fetchAndUpdateCounter = async () => {
       try {
-        const result = await window.storage.get('user_counter');
-        const currentCount = result ? parseInt(result.value) : 0;
+        // Obtener el contador actual
+        const { data, error } = await supabase
+          .from('app_stats')
+          .select('total_users')
+          .eq('id', 1)
+          .single();
+
+        if (error) throw error;
+
+        const currentCount = data?.total_users || 0;
         const newCount = Math.min(currentCount + 1, 500);
-        await window.storage.set('user_counter', newCount.toString(), true);
+
+        // Actualizar el contador en Supabase
+        const { error: updateError } = await supabase
+          .from('app_stats')
+          .update({ total_users: newCount })
+          .eq('id', 1);
+
+        if (updateError) throw updateError;
+
         setUserCount(newCount);
       } catch (error) {
-        console.log('Contador inicializado en 1');
+        console.error('Error:', error);
         setUserCount(1);
       } finally {
         setIsLoadingCount(false);
       }
     };
-    initializeCounter();
-  }, []);
 
+    fetchAndUpdateCounter();
+  }, []);
+  
   // Implementación de fetch con reintentos y backoff exponencial para estabilidad
   const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
     try {
@@ -209,7 +233,7 @@ const App = () => {
         <div className="absolute top-[-5%] left-[-5%] w-[45%] h-[45%] bg-purple-600/[0.04] blur-[120px] rounded-full" />
         <div className="absolute bottom-[-5%] right-[-5%] w-[45%] h-[45%] bg-blue-600/[0.04] blur-[120px] rounded-full" />
       </div>
-      
+
   {/* 🟢 CONTADOR VISUAL */}
       <div className="fixed top-6 right-6 z-50 flex flex-col items-end gap-2">
         {!isLoadingCount && (
