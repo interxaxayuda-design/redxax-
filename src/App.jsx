@@ -53,48 +53,39 @@ const App = () => {
         localStorage.setItem('redxax_user_id', userId);
       }
 
-      // Verificar si este usuario ya fue contado (SIN .single())
-      const { data: existingUsers } = await supabase
-        .from('app_stats')
-        .select('id')
-        .eq('user_id', userId);
+      // Intentar insertar el user_id en user_visits (falla si ya existe)
+      const { data: insertResult, error: insertError } = await supabase
+        .from('user_visits')
+        .insert({ user_id: userId });
 
-      // Si el usuario YA EXISTE, no sumar
-      if (existingUsers && existingUsers.length > 0) {
+      // Si NO hay error → es un usuario NUEVO
+      if (!insertError) {
+        // Obtener contador actual
+        const { data } = await supabase
+          .from('app_stats')
+          .select('total_users')
+          .eq('id', 1)
+          .single();
+
+        const currentCount = data?.total_users || 0;
+        const newCount = Math.min(currentCount + 1, 500);
+
+        // Actualizar el contador
+        await supabase
+          .from('app_stats')
+          .update({ total_users: newCount })
+          .eq('id', 1);
+
+        setUserCount(newCount);
+      } else {
+        // Si hay error (usuario ya existe) → solo mostrar el contador
         const { data } = await supabase
           .from('app_stats')
           .select('total_users')
           .eq('id', 1)
           .single();
         setUserCount(data?.total_users || 0);
-        setIsLoadingCount(false);
-        return;
       }
-
-      // Si NO existe, sumar +1
-      const { data, error } = await supabase
-        .from('app_stats')
-        .select('total_users')
-        .eq('id', 1)
-        .single();
-
-      if (error) throw error;
-
-      const currentCount = data?.total_users || 0;
-      const newCount = Math.min(currentCount + 1, 500);
-
-      // Actualizar el contador
-      await supabase
-        .from('app_stats')
-        .update({ total_users: newCount })
-        .eq('id', 1);
-
-      // Registrar este usuario para evitar contar dos veces
-      await supabase
-        .from('app_stats')
-        .insert({ user_id: userId });
-
-      setUserCount(newCount);
     } catch (error) {
       console.error('Error:', error);
       setUserCount(1);
