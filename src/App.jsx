@@ -4,7 +4,7 @@ import {
   RotateCcw, BrainCircuit, Eye, Target, 
   ShieldCheck, Send, Bot, X, 
   Activity, TrendingUp, AlertCircle, ListChecks,
-  Compass, Microscope
+  Compass, Microscope, CheckCircle // <--- Agrega este
 } from 'lucide-react';
 
 import { createClient } from '@supabase/supabase-js';
@@ -183,8 +183,7 @@ const App = () => {
         }],
         generationConfig: { 
           temperature: 0.1,
-          maxOutputTokens: 2048,
-          responseMimeType: "application/json"
+          maxOutputTokens: 2048
         }
       };
 
