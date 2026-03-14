@@ -45,7 +45,6 @@ const App = () => {
  useEffect(() => {
   const fetchAndUpdateCounter = async () => {
     try {
-      // Generar o recuperar ID único del usuario
       const storedUserId = localStorage.getItem('redxax_user_id');
       const userId = storedUserId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
@@ -53,24 +52,25 @@ const App = () => {
         localStorage.setItem('redxax_user_id', userId);
       }
 
-      // Intentar insertar el user_id en user_visits (falla si ya existe)
-      const { data: insertResult, error: insertError } = await supabase
+      // 1. Intentamos insertar el usuario
+      const { error: insertError } = await supabase
         .from('user_visits')
         .insert({ user_id: userId });
 
-      // Si NO hay error → es un usuario NUEVO
+      // 2. Obtenemos el valor actual del contador de todos modos
+      const { data: statsData } = await supabase
+        .from('app_stats')
+        .select('total_users')
+        .eq('id', 1)
+        .single();
+
+      const currentCount = statsData?.total_users || 0;
+
+      // 3. Solo sumamos si la inserción fue exitosa (usuario nuevo real)
+      // Si insertError existe, no hacemos nada (el usuario ya estaba registrado)
       if (!insertError) {
-        // Obtener contador actual
-        const { data } = await supabase
-          .from('app_stats')
-          .select('total_users')
-          .eq('id', 1)
-          .single();
-
-        const currentCount = data?.total_users || 0;
         const newCount = Math.min(currentCount + 1, 500);
-
-        // Actualizar el contador
+        
         await supabase
           .from('app_stats')
           .update({ total_users: newCount })
@@ -78,17 +78,12 @@ const App = () => {
 
         setUserCount(newCount);
       } else {
-        // Si hay error (usuario ya existe) → solo mostrar el contador
-        const { data } = await supabase
-          .from('app_stats')
-          .select('total_users')
-          .eq('id', 1)
-          .single();
-        setUserCount(data?.total_users || 0);
+        // Si ya existía, simplemente mostramos el número actual sin sumar
+        setUserCount(currentCount);
       }
+
     } catch (error) {
-      console.error('Error:', error);
-      setUserCount(1);
+      console.error('Error en contador:', error);
     } finally {
       setIsLoadingCount(false);
     }
@@ -188,7 +183,7 @@ const App = () => {
       };
 
      // Dentro de runNeuralAnalysis (aprox. línea 166)
-const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
       const result = await fetchWithRetry(endpoint, {
         method: 'POST',
@@ -229,7 +224,7 @@ const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini
       };
 
     // Dentro de sendMessage (aprox. línea 204)
-const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
       const result = await fetchWithRetry(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
