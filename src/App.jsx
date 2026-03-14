@@ -188,7 +188,8 @@ const App = () => {
         }
       };
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+     // Dentro de runNeuralAnalysis (aprox. línea 166)
+const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
 
       const result = await fetchWithRetry(endpoint, {
         method: 'POST',
@@ -228,7 +229,8 @@ const App = () => {
         generationConfig: { temperature: 0.7 }
       };
 
-     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    // Dentro de sendMessage (aprox. línea 204)
+const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${apiKey}`;
       const result = await fetchWithRetry(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
