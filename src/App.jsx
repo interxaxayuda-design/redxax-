@@ -188,7 +188,7 @@ const App = () => {
       };
 
      // Dentro de runNeuralAnalysis (aprox. línea 166)
-const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
       const result = await fetchWithRetry(endpoint, {
         method: 'POST',
@@ -229,7 +229,7 @@ const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5
       };
 
     // Dentro de sendMessage (aprox. línea 204)
-const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
       const result = await fetchWithRetry(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
