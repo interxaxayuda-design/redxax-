@@ -196,9 +196,48 @@ const App = () => {
         }],
         generationConfig: { 
   temperature: 0.1,
-  maxOutputTokens: 4000, // <--- Súbelo para que no se corte
-  responseMimeType: "application/json" // <--- ESTO ES VITAL
+  maxOutputTokens: 4000, 
+  responseMimeType: "application/json",
+  // ACÁ VA EL ESQUEMA (Lo que evita que el código se rompa)
+  responseSchema: {
+    type: "object",
+    properties: {
+      potentialScore: { type: "number" },
+      performanceScenario: { type: "string" },
+      honestVerdict: { type: "string" },
+      vision: {
+        type: "object",
+        properties: {
+          niche: { type: "string" },
+          type: { type: "string" },
+          audience: { type: "string" },
+          promise: { type: "string" }
+        }
+      },
+      aiVision: { type: "string" },
+      retentionData: {
+        type: "object",
+        properties: {
+          at3s: { type: "string" },
+          at10s: { type: "string" },
+          final: { type: "string" }
+        }
+      },
+      retentionCurve: {
+        type: "array",
+        items: { type: "number" }
+      },
+      roadmap: {
+        type: "array",
+        items: { type: "string" }
+      }
+    },
+    required: [
+      "potentialScore", "performanceScenario", "honestVerdict", 
+      "vision", "aiVision", "retentionData", "retentionCurve", "roadmap"
+    ]
   }
+}
       }; //Analiza este guion
 
      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
