@@ -25,7 +25,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co'
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso' // tu anon key real
 
-// Inicializar Supabase
+// Inicializar Supabase  //parts: [{ text:
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // API key de Gemini (guardada en .env)
@@ -199,7 +199,7 @@ const App = () => {
   maxOutputTokens: 4000, // <--- Súbelo para que no se corte
   responseMimeType: "application/json" // <--- ESTO ES VITAL
   }
-      };
+      }; //Analiza este guion
 
      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
@@ -236,7 +236,9 @@ const result = await fetchWithRetry(endpoint, {
       const payload = {
         contents: [{
           role: "user",
-          parts: [{ text: `${systemInstructions}\n\nAnaliza este concepto/guion antes de que sea grabado y predice su desempeño. Guion: "${scriptText}"` }]
+         parts: [{ 
+  text: `${systemInstructions}\n\nAnaliza este concepto/guion. No importa la ortografía o el formato, enfócate en el potencial de retención. Contenido a evaluar: ${JSON.stringify(scriptText)}` 
+}]
         }],
         generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
       };
