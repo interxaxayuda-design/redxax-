@@ -52,7 +52,7 @@ const App = () => {
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  };  //generationConfig
 
   useEffect(() => {
     if (showChat) scrollToBottom();
@@ -178,7 +178,7 @@ const App = () => {
         resolve(frames);
       };
     });
-  };
+  };  //result.candidates[0].content.parts[0
 
   const runNeuralAnalysis = async (url) => {
     setStep('analyzing');
@@ -195,9 +195,10 @@ const App = () => {
           ]
         }],
         generationConfig: { 
-          temperature: 0.1,
-          maxOutputTokens: 2048
-        }
+  temperature: 0.1,
+  maxOutputTokens: 4000, // <--- Súbelo para que no se corte
+  responseMimeType: "application/json" // <--- ESTO ES VITAL
+  }
       };
 
      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
@@ -207,7 +208,7 @@ const result = await fetchWithRetry(endpoint, {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(payload)
 });
-      const rawText = result.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const rawText = result.candidates[0].content.parts[0].text;
       const parsed = JSON.parse(rawText);
 
       setAiResult(parsed);
