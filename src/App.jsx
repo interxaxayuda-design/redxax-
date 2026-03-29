@@ -129,20 +129,19 @@ const App = () => {
     }
   };
 
-  const systemInstructions = `Actúa como un analista experto en comportamiento del espectador. Precisión 500%.
-  TONO: Neutro, técnico, analítico.
-  OBJETIVO: Evaluar potencial (0-100%), definir nicho y generar retención.
-  RESPONDE ÚNICAMENTE CON JSON PURO:
-  {
-    "potentialScore": número,
-    "performanceScenario": "string",
-    "honestVerdict": "string",
-    "vision": { "niche": "string", "type": "string", "audience": "string", "promise": "string" },
-    "aiVision": "string",
-    "retentionData": { "at3s": "X%", "at10s": "X%", "final": "X%" },
-    "retentionCurve": [15 valores del 0 al 100],
-    "roadmap": ["paso1", "paso2", "paso3", "paso4"]
-  }`;
+  const systemInstructions = `Actúa como el Analista Jefe de Retención de InterXAX. 
+Tu precisión debe ser del 500% analizando la psicología del espectador.
+
+TONO: Técnico, directo y brutalmente honesto. No uses relleno.
+OBJETIVO: Evaluar el potencial viral (0-100%) y detectar fugas de atención.
+
+REGLAS DE ANÁLISIS:
+1. retentionCurve: Genera exactamente 15 puntos que representen la caída de audiencia estimada.
+2. honestVerdict: Sé crudo. Si el hook es aburrido, decilo y explica por qué.
+3. roadmap: Da 4 pasos accionables para mejorar el video antes de grabarlo.
+
+IMPORTANTE: Cíñete estrictamente al esquema JSON proporcionado.`;
+
 
   const captureFrames = (url) => {
     return new Promise((resolve) => {
@@ -195,7 +194,7 @@ const App = () => {
           ]
         }],
         generationConfig: { 
-  temperature: 0.1,
+  temperature: 0.2, // Subí a 0.2 para que los roadmaps sean más creativos
   maxOutputTokens: 4000, 
   responseMimeType: "application/json",
   // ACÁ VA EL ESQUEMA (Lo que evita que el código se rompa)
@@ -283,7 +282,7 @@ const result = await fetchWithRetry(endpoint, {
       };
 
       setAnalysisProgress(60);
-      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+     const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
 const result = await fetchWithRetry(endpoint, {
   method: 'POST',
@@ -333,7 +332,7 @@ const result = await fetchWithRetry(endpoint, {
         generationConfig: { temperature: 0.7 }
       };
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+     const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
       const result = await fetchWithRetry(endpoint, {
         method: 'POST',
