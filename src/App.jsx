@@ -21,12 +21,14 @@ import { useEffect, useRef, useState } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
 
-// Inicializar Supabase
-const supabase = createClient(
-  'https://mvmilbpraefwprexgnpz.supabase.co',
-  'sb_publishable_us-Tbuike3PH_Z2P-y8e4w_i0wYopmr'
-);
+// URL y anon key de tu proyecto Supabase
+const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co'
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso' // tu anon key real
 
+// Inicializar Supabase
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+// API key de Gemini (guardada en .env)
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 const App = () => {
@@ -57,49 +59,58 @@ const App = () => {
   }, [chatMessages, isTyping]);
 
   useEffect(() => {
-    const fetchAndUpdateCounter = async () => {
-      try {
-        const storedUserId = localStorage.getItem('redxax_user_id');
-        const userId = storedUserId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        if (!storedUserId) {
-          localStorage.setItem('redxax_user_id', userId);
-        }
-
-        const { error: insertError } = await supabase
-          .from('user_visits')
-          .insert({ user_id: userId });
-
-        const { data: statsData } = await supabase
-          .from('app_stats')
-          .select('total_users')
-          .eq('id', 1)
-          .single();
-
-        const currentCount = statsData?.total_users || 0;
-
-        if (!insertError) {
-          const newCount = Math.min(currentCount + 1, 500);
-          
-          await supabase
-            .from('app_stats')
-            .update({ total_users: newCount })
-            .eq('id', 1);
-
-          setUserCount(newCount);
-        } else {
-          setUserCount(currentCount);
-        }
-
-      } catch (error) {
-        console.error('Error en contador:', error);
-      } finally {
-        setIsLoadingCount(false);
+  const fetchAndUpdateCounter = async () => {
+    try {
+      const storedUserId = localStorage.getItem('redxax_user_id');
+      const userId = storedUserId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      if (!storedUserId) {
+        localStorage.setItem('redxax_user_id', userId);
       }
-    };
 
-    fetchAndUpdateCounter();
-  }, []);
+      const { error: insertError } = await supabase
+        .from('user_visits')
+        .insert({ user_id: userId });
+
+      const { data: statsData, error: statsError } = await supabase
+        .from('app_stats')
+        .select('total_users')
+        .eq('id', 1)
+        .single();
+
+      if (statsError) {
+        console.error('Error leyendo app_stats:', statsError);
+        return;
+      }
+
+      const currentCount = statsData?.total_users || 0;
+
+      if (!insertError) {
+        const newCount = Math.min(currentCount + 1, 500);
+        const { error: updateError } = await supabase
+          .from('app_stats')
+          .update({ total_users: newCount })
+          .eq('id', 1);
+
+        if (updateError) {
+          console.error('Error actualizando app_stats:', updateError);
+        } else {
+          setUserCount(newCount);
+        }
+      } else {
+        console.error('Error insertando visita:', insertError);
+        setUserCount(currentCount);
+      }
+
+    } catch (error) {
+      console.error('Error en contador:', error);
+    } finally {
+      setIsLoadingCount(false);
+    }
+  };
+
+  fetchAndUpdateCounter();
+}, []);
 
   const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
     try {
