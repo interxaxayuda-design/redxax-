@@ -142,8 +142,7 @@ REGLAS DE ANÁLISIS:
 
 IMPORTANTE: Cíñete estrictamente al esquema JSON proporcionado.`;
 
-
-  const captureFrames = (url) => {
+const captureFrames = (url) => {
     return new Promise((resolve) => {
       const video = document.createElement('video');
       video.src = url;
@@ -177,92 +176,52 @@ IMPORTANTE: Cíñete estrictamente al esquema JSON proporcionado.`;
         resolve(frames);
       };
     });
-  };  //result.candidates[0].content.parts[0
+  };
 
+  // --- 1. FUNCIÓN DE ANÁLISIS DE VIDEO (CORREGIDA) ---
   const runNeuralAnalysis = async (url) => {
     setStep('analyzing');
     setAnalysisMode('video');
+    setStatusText("Iniciando escaneo de InterXAX...");
+    setAnalysisProgress(10);
+
     try {
       const base64Frames = await captureFrames(url);
-      
-      const payload = {
-        contents: [{
-          role: "user",
-          parts: [
-            { text: `${systemInstructions}\n\nAnaliza estos frames del video. Devuelve el JSON.` },
-            ...base64Frames.map(data => ({ inlineData: { mimeType: "image/jpeg", data } }))
-          ]
-        }],
-        generationConfig: { 
-  temperature: 0.2, // Subí a 0.2 para que los roadmaps sean más creativos
-  maxOutputTokens: 4000, 
-  responseMimeType: "application/json",
-  // ACÁ VA EL ESQUEMA (Lo que evita que el código se rompa)
-  responseSchema: {
-    type: "object",
-    properties: {
-      potentialScore: { type: "number" },
-      performanceScenario: { type: "string" },
-      honestVerdict: { type: "string" },
-      vision: {
-        type: "object",
-        properties: {
-          niche: { type: "string" },
-          type: { type: "string" },
-          audience: { type: "string" },
-          promise: { type: "string" }
-        }
-      },
-      aiVision: { type: "string" },
-      retentionData: {
-        type: "object",
-        properties: {
-          at3s: { type: "string" },
-          at10s: { type: "string" },
-          final: { type: "string" }
-        }
-      },
-      retentionCurve: {
-        type: "array",
-        items: { type: "number" }
-      },
-      roadmap: {
-        type: "array",
-        items: { type: "string" }
-      }
-    },
-    required: [
-      "potentialScore", "performanceScenario", "honestVerdict", 
-      "vision", "aiVision", "retentionData", "retentionCurve", "roadmap"
-    ]
-  }
-}
-      }; //Analiza este guion
+      setAnalysisProgress(80);
+      setStatusText("Conectando con el núcleo de REDxax...");
 
-     const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+      // Llamamos a tu proxy de Supabase
+      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+        body: { 
+          text: `${systemInstructions}\n\nAnaliza estos frames del video.`,
+          frames: base64Frames 
+        }
+      });
 
-const result = await fetchWithRetry(endpoint, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(payload)
-});
-      const rawText = result.candidates[0].content.parts[0].text;
-      const parsed = JSON.parse(rawText);
+      if (error) throw error;
+
+      const rawText = data.candidates[0].content.parts[0].text;
+      const cleanText = rawText.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(cleanText);
 
       setAiResult(parsed);
       setCompletedSteps([]);
       setChatMessages([{
         role: 'bot',
-        text: `Protocolo REDxax: Análisis de ${parsed.vision.niche} finalizado. Potencial: ${parsed.potentialScore}%. ¿Deseas profundizar en la consultoría?`
+        text: `Protocolo REDxax: Análisis de ${parsed.vision?.niche || 'contenido'} finalizado. Potencial: ${parsed.potentialScore}%. ¿Deseas profundizar en la consultoría?`
       }]);
+      
       setAnalysisProgress(100);
       setTimeout(() => setStep('results'), 500);
+
     } catch (err) {
-      console.error("DETALLE DEL ERROR:", err);
+      console.error("DETALLE DEL ERROR VIDEO:", err);
+      alert("Error en el análisis de video. Revisa la consola.");
       setStep('upload');
     }
   };
 
+  // --- 2. FUNCIÓN DE ANÁLISIS DE SCRIPT (CORREGIDA) ---
   const runScriptAnalysis = async () => {
     if (!scriptText.trim()) return;
     setStep('analyzing');
@@ -271,27 +230,17 @@ const result = await fetchWithRetry(endpoint, {
     setAnalysisProgress(30);
 
     try {
-      const payload = {
-        contents: [{
-          role: "user",
-         parts: [{ 
-  text: `${systemInstructions}\n\nAnaliza este concepto/guion. No importa la ortografía o el formato, enfócate en el potencial de retención. Contenido a evaluar: ${JSON.stringify(scriptText)}` 
-}]
-        }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
-      };
+      // Usamos el proxy también aquí para mantener la API Key segura
+      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+        body: { 
+          text: `${systemInstructions}\n\nAnaliza este concepto/guion: ${scriptText}` 
+        }
+      });
 
-      setAnalysisProgress(60);
-     const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-const result = await fetchWithRetry(endpoint, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(payload)
-});
+      if (error) throw error;
 
       setAnalysisProgress(90);
-      const rawText = result.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
+      const rawText = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
       const parsed = JSON.parse(rawText);
 
       setAiResult(parsed);
@@ -300,14 +249,17 @@ const result = await fetchWithRetry(endpoint, {
         role: 'bot',
         text: `Protocolo REDxax: Análisis de Pre-producción listo. Potencial proyectado: ${parsed.potentialScore}%. ¿Deseas optimizar el texto?`
       }]);
+      
       setAnalysisProgress(100);
       setTimeout(() => setStep('results'), 500);
     } catch (err) {
       console.error("Error Script:", err);
+      alert("Error al analizar el guion.");
       setStep('upload');
     }
   };
-
+  
+  // --- 3. FUNCIÓN DE MENSAJERÍA / CHAT (CORREGIDA) ---
   const sendMessage = async () => {
     if (!userInput.trim() || isTyping) return;
     const newMessages = [...chatMessages, { role: 'user', text: userInput }];
@@ -316,32 +268,20 @@ const result = await fetchWithRetry(endpoint, {
     setIsTyping(true);
 
     try {
-      const contextMessage = {
-        role: "user",
-        parts: [{ text: `CONTEXTO INTERNO: Eres el Consultor REDxax. Acabas de analizar un ${analysisMode === 'video' ? 'video' : 'guion'} que obtuvo un ${aiResult.potentialScore}% de potencial. Los datos exactos del análisis son: ${JSON.stringify(aiResult)}. Usa estos datos para responder al usuario.` }]
-      };
-      const contextAcknowledge = { role: "model", parts: [{ text: "Contexto asimilado. Responderé basándome en los datos específicos de este análisis." }] };
+      const promptPersonalizado = `CONTEXTO INTERNO: Eres el Consultor REDxax. El video analizado tiene un ${aiResult?.potentialScore}% de potencial. Datos: ${JSON.stringify(aiResult)}. Responde breve y brutalmente honesto.`;
 
-      const conversationHistory = newMessages.map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.text }]
-      }));
-
-      const payload = {
-        contents: [contextMessage, contextAcknowledge, ...conversationHistory],
-        generationConfig: { temperature: 0.7 }
-      };
-
-     const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
-
-      const result = await fetchWithRetry(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+        body: { 
+          text: `${promptPersonalizado}\n\nUsuario dice: ${userInput}` 
+        }
       });
+
+      if (error) throw error;
       
-      setChatMessages([...newMessages, { role: 'bot', text: result.candidates[0].content.parts[0].text }]);
+      const botResponse = data.candidates[0].content.parts[0].text;
+      setChatMessages([...newMessages, { role: 'bot', text: botResponse }]);
     } catch (err) {
+      console.error("Error Chat:", err);
       setChatMessages([...newMessages, { role: 'bot', text: "Error de conexión con el núcleo analítico." }]);
     } finally {
       setIsTyping(false);
