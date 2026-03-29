@@ -1,24 +1,25 @@
-import { createClient } from '@supabase/supabase-js';
 import {
   Activity,
   BarChart3,
   Bot,
+  BrainCircuit,
+  CheckCircle,
   CheckSquare,
   Compass,
   FileText,
-  ListChecks,
   MessageSquare,
   Microscope,
   RotateCcw,
   Send,
-  Square // <--- Nuevos íconos
-  ,
+  Square,
   Target,
   Upload,
   X,
   Zap
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+
+import { createClient } from '@supabase/supabase-js';
 
 // Inicializar Supabase
 const supabase = createClient(
@@ -29,11 +30,10 @@ const supabase = createClient(
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 const App = () => {
-  // NUEVOS ESTADOS
-  const [step, setStep] = useState('upload'); // upload, script_input, analyzing, results
-  const [analysisMode, setAnalysisMode] = useState('video'); // 'video' o 'script'
-  const [scriptText, setScriptText] = useState("");
-  const [completedSteps, setCompletedSteps] = useState([]); // Para la hoja de ruta interactiva
+  const [step, setStep] = useState('upload'); 
+  const [analysisMode, setAnalysisMode] = useState('video'); // NUEVO: 'video' o 'script'
+  const [scriptText, setScriptText] = useState(""); // NUEVO
+  const [completedSteps, setCompletedSteps] = useState([]); // NUEVO: Para checklist interactivo
   
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
   const [analysisProgress, setAnalysisProgress] = useState(0);
@@ -48,30 +48,56 @@ const App = () => {
   const [isTyping, setIsTyping] = useState(false);
   const chatEndRef = useRef(null);
 
-  const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  useEffect(() => { if (showChat) scrollToBottom(); }, [chatMessages, isTyping]);
+  const scrollToBottom = () => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    if (showChat) scrollToBottom();
+  }, [chatMessages, isTyping]);
 
   useEffect(() => {
     const fetchAndUpdateCounter = async () => {
       try {
         const storedUserId = localStorage.getItem('redxax_user_id');
         const userId = storedUserId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        if (!storedUserId) localStorage.setItem('redxax_user_id', userId);
+        
+        if (!storedUserId) {
+          localStorage.setItem('redxax_user_id', userId);
+        }
 
-        const { error: insertError } = await supabase.from('user_visits').insert({ user_id: userId });
-        const { data: statsData } = await supabase.from('app_stats').select('total_users').eq('id', 1).single();
+        const { error: insertError } = await supabase
+          .from('user_visits')
+          .insert({ user_id: userId });
+
+        const { data: statsData } = await supabase
+          .from('app_stats')
+          .select('total_users')
+          .eq('id', 1)
+          .single();
+
         const currentCount = statsData?.total_users || 0;
 
         if (!insertError) {
           const newCount = Math.min(currentCount + 1, 500);
-          await supabase.from('app_stats').update({ total_users: newCount }).eq('id', 1);
+          
+          await supabase
+            .from('app_stats')
+            .update({ total_users: newCount })
+            .eq('id', 1);
+
           setUserCount(newCount);
         } else {
           setUserCount(currentCount);
         }
-      } catch (error) { console.error('Error en contador:', error); } 
-      finally { setIsLoadingCount(false); }
+
+      } catch (error) {
+        console.error('Error en contador:', error);
+      } finally {
+        setIsLoadingCount(false);
+      }
     };
+
     fetchAndUpdateCounter();
   }, []);
 
@@ -92,18 +118,19 @@ const App = () => {
     }
   };
 
-  const systemInstructions = `Actúa como un analista senior de agencia enfocado en retención y conversión. Precisión 500%.
-  TONO: Neutro, técnico, implacable. Especialista en optimizar hooks para nichos competitivos (ej. Real Estate, Gaming, E-commerce).
-  OBJETIVO: Evaluar potencial viral (0-100%) y prevenir fracasos de producción.
+  const systemInstructions = `Actúa como un analista experto en comportamiento del espectador. Precisión 500%.
+  TONO: Neutro, técnico, analítico.
+  OBJETIVO: Evaluar potencial (0-100%), definir nicho y generar retención.
   RESPONDE ÚNICAMENTE CON JSON PURO:
   {
     "potentialScore": número,
     "performanceScenario": "string",
     "honestVerdict": "string",
     "vision": { "niche": "string", "type": "string", "audience": "string", "promise": "string" },
+    "aiVision": "string",
     "retentionData": { "at3s": "X%", "at10s": "X%", "final": "X%" },
-    "retentionCurve": [15 valores numéricos del 0 al 100],
-    "roadmap": ["Paso técnico 1", "Paso técnico 2", "Paso técnico 3", "Paso técnico 4"]
+    "retentionCurve": [15 valores del 0 al 100],
+    "roadmap": ["paso1", "paso2", "paso3", "paso4"]
   }`;
 
   const captureFrames = (url) => {
@@ -112,6 +139,7 @@ const App = () => {
       video.src = url;
       video.crossOrigin = "anonymous";
       video.muted = true;
+      video.preload = "auto";
       const frames = [];
       
       video.onloadedmetadata = async () => {
@@ -122,7 +150,7 @@ const App = () => {
         
         for (let i = 0; i < points.length; i++) {
           const targetTime = Math.min(points[i], duration);
-          setStatusText(`Analizando estructura visual y ritmo... ${i+1}/${points.length}`);
+          setStatusText(`Analizando estructura visual... ${i+1}/${points.length}`);
           setAnalysisProgress(Math.round(10 + (i * 18)));
           
           video.currentTime = targetTime;
@@ -146,46 +174,52 @@ const App = () => {
     setAnalysisMode('video');
     try {
       const base64Frames = await captureFrames(url);
+      
       const payload = {
         contents: [{
           role: "user",
           parts: [
-            { text: `${systemInstructions}\n\nAnaliza la retención visual de estos frames.` },
+            { text: `${systemInstructions}\n\nAnaliza estos frames del video. Devuelve el JSON.` },
             ...base64Frames.map(data => ({ inlineData: { mimeType: "image/jpeg", data } }))
           ]
         }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
+        generationConfig: { 
+          temperature: 0.1,
+          maxOutputTokens: 2048
+        }
       };
 
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-      const result = await fetchWithRetry(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+     const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
+const result = await fetchWithRetry(endpoint, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload)
+});
       const rawText = result.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
       const parsed = JSON.parse(rawText);
 
       setAiResult(parsed);
-      setCompletedSteps([]); // Resetear checklist
-      setChatMessages([{ role: 'bot', text: `Análisis de video finalizado. Potencial: ${parsed.potentialScore}%. ¿Qué dudas tienes sobre la corrección del Hook?` }]);
+      setCompletedSteps([]);
+      setChatMessages([{
+        role: 'bot',
+        text: `Protocolo REDxax: Análisis de ${parsed.vision.niche} finalizado. Potencial: ${parsed.potentialScore}%. ¿Deseas profundizar en la consultoría?`
+      }]);
       setAnalysisProgress(100);
       setTimeout(() => setStep('results'), 500);
     } catch (err) {
-      console.error("Error Video:", err);
+      console.error("DETALLE DEL ERROR:", err);
       setStep('upload');
     }
   };
 
-  // NUEVA FUNCIÓN: Análisis de Fase 0 (Guion)
   const runScriptAnalysis = async () => {
     if (!scriptText.trim()) return;
     setStep('analyzing');
     setAnalysisMode('script');
+    setStatusText("Evaluando psicología del texto...");
     setAnalysisProgress(30);
-    setStatusText("Evaluando psicología del texto y fricción de lectura...");
-    
+
     try {
       const payload = {
         contents: [{
@@ -196,12 +230,13 @@ const App = () => {
       };
 
       setAnalysisProgress(60);
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
-      const result = await fetchWithRetry(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      const endpoint = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+
+const result = await fetchWithRetry(endpoint, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload)
+});
 
       setAnalysisProgress(90);
       const rawText = result.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -209,7 +244,10 @@ const App = () => {
 
       setAiResult(parsed);
       setCompletedSteps([]);
-      setChatMessages([{ role: 'bot', text: `Análisis de Pre-producción listo. Potencial proyectado: ${parsed.potentialScore}%. Ajusta el guion según mis métricas antes de encender la cámara.` }]);
+      setChatMessages([{
+        role: 'bot',
+        text: `Protocolo REDxax: Análisis de Pre-producción listo. Potencial proyectado: ${parsed.potentialScore}%. ¿Deseas optimizar el texto?`
+      }]);
       setAnalysisProgress(100);
       setTimeout(() => setStep('results'), 500);
     } catch (err) {
@@ -218,7 +256,6 @@ const App = () => {
     }
   };
 
-  // CHATBOT CON MEMORIA INYECTADA
   const sendMessage = async () => {
     if (!userInput.trim() || isTyping) return;
     const newMessages = [...chatMessages, { role: 'user', text: userInput }];
@@ -227,10 +264,9 @@ const App = () => {
     setIsTyping(true);
 
     try {
-      // INYECCIÓN DE CONTEXTO: La IA sabe exactamente qué está evaluando
       const contextMessage = {
         role: "user",
-        parts: [{ text: `CONTEXTO INTERNO: Eres el Consultor REDxax. Acabas de analizar un ${analysisMode === 'video' ? 'video' : 'guion'} que obtuvo un ${aiResult.potentialScore}% de potencial. Los datos exactos del análisis son: ${JSON.stringify(aiResult)}. Usa estos datos para responder al usuario. Responde de forma técnica, como un editor senior hablando con otro profesional.` }]
+        parts: [{ text: `CONTEXTO INTERNO: Eres el Consultor REDxax. Acabas de analizar un ${analysisMode === 'video' ? 'video' : 'guion'} que obtuvo un ${aiResult.potentialScore}% de potencial. Los datos exactos del análisis son: ${JSON.stringify(aiResult)}. Usa estos datos para responder al usuario.` }]
       };
       const contextAcknowledge = { role: "model", parts: [{ text: "Contexto asimilado. Responderé basándome en los datos específicos de este análisis." }] };
 
@@ -245,6 +281,7 @@ const App = () => {
       };
 
       const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+
       const result = await fetchWithRetry(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -271,24 +308,37 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-[#020203] text-white font-sans selection:bg-purple-500/50 overflow-x-hidden">
+      {/* Background Glows */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-5%] left-[-5%] w-[45%] h-[45%] bg-purple-600/[0.04] blur-[120px] rounded-full" />
         <div className="absolute bottom-[-5%] right-[-5%] w-[45%] h-[45%] bg-blue-600/[0.04] blur-[120px] rounded-full" />
       </div>
 
+      {/* 🟢 CONTADOR VISUAL */}
       <div className="fixed top-6 right-6 z-50 flex flex-col items-end gap-2">
         {!isLoadingCount && (
           <>
             <div className="flex items-center gap-2 bg-black/60 border border-white/10 px-4 py-2 rounded-full backdrop-blur-md">
               <Activity className="w-4 h-4 text-green-400" />
-              <span className="text-sm font-black italic tracking-tight">{userCount}/500 usuarios</span>
+              <span className="text-sm font-black italic tracking-tight">
+                {userCount}/500 usuarios
+              </span>
             </div>
+
             <div className="w-64 h-2 bg-white/5 border border-white/10 rounded-full overflow-hidden shadow-lg">
               <div 
-                className={`h-full rounded-full transition-all duration-500 ${userCount >= 500 ? 'bg-gradient-to-r from-green-400 to-green-600' : 'bg-gradient-to-r from-green-500 to-emerald-500'}`}
+                className={`h-full rounded-full transition-all duration-500 ${
+                  userCount >= 500 
+                    ? 'bg-gradient-to-r from-green-400 to-green-600' 
+                    : 'bg-gradient-to-r from-green-500 to-emerald-500'
+                }`}
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
+
+            {userCount >= 500 && (
+              <div className="text-2xl animate-bounce">🎉</div>
+            )}
           </>
         )}
       </div>
@@ -302,7 +352,7 @@ const App = () => {
         </div>
         {step === 'results' && (
           <button onClick={() => window.location.reload()} className="bg-white/5 border border-white/10 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 hover:bg-white/10">
-            <RotateCcw className="w-3 h-3" /> Nuevo Análisis
+            <RotateCcw className="w-3 h-3" /> Nuevo Test
           </button>
         )}
       </header>
@@ -312,31 +362,31 @@ const App = () => {
           <div className="text-center space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-700">
             <div className="space-y-4">
               <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-                <Microscope className="w-3 h-3" /> Fase de Pre-producción y Edición
+                <Microscope className="w-3 h-3" /> Precisión 500% — Analista Neutro
               </div>
-              <h2 className="text-6xl md:text-8xl font-black italic tracking-tighter leading-none uppercase">
-                Asegura tu <br/><span className="bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent">Éxito.</span>
+              <h2 className="text-7xl md:text-9xl font-black italic tracking-tighter leading-none uppercase">
+                POTENCIAL <br/><span className="bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent">REAL.</span>
               </h2>
               <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
-                No edites a ciegas. Valida tu guion antes de grabar, o analiza tu video crudo antes de publicarlo.
+                Sin juicios. Sin amabilidad. Solo la verdad técnica <br/>sobre tu probabilidad de éxito.
               </p>
             </div>  
 
-            {/* DUAL UPLOAD ZONE */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {/* CAJAS DUALES (GUION Y VIDEO) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto px-4">
               <div 
                 onClick={() => setStep('script_input')}
-                className="group relative border-2 border-dashed border-white/10 hover:border-indigo-500/50 bg-white/[0.02] rounded-[3rem] p-12 transition-all cursor-pointer overflow-hidden hover:bg-white/[0.04]"
+                className="group relative block border-2 border-dashed border-white/10 hover:border-indigo-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl"
               >
-                <FileText className="w-12 h-12 text-slate-600 mx-auto mb-4 group-hover:text-indigo-400 group-hover:scale-110 transition-all duration-500" />
-                <h3 className="text-2xl font-black italic tracking-tighter uppercase mb-2">Validar Guion</h3>
-                <p className="text-sm text-slate-500">Analiza el hook y la idea (Fase 0)</p>
+                <FileText className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-indigo-400 group-hover:scale-110 transition-all duration-500" />
+                <p className="text-3xl font-black italic tracking-tighter uppercase">Validar Guion</p>
+                <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 0: Estructura y Texto</p>
               </div>
 
-              <label className="group relative block border-2 border-dashed border-white/10 hover:border-purple-500/50 bg-white/[0.02] rounded-[3rem] p-12 transition-all cursor-pointer overflow-hidden hover:bg-white/[0.04]">
-                <Upload className="w-12 h-12 text-slate-600 mx-auto mb-4 group-hover:text-purple-400 group-hover:scale-110 transition-all duration-500" />
-                <h3 className="text-2xl font-black italic tracking-tighter uppercase mb-2">Analizar Video</h3>
-                <p className="text-sm text-slate-500">Sube material crudo o finalizado</p>
+              <label className="group relative block border-2 border-dashed border-white/10 hover:border-purple-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
+                <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-purple-400 group-hover:scale-110 transition-all duration-500" />
+                <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
+                <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Edición y Ritmo</p>
                 <input type="file" className="hidden" accept="video/*" onChange={(e) => {
                   const file = e.target.files[0];
                   if (file) {
@@ -351,25 +401,25 @@ const App = () => {
         )}
 
         {step === 'script_input' && (
-          <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-10">
-            <div className="bg-white/[0.02] border border-white/10 rounded-[3rem] p-8 shadow-2xl">
-              <h3 className="text-2xl font-black italic uppercase tracking-tighter mb-4 flex items-center gap-3">
-                <FileText className="text-indigo-400" /> Laboratorio de Guiones
+          <div className="max-w-3xl mx-auto animate-in slide-in-from-bottom-10 duration-500">
+            <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-12 md:p-16 shadow-2xl">
+              <h3 className="text-3xl font-black italic uppercase tracking-tighter mb-4 flex items-center gap-3">
+                <BrainCircuit className="text-indigo-400 w-8 h-8" /> Laboratorio de Guiones
               </h3>
-              <p className="text-slate-400 mb-6">Pega aquí los primeros segundos de tu diálogo o el concepto general del video. La IA detectará si tu Hook es lo suficientemente fuerte para retener a la audiencia.</p>
+              <p className="text-slate-400 mb-6 font-medium">Pega aquí los primeros segundos de tu diálogo o el concepto general del video. La IA detectará si tu Hook es lo suficientemente fuerte para retener a la audiencia.</p>
               
               <textarea 
                 value={scriptText}
                 onChange={(e) => setScriptText(e.target.value)}
                 placeholder="Ej: '¿Sabías que el 90% de los agentes inmobiliarios cometen este error al mostrar un departamento? Hoy te enseño...'"
-                className="w-full h-48 bg-black/50 border border-white/10 rounded-[2rem] p-6 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none mb-6"
+                className="w-full h-56 bg-black/50 border border-white/10 rounded-[2rem] p-6 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none mb-6 italic"
               />
-              <div className="flex justify-end gap-4">
-                <button onClick={() => setStep('upload')} className="px-6 py-3 rounded-full text-sm font-bold text-slate-400 hover:text-white transition-colors">Cancelar</button>
+              <div className="flex justify-between items-center">
+                <button onClick={() => setStep('upload')} className="text-sm font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-widest">← Volver</button>
                 <button 
                   onClick={runScriptAnalysis}
                   disabled={!scriptText.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-full text-sm font-black italic uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)]"
+                  className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all"
                 >
                   Analizar Viabilidad
                 </button>
@@ -399,22 +449,20 @@ const App = () => {
                   {videoPreviewUrl && <video src={videoPreviewUrl} className="w-full h-full object-cover" controls autoPlay loop muted />}
                 </div>
               ) : (
-                <div className="bg-[#111] rounded-[3.5rem] p-8 border border-white/10 aspect-[9/16] relative shadow-2xl flex flex-col">
+                <div className="bg-[#111] rounded-[3.5rem] p-10 border border-white/10 aspect-[9/16] relative shadow-2xl flex flex-col justify-center">
                   <div className="flex items-center gap-2 mb-4 text-indigo-400">
                     <FileText className="w-5 h-5" />
-                    <span className="text-xs font-black uppercase tracking-widest">Guion Analizado</span>
+                    <span className="text-xs font-black uppercase tracking-widest">Guion Escaneado</span>
                   </div>
-                  <p className="text-slate-300 italic text-sm leading-relaxed overflow-y-auto custom-scrollbar flex-1">"{scriptText}"</p>
+                  <p className="text-slate-300 italic text-sm font-medium leading-relaxed overflow-y-auto custom-scrollbar flex-1">"{scriptText}"</p>
                 </div>
               )}
 
               <div className="bg-gradient-to-br from-zinc-900 to-black p-10 rounded-[3.5rem] border border-white/10 shadow-2xl space-y-8">
                 <div className="text-center">
                   <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-500 italic mb-4">Potencial de Éxito</p>
-                  <div className={`text-8xl font-black italic tracking-tighter tabular-nums ${aiResult.potentialScore >= 80 ? 'text-green-400' : aiResult.potentialScore >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
-                    {aiResult.potentialScore}%
-                  </div>
-                  <div className="mt-4 inline-block bg-white/5 text-slate-300 px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/10">
+                  <div className={`text-8xl font-black italic tracking-tighter tabular-nums ${aiResult.potentialScore >= 70 ? 'text-green-400' : 'text-white'}`}>{aiResult.potentialScore}%</div>
+                  <div className="mt-4 inline-block bg-purple-600/20 text-purple-400 px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-500/30">
                     Escenario: {aiResult.performanceScenario}
                   </div>
                 </div>  
@@ -422,7 +470,7 @@ const App = () => {
                 <div className="pt-8 border-t border-white/5">
                   <div className="flex items-center gap-2 mb-3">
                     <Target className={`w-4 h-4 ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`} />
-                    <p className={`text-[10px] font-black uppercase tracking-[0.4em] italic ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`}>Veredicto Honesto</p>
+                    <p className={`text-[10px] font-black uppercase tracking-[0.4em] italic ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`}>Veredicto</p>
                   </div>
                   <p className="text-sm font-bold italic leading-relaxed text-slate-300">"{aiResult.honestVerdict}"</p>
                 </div>
@@ -433,7 +481,7 @@ const App = () => {
               <div className="bg-white/[0.03] border border-white/5 p-10 rounded-[3.5rem] space-y-6">
                 <div className="flex items-center gap-4">
                   <Compass className={analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'} />
-                  <h3 className="text-2xl font-black italic uppercase tracking-tighter">Visión Estratégica</h3>
+                  <h3 className="text-2xl font-black italic uppercase tracking-tighter">La Visión</h3>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-white/5 pt-6">
                   <div>
@@ -463,15 +511,15 @@ const App = () => {
                   </div>
                   <div className="grid grid-cols-3 gap-8">
                     <div className="text-center">
-                      <p className="text-[8px] font-black text-slate-500 uppercase mb-1">3s (Hook)</p>
+                      <p className="text-[8px] font-black text-slate-500 uppercase mb-1">3s</p>
                       <p className="text-xl font-black italic">{aiResult.retentionData.at3s}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[8px] font-black text-slate-500 uppercase mb-1">10s (Desarrollo)</p>
+                      <p className="text-[8px] font-black text-slate-500 uppercase mb-1">10s</p>
                       <p className="text-xl font-black italic">{aiResult.retentionData.at10s}</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Final (CTA)</p>
+                      <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Final</p>
                       <p className="text-xl font-black italic">{aiResult.retentionData.final}</p>
                     </div>
                   </div>
@@ -488,11 +536,11 @@ const App = () => {
                 </div>
               </div>
 
-              {/* HOJA DE RUTA INTERACTIVA */}
+              {/* CHECKLIST HOJA DE RUTA */}
               <div className="bg-white/[0.02] border border-white/5 p-10 rounded-[3.5rem] space-y-8">
                 <div className="flex items-center gap-4">
-                  <ListChecks className="text-green-500" />
-                  <h3 className="text-2xl font-black italic uppercase tracking-tighter">Hoja de Ruta (Checklist)</h3>
+                  <CheckCircle className="text-green-500" />
+                  <h3 className="text-2xl font-black italic uppercase tracking-tighter">Hoja de Ruta</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {(aiResult.roadmap || []).map((step, i) => {
@@ -501,7 +549,7 @@ const App = () => {
                       <div 
                         key={i} 
                         onClick={() => toggleStep(i)}
-                        className={`flex items-center gap-6 p-6 rounded-[2.5rem] transition-all cursor-pointer border ${isCompleted ? 'bg-green-500/10 border-green-500/30' : 'bg-black/40 border-white/5 hover:border-white/20'}`}
+                        className={`flex items-center gap-6 p-6 rounded-[2.5rem] transition-all cursor-pointer border ${isCompleted ? 'bg-green-500/10 border-green-500/30 opacity-50' : 'bg-black/40 border-white/5 hover:border-purple-500/30'}`}
                       >
                         <div className={`shrink-0 transition-colors ${isCompleted ? 'text-green-400' : 'text-slate-600'}`}>
                           {isCompleted ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6" />}
@@ -514,15 +562,15 @@ const App = () => {
               </div>
 
               {!showChat ? (
-                <button onClick={() => setShowChat(true)} className="w-full flex items-center justify-center gap-3 p-8 bg-zinc-600/10 hover:bg-zinc-600/20 border border-white/10 rounded-[3rem] text-slate-300 font-black italic uppercase tracking-tighter transition-all">
-                  <MessageSquare className="w-5 h-5" /> Consultar Detalles con la IA
+                <button onClick={() => setShowChat(true)} className="w-full flex items-center justify-center gap-3 p-8 bg-zinc-600/10 hover:bg-zinc-600/20 border border-white/10 rounded-[3rem] text-slate-400 font-black italic uppercase tracking-tighter transition-all">
+                  <MessageSquare className="w-5 h-5" /> Consultoría Técnica de Visión
                 </button>
               ) : (
                 <div className="bg-[#0a0a0c] border border-white/10 rounded-[3.5rem] overflow-hidden flex flex-col h-[550px] shadow-2xl animate-in slide-in-from-bottom-10">
                   <div className="p-6 border-b border-white/10 flex justify-between items-center bg-zinc-900/50">
                     <div className="flex items-center gap-3">
                       <div className="bg-zinc-800 p-2 rounded-xl border border-white/10"><Bot className="w-4 h-4 text-white" /></div>
-                      <h3 className="font-black italic uppercase tracking-tighter text-sm text-zinc-400">Consultor REDxax</h3>
+                      <h3 className="font-black italic uppercase tracking-tighter text-sm text-zinc-400">Analista Vision REDxax</h3>
                     </div>
                     <button onClick={() => setShowChat(false)} className="hover:bg-white/10 p-2 rounded-full transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
                   </div>
@@ -534,12 +582,12 @@ const App = () => {
                         </div>
                       </div>
                     ))}
-                    {isTyping && <div className="text-[10px] text-zinc-500 animate-pulse font-black uppercase ml-2 italic tracking-widest">Analizando parámetros...</div>}
+                    {isTyping && <div className="text-[10px] text-zinc-500 animate-pulse font-black uppercase ml-2 italic tracking-widest">Calculando respuesta técnica...</div>}
                     <div ref={chatEndRef} />
                   </div>
                   <div className="p-6 bg-black/50 border-t border-white/10">
                     <div className="bg-white/5 rounded-full p-2 flex items-center gap-2 px-6">
-                      <input type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendMessage()} placeholder="Ej: ¿Qué gancho visual sugieres para el segundo 2?" className="bg-transparent border-none outline-none flex-1 text-sm text-white py-2 italic" />
+                      <input type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && sendMessage()} placeholder="Escribe tu consulta..." className="bg-transparent border-none outline-none flex-1 text-sm text-white py-2 italic" />
                       <button onClick={sendMessage} className="bg-zinc-700 hover:bg-zinc-600 p-3 rounded-full transition-all active:scale-90"><Send className="w-4 h-4" /></button>
                     </div>
                   </div>
