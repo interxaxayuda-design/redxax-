@@ -7,6 +7,8 @@ import {
   CheckSquare,
   Compass,
   FileText,
+  Gem // <-- AGREGÁ "Gem" ACÁ
+  ,
   MessageSquare,
   Microscope,
   RotateCcw,
@@ -26,7 +28,7 @@ const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co'
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso' // tu anon key real
 
 function extractGeminiText(data) {
-  if (data?.error) {
+  if (data?.error) {  //return
     throw new Error(`Edge Function error: ${data.error} — ${data.message ?? data.raw ?? ''}`);
   }
   if (!data?.candidates || data.candidates.length === 0) {
@@ -45,7 +47,7 @@ function safeParseJSON(rawText, context = '') {
     console.error(`JSON inválido en [${context}]:`, err.message);
     console.error('Preview:', rawText.slice(0, 400));
     throw new Error(`JSON malformado o truncado. Preview: "${rawText.slice(0, 80)}..."`);
-  }
+  }   //<header>
 }
 
 // Inicializar Supabase  //parts: [{ text:
@@ -56,6 +58,7 @@ const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 const App = () => {
   const [step, setStep] = useState('upload'); 
+  const [gems, setGems] = useState(500);
   const [analysisMode, setAnalysisMode] = useState('video'); // NUEVO: 'video' o 'script'
   const [scriptText, setScriptText] = useState(""); // NUEVO
   const [completedSteps, setCompletedSteps] = useState([]); // NUEVO: Para checklist interactivo
@@ -133,7 +136,7 @@ useEffect(() => {
       console.error('Error en contador:', error);
     } finally {
       setIsLoadingCount(false);
-    }
+    }  
   };
 
   fetchAndUpdateCounter();
@@ -149,7 +152,7 @@ const handleLLMResponse = (result) => {
   const rawText = candidates[0]?.content?.parts?.[0]?.text || "";
   console.log("Texto generado:", rawText);
 };
-
+//Const app
   const systemInstructions = `Actúa como el Analista Jefe de Retención de InterXAX. 
 Tu precisión debe ser del 500% analizando la psicología del espectador.
 
@@ -241,7 +244,7 @@ const captureFrames = (url) => {
 
       const rawText = extractGeminiText(data);
 const parsed = safeParseJSON(rawText, 'runNeuralAnalysis');
-
+//<header className
       setAiResult(parsed);
       setCompletedSteps([]);
       setChatMessages([{
@@ -256,7 +259,7 @@ const parsed = safeParseJSON(rawText, 'runNeuralAnalysis');
       console.error("DETALLE DEL ERROR VIDEO:", err);
       alert("Error en el análisis de video. Revisa la consola.");
       setStep('upload');
-    }
+    }  //nuevo test
   };
 
   // --- 2. FUNCIÓN DE ANÁLISIS DE SCRIPT (CORREGIDA) ---
@@ -374,18 +377,37 @@ const parsed = safeParseJSON(rawText, 'runScriptAnalysis');
       </div>
 
       <header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
-        <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
-          <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-2 rounded-xl shadow-lg">
-            <Zap className="w-5 h-5 text-white" fill="white" />
-          </div>
-          <h1 className="text-2xl font-black tracking-tighter italic uppercase">RED<span className="text-purple-500">xax</span> VISION</h1>
-        </div>
-        {step === 'results' && (
-          <button onClick={() => window.location.reload()} className="bg-white/5 border border-white/10 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 hover:bg-white/10">
-            <RotateCcw className="w-3 h-3" /> Nuevo Test
-          </button>
-        )}
-      </header>
+  {/* Sección Izquierda: Logo */}
+  <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
+    <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-2 rounded-xl shadow-lg transition-transform group-hover:scale-110">
+      <Zap className="w-5 h-5 text-white" fill="white" />
+    </div>
+    <h1 className="text-2xl font-black tracking-tighter italic uppercase">
+      RED<span className="text-purple-500">xax</span> VISION
+    </h1>
+  </div>
+
+  {/* Sección Derecha: Gemas + Botón Condicional */}
+  <div className="flex items-center gap-4">
+    {/* Contador de Gemas (Siempre visible) */}
+    <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.1)] transition-all hover:bg-purple-500/20">
+      <Gem className="w-4 h-4 text-purple-400" fill="currentColor" />
+      <span className="text-purple-300 font-black italic tracking-tighter tabular-nums text-lg leading-none">
+        {gems}
+      </span>
+    </div>
+
+    {/* Botón Nuevo Test (Solo aparece en resultados) */}
+    {step === 'results' && (
+      <button 
+        onClick={() => window.location.reload()} 
+        className="bg-white/5 border border-white/10 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 hover:bg-white/20 active:scale-95"
+      >
+        <RotateCcw className="w-3 h-3" /> Nuevo Test
+      </button>
+    )}
+  </div>
+</header>
 
       <main className="relative z-10 max-w-6xl mx-auto p-4 py-12">
         {step === 'upload' && (
