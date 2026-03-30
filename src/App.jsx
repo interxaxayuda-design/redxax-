@@ -25,6 +25,29 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co'
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso' // tu anon key real
 
+function extractGeminiText(data) {
+  if (data?.error) {
+    throw new Error(`Edge Function error: ${data.error} — ${data.message ?? data.raw ?? ''}`);
+  }
+  if (!data?.candidates || data.candidates.length === 0) {
+    const reason = data?.promptFeedback?.blockReason ?? 'Sin candidates en la respuesta';
+    throw new Error(`Gemini no devolvió candidates: ${reason}`);
+  }
+  const raw = data.candidates[0]?.content?.parts?.[0]?.text;
+  if (!raw) throw new Error('La respuesta de Gemini no contiene texto en parts[0]');
+  return raw.replace(/```json|```/g, '').trim();
+}
+
+function safeParseJSON(rawText, context = '') {
+  try {
+    return JSON.parse(rawText);
+  } catch (err) {
+    console.error(`JSON inválido en [${context}]:`, err.message);
+    console.error('Preview:', rawText.slice(0, 400));
+    throw new Error(`JSON malformado o truncado. Preview: "${rawText.slice(0, 80)}..."`);
+  }
+}
+
 // Inicializar Supabase  //parts: [{ text:
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
      
@@ -62,16 +85,22 @@ useEffect(() => {
   const fetchAndUpdateCounter = async () => {
     try {
       const storedUserId = localStorage.getItem('redxax_user_id');
-      const userId = storedUserId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      if (!storedUserId) {
+      const isNewUser = !storedUserId;
+      const userId = storedUserId
+        || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      if (isNewUser) {
         localStorage.setItem('redxax_user_id', userId);
       }
 
-      // usar upsert para evitar 409
-      const { error: insertError } = await supabase
+      const { error: upsertError } = await supabase
         .from('user_visits')
-        .upsert({ user_id: userId });
+        .upsert(
+          { user_id: userId },
+          { onConflict: 'user_id', ignoreDuplicates: true }
+        );
+
+      if (upsertError) console.error('Error en upsert de visita:', upsertError);
 
       const { data: statsData, error: statsError } = await supabase
         .from('app_stats')
@@ -79,14 +108,11 @@ useEffect(() => {
         .eq('id', 1)
         .single();
 
-      if (statsError) {
-        console.error('Error leyendo app_stats:', statsError);
-        return;
-      }
+      if (statsError) { console.error('Error leyendo app_stats:', statsError); return; }
 
       const currentCount = statsData?.total_users || 0;
 
-      if (!insertError) {
+      if (isNewUser && !upsertError) {
         const newCount = Math.min(currentCount + 1, 500);
         const { error: updateError } = await supabase
           .from('app_stats')
@@ -95,11 +121,11 @@ useEffect(() => {
 
         if (updateError) {
           console.error('Error actualizando app_stats:', updateError);
+          setUserCount(currentCount);
         } else {
           setUserCount(newCount);
         }
       } else {
-        console.error('Error insertando visita:', insertError);
         setUserCount(currentCount);
       }
 
@@ -131,11 +157,29 @@ TONO: Técnico, directo y brutalmente honesto. No uses relleno.
 OBJETIVO: Evaluar el potencial viral (0-100%) y detectar fugas de atención.
 
 REGLAS DE ANÁLISIS:
-1. retentionCurve: Genera exactamente 15 puntos que representen la caída de audiencia estimada.
-2. honestVerdict: Sé crudo. Si el hook es aburrido, decilo y explica por qué.
-3. roadmap: Da 4 pasos accionables para mejorar el video antes de grabarlo.
+1. retentionCurve: Genera exactamente 15 números (0-100) que representen la caída de audiencia estimada.
+2. honestVerdict: Sé crudo. Si el hook es aburrido, decilo y explicá por qué.
+3. roadmap: Da exactamente 4 pasos accionables (strings) para mejorar el video.
 
-IMPORTANTE: Cíñete estrictamente al esquema JSON proporcionado.`;
+ESQUEMA JSON OBLIGATORIO — devuelve SOLO este JSON, sin texto adicional ni bloques de código:
+{
+  "potentialScore": <número 0-100>,
+  "performanceScenario": "<string>",
+  "honestVerdict": "<string>",
+  "vision": {
+    "niche": "<string>",
+    "type": "<string>",
+    "audience": "<string>",
+    "promise": "<string>"
+  },
+  "retentionData": {
+    "at3s": "<string: ej. 85%>",
+    "at10s": "<string: ej. 62%>",
+    "final": "<string: ej. 34%>"
+  },
+  "retentionCurve": [<15 números entre 0 y 100>],
+  "roadmap": ["<paso 1>", "<paso 2>", "<paso 3>", "<paso 4>"]
+}`;
 
 const captureFrames = (url) => {
     return new Promise((resolve) => {
@@ -195,9 +239,8 @@ const captureFrames = (url) => {
 
       if (error) throw error;
 
-      const rawText = data.candidates[0].content.parts[0].text;
-      const cleanText = rawText.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(cleanText);
+      const rawText = extractGeminiText(data);
+const parsed = safeParseJSON(rawText, 'runNeuralAnalysis');
 
       setAiResult(parsed);
       setCompletedSteps([]);
@@ -235,8 +278,8 @@ const captureFrames = (url) => {
       if (error) throw error;
 
       setAnalysisProgress(90);
-      const rawText = data.candidates[0].content.parts[0].text.replace(/```json|```/g, '').trim();
-      const parsed = JSON.parse(rawText);
+      const rawText = extractGeminiText(data);
+const parsed = safeParseJSON(rawText, 'runScriptAnalysis');
 
       setAiResult(parsed);
       setCompletedSteps([]);
@@ -273,7 +316,7 @@ const captureFrames = (url) => {
 
       if (error) throw error;
       
-      const botResponse = data.candidates[0].content.parts[0].text;
+      const botResponse = extractGeminiText(data);
       setChatMessages([...newMessages, { role: 'bot', text: botResponse }]);
     } catch (err) {
       console.error("Error Chat:", err);
@@ -288,7 +331,7 @@ const captureFrames = (url) => {
       setCompletedSteps(completedSteps.filter(i => i !== index));
     } else {
       setCompletedSteps([...completedSteps, index]);
-    }
+    }  //sendMessage
   };
 
   const progressPercent = (userCount / 500) * 100;
