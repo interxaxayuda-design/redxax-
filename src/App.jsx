@@ -191,6 +191,8 @@ CREDIBILIDAD Y ESPECIFICIDAD → 15% del score
   - Prueba social implícita o explícita
   - Lenguaje específico del nicho (señal de autoridad)
 
+  ADVERTENCIA: Haz que el usuario entienda lo que decís. Explica palabras complejas cómo hook, retención, entre otras. 
+
 ═══════════════════════════════════════
 FASE 2 — CALIBRACIÓN CON TENDENCIAS ACTUALES
 ═══════════════════════════════════════
@@ -216,6 +218,16 @@ FASE 3 — CÁLCULO DEL SCORE (SÉ HONESTO)
 - 0-29%: No hay loop abierto, hook no interrumpe el scroll
 
 NUNCA des un score sin justificarlo con los criterios de arriba.
+
+═══════════════════════════════════════
+FASE PREVIA — BÚSQUEDA DE TENDENCIAS (EJECUTAR PRIMERO)
+═══════════════════════════════════════
+Antes de analizar el contenido, buscá en Google:
+1. "tendencias TikTok Reels [nicho detectado] 2025"
+2. "videos virales [nicho detectado] últimos 30 días"
+3. "hooks que funcionan [nicho detectado] 2025,2026"
+
+Usá esos resultados para calibrar el score y el roadmap.
 
 ═══════════════════════════════════════
 ESQUEMA JSON OBLIGATORIO
