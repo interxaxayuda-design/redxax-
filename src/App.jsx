@@ -27,7 +27,7 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 // Inicializar Supabase  //parts: [{ text:
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
+     
 // API key de Gemini (guardada en .env)
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -55,10 +55,10 @@ const App = () => {
   };  //generationConfig
 
   useEffect(() => {
-    if (showChat) scrollToBottom();
-  }, [chatMessages, isTyping]);
+  if (showChat) scrollToBottom();
+}, [chatMessages, isTyping]);
 
-  useEffect(() => {
+useEffect(() => {
   const fetchAndUpdateCounter = async () => {
     try {
       const storedUserId = localStorage.getItem('redxax_user_id');
@@ -68,9 +68,10 @@ const App = () => {
         localStorage.setItem('redxax_user_id', userId);
       }
 
+      // usar upsert para evitar 409
       const { error: insertError } = await supabase
         .from('user_visits')
-        .insert({ user_id: userId });
+        .upsert({ user_id: userId });
 
       const { data: statsData, error: statsError } = await supabase
         .from('app_stats')
@@ -112,22 +113,16 @@ const App = () => {
   fetchAndUpdateCounter();
 }, []);
 
-  const fetchWithRetry = async (url, options, retries = 5, backoff = 1000) => {
-    try {
-      const response = await fetch(url, options);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || `Error ${response.status}`);
-      }
-      return await response.json();
-    } catch (err) {
-      if (retries > 0) {
-        await new Promise(r => setTimeout(r, backoff));
-        return fetchWithRetry(url, options, retries - 1, backoff * 2);
-      }
-      throw err;
-    }
-  };
+// cuando proceses la respuesta del proxy:
+const handleLLMResponse = (result) => {
+  const candidates = result?.candidates || [];
+  if (!candidates.length) {
+    console.error("No candidates en la respuesta:", result);
+    return;
+  }
+  const rawText = candidates[0]?.content?.parts?.[0]?.text || "";
+  console.log("Texto generado:", rawText);
+};
 
   const systemInstructions = `Actúa como el Analista Jefe de Retención de InterXAX. 
 Tu precisión debe ser del 500% analizando la psicología del espectador.
