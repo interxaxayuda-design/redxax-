@@ -7,8 +7,7 @@ import {
   CheckSquare,
   Compass,
   FileText,
-  Gem // <-- AGREGÁ "Gem" ACÁ
-  ,
+  Gem,
   MessageSquare,
   Microscope,
   RotateCcw,
@@ -22,14 +21,18 @@ import {
 import { useEffect, useRef, useState } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
-import { gemsManager } from './gems-manager';
 
-// URL y anon key de tu proyecto Supabase
-const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso' // tu anon key real
+// ❌ BORRASTE: import { gemsManager } from './gems-manager'; 
+
+const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso';
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 
 function extractGeminiText(data) {
-  if (data?.error) {  //return
+  if (data?.error) {
     throw new Error(`Edge Function error: ${data.error} — ${data.message ?? data.raw ?? ''}`);
   }
   if (!data?.candidates || data.candidates.length === 0) {
@@ -48,110 +51,91 @@ function safeParseJSON(rawText, context = '') {
     console.error(`JSON inválido en [${context}]:`, err.message);
     console.error('Preview:', rawText.slice(0, 400));
     throw new Error(`JSON malformado o truncado. Preview: "${rawText.slice(0, 80)}..."`);
-  }   //<header>
+  }
 }
 
-// Inicializar Supabase  //parts: [{ text:
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-     
-// API key de Gemini (guardada en .env)
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-
 const App = () => {
-  const [step, setStep] = useState('upload'); 
-  // ✅ DESPUÉS
-const [gems, setGems] = useState(() => {
-  try {
-    return gemsManager.getGems();
-  } catch {
-    return 500;
-  }
-});
-  const [analysisMode, setAnalysisMode] = useState('video'); // NUEVO: 'video' o 'script'
-  const [scriptText, setScriptText] = useState(""); // NUEVO
-  const [showStore, setShowStore] = useState(false); // ← AGREGÁ ESTA LÍNEA
-
-  const [completedSteps, setCompletedSteps] = useState([]); // NUEVO: Para checklist interactivo
-  
+  const [step, setStep] = useState('upload');
+  const [analysisMode, setAnalysisMode] = useState('video');
+  const [scriptText, setScriptText] = useState('');
+  const [completedSteps, setCompletedSteps] = useState([]);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
-  const [videoDuration, setVideoDuration] = useState(1);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [aiResult, setAiResult] = useState(null);
   const [userCount, setUserCount] = useState(0);
   const [isLoadingCount, setIsLoadingCount] = useState(true);
-  const [statusText, setStatusText] = useState("");
-  
+  const [statusText, setStatusText] = useState('');
   const [showChat, setShowChat] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
-  const [userInput, setUserInput] = useState("");
+  const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+
+  // ✅ Gemas conectadas a Supabase, no a gemsManager local
+  const [gems, setGems] = useState(null);
+  const [showGemStore, setShowGemStore] = useState(false);
+  const [gemError, setGemError] = useState(null);
+
   const chatEndRef = useRef(null);
 
   const scrollToBottom = () => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };  //generationConfig
-
-  useEffect(() => {
-  if (showChat) scrollToBottom();
-}, [chatMessages, isTyping]);
-
-useEffect(() => {
-  const fetchAndUpdateCounter = async () => {
-    try {
-      const storedUserId = localStorage.getItem('redxax_user_id');
-      const isNewUser = !storedUserId;
-      const userId = storedUserId
-        || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      if (isNewUser) {
-        localStorage.setItem('redxax_user_id', userId);
-      }
-
-      const { error: upsertError } = await supabase
-        .from('user_visits')
-        .upsert(
-          { user_id: userId },
-          { onConflict: 'user_id', ignoreDuplicates: true }
-        );
-
-      if (upsertError) console.error('Error en upsert de visita:', upsertError);
-
-      const { data: statsData, error: statsError } = await supabase
-        .from('app_stats')
-        .select('total_users')
-        .eq('id', 1)
-        .single();
-
-      if (statsError) { console.error('Error leyendo app_stats:', statsError); return; }
-
-      const currentCount = statsData?.total_users || 0;
-
-      if (isNewUser && !upsertError) {
-        const newCount = Math.min(currentCount + 1, 500);
-        const { error: updateError } = await supabase
-          .from('app_stats')
-          .update({ total_users: newCount })
-          .eq('id', 1);
-
-        if (updateError) {
-          console.error('Error actualizando app_stats:', updateError);
-          setUserCount(currentCount);
-        } else {
-          setUserCount(newCount);
-        }
-      } else {
-        setUserCount(currentCount);
-      }
-
-    } catch (error) {
-      console.error('Error en contador:', error);
-    } finally {
-      setIsLoadingCount(false);
-    }  
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  fetchAndUpdateCounter();
-}, []);
+  useEffect(() => {
+    if (showChat) scrollToBottom();
+  }, [chatMessages, isTyping]);
+
+  // ── CONTADOR DE USUARIOS ──
+  useEffect(() => {
+    const fetchAndUpdateCounter = async () => {
+      try {
+        const storedUserId = localStorage.getItem('redxax_user_id');
+        const isNewUser = !storedUserId;
+        const userId = storedUserId
+          || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+        if (isNewUser) localStorage.setItem('redxax_user_id', userId);
+
+        const { error: upsertError } = await supabase
+          .from('user_visits')
+          .upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true });
+
+        if (upsertError) console.error('Error en upsert de visita:', upsertError);
+
+        const { data: statsData, error: statsError } = await supabase
+          .from('app_stats').select('total_users').eq('id', 1).single();
+
+        if (statsError) { console.error('Error leyendo app_stats:', statsError); return; }
+
+        const currentCount = statsData?.total_users || 0;
+
+        if (isNewUser && !upsertError) {
+          const newCount = Math.min(currentCount + 1, 500);
+          const { error: updateError } = await supabase
+            .from('app_stats').update({ total_users: newCount }).eq('id', 1);
+          setUserCount(updateError ? currentCount : newCount);
+        } else {
+          setUserCount(currentCount);
+        }
+      } catch (error) {
+        console.error('Error en contador:', error);
+      } finally {
+        setIsLoadingCount(false);
+      }
+    };
+    fetchAndUpdateCounter();
+  }, []);
+
+  // ── CARGAR GEMAS DESDE SUPABASE ──
+  useEffect(() => {
+    const loadGems = async () => {
+      const { data, error } = await supabase.functions.invoke('gems-manager', {
+        body: { action: 'get_balance' }
+      });
+      if (!error && data?.balance !== undefined) setGems(data.balance);
+    };
+    loadGems();
+  }, []);
 
 // cuando proceses la respuesta del proxy:
 const handleLLMResponse = (result) => {
