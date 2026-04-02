@@ -59,7 +59,7 @@ const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 const App = () => {
   const [step, setStep] = useState('upload'); 
-  const [gems, setGems] = useState(0); // Se inicializa en el useEffect
+  const [gems, setGems] = useState(() => gemsManager.getGems());
   const [analysisMode, setAnalysisMode] = useState('video'); // NUEVO: 'video' o 'script'
   const [scriptText, setScriptText] = useState(""); // NUEVO
   const [completedSteps, setCompletedSteps] = useState([]); // NUEVO: Para checklist interactivo
