@@ -22,6 +22,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
+import { gemsManager } from './utils/gems-manager'; // <--- IMPORTANTE
 
 // URL y anon key de tu proyecto Supabase
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co'
@@ -58,7 +59,7 @@ const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 
 const App = () => {
   const [step, setStep] = useState('upload'); 
-  const [gems, setGems] = useState(500);
+  const [gems, setGems] = useState(0); // Se inicializa en el useEffect
   const [analysisMode, setAnalysisMode] = useState('video'); // NUEVO: 'video' o 'script'
   const [scriptText, setScriptText] = useState(""); // NUEVO
   const [completedSteps, setCompletedSteps] = useState([]); // NUEVO: Para checklist interactivo
@@ -281,11 +282,81 @@ Directo como un editor profesional que cobra $500 la hora y no tiene tiempo que 
 Sin frases de relleno. Sin "es importante", "te recomiendo", "cabe destacar", "sin embargo".
 Cada oración arranca con el dato o la acción, nunca con una introducción.
 
+ 
+TONO Y PSICOLOGÍA DE RESPUESTA — OBLIGATORIO:
+
+Sos un coach de contenido, no un crítico.
+Tu trabajo es que el creador salga del análisis con energía para mejorar, no con ganas de borrar todo.
+
+REGLA DE ORO: Nunca destruyas, siempre redirigí.
+El creador ya grabó el video, ya le dedicó tiempo. Tu trabajo es mostrarle el camino, no el error.
+
+ESTRUCTURA DE FEEDBACK OBLIGATORIA:
+Siempre en este orden:
+1. Primero reconocé lo que está funcionando. Siempre hay algo.
+2. Después presentá la oportunidad de mejora como exactamente eso: una oportunidad.
+3. Cerrá con la acción concreta que lo lleva al siguiente nivel.
+
+EJEMPLOS DE TRANSFORMACIÓN DE TONO:
+
+❌ "Tu hook es débil y genérico"
+✅ "El hook tiene potencial — agregarle un dato concreto lo vuelve irresistible"
+
+❌ "El ritmo es lento y aburre al espectador"  
+✅ "Un corte en el segundo 4 mantiene la energía que arrancaste bien en el inicio"
+
+❌ "No hay loop abierto, la gente no tiene razón para quedarse"
+✅ "Mover la promesa del final al segundo 8 crea la tensión que hace que nadie se vaya"
+
+❌ "La edición es amateur"
+✅ "La base está — agregar texto en pantalla en los momentos clave duplica el tiempo de visualización"
+
+PALABRAS PROHIBIDAS EN CUALQUIER CAMPO:
+"malo", "débil", "aburrido", "amateur", "error", "falla", "problema", "basura",
+"mediocre", "pobre", "flojo", "deficiente", "incorrecto"
+
+PALABRAS QUE DEBEN APARECER:
+"potencial", "oportunidad", "siguiente nivel", "ajuste", "amplificar", "ya tenés",
+"funciona", "suma", "mejora", "construí sobre esto"
+
+SOBRE LOS HOOKS ENCONTRADOS EN GOOGLE:
+Cuando la búsqueda devuelva hooks populares del momento, presentalos como inspiración,
+no como "lo que deberías haber hecho". La frase siempre es:
+"Hooks que están funcionando en tu nicho ahora mismo que podrías adaptar a tu estilo:"
+Nunca compares directamente el hook del usuario con los tendencia de forma negativa.
+La comparación siempre es una oportunidad, no una sentencia.
+
+MENTALIDAD GENERAL:
+El creador que usa esta app ya está un paso adelante de los que no la usan.
+Cada análisis debe dejarle claro que tiene las herramientas para llegar adonde quiere.
+`;
+```
+
+---
+
+La diferencia en la práctica con tu propio guion de antes:
+// ❌ ANTES — agresivo
+"La falta de especificidad en el hook podría ser un punto débil 
+si no se resuelve rápidamente."
+
+// ✅ AHORA — coach
+"El hook ya genera curiosidad real. Agregarle un resultado concreto 
+— un número, una historia de 3 palabras — lo convierte en algo 
+que nadie puede scrollear sin preguntarse si aplica a ellos."
 PROHIBIDO:
 - Repetir información entre campos
 
 PERMITIDO
 - Ser motivador al final del mensaje
+
+CRITERIO DE "VALOR PERCIBIDO" (Añadir 10% extra):
+- ¿El espectador siente que aprendió algo o se entretuvo en los primeros 10s?
+- Si la respuesta es "estoy esperando a que empiece", el score baja automáticamente 20 puntos.
+
+LÓGICA DE CURVA DE RETENCIÓN:
+- Los primeros 3 puntos de la curva [0,1,2] deben reflejar la eficacia del hook.
+- Si el hook es vago, la caída entre el punto 1 y 3 debe ser superior al 40%
+
 
 ═══════════════════════════════════════
 ESQUEMA JSON OBLIGATORIO
@@ -358,8 +429,27 @@ const captureFrames = (url) => {
     });
   };
 
-  // --- 1. FUNCIÓN DE ANÁLISIS DE VIDEO (CORREGIDA) ---
+  // Lógica de Negocio InterXAX
+  const getVideoCost = (min) => Math.max(100, Math.ceil(min * 100));
+
+  const deductGems = (amount) => {
+    if (gemsManager.hasEnough(amount)) {
+      const newBalance = gemsManager.getGems() - amount;
+      setGems(gemsManager.setGems(newBalance));
+      return true;
+    }
+    setShowStore(true);
+    return false;
+  };
+
+  // --- 1. FUNCIÓN DE ANÁLISIS DE VIDEO (CORREGIDA CON GEMAS) ---
   const runNeuralAnalysis = async (url) => {
+    // Cálculo de costo: 100 gemas por minuto de video
+    const videoCost = Math.max(100, Math.ceil(videoDuration * 100));
+
+    // Intento de descuento. Si no hay gemas, la función deductGems() abre la tienda y retorna false.
+    if (!deductGems(videoCost)) return;
+
     setStep('analyzing');
     setAnalysisMode('video');
     setStatusText("Iniciando escaneo de InterXAX...");
@@ -381,8 +471,8 @@ const captureFrames = (url) => {
       if (error) throw error;
 
       const rawText = extractGeminiText(data);
-const parsed = safeParseJSON(rawText, 'runNeuralAnalysis');
-//<header className
+      const parsed = safeParseJSON(rawText, 'runNeuralAnalysis');
+      
       setAiResult(parsed);
       setCompletedSteps([]);
       setChatMessages([{
@@ -397,12 +487,19 @@ const parsed = safeParseJSON(rawText, 'runNeuralAnalysis');
       console.error("DETALLE DEL ERROR VIDEO:", err);
       alert("Error en el análisis de video. Revisa la consola.");
       setStep('upload');
-    }  //nuevo test
+    }
   };
 
-  // --- 2. FUNCIÓN DE ANÁLISIS DE SCRIPT (CORREGIDA) ---
+  // --- 2. FUNCIÓN DE ANÁLISIS DE SCRIPT (CORREGIDA CON GEMAS) ---
   const runScriptAnalysis = async () => {
     if (!scriptText.trim()) return;
+
+    // Definimos un costo fijo para análisis de guion (por ejemplo, 50 gemas)
+    const scriptCost = 50;
+
+    // Validación de saldo
+    if (!deductGems(scriptCost)) return;
+
     setStep('analyzing');
     setAnalysisMode('script');
     setStatusText("Evaluando psicología del texto...");
@@ -420,7 +517,7 @@ const parsed = safeParseJSON(rawText, 'runNeuralAnalysis');
 
       setAnalysisProgress(90);
       const rawText = extractGeminiText(data);
-const parsed = safeParseJSON(rawText, 'runScriptAnalysis');
+      const parsed = safeParseJSON(rawText, 'runScriptAnalysis');
 
       setAiResult(parsed);
       setCompletedSteps([]);
