@@ -137,16 +137,6 @@ const App = () => {
     loadGems();
   }, []);
 
-// cuando proceses la respuesta del proxy:
-const handleLLMResponse = (result) => {
-  const candidates = result?.candidates || [];
-  if (!candidates.length) {
-    console.error("No candidates en la respuesta:", result);
-    return;
-  }
-  const rawText = candidates[0]?.content?.parts?.[0]?.text || "";
-  console.log("Texto generado:", rawText);
-};
 //Const app
   const systemInstructions = `Eres REDXAX VISION, el sistema de análisis de retención más avanzado para creadores de contenido de habla hispana en el mundo entero.
 
@@ -426,20 +416,32 @@ const captureFrames = (url) => {
   // Lógica de Negocio InterXAX
   const getVideoCost = (min) => Math.max(100, Math.ceil(min * 100));
 
-  const deductGems = (amount) => {
-    if (gemsManager.hasEnough(amount)) {
-      const newBalance = gemsManager.getGems() - amount;
-      setGems(gemsManager.setGems(newBalance));
-      return true;
-    }
-    setShowStore(true);
+  // ✅ DESPUÉS
+const deductGems = async (amount) => {
+  const { data, error } = await supabase.functions.invoke('gems-manager', {
+    body: { action: 'deduct', amount }
+  });
+  if (error || data?.error === 'insufficient_gems') {
+    setGemError('insufficient_gems');
+    setShowGemStore(true);
     return false;
-  };
+  }
+  setGems(data.balance);
+  return true;
+};
 
-  // --- 1. FUNCIÓN DE ANÁLISIS DE VIDEO (CORREGIDA CON GEMAS) ---
-  const runNeuralAnalysis = async (url) => {
-    // Cálculo de costo: 100 gemas por minuto de video
-    const videoCost = Math.max(100, Math.ceil(videoDuration * 100));
+
+
+  // ✅ DESPUÉS
+const runNeuralAnalysis = async (url) => {
+  const duration = await new Promise((resolve) => {
+    const v = document.createElement('video');
+    v.src = url;
+    v.onloadedmetadata = () => resolve(v.duration);
+  });
+  const cost = Math.ceil(duration / 60) * 100;
+  const approved = await deductGems(cost);
+  if (!approved) return;
 
     // Intento de descuento. Si no hay gemas, la función deductGems() abre la tienda y retorna false.
     if (!deductGems(videoCost)) return;
@@ -487,12 +489,10 @@ const captureFrames = (url) => {
   // --- 2. FUNCIÓN DE ANÁLISIS DE SCRIPT (CORREGIDA CON GEMAS) ---
   const runScriptAnalysis = async () => {
     if (!scriptText.trim()) return;
-
-    // Definimos un costo fijo para análisis de guion (por ejemplo, 50 gemas)
-    const scriptCost = 50;
-
-    // Validación de saldo
-    if (!deductGems(scriptCost)) return;
+    
+// ✅ DESPUÉS
+const approved = await deductGems(80);
+if (!approved) return;
 
     setStep('analyzing');
     setAnalysisMode('script');
