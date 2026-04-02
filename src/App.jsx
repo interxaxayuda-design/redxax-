@@ -69,9 +69,12 @@ const [gems, setGems] = useState(() => {
 });
   const [analysisMode, setAnalysisMode] = useState('video'); // NUEVO: 'video' o 'script'
   const [scriptText, setScriptText] = useState(""); // NUEVO
+  const [showStore, setShowStore] = useState(false); // ← AGREGÁ ESTA LÍNEA
+
   const [completedSteps, setCompletedSteps] = useState([]); // NUEVO: Para checklist interactivo
   
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
+  const [videoDuration, setVideoDuration] = useState(1);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [aiResult, setAiResult] = useState(null);
   const [userCount, setUserCount] = useState(0);
@@ -589,7 +592,7 @@ const captureFrames = (url) => {
         <div className="absolute bottom-[-5%] right-[-5%] w-[45%] h-[45%] bg-blue-600/[0.04] blur-[120px] rounded-full" />
       </div>
 
-      {/* 🟢 CONTADOR VISUAL */}
+      {/* CONTADOR VISUAL */}
       <div className="fixed top-6 right-6 z-50 flex flex-col items-end gap-2">
         {!isLoadingCount && (
           <>
@@ -599,7 +602,6 @@ const captureFrames = (url) => {
                 {userCount}/500 usuarios
               </span>
             </div>
-
             <div className="w-64 h-2 bg-white/5 border border-white/10 rounded-full overflow-hidden shadow-lg">
               <div 
                 className={`h-full rounded-full transition-all duration-500 ${
@@ -610,7 +612,6 @@ const captureFrames = (url) => {
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-
             {userCount >= 500 && (
               <div className="text-2xl animate-bounce">🎉</div>
             )}
@@ -619,39 +620,36 @@ const captureFrames = (url) => {
       </div>
 
       <header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
-  {/* Sección Izquierda: Logo */}
-  <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
-    <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-2 rounded-xl shadow-lg transition-transform group-hover:scale-110">
-      <Zap className="w-5 h-5 text-white" fill="white" />
-    </div>
-    <h1 className="text-2xl font-black tracking-tighter italic uppercase">
-      RED<span className="text-purple-500">xax</span> VISION
-    </h1>
-  </div>
+        <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
+          <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-2 rounded-xl shadow-lg transition-transform group-hover:scale-110">
+            <Zap className="w-5 h-5 text-white" fill="white" />
+          </div>
+          <h1 className="text-2xl font-black tracking-tighter italic uppercase">
+            RED<span className="text-purple-500">xax</span> VISION
+          </h1>
+        </div>
 
-  {/* Sección Derecha: Gemas + Botón Condicional */}
-  <div className="flex items-center gap-4">
-    {/* Contador de Gemas (Siempre visible) */}
-    <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.1)] transition-all hover:bg-purple-500/20">
-      <Gem className="w-4 h-4 text-purple-400" fill="currentColor" />
-      <span className="text-purple-300 font-black italic tracking-tighter tabular-nums text-lg leading-none">
-        {gems}
-      </span>
-    </div>
-
-    {/* Botón Nuevo Test (Solo aparece en resultados) */}
-    {step === 'results' && (
-      <button 
-        onClick={() => window.location.reload()} 
-        className="bg-white/5 border border-white/10 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 hover:bg-white/20 active:scale-95"
-      >
-        <RotateCcw className="w-3 h-3" /> Nuevo Test
-      </button>
-    )}
-  </div>
-</header>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.1)] transition-all hover:bg-purple-500/20">
+            <Gem className="w-4 h-4 text-purple-400" fill="currentColor" />
+            <span className="text-purple-300 font-black italic tracking-tighter tabular-nums text-lg leading-none">
+              {gems}
+            </span>
+          </div>
+          {step === 'results' && (
+            <button 
+              onClick={() => window.location.reload()} 
+              className="bg-white/5 border border-white/10 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 hover:bg-white/20 active:scale-95"
+            >
+              <RotateCcw className="w-3 h-3" /> Nuevo Test
+            </button>
+          )}
+        </div>
+      </header>
 
       <main className="relative z-10 max-w-6xl mx-auto p-4 py-12">
+
+        {/* ── PASO 1: UPLOAD ── */}
         {step === 'upload' && (
           <div className="text-center space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-700">
             <div className="space-y-4">
@@ -664,10 +662,10 @@ const captureFrames = (url) => {
               <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
                 Sin juicios. Sin amabilidad. Solo la verdad técnica <br/>sobre tu probabilidad de éxito.
               </p>
-            </div>  
+            </div>
 
-            {/* CAJAS DUALES (GUION Y VIDEO) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto px-4">
+              {/* Caja Guion */}
               <div 
                 onClick={() => setStep('script_input')}
                 className="group relative block border-2 border-dashed border-white/10 hover:border-indigo-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl"
@@ -677,23 +675,35 @@ const captureFrames = (url) => {
                 <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 0: Estructura y Texto</p>
               </div>
 
+              {/* ✅ Caja Video — con setVideoDuration corregido */}
               <label className="group relative block border-2 border-dashed border-white/10 hover:border-purple-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
                 <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-purple-400 group-hover:scale-110 transition-all duration-500" />
                 <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
                 <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Edición y Ritmo</p>
-                <input type="file" className="hidden" accept="video/*" onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    const url = URL.createObjectURL(file);
-                    setVideoPreviewUrl(url);
-                    runNeuralAnalysis(url);
-                  }
-                }} />
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept="video/*" 
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const url = URL.createObjectURL(file);
+                      const tempVideo = document.createElement('video');
+                      tempVideo.src = url;
+                      tempVideo.onloadedmetadata = () => {
+                        setVideoDuration(tempVideo.duration / 60); // ✅ CORREGIDO
+                        setVideoPreviewUrl(url);
+                        runNeuralAnalysis(url);
+                      };
+                    }
+                  }} 
+                />
               </label>
             </div>
           </div>
         )}
 
+        {/* ── PASO 2: SCRIPT INPUT ── */}
         {step === 'script_input' && (
           <div className="max-w-3xl mx-auto animate-in slide-in-from-bottom-10 duration-500">
             <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-12 md:p-16 shadow-2xl">
@@ -701,7 +711,6 @@ const captureFrames = (url) => {
                 <BrainCircuit className="text-indigo-400 w-8 h-8" /> Laboratorio de Guiones
               </h3>
               <p className="text-slate-400 mb-6 font-medium">Pega aquí los primeros segundos de tu diálogo o el concepto general del video. La IA detectará si tu Hook es lo suficientemente fuerte para retener a la audiencia.</p>
-              
               <textarea 
                 value={scriptText}
                 onChange={(e) => setScriptText(e.target.value)}
@@ -722,6 +731,7 @@ const captureFrames = (url) => {
           </div>
         )}
 
+        {/* ── PASO 3: ANALYZING ── */}
         {step === 'analyzing' && (
           <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-12">
             <div className="relative">
@@ -734,6 +744,7 @@ const captureFrames = (url) => {
           </div>
         )}
 
+        {/* ── PASO 4: RESULTS ── */}
         {step === 'results' && aiResult && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-right-10 duration-700">
             <div className="lg:col-span-4 space-y-6">
@@ -759,8 +770,7 @@ const captureFrames = (url) => {
                   <div className="mt-4 inline-block bg-purple-600/20 text-purple-400 px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-500/30">
                     Escenario: {aiResult.performanceScenario}
                   </div>
-                </div>  
-                
+                </div>
                 <div className="pt-8 border-t border-white/5">
                   <div className="flex items-center gap-2 mb-3">
                     <Target className={`w-4 h-4 ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`} />
