@@ -55,13 +55,16 @@ function safeParseJSON(rawText, context = '') {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
      
 // API key de Gemini (guardada en .env)
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY;  //onChange
+
 
 const App = () => {
   const [step, setStep] = useState('upload'); 
   const [gems, setGems] = useState(() => gemsManager.getGems());
   const [analysisMode, setAnalysisMode] = useState('video'); // NUEVO: 'video' o 'script'
   const [scriptText, setScriptText] = useState(""); // NUEVO
+  const [videoDuration, setVideoDuration] = useState(1);
+  const [showStore, setShowStore] = useState(false);
   const [completedSteps, setCompletedSteps] = useState([]); // NUEVO: Para checklist interactivo
   
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
@@ -533,7 +536,7 @@ const captureFrames = (url) => {
       alert("Error al analizar el guion.");
       setStep('upload');
     }
-  };
+  }; //<p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Edición y Ritmo</p>
   
   // --- 3. FUNCIÓN DE MENSAJERÍA / CHAT (CORREGIDA) ---
   const sendMessage = async () => {
@@ -674,14 +677,19 @@ const captureFrames = (url) => {
                 <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-purple-400 group-hover:scale-110 transition-all duration-500" />
                 <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
                 <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Edición y Ritmo</p>
-                <input type="file" className="hidden" accept="video/*" onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    const url = URL.createObjectURL(file);
-                    setVideoPreviewUrl(url);
-                    runNeuralAnalysis(url);
-                  }
-                }} />
+               <input type="file" className="hidden" accept="video/*" onChange={(e) => {
+  const file = e.target.files[0];
+  if (file) {
+    const url = URL.createObjectURL(file);
+    const tempVideo = document.createElement('video');
+    tempVideo.src = url;
+    tempVideo.onloadedmetadata = () => {
+      setVideoDuration(tempVideo.duration / 60);
+      setVideoPreviewUrl(url);
+      runNeuralAnalysis(url);
+    };
+  }
+}} />
               </label>
             </div>
           </div>
@@ -846,7 +854,9 @@ const captureFrames = (url) => {
                     );
                   })}
                 </div>
-              </div>
+              </div> 
+
+
 
               {!showChat ? (
                 <button onClick={() => setShowChat(true)} className="w-full flex items-center justify-center gap-3 p-8 bg-zinc-600/10 hover:bg-zinc-600/20 border border-white/10 rounded-[3rem] text-slate-400 font-black italic uppercase tracking-tighter transition-all">
@@ -893,4 +903,4 @@ const captureFrames = (url) => {
   );
 };
 
-export default App;
+export default App;    //<p className
