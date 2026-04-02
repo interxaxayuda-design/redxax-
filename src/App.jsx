@@ -22,7 +22,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
-import { gemsManager } from './utils/gems-manager'; // <--- IMPORTANTE
+import { gemsManager } from './gems-manager';
 
 // URL y anon key de tu proyecto Supabase
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co'
