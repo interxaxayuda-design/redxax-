@@ -266,7 +266,6 @@ Directo como un editor profesional que cobra $500 la hora y no tiene tiempo que 
 Sin frases de relleno. Sin "es importante", "te recomiendo", "cabe destacar", "sin embargo".
 Cada oración arranca con el dato o la acción, nunca con una introducción.
 
- 
 TONO Y PSICOLOGÍA DE RESPUESTA — OBLIGATORIO:
 
 Sos un coach de contenido, no un crítico.
@@ -280,20 +279,6 @@ Siempre en este orden:
 1. Primero reconocé lo que está funcionando. Siempre hay algo.
 2. Después presentá la oportunidad de mejora como exactamente eso: una oportunidad.
 3. Cerrá con la acción concreta que lo lleva al siguiente nivel.
-
-EJEMPLOS DE TRANSFORMACIÓN DE TONO:
-
-❌ "Tu hook es débil y genérico"
-✅ "El hook tiene potencial — agregarle un dato concreto lo vuelve irresistible"
-
-❌ "El ritmo es lento y aburre al espectador"  
-✅ "Un corte en el segundo 4 mantiene la energía que arrancaste bien en el inicio"
-
-❌ "No hay loop abierto, la gente no tiene razón para quedarse"
-✅ "Mover la promesa del final al segundo 8 crea la tensión que hace que nadie se vaya"
-
-❌ "La edición es amateur"
-✅ "La base está — agregar texto en pantalla en los momentos clave duplica el tiempo de visualización"
 
 PALABRAS PROHIBIDAS EN CUALQUIER CAMPO:
 "malo", "débil", "aburrido", "amateur", "error", "falla", "problema", "basura",
@@ -313,25 +298,9 @@ La comparación siempre es una oportunidad, no una sentencia.
 MENTALIDAD GENERAL:
 El creador que usa esta app ya está un paso adelante de los que no la usan.
 Cada análisis debe dejarle claro que tiene las herramientas para llegar adonde quiere.
-`;
-```
 
----
-
-La diferencia en la práctica con tu propio guion de antes:
-// ❌ ANTES — agresivo
-"La falta de especificidad en el hook podría ser un punto débil 
-si no se resuelve rápidamente."
-
-// ✅ AHORA — coach
-"El hook ya genera curiosidad real. Agregarle un resultado concreto 
-— un número, una historia de 3 palabras — lo convierte en algo 
-que nadie puede scrollear sin preguntarse si aplica a ellos."
 PROHIBIDO:
 - Repetir información entre campos
-
-PERMITIDO
-- Ser motivador al final del mensaje
 
 CRITERIO DE "VALOR PERCIBIDO" (Añadir 10% extra):
 - ¿El espectador siente que aprendió algo o se entretuvo en los primeros 10s?
@@ -340,7 +309,6 @@ CRITERIO DE "VALOR PERCIBIDO" (Añadir 10% extra):
 LÓGICA DE CURVA DE RETENCIÓN:
 - Los primeros 3 puntos de la curva [0,1,2] deben reflejar la eficacia del hook.
 - Si el hook es vago, la caída entre el punto 1 y 3 debe ser superior al 40%
-
 
 ═══════════════════════════════════════
 ESQUEMA JSON OBLIGATORIO
@@ -378,45 +346,43 @@ Devuelve SOLO este JSON sin texto adicional ni bloques de código:
 }`;
 
 const captureFrames = (url) => {
-    return new Promise((resolve) => {
-      const video = document.createElement('video');
-      video.src = url;
-      video.crossOrigin = "anonymous";
-      video.muted = true;
-      video.preload = "auto";
-      const frames = [];
-      
-      video.onloadedmetadata = async () => {
-        const duration = video.duration;
-        const points = [0.1, 1.5, 3.0, duration * 0.5, duration * 0.9]; 
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        
-        for (let i = 0; i < points.length; i++) {
-          const targetTime = Math.min(points[i], duration);
-          setStatusText(`Analizando estructura visual... ${i+1}/${points.length}`);
-          setAnalysisProgress(Math.round(10 + (i * 18)));
-          
-          video.currentTime = targetTime;
-          await new Promise(r => {
-            const onSeeked = () => { video.removeEventListener('seeked', onSeeked); r(); };
-            video.addEventListener('seeked', onSeeked);
-          });
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.src = url;
+    video.crossOrigin = "anonymous";
+    video.muted = true;
+    video.preload = "auto";
+    const frames = [];
 
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          frames.push(canvas.toDataURL('image/jpeg', 0.5).split(',')[1]);
-        }
-        resolve(frames);
-      };
-    });
-  };
+    video.onloadedmetadata = async () => {
+      const duration = video.duration;
+      const points = [0.1, 1.5, 3.0, duration * 0.5, duration * 0.9];
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
 
-  // Lógica de Negocio InterXAX
-  const getVideoCost = (min) => Math.max(100, Math.ceil(min * 100));
+      for (let i = 0; i < points.length; i++) {
+        const targetTime = Math.min(points[i], duration);
+        setStatusText(`Analizando estructura visual... ${i+1}/${points.length}`);
+        setAnalysisProgress(Math.round(10 + (i * 18)));
 
-  // ✅ DESPUÉS
+        video.currentTime = targetTime;
+        await new Promise(r => {
+          const onSeeked = () => { video.removeEventListener('seeked', onSeeked); r(); };
+          video.addEventListener('seeked', onSeeked);
+        });
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        frames.push(canvas.toDataURL('image/jpeg', 0.5).split(',')[1]);
+      }
+      resolve(frames);
+    };
+  });
+};
+
+const getVideoCost = (min) => Math.max(100, Math.ceil(min * 100));
+
 const deductGems = async (amount) => {
   const { data, error } = await supabase.functions.invoke('gems-manager', {
     body: { action: 'deduct', amount }
@@ -430,9 +396,6 @@ const deductGems = async (amount) => {
   return true;
 };
 
-
-
-  // ✅ DESPUÉS
 const runNeuralAnalysis = async (url) => {
   const duration = await new Promise((resolve) => {
     const v = document.createElement('video');
@@ -443,130 +406,122 @@ const runNeuralAnalysis = async (url) => {
   const approved = await deductGems(cost);
   if (!approved) return;
 
-    // Intento de descuento. Si no hay gemas, la función deductGems() abre la tienda y retorna false.
+  setStep('analyzing');
+  setAnalysisMode('video');
+  setStatusText("Iniciando escaneo de InterXAX...");
+  setAnalysisProgress(10);
 
+  try {
+    const base64Frames = await captureFrames(url);
+    setAnalysisProgress(80);
+    setStatusText("Conectando con el núcleo de REDxax...");
 
-    setStep('analyzing');
-    setAnalysisMode('video');
-    setStatusText("Iniciando escaneo de InterXAX...");
-    setAnalysisProgress(10);
+    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: `${systemInstructions}\n\nAnaliza estos frames del video.`,
+        frames: base64Frames
+      }
+    });
 
-    try {
-      const base64Frames = await captureFrames(url);
-      setAnalysisProgress(80);
-      setStatusText("Conectando con el núcleo de REDxax...");
+    if (error) throw error;
 
-      // Llamamos a tu proxy de Supabase
-      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-        body: { 
-          text: `${systemInstructions}\n\nAnaliza estos frames del video.`,
-          frames: base64Frames 
-        }
-      });
+    const rawText = extractGeminiText(data);
+    const parsed = safeParseJSON(rawText, 'runNeuralAnalysis');
 
-      if (error) throw error;
+    setAiResult(parsed);
+    setCompletedSteps([]);
+    setChatMessages([{
+      role: 'bot',
+      text: `Protocolo REDxax: Análisis de ${parsed.vision?.niche || 'contenido'} finalizado. Potencial: ${parsed.potentialScore}%. ¿Deseas profundizar en la consultoría?`
+    }]);
 
-      const rawText = extractGeminiText(data);
-      const parsed = safeParseJSON(rawText, 'runNeuralAnalysis');
-      
-      setAiResult(parsed);
-      setCompletedSteps([]);
-      setChatMessages([{
-        role: 'bot',
-        text: `Protocolo REDxax: Análisis de ${parsed.vision?.niche || 'contenido'} finalizado. Potencial: ${parsed.potentialScore}%. ¿Deseas profundizar en la consultoría?`
-      }]);
-      
-      setAnalysisProgress(100);
-      setTimeout(() => setStep('results'), 500);
+    setAnalysisProgress(100);
+    setTimeout(() => setStep('results'), 500);
 
-    } catch (err) {
-      console.error("DETALLE DEL ERROR VIDEO:", err);
-      alert("Error en el análisis de video. Revisa la consola.");
-      setStep('upload');
-    }
-  };
+  } catch (err) {
+    console.error("DETALLE DEL ERROR VIDEO:", err);
+    alert("Error en el análisis de video. Revisa la consola.");
+    setStep('upload');
+  }
+};
 
-  // --- 2. FUNCIÓN DE ANÁLISIS DE SCRIPT (CORREGIDA CON GEMAS) ---
-  const runScriptAnalysis = async () => {
-    if (!scriptText.trim()) return;
-    
-// ✅ DESPUÉS
-const approved = await deductGems(80);
-if (!approved) return;
+const runScriptAnalysis = async () => {
+  if (!scriptText.trim()) return;
 
-    setStep('analyzing');
-    setAnalysisMode('script');
-    setStatusText("Evaluando psicología del texto...");
-    setAnalysisProgress(30);
+  const approved = await deductGems(80);
+  if (!approved) return;
 
-    try {
-      // Usamos el proxy también aquí para mantener la API Key segura
-      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-        body: { 
-          text: `${systemInstructions}\n\nAnaliza este concepto/guion: ${scriptText}` 
-        }
-      });
+  setStep('analyzing');
+  setAnalysisMode('script');
+  setStatusText("Evaluando psicología del texto...");
+  setAnalysisProgress(30);
 
-      if (error) throw error;
+  try {
+    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: `${systemInstructions}\n\nAnaliza este concepto/guion: ${scriptText}`
+      }
+    });
 
-      setAnalysisProgress(90);
-      const rawText = extractGeminiText(data);
-      const parsed = safeParseJSON(rawText, 'runScriptAnalysis');
+    if (error) throw error;
 
-      setAiResult(parsed);
-      setCompletedSteps([]);
-      setChatMessages([{
-        role: 'bot',
-        text: `Protocolo REDxax: Análisis de Pre-producción listo. Potencial proyectado: ${parsed.potentialScore}%. ¿Deseas optimizar el texto?`
-      }]);
-      
-      setAnalysisProgress(100);
-      setTimeout(() => setStep('results'), 500);
-    } catch (err) {
-      console.error("Error Script:", err);
-      alert("Error al analizar el guion.");
-      setStep('upload');
-    }
-  };
-  
-  // --- 3. FUNCIÓN DE MENSAJERÍA / CHAT (CORREGIDA) ---
-  const sendMessage = async () => {
-    if (!userInput.trim() || isTyping) return;
-    const newMessages = [...chatMessages, { role: 'user', text: userInput }];
-    setChatMessages(newMessages);
-    setUserInput("");
-    setIsTyping(true);
+    setAnalysisProgress(90);
+    const rawText = extractGeminiText(data);
+    const parsed = safeParseJSON(rawText, 'runScriptAnalysis');
 
-    try {
-      const promptPersonalizado = `CONTEXTO INTERNO: Eres el Consultor REDxax. El video analizado tiene un ${aiResult?.potentialScore}% de potencial. Datos: ${JSON.stringify(aiResult)}. Responde breve y brutalmente honesto.`;
+    setAiResult(parsed);
+    setCompletedSteps([]);
+    setChatMessages([{
+      role: 'bot',
+      text: `Protocolo REDxax: Análisis de Pre-producción listo. Potencial proyectado: ${parsed.potentialScore}%. ¿Deseas optimizar el texto?`
+    }]);
 
-      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-        body: { 
-          text: `${promptPersonalizado}\n\nUsuario dice: ${userInput}` 
-        }
-      });
+    setAnalysisProgress(100);
+    setTimeout(() => setStep('results'), 500);
+  } catch (err) {
+    console.error("Error Script:", err);
+    alert("Error al analizar el guion.");
+    setStep('upload');
+  }
+};
 
-      if (error) throw error;
-      
-      const botResponse = extractGeminiText(data);
-      setChatMessages([...newMessages, { role: 'bot', text: botResponse }]);
-    } catch (err) {
-      console.error("Error Chat:", err);
-      setChatMessages([...newMessages, { role: 'bot', text: "Error de conexión con el núcleo analítico." }]);
-    } finally {
-      setIsTyping(false);
-    }
-  };
+const sendMessage = async () => {
+  if (!userInput.trim() || isTyping) return;
+  const newMessages = [...chatMessages, { role: 'user', text: userInput }];
+  setChatMessages(newMessages);
+  setUserInput("");
+  setIsTyping(true);
 
-  const toggleStep = (index) => {
-    if (completedSteps.includes(index)) {
-      setCompletedSteps(completedSteps.filter(i => i !== index));
-    } else {
-      setCompletedSteps([...completedSteps, index]);
-    }  //sendMessage
-  };
+  try {
+    const promptPersonalizado = `CONTEXTO INTERNO: Eres el Consultor REDxax. El video analizado tiene un ${aiResult?.potentialScore}% de potencial. Datos: ${JSON.stringify(aiResult)}. Responde breve y brutalmente honesto.`;
 
-  const progressPercent = (userCount / 500) * 100;
+    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: `${promptPersonalizado}\n\nUsuario dice: ${userInput}`
+      }
+    });
+
+    if (error) throw error;
+
+    const botResponse = extractGeminiText(data);
+    setChatMessages([...newMessages, { role: 'bot', text: botResponse }]);
+  } catch (err) {
+    console.error("Error Chat:", err);
+    setChatMessages([...newMessages, { role: 'bot', text: "Error de conexión con el núcleo analítico." }]);
+  } finally {
+    setIsTyping(false);
+  }
+};
+
+const toggleStep = (index) => {
+  if (completedSteps.includes(index)) {
+    setCompletedSteps(completedSteps.filter(i => i !== index));
+  } else {
+    setCompletedSteps([...completedSteps, index]);
+  }
+};
+
+const progressPercent = (userCount / 500) * 100;
 
   return (
     <div className="min-h-screen bg-[#020203] text-white font-sans selection:bg-purple-500/50 overflow-x-hidden">
