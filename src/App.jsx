@@ -59,6 +59,8 @@ const App = () => {
   const [analysisMode, setAnalysisMode] = useState('video');
   const [scriptText, setScriptText] = useState('');
   const [completedSteps, setCompletedSteps] = useState([]);
+  const [history, setHistory] = useState([]);
+  const [selectedHistory, setSelectedHistory] = useState(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [aiResult, setAiResult] = useState(null);
@@ -87,44 +89,65 @@ const App = () => {
 
   // ── CONTADOR DE USUARIOS ──
   useEffect(() => {
-    const fetchAndUpdateCounter = async () => {
-      try {
-        const storedUserId = localStorage.getItem('redxax_user_id');
-        const isNewUser = !storedUserId;
-        const userId = storedUserId
-          || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const initUser = async () => {
+    try {
+      const storedUserId = localStorage.getItem('redxax_user_id');
+      const isNewUser = !storedUserId;
+      const userId = storedUserId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      if (isNewUser) localStorage.setItem('redxax_user_id', userId);
 
-        if (isNewUser) localStorage.setItem('redxax_user_id', userId);
+      // --- GEMAS POR USUARIO ---
+      const { data: gemsData, error: gemsError } = await supabase
+        .from('user_gems')
+        .select('balance')
+        .eq('user_id', userId)
+        .single();
 
-        const { error: upsertError } = await supabase
-          .from('user_visits')
-          .upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true });
-
-        if (upsertError) console.error('Error en upsert de visita:', upsertError);
-
-        const { data: statsData, error: statsError } = await supabase
-          .from('app_stats').select('total_users').eq('id', 1).single();
-
-        if (statsError) { console.error('Error leyendo app_stats:', statsError); return; }
-
-        const currentCount = statsData?.total_users || 0;
-
-        if (isNewUser && !upsertError) {
-          const newCount = Math.min(currentCount + 1, 500);
-          const { error: updateError } = await supabase
-            .from('app_stats').update({ total_users: newCount }).eq('id', 1);
-          setUserCount(updateError ? currentCount : newCount);
-        } else {
-          setUserCount(currentCount);
-        }
-      } catch (error) {
-        console.error('Error en contador:', error);
-      } finally {
-        setIsLoadingCount(false);
+      if (gemsError || !gemsData) {
+        // Usuario nuevo: crear registro con 500 gemas
+        await supabase.from('user_gems').insert({ user_id: userId, balance: 500 });
+        setGems(500);
+        gemsManager.setGems(500);
+      } else {
+        setGems(gemsData.balance);
+        gemsManager.setGems(gemsData.balance);
       }
-    };
-    fetchAndUpdateCounter();
-  }, []);
+
+      // --- HISTORIAL ---
+      const { data: historyData } = await supabase
+        .from('analysis_history')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+      if (historyData) setHistory(historyData);
+
+      // --- CONTADOR DE USUARIOS (igual que antes) ---
+      const { error: upsertError } = await supabase
+        .from('user_visits')
+        .upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true });
+
+      const { data: statsData } = await supabase
+        .from('app_stats').select('total_users').eq('id', 1).single();
+
+      const currentCount = statsData?.total_users || 0;
+      if (isNewUser && !upsertError) {
+        const newCount = Math.min(currentCount + 1, 500);
+        await supabase.from('app_stats').update({ total_users: newCount }).eq('id', 1);
+        setUserCount(newCount);
+      } else {
+        setUserCount(currentCount);
+      }
+
+    } catch (error) {
+      console.error('Error init:', error);
+    } finally {
+      setIsLoadingCount(false);
+    }
+  };
+  initUser();
+}, []);
 
   // ── CARGAR GEMAS DESDE SUPABASE ──
   useEffect(() => {
@@ -384,17 +407,48 @@ const captureFrames = (url) => {
 const getVideoCost = (min) => Math.max(100, Math.ceil(min * 100));
 
 const deductGems = async (amount) => {
-  const { data, error } = await supabase.functions.invoke('gems-manager', {
-    body: { action: 'deduct', amount }
-  });
-  if (error || data?.error === 'insufficient_gems') {
-    setGemError('insufficient_gems');
-    setShowGemStore(true);
-    return false;
+  const userId = localStorage.getItem('redxax_user_id');
+  const currentGems = gemsManager.getGems();
+
+  if (currentGems >= amount) {
+    const newBalance = currentGems - amount;
+    gemsManager.setGems(newBalance);
+    setGems(newBalance);
+
+    // Sincronizar con Supabase
+    await supabase
+      .from('user_gems')
+      .update({ balance: newBalance })
+      .eq('user_id', userId);
+
+    return true;
   }
-  setGems(data.balance);
-  return true;
+  setShowStore(true);
+  return false;
 };
+
+const saveAnalysisToHistory = async (result, mode) => {
+  const userId = localStorage.getItem('redxax_user_id');
+  if (!userId) return;
+
+  // El título lo genera la IA con el nicho + tipo
+  const title = `${result.vision?.niche || 'Contenido'} — ${result.vision?.type || mode}`;
+
+  const { data, error } = await supabase
+    .from('analysis_history')
+    .insert({
+      user_id: userId,
+      title,
+      mode,
+      analysis_data: result
+    })
+    .select()
+    .single();
+
+  if (!error && data) {
+    setHistory(prev => [data, ...prev]);
+  }
+}; 
 
 const runNeuralAnalysis = async (url) => {
   const duration = await new Promise((resolve) => {
@@ -436,6 +490,7 @@ const runNeuralAnalysis = async (url) => {
     }]);
 
     setAnalysisProgress(100);
+   await saveAnalysisToHistory(parsed, 'video');
     setTimeout(() => setStep('results'), 500);
 
   } catch (err) {
@@ -477,6 +532,7 @@ const runScriptAnalysis = async () => {
     }]);
 
     setAnalysisProgress(100);
+    await saveAnalysisToHistory(parsed, 'script');
     setTimeout(() => setStep('results'), 500);
   } catch (err) {
     console.error("Error Script:", err);
@@ -836,8 +892,43 @@ const progressPercent = (userCount / 500) * 100;
             </div>
           </div>
         )}
+    {/* HISTORIAL */}
+    {history.length > 0 && step === 'upload' && (
+    <div className="mt-20 max-w-5xl mx-auto px-4">
+    <div className="flex items-center gap-3 mb-6">
+      <div className="h-px flex-1 bg-white/5" />
+      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-600">Análisis anteriores</p>
+      <div className="h-px flex-1 bg-white/5" />
+    </div>
+    <div className="flex flex-wrap gap-3">
+      {history.map((item) => (
+        <button
+          key={item.id}
+          onClick={() => {
+            setAiResult(item.analysis_data);
+            setAnalysisMode(item.mode);
+            setCompletedSteps([]);
+            setChatMessages([{
+              role: 'bot',
+              text: `Cargando análisis de ${item.analysis_data.vision?.niche || 'contenido'}. Potencial: ${item.analysis_data.potentialScore}%.`
+            }]);
+            setStep('results');
+          }}
+          className="group flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-purple-500/30 px-5 py-3 rounded-full transition-all"
+        >
+          <div className={`w-2 h-2 rounded-full ${item.mode === 'video' ? 'bg-purple-500' : 'bg-indigo-500'}`} />
+          <span className="text-sm font-bold italic text-slate-300 group-hover:text-white transition-colors">
+            {item.title}
+          </span>
+          <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">
+            {new Date(item.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+          </span>
+        </button>
+      ))}
+    </div>
+  </div>
+   )}
       </main>
-
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
