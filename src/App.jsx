@@ -52,7 +52,7 @@ function safeParseJSON(rawText, context = '') {
     console.error('Preview:', rawText.slice(0, 400));
     throw new Error(`JSON malformado o truncado. Preview: "${rawText.slice(0, 80)}..."`);
   }
-}
+} 
 
 const App = () => {
   const [step, setStep] = useState('upload');
@@ -444,7 +444,7 @@ const runNeuralAnalysis = async (url) => {
   if (!approved) return;
 
     // Intento de descuento. Si no hay gemas, la función deductGems() abre la tienda y retorna false.
-    if (!deductGems(videoCost)) return;
+
 
     setStep('analyzing');
     setAnalysisMode('video');
@@ -631,6 +631,8 @@ if (!approved) return;
         </div>
       </header>
 
+      
+
       <main className="relative z-10 max-w-6xl mx-auto p-4 py-12">
 
         {/* ── PASO 1: UPLOAD ── */}
@@ -669,18 +671,13 @@ if (!approved) return;
                   className="hidden" 
                   accept="video/*" 
                   onChange={(e) => {
-                    const file = e.target.files[0];
-                    if (file) {
-                      const url = URL.createObjectURL(file);
-                      const tempVideo = document.createElement('video');
-                      tempVideo.src = url;
-                      tempVideo.onloadedmetadata = () => {
-                        setVideoDuration(tempVideo.duration / 60); // ✅ CORREGIDO
-                        setVideoPreviewUrl(url);
-                        runNeuralAnalysis(url);
-                      };
-                    }
-                  }} 
+  const file = e.target.files[0];
+  if (file) {
+    const url = URL.createObjectURL(file);
+    setVideoPreviewUrl(url);
+    runNeuralAnalysis(url); // ← la duración la calcula runNeuralAnalysis internamente
+  }
+}}
                 />
               </label>
             </div>
@@ -822,7 +819,7 @@ if (!approved) return;
                     </div>
                   ))}
                 </div>
-              </div>
+              </div>   
 
               {/* CHECKLIST HOJA DE RUTA */}
               <div className="bg-white/[0.02] border border-white/5 p-10 rounded-[3.5rem] space-y-8">
