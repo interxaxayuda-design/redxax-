@@ -52,13 +52,14 @@ function safeParseJSON(rawText, context = '') {
     console.error('Preview:', rawText.slice(0, 400));
     throw new Error(`JSON malformado o truncado. Preview: "${rawText.slice(0, 80)}..."`);
   }
-} 
+} //saveAnalysisToHistory
 
 const App = () => {
   const [step, setStep] = useState('upload');
   const [analysisMode, setAnalysisMode] = useState('video');
   const [scriptText, setScriptText] = useState('');
   const [completedSteps, setCompletedSteps] = useState([]);
+  const [currentHistoryId, setCurrentHistoryId] = useState(null);
   const [history, setHistory] = useState([]);
   const [selectedHistory, setSelectedHistory] = useState(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
@@ -443,6 +444,7 @@ const saveAnalysisToHistory = async (result, mode) => {
 
   if (!error && data) {
     setHistory(prev => [data, ...prev]);
+    setCurrentHistoryId(data.id); // ← agregá esta línea
   }
 }; 
 
@@ -577,24 +579,12 @@ const toggleStep = (index) => {
 const progressPercent = (userCount / 500) * 100;
 
 const saveChatToHistory = async (messages) => {
-  if (!aiResult) return;
-  const userId = localStorage.getItem('redxax_user_id');
+  if (!currentHistoryId) return;
   
-  // Busca el análisis más reciente del usuario para actualizarlo
-  const { data } = await supabase
+  await supabase
     .from('analysis_history')
-    .select('id')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .single();
-
-  if (data) {
-    await supabase
-      .from('analysis_history')
-      .update({ chat_messages: messages })
-      .eq('id', data.id);
-  }
+    .update({ chat_messages: messages })
+    .eq('id', currentHistoryId);
 };
 
   return (
@@ -923,17 +913,18 @@ const saveChatToHistory = async (messages) => {
         <button
           key={item.id}
           onClick={() => {
-  setAiResult(item.analysis_data);
-  setAnalysisMode(item.mode);
-  setCompletedSteps([]);
-  setChatMessages(
-    item.chat_messages?.length > 0 
+          setAiResult(item.analysis_data);
+          setCurrentHistoryId(item.id); // ← agregá esta línea
+          setAnalysisMode(item.mode);
+          setCompletedSteps([]);
+          setChatMessages(
+          item.chat_messages?.length > 0 
       ? item.chat_messages 
       : [{
           role: 'bot',
           text: `Análisis cargado: ${item.analysis_data.vision?.niche || 'contenido'}. Potencial: ${item.analysis_data.potentialScore}%.`
         }]
-  );
+    );
   setStep('results');
 }}
           className="group flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-purple-500/30 px-5 py-3 rounded-full transition-all"
