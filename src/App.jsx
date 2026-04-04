@@ -147,18 +147,6 @@ const App = () => {
   };
   initUser();
 }, []);
-
-  // ── CARGAR GEMAS DESDE SUPABASE ──
-  useEffect(() => {
-    const loadGems = async () => {
-      const { data, error } = await supabase.functions.invoke('gems-manager', {
-        body: { action: 'get_balance' }
-      });
-      if (!error && data?.balance !== undefined) setGems(data.balance);
-    };
-    loadGems();
-  }, []);
-
 //Const app
   const systemInstructions = `Eres REDXAX VISION, el sistema de análisis de retención más avanzado para creadores de contenido de habla hispana en el mundo entero.
 
@@ -539,6 +527,15 @@ const runScriptAnalysis = async () => {
   }
 };
 
+const saveChatToHistory = async (messages) => {
+  if (!currentHistoryId) return;
+  
+  await supabase
+    .from('analysis_history')
+    .update({ chat_messages: messages })
+    .eq('id', currentHistoryId);
+};
+
 const sendMessage = async () => {
   if (!userInput.trim() || isTyping) return;
   const newMessages = [...chatMessages, { role: 'user', text: userInput }];
@@ -547,22 +544,21 @@ const sendMessage = async () => {
   setIsTyping(true);
 
   try {
-    const promptPersonalizado = `CONTEXTO INTERNO: Eres el Consultor REDxax. El video analizado tiene un ${aiResult?.potentialScore}% de potencial. Datos: ${JSON.stringify(aiResult)}. Responde breve, explica cosas complejas como "Hook" y se brutalmente honesto.`;
+    const promptPersonalizado = `CONTEXTO INTERNO: Eres el Consultor REDxax. El video analizado tiene un ${aiResult?.potentialScore}% de potencial. Datos: ${JSON.stringify(aiResult)}. Responde breve y brutalmente honesto.`;
 
     const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: `${promptPersonalizado}\n\nUsuario dice: ${userInput}`
-      }
+      body: { text: `${promptPersonalizado}\n\nUsuario dice: ${userInput}` }
     });
 
     if (error) throw error;
 
     const botResponse = extractGeminiText(data);
-    setChatMessages([...newMessages, { role: 'bot', text: botResponse }]);
+    const updatedMessages = [...newMessages, { role: 'bot', text: botResponse }];
+    setChatMessages(updatedMessages);
+    await saveChatToHistory(updatedMessages); // ✅ Acá, no en el catch
   } catch (err) {
     console.error("Error Chat:", err);
-    setChatMessages([...newMessages, { role: 'bot', text: "Error de conexión con el núcleo analítico." }]);
-    await saveChatToHistory(updatedMessages); // ← agregá esta línea
+    setChatMessages([...newMessages, { role: 'bot', text: "Error de conexión." }]);
   } finally {
     setIsTyping(false);
   }
@@ -577,15 +573,6 @@ const toggleStep = (index) => {
 };
 
 const progressPercent = (userCount / 500) * 100;
-
-const saveChatToHistory = async (messages) => {
-  if (!currentHistoryId) return;
-  
-  await supabase
-    .from('analysis_history')
-    .update({ chat_messages: messages })
-    .eq('id', currentHistoryId);
-};
 
   return (
     <div className="min-h-screen bg-[#020203] text-white font-sans selection:bg-purple-500/50 overflow-x-hidden">
