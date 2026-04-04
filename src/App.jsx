@@ -545,7 +545,7 @@ const sendMessage = async () => {
   setIsTyping(true);
 
   try {
-    const promptPersonalizado = `CONTEXTO INTERNO: Eres el Consultor REDxax. El video analizado tiene un ${aiResult?.potentialScore}% de potencial. Datos: ${JSON.stringify(aiResult)}. Responde breve y brutalmente honesto.`;
+    const promptPersonalizado = `CONTEXTO INTERNO: Eres el Consultor REDxax. El video analizado tiene un ${aiResult?.potentialScore}% de potencial. Datos: ${JSON.stringify(aiResult)}. Responde breve, explica cosas complejas como "Hook" y se brutalmente honesto.`;
 
     const { data, error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
@@ -560,6 +560,7 @@ const sendMessage = async () => {
   } catch (err) {
     console.error("Error Chat:", err);
     setChatMessages([...newMessages, { role: 'bot', text: "Error de conexión con el núcleo analítico." }]);
+    await saveChatToHistory(updatedMessages); // ← agregá esta línea
   } finally {
     setIsTyping(false);
   }
@@ -570,10 +571,31 @@ const toggleStep = (index) => {
     setCompletedSteps(completedSteps.filter(i => i !== index));
   } else {
     setCompletedSteps([...completedSteps, index]);
-  }
+  }   //onClick={() => {
 };
 
 const progressPercent = (userCount / 500) * 100;
+
+const saveChatToHistory = async (messages) => {
+  if (!aiResult) return;
+  const userId = localStorage.getItem('redxax_user_id');
+  
+  // Busca el análisis más reciente del usuario para actualizarlo
+  const { data } = await supabase
+    .from('analysis_history')
+    .select('id')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (data) {
+    await supabase
+      .from('analysis_history')
+      .update({ chat_messages: messages })
+      .eq('id', data.id);
+  }
+};
 
   return (
     <div className="min-h-screen bg-[#020203] text-white font-sans selection:bg-purple-500/50 overflow-x-hidden">
@@ -901,15 +923,19 @@ const progressPercent = (userCount / 500) * 100;
         <button
           key={item.id}
           onClick={() => {
-            setAiResult(item.analysis_data);
-            setAnalysisMode(item.mode);
-            setCompletedSteps([]);
-            setChatMessages([{
-              role: 'bot',
-              text: `Cargando análisis de ${item.analysis_data.vision?.niche || 'contenido'}. Potencial: ${item.analysis_data.potentialScore}%.`
-            }]);
-            setStep('results');
-          }}
+  setAiResult(item.analysis_data);
+  setAnalysisMode(item.mode);
+  setCompletedSteps([]);
+  setChatMessages(
+    item.chat_messages?.length > 0 
+      ? item.chat_messages 
+      : [{
+          role: 'bot',
+          text: `Análisis cargado: ${item.analysis_data.vision?.niche || 'contenido'}. Potencial: ${item.analysis_data.potentialScore}%.`
+        }]
+  );
+  setStep('results');
+}}
           className="group flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-purple-500/30 px-5 py-3 rounded-full transition-all"
         >
           <div className={`w-2 h-2 rounded-full ${item.mode === 'video' ? 'bg-purple-500' : 'bg-indigo-500'}`} />
