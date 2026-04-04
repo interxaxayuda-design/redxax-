@@ -44,6 +44,13 @@ function extractGeminiText(data) {
   return raw.replace(/```json|```/g, '').trim();
 }
 
+
+const GEM_PACKAGES = [
+  { id: 'starter', gems: 500, price: 4.99, label: 'Starter', popular: false },
+  { id: 'pro', gems: 1500, price: 9.99, label: 'Pro', popular: true },
+  { id: 'elite', gems: 4000, price: 19.99, label: 'Elite', popular: false },
+];
+
 function safeParseJSON(rawText, context = '') {
   try {
     return JSON.parse(rawText);
@@ -87,6 +94,27 @@ const App = () => {
   useEffect(() => {
     if (showChat) scrollToBottom();
   }, [chatMessages, isTyping]);
+
+  useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const payment = params.get('payment');
+  
+  if (payment === 'success') {
+    const reloadGems = async () => {
+      const userId = localStorage.getItem('redxax_user_id');
+      const { data } = await supabase
+        .from('user_gems')
+        .select('balance')
+        .eq('user_id', userId)
+        .single();
+      
+      if (data) setGems(data.balance);
+      alert('✅ ¡Pago exitoso! Tus gemas fueron acreditadas.');
+    };
+    reloadGems();
+    window.history.replaceState({}, '', '/');
+  }
+}, []);
 
   // ── CONTADOR DE USUARIOS ──
   useEffect(() => {
@@ -388,7 +416,31 @@ const captureFrames = (url) => {
       }
       resolve(frames);
     };
-  });
+  });  //handleBuyGems
+};
+
+const handleBuyGems = async (pkg) => {
+  const userId = localStorage.getItem('redxax_user_id');
+  
+  try {
+    setGemError(null);
+    const { data, error } = await supabase.functions.invoke('create-mp-preference', {
+      body: {
+        gems: pkg.gems,
+        price: pkg.price,
+        label: pkg.label,
+        userId
+      }
+    });
+
+    if (error || !data?.init_point) throw new Error('No se pudo crear la preferencia');
+
+    // Redirigir a MercadoPago
+    window.location.href = data.init_point;
+
+  } catch (err) {
+    setGemError('Error al iniciar el pago. Intentá de nuevo.');
+  }
 };
 
 const getVideoCost = (min) => Math.max(100, Math.ceil(min * 100));  //
@@ -582,29 +634,73 @@ const progressPercent = (userCount / 500) * 100;
         <div className="absolute bottom-[-5%] right-[-5%] w-[45%] h-[45%] bg-blue-600/[0.04] blur-[120px] rounded-full" />
       </div>
 
+      {/* ✅ TIENDA DE GEMAS — fuera de main */}
+      {showGemStore && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-[#0d0d0f] border border-white/10 rounded-[3rem] p-10 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h2 className="text-3xl font-black italic uppercase tracking-tighter">
+                  Recargar <span className="text-purple-400">Gemas</span>
+                </h2>
+                <p className="text-slate-500 text-sm font-bold mt-1">
+                  Saldo actual: <span className="text-purple-300">{gems} 💎</span>
+                </p>
+              </div>
+              <button onClick={() => setShowGemStore(false)} className="hover:bg-white/10 p-2 rounded-full transition-colors">
+                <X className="w-5 h-5 text-slate-500" />
+              </button>
+            </div>
+            <div className="space-y-3 mb-8">
+              {GEM_PACKAGES.map((pkg) => (
+                <div
+                  key={pkg.id}
+                  className={`relative flex items-center justify-between p-5 rounded-[2rem] border cursor-pointer transition-all hover:border-purple-500/50 hover:bg-purple-500/5
+                    ${pkg.popular ? 'border-purple-500/40 bg-purple-500/10' : 'border-white/10 bg-white/[0.02]'}`}
+                  onClick={() => handleBuyGems(pkg)}
+                >
+                  {pkg.popular && (
+                    <div className="absolute -top-3 left-6 bg-purple-600 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                      Más popular
+                    </div>
+                  )}
+                  <div className="flex items-center gap-4">
+                    <Gem className="w-6 h-6 text-purple-400" fill="currentColor" />
+                    <div>
+                      <p className="font-black italic text-white text-lg">{pkg.gems.toLocaleString()} gemas</p>
+                      <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">{pkg.label}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-black text-white text-xl">${pkg.price}</p>
+                    <p className="text-slate-500 text-[10px]">USD</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div id="paypal-button-container" className="min-h-[50px]" />
+            {gemError && (
+              <p className="text-red-400 text-xs font-bold text-center mt-4">{gemError}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* CONTADOR VISUAL */}
       <div className="fixed top-6 right-6 z-50 flex flex-col items-end gap-2">
         {!isLoadingCount && (
           <>
             <div className="flex items-center gap-2 bg-black/60 border border-white/10 px-4 py-2 rounded-full backdrop-blur-md">
               <Activity className="w-4 h-4 text-green-400" />
-              <span className="text-sm font-black italic tracking-tight">
-                {userCount}/500 usuarios
-              </span>
+              <span className="text-sm font-black italic tracking-tight">{userCount}/500 usuarios</span>
             </div>
             <div className="w-64 h-2 bg-white/5 border border-white/10 rounded-full overflow-hidden shadow-lg">
               <div 
-                className={`h-full rounded-full transition-all duration-500 ${
-                  userCount >= 500 
-                    ? 'bg-gradient-to-r from-green-400 to-green-600' 
-                    : 'bg-gradient-to-r from-green-500 to-emerald-500'
-                }`}
+                className={`h-full rounded-full transition-all duration-500 ${userCount >= 500 ? 'bg-gradient-to-r from-green-400 to-green-600' : 'bg-gradient-to-r from-green-500 to-emerald-500'}`}
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-            {userCount >= 500 && (
-              <div className="text-2xl animate-bounce">🎉</div>
-            )}
+            {userCount >= 500 && <div className="text-2xl animate-bounce">🎉</div>}
           </>
         )}
       </div>
@@ -618,30 +714,25 @@ const progressPercent = (userCount / 500) * 100;
             RED<span className="text-purple-500">xax</span> VISION
           </h1>
         </div>
-
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.1)] transition-all hover:bg-purple-500/20">
+          {/* ✅ onClick para abrir tienda */}
+          <div 
+            onClick={() => setShowGemStore(true)}
+            className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.1)] transition-all hover:bg-purple-500/20 cursor-pointer"
+          >
             <Gem className="w-4 h-4 text-purple-400" fill="currentColor" />
-            <span className="text-purple-300 font-black italic tracking-tighter tabular-nums text-lg leading-none">
-              {gems}
-            </span>
+            <span className="text-purple-300 font-black italic tracking-tighter tabular-nums text-lg leading-none">{gems}</span>
           </div>
           {step === 'results' && (
-            <button 
-              onClick={() => window.location.reload()} 
-              className="bg-white/5 border border-white/10 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 hover:bg-white/20 active:scale-95"
-            >
+            <button onClick={() => window.location.reload()} className="bg-white/5 border border-white/10 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 hover:bg-white/20 active:scale-95">
               <RotateCcw className="w-3 h-3" /> Nuevo Test
             </button>
           )}
         </div>
       </header>
 
-      
-
       <main className="relative z-10 max-w-6xl mx-auto p-4 py-12">
 
-        {/* ── PASO 1: UPLOAD ── */}
         {step === 'upload' && (
           <div className="text-center space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-700">
             <div className="space-y-4">
@@ -655,9 +746,7 @@ const progressPercent = (userCount / 500) * 100;
                 Sin juicios. Sin amabilidad. Solo la verdad técnica <br/>sobre tu probabilidad de éxito.
               </p>
             </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto px-4">
-              {/* Caja Guion */}
               <div 
                 onClick={() => setStep('script_input')}
                 className="group relative block border-2 border-dashed border-white/10 hover:border-indigo-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl"
@@ -666,51 +755,39 @@ const progressPercent = (userCount / 500) * 100;
                 <p className="text-3xl font-black italic tracking-tighter uppercase">Validar Guion</p>
                 <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 0: Estructura y Texto</p>
               </div>
-
-              {/* ✅ Caja Video — con setVideoDuration corregido */}
               <label className="group relative block border-2 border-dashed border-white/10 hover:border-purple-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
                 <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-purple-400 group-hover:scale-110 transition-all duration-500" />
                 <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
                 <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Edición y Ritmo</p>
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept="video/*" 
-                  onChange={(e) => {
-  const file = e.target.files[0];
-  if (file) {
-    const url = URL.createObjectURL(file);
-    setVideoPreviewUrl(url);
-    runNeuralAnalysis(url); // ← la duración la calcula runNeuralAnalysis internamente
-  }
-}}
-                />
+                <input type="file" className="hidden" accept="video/*" onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    const url = URL.createObjectURL(file);
+                    setVideoPreviewUrl(url);
+                    runNeuralAnalysis(url);
+                  }
+                }} />
               </label>
             </div>
           </div>
         )}
 
-        {/* ── PASO 2: SCRIPT INPUT ── */}
         {step === 'script_input' && (
           <div className="max-w-3xl mx-auto animate-in slide-in-from-bottom-10 duration-500">
             <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-12 md:p-16 shadow-2xl">
               <h3 className="text-3xl font-black italic uppercase tracking-tighter mb-4 flex items-center gap-3">
                 <BrainCircuit className="text-indigo-400 w-8 h-8" /> Laboratorio de Guiones
               </h3>
-              <p className="text-slate-400 mb-6 font-medium">Pega aquí los primeros segundos de tu diálogo o el concepto general del video. La IA detectará si tu Hook es lo suficientemente fuerte para retener a la audiencia.</p>
+              <p className="text-slate-400 mb-6 font-medium">Pega aquí los primeros segundos de tu diálogo o el concepto general del video.</p>
               <textarea 
                 value={scriptText}
                 onChange={(e) => setScriptText(e.target.value)}
-                placeholder="Ej: '¿Sabías que el 90% de los agentes inmobiliarios cometen este error al mostrar un departamento? Hoy te enseño...'"
+                placeholder="Ej: '¿Sabías que el 90% de los agentes inmobiliarios cometen este error...'"
                 className="w-full h-56 bg-black/50 border border-white/10 rounded-[2rem] p-6 text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500/50 transition-colors resize-none mb-6 italic"
               />
               <div className="flex justify-between items-center">
                 <button onClick={() => setStep('upload')} className="text-sm font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-widest">← Volver</button>
-                <button 
-                  onClick={runScriptAnalysis}
-                  disabled={!scriptText.trim()}
-                  className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all"
-                >
+                <button onClick={runScriptAnalysis} disabled={!scriptText.trim()} className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all">
                   Analizar Viabilidad
                 </button>
               </div>
@@ -718,7 +795,6 @@ const progressPercent = (userCount / 500) * 100;
           </div>
         )}
 
-        {/* ── PASO 3: ANALYZING ── */}
         {step === 'analyzing' && (
           <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-12">
             <div className="relative">
@@ -731,11 +807,9 @@ const progressPercent = (userCount / 500) * 100;
           </div>
         )}
 
-        {/* ── PASO 4: RESULTS ── */}
         {step === 'results' && aiResult && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-right-10 duration-700">
             <div className="lg:col-span-4 space-y-6">
-              
               {analysisMode === 'video' ? (
                 <div className="bg-[#111] rounded-[3.5rem] overflow-hidden border border-white/10 aspect-[9/16] relative shadow-2xl">
                   {videoPreviewUrl && <video src={videoPreviewUrl} className="w-full h-full object-cover" controls autoPlay loop muted />}
@@ -749,7 +823,6 @@ const progressPercent = (userCount / 500) * 100;
                   <p className="text-slate-300 italic text-sm font-medium leading-relaxed overflow-y-auto custom-scrollbar flex-1">"{scriptText}"</p>
                 </div>
               )}
-
               <div className="bg-gradient-to-br from-zinc-900 to-black p-10 rounded-[3.5rem] border border-white/10 shadow-2xl space-y-8">
                 <div className="text-center">
                   <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-500 italic mb-4">Potencial de Éxito</p>
@@ -775,22 +848,10 @@ const progressPercent = (userCount / 500) * 100;
                   <h3 className="text-2xl font-black italic uppercase tracking-tighter">La Visión</h3>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-white/5 pt-6">
-                  <div>
-                    <p className="text-[9px] font-black uppercase text-slate-500 mb-1">Nicho</p>
-                    <p className="text-sm font-bold italic text-white">{aiResult.vision.niche}</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-black uppercase text-slate-500 mb-1">Tipo</p>
-                    <p className="text-sm font-bold italic text-white">{aiResult.vision.type}</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-black uppercase text-slate-500 mb-1">Público</p>
-                    <p className="text-sm font-bold italic text-white">{aiResult.vision.audience}</p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] font-black uppercase text-slate-500 mb-1">Promesa</p>
-                    <p className="text-sm font-bold italic text-white">{aiResult.vision.promise}</p>
-                  </div>
+                  <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Nicho</p><p className="text-sm font-bold italic text-white">{aiResult.vision.niche}</p></div>
+                  <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Tipo</p><p className="text-sm font-bold italic text-white">{aiResult.vision.type}</p></div>
+                  <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Público</p><p className="text-sm font-bold italic text-white">{aiResult.vision.audience}</p></div>
+                  <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Promesa</p><p className="text-sm font-bold italic text-white">{aiResult.vision.promise}</p></div>
                 </div>
               </div>
 
@@ -801,18 +862,9 @@ const progressPercent = (userCount / 500) * 100;
                     <h3 className="text-xl font-black italic uppercase tracking-tight">Proyección de Retención</h3>
                   </div>
                   <div className="grid grid-cols-3 gap-8">
-                    <div className="text-center">
-                      <p className="text-[8px] font-black text-slate-500 uppercase mb-1">3s</p>
-                      <p className="text-xl font-black italic">{aiResult.retentionData.at3s}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[8px] font-black text-slate-500 uppercase mb-1">10s</p>
-                      <p className="text-xl font-black italic">{aiResult.retentionData.at10s}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[8px] font-black text-slate-500 uppercase mb-1">Final</p>
-                      <p className="text-xl font-black italic">{aiResult.retentionData.final}</p>
-                    </div>
+                    <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">3s</p><p className="text-xl font-black italic">{aiResult.retentionData.at3s}</p></div>
+                    <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">10s</p><p className="text-xl font-black italic">{aiResult.retentionData.at10s}</p></div>
+                    <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">Final</p><p className="text-xl font-black italic">{aiResult.retentionData.final}</p></div>
                   </div>
                 </div>
                 <div className="relative h-48 w-full flex items-end gap-1 px-2 border-b border-white/5">
@@ -825,9 +877,8 @@ const progressPercent = (userCount / 500) * 100;
                     </div>
                   ))}
                 </div>
-              </div>   
+              </div>
 
-              {/* CHECKLIST HOJA DE RUTA */}
               <div className="bg-white/[0.02] border border-white/5 p-10 rounded-[3.5rem] space-y-8">
                 <div className="flex items-center gap-4">
                   <CheckCircle className="text-green-500" />
@@ -837,11 +888,7 @@ const progressPercent = (userCount / 500) * 100;
                   {(aiResult.roadmap || []).map((step, i) => {
                     const isCompleted = completedSteps.includes(i);
                     return (
-                      <div 
-                        key={i} 
-                        onClick={() => toggleStep(i)}
-                        className={`flex items-center gap-6 p-6 rounded-[2.5rem] transition-all cursor-pointer border ${isCompleted ? 'bg-green-500/10 border-green-500/30 opacity-50' : 'bg-black/40 border-white/5 hover:border-purple-500/30'}`}
-                      >
+                      <div key={i} onClick={() => toggleStep(i)} className={`flex items-center gap-6 p-6 rounded-[2.5rem] transition-all cursor-pointer border ${isCompleted ? 'bg-green-500/10 border-green-500/30 opacity-50' : 'bg-black/40 border-white/5 hover:border-purple-500/30'}`}>
                         <div className={`shrink-0 transition-colors ${isCompleted ? 'text-green-400' : 'text-slate-600'}`}>
                           {isCompleted ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6" />}
                         </div>
@@ -887,48 +934,46 @@ const progressPercent = (userCount / 500) * 100;
             </div>
           </div>
         )}
-    {/* HISTORIAL */}
-    {history.length > 0 && step === 'upload' && (
-    <div className="mt-20 max-w-5xl mx-auto px-4">
-    <div className="flex items-center gap-3 mb-6">
-      <div className="h-px flex-1 bg-white/5" />
-      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-600">Análisis anteriores</p>
-      <div className="h-px flex-1 bg-white/5" />
-    </div>
-    <div className="flex flex-wrap gap-3">
-      {history.map((item) => (
-        <button
-          key={item.id}
-          onClick={() => {
-          setAiResult(item.analysis_data);
-          setCurrentHistoryId(item.id); // ← agregá esta línea
-          setAnalysisMode(item.mode);
-          setCompletedSteps([]);
-          setChatMessages(
-          item.chat_messages?.length > 0 
-      ? item.chat_messages 
-      : [{
-          role: 'bot',
-          text: `Análisis cargado: ${item.analysis_data.vision?.niche || 'contenido'}. Potencial: ${item.analysis_data.potentialScore}%.`
-        }]
-    );
-  setStep('results');
-}}
-          className="group flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-purple-500/30 px-5 py-3 rounded-full transition-all"
-        >
-          <div className={`w-2 h-2 rounded-full ${item.mode === 'video' ? 'bg-purple-500' : 'bg-indigo-500'}`} />
-          <span className="text-sm font-bold italic text-slate-300 group-hover:text-white transition-colors">
-            {item.title}
-          </span>
-          <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">
-            {new Date(item.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
-          </span>
-        </button>
-      ))}
-    </div>
-  </div>
-   )}
+
+        {/* HISTORIAL */}
+        {history.length > 0 && step === 'upload' && (
+          <div className="mt-20 max-w-5xl mx-auto px-4">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-px flex-1 bg-white/5" />
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-600">Análisis anteriores</p>
+              <div className="h-px flex-1 bg-white/5" />
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {history.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setAiResult(item.analysis_data);
+                    setCurrentHistoryId(item.id);
+                    setAnalysisMode(item.mode);
+                    setCompletedSteps([]);
+                    setChatMessages(
+                      item.chat_messages?.length > 0 
+                        ? item.chat_messages 
+                        : [{ role: 'bot', text: `Análisis cargado: ${item.analysis_data.vision?.niche || 'contenido'}. Potencial: ${item.analysis_data.potentialScore}%.` }]
+                    );
+                    setStep('results');
+                  }}
+                  className="group flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-purple-500/30 px-5 py-3 rounded-full transition-all"
+                >
+                  <div className={`w-2 h-2 rounded-full ${item.mode === 'video' ? 'bg-purple-500' : 'bg-indigo-500'}`} />
+                  <span className="text-sm font-bold italic text-slate-300 group-hover:text-white transition-colors">{item.title}</span>
+                  <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">
+                    {new Date(item.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
       </main>
+
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
