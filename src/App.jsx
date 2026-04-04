@@ -22,7 +22,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
 
-// ❌ BORRASTE: import { gemsManager } from './gems-manager'; 
+// ❌ BORRASTE: import { gemsManager } from './gems-manager';    //gemsManager.setGems(500);
 
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso';
@@ -107,10 +107,8 @@ const App = () => {
         // Usuario nuevo: crear registro con 500 gemas
         await supabase.from('user_gems').insert({ user_id: userId, balance: 500 });
         setGems(500);
-        gemsManager.setGems(500);
       } else {
         setGems(gemsData.balance);
-        gemsManager.setGems(gemsData.balance);
       }
 
       // --- HISTORIAL ---
@@ -404,18 +402,15 @@ const captureFrames = (url) => {
   });
 };
 
-const getVideoCost = (min) => Math.max(100, Math.ceil(min * 100));
+const getVideoCost = (min) => Math.max(100, Math.ceil(min * 100));  //
 
 const deductGems = async (amount) => {
   const userId = localStorage.getItem('redxax_user_id');
-  const currentGems = gemsManager.getGems();
 
-  if (currentGems >= amount) {
-    const newBalance = currentGems - amount;
-    gemsManager.setGems(newBalance);
+  if (gems >= amount) {
+    const newBalance = gems - amount;
     setGems(newBalance);
 
-    // Sincronizar con Supabase
     await supabase
       .from('user_gems')
       .update({ balance: newBalance })
@@ -423,7 +418,8 @@ const deductGems = async (amount) => {
 
     return true;
   }
-  setShowStore(true);
+
+  alert(`Gemas insuficientes. Tenés ${gems} y necesitás ${amount}.`);
   return false;
 };
 
