@@ -445,23 +445,25 @@ const handleBuyGems = async (pkg) => {
 
 const getVideoCost = (min) => Math.max(100, Math.ceil(min * 100));  //
 
-const deductGems = async (amount) => {
+const deductGems = async (amount, reason) => {
   const userId = localStorage.getItem('redxax_user_id');
 
-  if (gems >= amount) {
-    const newBalance = gems - amount;
-    setGems(newBalance);
+  const { data, error } = await supabase.functions.invoke('deduct-gems', {
+    body: { userId, amount, reason }
+  });
 
-    await supabase
-      .from('user_gems')
-      .update({ balance: newBalance })
-      .eq('user_id', userId);
-
-    return true;
+  if (error || !data?.success) {
+    if (data?.error === 'Saldo insuficiente') {
+      alert(`Gemas insuficientes. Tenés ${data.balance} y necesitás ${amount}.`);
+      setShowGemStore(true);
+    } else {
+      alert('Error al procesar las gemas. Intentá de nuevo.');
+    }
+    return false;
   }
 
-  alert(`Gemas insuficientes. Tenés ${gems} y necesitás ${amount}.`);
-  return false;
+  setGems(data.newBalance);
+  return true;
 };
 
 const saveAnalysisToHistory = async (result, mode) => {
@@ -494,8 +496,9 @@ const runNeuralAnalysis = async (url) => {
     v.src = url;
     v.onloadedmetadata = () => resolve(v.duration);
   });
-  const cost = Math.ceil(duration / 60) * 100;
-  const approved = await deductGems(cost);
+  const minutes = Math.ceil(duration / 60);
+  const cost = Math.min(minutes * 100, 600);
+  const approved = await deductGems(cost, `video:${minutes}`);
   if (!approved) return;
 
   setStep('analyzing');
@@ -541,7 +544,7 @@ const runNeuralAnalysis = async (url) => {
 const runScriptAnalysis = async () => {
   if (!scriptText.trim()) return;
 
-  const approved = await deductGems(80);
+  const approved = await deductGems(80, 'script');
   if (!approved) return;
 
   setStep('analyzing');
