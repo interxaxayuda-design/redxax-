@@ -102,13 +102,11 @@ const App = () => {
   if (payment === 'success') {
     const reloadGems = async () => {
       const userId = localStorage.getItem('redxax_user_id');
-      const { data } = await supabase
-        .from('user_gems')
-        .select('balance')
-        .eq('user_id', userId)
-        .single();
-      
-      if (data) setGems(data.balance);
+      // ✅ Usar get-gems en vez de query directa
+      const { data } = await supabase.functions.invoke('get-gems', {
+        body: { userId }
+      });
+      if (data?.balance !== undefined) setGems(data.balance);
       alert('✅ ¡Pago exitoso! Tus gemas fueron acreditadas.');
     };
     reloadGems();
