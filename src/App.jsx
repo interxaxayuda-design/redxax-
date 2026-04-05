@@ -210,6 +210,60 @@ CREDIBILIDAD Y ESPECIFICIDAD → 15% del score
 
   ADVERTENCIA: Haz que el usuario entienda lo que decís. Explica palabras complejas cómo hook, retención, entre otras. 
 
+  ═══════════════════════════════════════
+FASE 0.5 — DETECCIÓN DE MODO MUSICAL (OBLIGATORIA)
+═══════════════════════════════════════
+Antes de aplicar cualquier criterio, detectá si el contenido es MÚSICA INSTRUMENTAL o tiene componente musical dominante.
+
+SEÑALES DE MODO MUSICAL:
+- No hay voz hablando o cantando letra
+- El audio dominante es instrumental
+- Los frames muestran producción musical, instrumento, DJ, estudio
+- Hay waveforms, visualizadores, o notación musical visible
+
+SI DETECTÁS MODO MUSICAL → ignorá los criterios de hook verbal y aplicá ESTOS:
+
+CRITERIOS MUSICALES (reemplaza los pesos anteriores):
+
+IMPACTO EMOCIONAL INMEDIATO → 40% del score
+  - ¿Los primeros 3 segundos generan una sensación física? (escalofríos, urgencia, calma profunda, euforia)
+  - ¿El drop, el intro o el motivo principal es memorable después de escucharlo una vez?
+  - Géneros con mayor potencial viral actual: phonk, lo-fi con twist, hyperpop, drill melódico, ambient cinematográfico
+
+RITMO Y GROOVE → 25% del score
+  - ¿El BPM es adecuado para el mood que transmite? (no "aburrido" — sino ¿el tempo sirve al propósito?)
+  - ¿Hay variación rítmica que mantiene la atención? (fills, cambios de patrón, síncopa)
+  - ¿El ritmo produce una respuesta física involuntaria? (querer mover el cuerpo, asentir, acelerar la respiración)
+  - Penalizá: ritmos predecibles sin variación, tempo que no justifica el mood, ausencia total de dinámica
+
+ESTRUCTURA Y NARRATIVA SONORA → 20% del score
+  - ¿Hay un arco: intro → desarrollo → clímax → resolución?
+  - ¿Existe un momento de "giro" o "drop" que recompensa al oyente por quedarse?
+  - ¿La tensión y liberación están bien manejadas?
+
+CALIDAD DE PRODUCCIÓN Y NICHO → 15% del score
+  - ¿El mix es limpio o hay elementos que distraen?
+  - ¿El sonido es coherente con las tendencias actuales del género?
+  - ¿Hay un elemento distintivo que lo hace reconocible? (sample único, efecto signature, textura particular)
+
+BONIFICACIÓN VIRAL MUSICAL:
+- Loop perfecto (el final conecta con el inicio sin fricción) → +10 puntos
+- Tiene potencial de ser usado como background en videos de terceros → +8 puntos
+- El drop o momento cumbre ocurre antes del segundo 15 → +7 puntos
+- Genera una emoción específica e identificable en menos de 5 segundos → +10 puntos
+- BPM sincronizado con tendencias de plataforma (TikTok: 120-140bpm, Reels ambient: 60-80bpm) → +5 puntos
+
+PENALIZACIONES MUSICALES:
+- Intro de más de 8 segundos sin variación → -15 puntos
+- Ritmo completamente predecible sin ningún elemento sorpresa → -20 puntos
+- Producción que suena genérica o de stock → -15 puntos
+- Sin momento de clímax o giro en toda la pieza → -20 puntos
+
+EJEMPLOS DE REFERENCIA PARA CALIBRACIÓN:
+- Música que llegó a 100M+ vistas generalmente tiene: loop perfecto, emoción clara en <5s, usabilidad como fondo de video
+- No penalices la ausencia de letra — la música instrumental viral funciona por SENSACIÓN, no por mensaje
+- Un track de 60% de score bien producido puede superar en views a un track de 80% mal distribuido — mencioná el potencial de distribución en el roadmap
+
 ═══════════════════════════════════════
 FASE 2 — CALIBRACIÓN CON TENDENCIAS ACTUALES
 ═══════════════════════════════════════
