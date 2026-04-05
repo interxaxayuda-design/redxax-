@@ -22,7 +22,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { createClient } from '@supabase/supabase-js';
 
-// ❌ BORRASTE: import { gemsManager } from './gems-manager';    //gemsManager.setGems(500);
+// ❌ BORRASTE: import { gemsManager } from './gems-manager';    //gemsManager.setGems(500);   //safeParseJSON
 
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso';
@@ -54,12 +54,33 @@ const GEM_PACKAGES = [
 function safeParseJSON(rawText, context = '') {
   try {
     return JSON.parse(rawText);
-  } catch (err) {
-    console.error(`JSON inválido en [${context}]:`, err.message);
+  } catch (firstErr) {
+    console.warn(`JSON inválido en [${context}], intentando reparar...`);
+    
+    try {
+      // Intento 1: extraer el bloque JSON con regex
+      const match = rawText.match(/\{[\s\S]*\}/);
+      if (match) return JSON.parse(match[0]);
+    } catch {}
+
+    try {
+      // Intento 2: limpiar saltos de línea y caracteres problemáticos dentro de strings
+      const cleaned = rawText
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ') // control chars
+        .replace(/\\n/g, ' ')
+        .replace(/\\t/g, ' ')
+        .replace(/\n/g, ' ')
+        .replace(/\r/g, ' ');
+      const match2 = cleaned.match(/\{[\s\S]*\}/);
+      if (match2) return JSON.parse(match2[0]);
+    } catch {}
+
+    // Si todo falla, loguear y lanzar
+    console.error(`JSON inválido en [${context}]:`, firstErr.message);
     console.error('Preview:', rawText.slice(0, 400));
-    throw new Error(`JSON malformado o truncado. Preview: "${rawText.slice(0, 80)}..."`);
+    throw new Error(`JSON malformado. Preview: "${rawText.slice(0, 80)}..."`);
   }
-} //saveAnalysisToHistory
+}
 
 const App = () => {
   const [step, setStep] = useState('upload');
