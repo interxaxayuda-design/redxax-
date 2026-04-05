@@ -46,9 +46,33 @@ function extractGeminiText(data) {
 
 
 const GEM_PACKAGES = [
-  { id: 'starter', gems: 500, price: 4.99, label: 'Starter', popular: false },
-  { id: 'pro', gems: 1500, price: 9.99, label: 'Pro', popular: true },
-  { id: 'elite', gems: 4000, price: 19.99, label: 'Elite', popular: false },
+  { 
+    id: 'starter', 
+    gems: 500, 
+    price: 1.99, 
+    label: 'Starter',
+    analyses: '5 análisis',
+    perGem: '$0.004/gema',
+    popular: false 
+  },
+  { 
+    id: 'pro', 
+    gems: 2000, 
+    price: 4.99, 
+    label: 'Pro',
+    analyses: '20 análisis',
+    perGem: '$0.002/gema',
+    popular: true 
+  },
+  { 
+    id: 'elite', 
+    gems: 6000, 
+    price: 9.99, 
+    label: 'Elite',
+    analyses: '60 análisis',
+    perGem: '$0.001/gema',
+    popular: false 
+  },
 ];
 
 function safeParseJSON(rawText, context = '') {
@@ -679,58 +703,95 @@ const progressPercent = (userCount / 500) * 100;
         <div className="absolute bottom-[-5%] right-[-5%] w-[45%] h-[45%] bg-blue-600/[0.04] blur-[120px] rounded-full" />
       </div>
 
-      {/* ✅ TIENDA DE GEMAS — fuera de main */}
-      {showGemStore && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="bg-[#0d0d0f] border border-white/10 rounded-[3rem] p-10 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h2 className="text-3xl font-black italic uppercase tracking-tighter">
-                  Recargar <span className="text-purple-400">Gemas</span>
-                </h2>
-                <p className="text-slate-500 text-sm font-bold mt-1">
-                  Saldo actual: <span className="text-purple-300">{gems} 💎</span>
-                </p>
-              </div>
-              <button onClick={() => setShowGemStore(false)} className="hover:bg-white/10 p-2 rounded-full transition-colors">
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
-            </div>
-            <div className="space-y-3 mb-8">
-              {GEM_PACKAGES.map((pkg) => (
-                <div
-                  key={pkg.id}
-                  className={`relative flex items-center justify-between p-5 rounded-[2rem] border cursor-pointer transition-all hover:border-purple-500/50 hover:bg-purple-500/5
-                    ${pkg.popular ? 'border-purple-500/40 bg-purple-500/10' : 'border-white/10 bg-white/[0.02]'}`}
-                  onClick={() => handleBuyGems(pkg)}
-                >
-                  {pkg.popular && (
-                    <div className="absolute -top-3 left-6 bg-purple-600 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
-                      Más popular
-                    </div>
-                  )}
-                  <div className="flex items-center gap-4">
-                    <Gem className="w-6 h-6 text-purple-400" fill="currentColor" />
-                    <div>
-                      <p className="font-black italic text-white text-lg">{pkg.gems.toLocaleString()} gemas</p>
-                      <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">{pkg.label}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-black text-white text-xl">${pkg.price}</p>
-                    <p className="text-slate-500 text-[10px]">USD</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div id="paypal-button-container" className="min-h-[50px]" />
-            {gemError && (
-              <p className="text-red-400 text-xs font-bold text-center mt-4">{gemError}</p>
-            )}
-          </div>
+     {showGemStore && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div className="bg-[#0d0d0f] border border-white/10 rounded-[3rem] p-10 max-w-lg w-full shadow-2xl animate-in zoom-in-95 duration-300">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h2 className="text-3xl font-black italic uppercase tracking-tighter">
+            Recargar <span className="text-purple-400">Gemas</span>
+          </h2>
+          <p className="text-slate-500 text-sm font-bold mt-1">
+            Saldo actual: <span className="text-purple-300">{gems} 💎</span>
+          </p>
         </div>
-      )}
+        <button onClick={() => setShowGemStore(false)} className="hover:bg-white/10 p-2 rounded-full transition-colors">
+          <X className="w-5 h-5 text-slate-500" />
+        </button>
+      </div>
 
+      {/* Paquetes */}
+      <div className="space-y-3 mb-8">
+        {GEM_PACKAGES.map((pkg) => {
+          const savings = pkg.id === 'pro'
+            ? 'Ahorrás 50% vs Starter'
+            : pkg.id === 'elite'
+            ? 'Ahorrás 75% vs Starter'
+            : null;
+          return (
+            <div
+              key={pkg.id}
+              className={`relative flex items-center justify-between p-5 rounded-[2rem] border cursor-pointer transition-all hover:scale-[1.02]
+                ${pkg.id === 'elite'
+                  ? 'border-yellow-500/50 bg-yellow-500/5 hover:bg-yellow-500/10'
+                  : pkg.popular
+                  ? 'border-purple-500/50 bg-purple-500/10 hover:bg-purple-500/15'
+                  : 'border-white/10 bg-white/[0.02] hover:border-white/20'}`}
+              onClick={() => handleBuyGems(pkg)}
+            >
+              {pkg.id === 'elite' && (
+                <div className="absolute -top-3 left-6 bg-yellow-500 text-black text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                  ⚡ Más popular
+                </div>
+              )}
+              {pkg.popular && (
+                <div className="absolute -top-3 left-6 bg-purple-600 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
+                  🔥 Mejor valor
+                </div>
+              )}
+              <div className="flex items-center gap-4">
+                <Gem
+                  className={`w-6 h-6 ${pkg.id === 'elite' ? 'text-yellow-400' : 'text-purple-400'}`}
+                  fill="currentColor"
+                />
+                <div>
+                  <p className="font-black italic text-white text-lg">
+                    {pkg.gems.toLocaleString()} gemas
+                  </p>
+                  <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">
+                    {pkg.analyses} · {pkg.perGem}
+                  </p>
+                  {savings && (
+                    <p className="text-green-400 text-[10px] font-black uppercase tracking-wider mt-0.5">
+                      ✓ {savings}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div className="text-right">
+                <p className={`font-black text-xl ${pkg.id === 'elite' ? 'text-yellow-400' : 'text-white'}`}>
+                  ${pkg.price}
+                </p>
+                <p className="text-slate-500 text-[10px]">USD</p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Garantía */}
+      <div className="flex items-center justify-center gap-2 mt-2 mb-6 text-slate-600 text-[10px] font-bold uppercase tracking-wider">
+        <span>🔒</span>
+        <span>Pago seguro · Las gemas no vencen · Sin suscripción</span>
+      </div>
+
+      <div id="paypal-button-container" className="min-h-[50px]" />
+      {gemError && (
+        <p className="text-red-400 text-xs font-bold text-center mt-4">{gemError}</p>
+      )}
+    </div>
+  </div>
+)}
       {/* CONTADOR VISUAL */}
       <div className="fixed top-6 right-6 z-50 flex flex-col items-end gap-2">
         {!isLoadingCount && (
