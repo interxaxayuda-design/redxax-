@@ -125,20 +125,16 @@ const App = () => {
       const userId = storedUserId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       if (isNewUser) localStorage.setItem('redxax_user_id', userId);
 
-      // --- GEMAS POR USUARIO ---
-      const { data: gemsData, error: gemsError } = await supabase
-        .from('user_gems')
-        .select('balance')
-        .eq('user_id', userId)
-        .single();
+      // --- GEMAS POR USUARIO --- (reemplazá el bloque anterior)
+const { data: gemsData, error: gemsError } = await supabase.functions.invoke('get-gems', {
+  body: { userId }
+});
 
-      if (gemsError || !gemsData) {
-        // Usuario nuevo: crear registro con 500 gemas
-        await supabase.from('user_gems').insert({ user_id: userId, balance: 500 });
-        setGems(500);
-      } else {
-        setGems(gemsData.balance);
-      }
+if (!gemsError && gemsData?.balance !== undefined) {
+  setGems(gemsData.balance);
+} else {
+  setGems(500);
+}
 
       // --- HISTORIAL ---
       const { data: historyData } = await supabase
@@ -900,7 +896,7 @@ const progressPercent = (userCount / 500) * 100;
                     );
                   })}
                 </div>
-              </div>
+              </div> 
 
               {!showChat ? (
                 <button onClick={() => setShowChat(true)} className="w-full flex items-center justify-center gap-3 p-8 bg-zinc-600/10 hover:bg-zinc-600/20 border border-white/10 rounded-[3rem] text-slate-400 font-black italic uppercase tracking-tighter transition-all">
