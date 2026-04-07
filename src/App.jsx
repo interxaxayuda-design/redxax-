@@ -140,22 +140,31 @@ const App = () => {
     if (showChat) scrollToBottom();
   }, [chatMessages, isTyping]);
 
-  useEffect(() => {
+  // DESPUÉS
+useEffect(() => {
   const params = new URLSearchParams(window.location.search);
   const payment = params.get('payment');
-  
+
   if (payment === 'success') {
+    window.history.replaceState({}, '', '/');
     const reloadGems = async () => {
       const userId = localStorage.getItem('redxax_user_id');
-      // ✅ Usar get-gems en vez de query directa
+
+      // Esperar 4 segundos para que el webhook de MP llegue y acredite
+      await new Promise(r => setTimeout(r, 4000));
+
       const { data } = await supabase.functions.invoke('get-gems', {
         body: { userId }
       });
-      if (data?.balance !== undefined) setGems(data.balance);
-      alert('✅ ¡Pago exitoso! Tus gemas fueron acreditadas.');
+
+      if (data?.balance !== undefined) {
+        setGems(data.balance);
+        alert('✅ ¡Pago exitoso! Tus gemas fueron acreditadas.');
+      } else {
+        alert('⏳ Pago procesado. Si las gemas no aparecen en unos segundos, recargá la página.');
+      }
     };
     reloadGems();
-    window.history.replaceState({}, '', '/');
   }
 }, []);
 
