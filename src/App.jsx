@@ -46,15 +46,16 @@ function extractGeminiText(data) {
 
 
 const GEM_PACKAGES = [
-  { 
-    id: 'starter', 
-    gems: 500, 
-    price: 1.99, 
-    label: 'Starter',
-    analyses: '5 análisis',
-    perGem: '$0.004/gema',
-    popular: false 
-  },
+ // DESPUÉS
+{ 
+  id: 'starter', 
+  gems: 500, 
+  price: 0.01, 
+  label: 'Starter',
+  analyses: '5 análisis',
+  perGem: '$0.00002/gema',
+  popular: false 
+},
   { 
     id: 'pro', 
     gems: 2000, 
@@ -1130,4 +1131,4 @@ const progressPercent = (userCount / 500) * 100;
   );
 };
 
-export default App;
+export default App; //GEM_PACKAGES
