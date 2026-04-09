@@ -86,7 +86,7 @@ function safeParseJSON(rawText, context = '') {
   }
 }
 
-const buildSystemInstructions = (platform, followerRange) => {
+const buildSystemInstructions = (platform, followerRange, mode = 'video') => {
   const platformNames = {
     tiktok: 'TikTok', reels: 'Instagram Reels',
     shorts: 'YouTube Shorts', all: 'TikTok, Instagram Reels y YouTube Shorts'
@@ -95,6 +95,17 @@ const buildSystemInstructions = (platform, followerRange) => {
     new: '0–1K seguidores', small: '1K–10K', mid: '10K–100K',
     large: '100K–500K', mega: '500K+'
   };
+
+  const phaseInstructions = mode === 'video'
+    ? `Evaluá estas 4 fases de forma INDEPENDIENTE. Cada una tiene su propio score:
+- FASE 1 — Hook & Primeros 3s: ¿El primer frame detiene el scroll? ¿Hay razón para quedarse?
+- FASE 2 — Estructura & Narrativa: ¿Hay loop abierto? ¿Re-enganche? ¿El contenido podría cortarse en cualquier segundo o tiene arco claro?
+- FASE 3 — Edición & Ritmo: ¿Hay cuts frecuentes? ¿Variación visual? ¿Texto en pantalla que suma info? ¿Energía sostenida?
+- FASE 4 — Credibilidad & Nicho: ¿Hay números concretos? ¿Prueba social? ¿El creador demuestra autoridad real en su nicho?`
+    : `Evaluá estas 3 fases de forma INDEPENDIENTE (es un guion, no hay edición):
+- FASE 1 — Hook & Primeros 3s: ¿El primer enunciado detiene el scroll? ¿Genera curiosidad inmediata?
+- FASE 2 — Estructura & Narrativa: ¿Hay loop abierto? ¿La estructura lleva al espectador de principio a fin con intención?
+- FASE 3 — Credibilidad & Nicho: ¿El lenguaje demuestra autoridad? ¿Hay especificidad o es genérico?`;
 
   return `Sos REDXAX VISION, un analista experto en contenido viral para redes sociales.
 
@@ -111,23 +122,53 @@ Antes de emitir cualquier juicio, usá Google Search para investigar:
 No adivines. Si no buscás primero, tu análisis no tiene base real.
 Usá lo que encontrás para fundamentar cada parte del análisis.
 
-Una vez investigado, analizá el contenido con criterio propio — como lo haría
-un director creativo con 10 años de experiencia en ${platformNames[platform]}.
+ANÁLISIS POR FASES:
+${phaseInstructions}
 
-Considerá todo lo que sea relevante: el hook, el ritmo, el nicho, la emoción que genera,
-si hay razón real para que alguien lo comparta, cómo funciona el algoritmo de
-${platformNames[platform]} hoy, y si el formato tiene tracción real en este momento.
+Para cada fase con score menor a 50, explicá la CONSECUENCIA REAL y concreta que eso va a tener
+en el rendimiento del video. No teoría — qué va a pasar exactamente (ej: "El algoritmo no va a
+distribuir más allá de tus seguidores porque sin hook el watch time del primer 10% va a ser
+menor al 30% y TikTok congela la distribución en ese punto").
 
-Sé honesto. Si el video tiene problemas reales, decílo con claridad pero siempre
-orientado a que el creador pueda mejorar. Tu valor está en ayudarlo a crecer.
+Una vez investigado y analizado por fases, determiná un score general que refleje
+el conjunto — considerando que una fase crítica puede hundir todo el video aunque
+las demás estén bien.
+
+Sé honesto. Orientado siempre a que el creador pueda mejorar.
 
 Devolvé ÚNICAMENTE este JSON sin texto antes ni después:
 
 {
-  "potentialScore": <número 0-100, tu evaluación genuina basada en investigación real>,
+  "potentialScore": <número 0-100, refleja el conjunto considerando que una fase crítica arrastra todo>,
   "performanceScenario": "<diagnóstico central en máximo 8 palabras>",
-  "honestVerdict": "<450-600 caracteres: qué funciona, qué limita, por qué ese score, basado en tendencias reales>",
+  "honestVerdict": "<450-600 caracteres: síntesis del análisis basada en tendencias reales y las fases>",
   "trendContext": "<150-200 caracteres: qué encontraste buscando sobre este nicho en ${platformNames[platform]} ahora mismo>",
+  "phaseScores": {
+    "hook": {
+      "score": <0-100>,
+      "label": "Hook & Primeros 3s",
+      "verdict": "<diagnóstico en máximo 12 palabras>",
+      "consequence": "<si score < 50: consecuencia real y concreta en 80-120 caracteres. Si score >= 50: null>"
+    },
+    "estructura": {
+      "score": <0-100>,
+      "label": "Estructura & Narrativa",
+      "verdict": "<diagnóstico en máximo 12 palabras>",
+      "consequence": "<si score < 50: consecuencia real y concreta en 80-120 caracteres. Si score >= 50: null>"
+    }${mode === 'video' ? `,
+    "edicion": {
+      "score": <0-100>,
+      "label": "Edición & Ritmo",
+      "verdict": "<diagnóstico en máximo 12 palabras>",
+      "consequence": "<si score < 50: consecuencia real y concreta en 80-120 caracteres. Si score >= 50: null>"
+    }` : ''},
+    "credibilidad": {
+      "score": <0-100>,
+      "label": "Credibilidad & Nicho",
+      "verdict": "<diagnóstico en máximo 12 palabras>",
+      "consequence": "<si score < 50: consecuencia real y concreta en 80-120 caracteres. Si score >= 50: null>"
+    }
+  },
   "platformScores": {
     "tiktok":  { "score": <0-100>, "verdict": "<máximo 10 palabras>", "topTip": "<acción concreta basada en lo que funciona hoy>" },
     "reels":   { "score": <0-100>, "verdict": "<máximo 10 palabras>", "topTip": "<acción concreta basada en lo que funciona hoy>" },
@@ -144,19 +185,19 @@ Devolvé ÚNICAMENTE este JSON sin texto antes ni después:
     "audience": "<audiencia con edad y contexto>",
     "promise": "<emoción o promesa implícita>"
   },
-  "hookScore": <0-100>,
+  "hookScore": <número 0-100, igual a phaseScores.hook.score>,
   "retentionData": {
     "at3s": "<% proyectado>",
     "at10s": "<% proyectado>",
     "final": "<% proyectado>"
   },
-  "retentionCurve": [<15 números 0-100 que representen la curva realista>],
+  "retentionCurve": [<exactamente 15 números enteros 0-100>],
   "weakestMoment": "<segundo + causa + cómo evitarlo, 150-200 caracteres>",
   "roadmap": [
-    "<mejora 1: acción concreta basada en tendencias reales + razón>",
-    "<mejora 2: acción concreta basada en tendencias reales + razón>",
-    "<mejora 3: acción concreta basada en tendencias reales + razón>",
-    "<mejora 4: técnica trending adaptada a su estilo y plataforma>"
+    "<mejora 1: basada en la fase más crítica>",
+    "<mejora 2: segunda prioridad>",
+    "<mejora 3: mejora de soporte>",
+    "<mejora 4: técnica trending adaptada a su estilo>"
   ]
 }`;
 };
@@ -327,73 +368,74 @@ const App = () => {
   };
 
   const runNeuralAnalysis = async (url, platform, followerRange) => {
-    const duration = await new Promise((resolve) => {
-      const v = document.createElement('video');
-      v.src = url;
-      v.onloadedmetadata = () => resolve(v.duration);
+  const duration = await new Promise((resolve) => {
+    const v = document.createElement('video');
+    v.src = url;
+    v.onloadedmetadata = () => resolve(v.duration);
+  });
+  const minutes = Math.ceil(duration / 60);
+  const cost = Math.min(minutes * 100, 600);
+  const approved = await deductGems(cost, `video:${minutes}`);
+  if (!approved) return;
+
+  setStep('analyzing');
+  setAnalysisMode('video');
+  setStatusText("Iniciando escaneo de InterXAX...");
+  setAnalysisProgress(10);
+
+  try {
+    const base64Frames = await captureFrames(url);
+    setAnalysisProgress(80);
+    setStatusText("Investigando tendencias y conectando con REDxax...");
+
+    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        // CAMBIO AQUÍ: Se agregó 'video'
+        text: `${buildSystemInstructions(platform, followerRange, 'video')}\n\nAnaliza estos frames del video.`,
+        frames: base64Frames
+      }
     });
-    const minutes = Math.ceil(duration / 60);
-    const cost = Math.min(minutes * 100, 600);
-    const approved = await deductGems(cost, `video:${minutes}`);
-    if (!approved) return;
 
-    setStep('analyzing');
-    setAnalysisMode('video');
-    setStatusText("Iniciando escaneo de InterXAX...");
-    setAnalysisProgress(10);
+    if (error) throw error;
 
-    try {
-      const base64Frames = await captureFrames(url);
-      setAnalysisProgress(80);
-      setStatusText("Investigando tendencias y conectando con REDxax...");
+    const rawText = extractGeminiText(data);
+    const parsed = safeParseJSON(rawText, 'runNeuralAnalysis');
 
-      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: `${buildSystemInstructions(platform, followerRange)}\n\nAnaliza estos frames del video.`,
-          frames: base64Frames
-        }
-      });
+    setAiResult(parsed);
+    setCompletedSteps([]);
+    setChatMessages([{
+      role: 'bot',
+      text: `Protocolo REDxax: Análisis de ${parsed.vision?.niche || 'contenido'} finalizado. Potencial: ${parsed.potentialScore}%. ¿Deseas profundizar en la consultoría?`
+    }]);
 
-      if (error) throw error;
-
-      const rawText = extractGeminiText(data);
-      const parsed = safeParseJSON(rawText, 'runNeuralAnalysis');
-
-      setAiResult(parsed);
-      setCompletedSteps([]);
-      setChatMessages([{
-        role: 'bot',
-        text: `Protocolo REDxax: Análisis de ${parsed.vision?.niche || 'contenido'} finalizado. Potencial: ${parsed.potentialScore}%. ¿Deseas profundizar en la consultoría?`
-      }]);
-
-      setAnalysisProgress(100);
-      await saveAnalysisToHistory(parsed, 'video');
-      setTimeout(() => setStep('results'), 500);
-    } catch (err) {
-      console.error("DETALLE DEL ERROR VIDEO:", err);
-      alert("Error en el análisis de video. Revisa la consola.");
-      setStep('upload');
-    }
-  };
-
+    setAnalysisProgress(100);
+    await saveAnalysisToHistory(parsed, 'video');
+    setTimeout(() => setStep('results'), 500);
+  } catch (err) {
+    console.error("DETALLE DEL ERROR VIDEO:", err);
+    alert("Error en el análisis de video. Revisa la consola.");
+    setStep('upload');
+  }
+};
   const runScriptAnalysis = async (platform, followerRange) => {
-    if (!scriptText.trim()) return;
-    const approved = await deductGems(80, 'script');
-    if (!approved) return;
+  if (!scriptText.trim()) return;
+  const approved = await deductGems(80, 'script');
+  if (!approved) return;
 
-    setStep('analyzing');
-    setAnalysisMode('script');
-    setStatusText("Investigando tendencias y evaluando guion...");
-    setAnalysisProgress(30);
+  setStep('analyzing');
+  setAnalysisMode('script');
+  setStatusText("Investigando tendencias y evaluando guion...");
+  setAnalysisProgress(30);
 
-    try {
-      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: `${buildSystemInstructions(platform, followerRange)}\n\nAnaliza este concepto/guion: ${scriptText}`
-        }
-      });
+  try {
+    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        // CAMBIO AQUÍ: Se agregó 'script'
+        text: `${buildSystemInstructions(platform, followerRange, 'script')}\n\nAnaliza este concepto/guion: ${scriptText}`
+      }
+    });
 
-      if (error) throw error;
+    if (error) throw error;
 
       setAnalysisProgress(90);
       const rawText = extractGeminiText(data);
@@ -733,6 +775,8 @@ const App = () => {
         {step === 'results' && aiResult && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-right-10 duration-700">
             <div className="lg:col-span-4 space-y-6">
+
+              {/* Preview */}
               {analysisMode === 'video' ? (
                 <div className="bg-[#111] rounded-[3.5rem] overflow-hidden border border-white/10 aspect-[9/16] relative shadow-2xl">
                   {videoPreviewUrl && <video src={videoPreviewUrl} className="w-full h-full object-cover" controls autoPlay loop muted />}
@@ -746,34 +790,90 @@ const App = () => {
                   <p className="text-slate-300 italic text-sm font-medium leading-relaxed overflow-y-auto custom-scrollbar flex-1">"{scriptText}"</p>
                 </div>
               )}
-              <div className="bg-gradient-to-br from-zinc-900 to-black p-10 rounded-[3.5rem] border border-white/10 shadow-2xl space-y-8">
-                <div className="text-center">
-                  <p className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-500 italic mb-4">Potencial de Éxito</p>
-                  <div className={`text-8xl font-black italic tracking-tighter tabular-nums ${aiResult.potentialScore >= 70 ? 'text-green-400' : 'text-white'}`}>
+
+              {/* PHASE SCORES */}
+              <div className="space-y-3">
+                {/* Score general */}
+                <div className="flex items-center justify-between bg-black/40 border border-white/10 rounded-[2rem] px-6 py-4">
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1">Score General</p>
+                    <p className="text-[10px] font-bold italic text-slate-400">{aiResult.performanceScenario}</p>
+                  </div>
+                  <span className={`text-5xl font-black italic tabular-nums ${aiResult.potentialScore >= 70 ? 'text-green-400' : aiResult.potentialScore >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
                     {aiResult.potentialScore}%
-                  </div>
-                  <div className="mt-4 inline-block bg-purple-600/20 text-purple-400 px-6 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-purple-500/30">
-                    {aiResult.performanceScenario}
-                  </div>
+                  </span>
                 </div>
 
-                {/* TREND CONTEXT */}
+                {/* Tarjetas de fases */}
+                {aiResult.phaseScores && Object.values(aiResult.phaseScores).map((phase, i) => {
+                  if (!phase) return null;
+                  const isCritical = phase.score < 50;
+                  return (
+                    <div key={i} className={`rounded-[2rem] border p-5 transition-all ${
+                      isCritical
+                        ? 'border-red-500/40 bg-red-500/[0.08]'
+                        : phase.score >= 75
+                        ? 'border-green-500/30 bg-green-500/5'
+                        : 'border-white/10 bg-white/[0.02]'
+                    }`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          {isCritical && (
+                            <span className="bg-red-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+                              CRÍTICO
+                            </span>
+                          )}
+                          <p className={`text-xs font-black uppercase tracking-wider ${isCritical ? 'text-red-400' : 'text-slate-300'}`}>
+                            {phase.label}
+                          </p>
+                        </div>
+                        <span className={`text-2xl font-black italic tabular-nums ${
+                          isCritical ? 'text-red-400' : phase.score >= 75 ? 'text-green-400' : 'text-yellow-400'
+                        }`}>
+                          {phase.score}%
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
+                        <div
+                          className={`h-full rounded-full transition-all duration-700 ${
+                            isCritical ? 'bg-gradient-to-r from-red-600 to-red-400'
+                            : phase.score >= 75 ? 'bg-gradient-to-r from-green-500 to-emerald-400'
+                            : 'bg-gradient-to-r from-yellow-500 to-amber-400'
+                          }`}
+                          style={{ width: `${phase.score}%` }}
+                        />
+                      </div>
+                      <p className={`text-xs font-bold italic ${isCritical ? 'text-red-300/80' : 'text-slate-400'}`}>
+                        {phase.verdict}
+                      </p>
+                      {isCritical && phase.consequence && (
+                        <div className="mt-3 flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-[1rem] p-3">
+                          <span className="text-red-400 text-xs mt-0.5">⚠</span>
+                          <p className="text-red-300 text-[11px] font-bold leading-relaxed">{phase.consequence}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Trend context */}
                 {aiResult.trendContext && (
-                  <div className="pt-6 border-t border-white/5">
+                  <div className="bg-black/30 border border-white/5 rounded-[2rem] p-5">
                     <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="w-4 h-4 text-green-400" />
-                      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-green-400">Tendencias Detectadas</p>
+                      <TrendingUp className="w-3 h-3 text-green-400" />
+                      <p className="text-[9px] font-black uppercase tracking-[0.4em] text-green-400">Tendencias Detectadas</p>
                     </div>
                     <p className="text-xs font-bold italic leading-relaxed text-slate-400">"{aiResult.trendContext}"</p>
                   </div>
                 )}
 
-                <div className="pt-6 border-t border-white/5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Target className={`w-4 h-4 ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`} />
-                    <p className={`text-[10px] font-black uppercase tracking-[0.4em] italic ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`}>Veredicto</p>
+                {/* Veredicto */}
+                <div className="bg-black/30 border border-white/5 rounded-[2rem] p-5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className={`w-3 h-3 ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`} />
+                    <p className={`text-[9px] font-black uppercase tracking-[0.4em] ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`}>Veredicto</p>
                   </div>
-                  <p className="text-sm font-bold italic leading-relaxed text-slate-300">"{aiResult.honestVerdict}"</p>
+                  <p className="text-xs font-bold italic leading-relaxed text-slate-300">"{aiResult.honestVerdict}"</p>
                 </div>
               </div>
             </div>
@@ -809,7 +909,6 @@ const App = () => {
                               {p.score}%
                             </span>
                           </div>
-                          {/* Barra */}
                           <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
                             <div
                               className={`h-full rounded-full transition-all duration-700 ${
