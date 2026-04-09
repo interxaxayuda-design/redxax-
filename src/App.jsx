@@ -31,10 +31,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 
 const PLATFORMS = [
-  { id: 'tiktok',   label: 'TikTok',          emoji: '🎵', color: 'from-pink-500 to-red-500' },
-  { id: 'reels',    label: 'Instagram Reels',  emoji: '📸', color: 'from-purple-500 to-pink-500' },
-  { id: 'shorts',   label: 'YouTube Shorts',   emoji: '▶️', color: 'from-red-500 to-orange-500' },
-  { id: 'all',      label: 'Todas las plataformas', emoji: '🌐', color: 'from-blue-500 to-purple-500' },
+  { id: 'tiktok',   label: 'TikTok',               emoji: '🎵' },
+  { id: 'reels',    label: 'Instagram Reels',        emoji: '📸' },
+  { id: 'shorts',   label: 'YouTube Shorts',         emoji: '▶️' },
+  { id: 'all',      label: 'Todas las plataformas',  emoji: '🌐' },
+];
+
+const FOLLOWER_RANGES = [
+  { id: 'new',   label: 'Cuenta nueva',    range: '0 – 1K',      emoji: '🌱' },
+  { id: 'small', label: 'Cuenta pequeña',  range: '1K – 10K',    emoji: '📈' },
+  { id: 'mid',   label: 'Cuenta media',    range: '10K – 100K',  emoji: '🔥' },
+  { id: 'large', label: 'Cuenta grande',   range: '100K – 500K', emoji: '⚡' },
+  { id: 'mega',  label: 'Mega cuenta',     range: '500K+',       emoji: '👑' },
 ];
 
 function extractGeminiText(data) {
@@ -78,19 +86,33 @@ function safeParseJSON(rawText, context = '') {
   }
 }
 
-const buildSystemInstructions = (platform) => {
+const buildSystemInstructions = (platform, followerRange) => {
   const platformNames = {
     tiktok: 'TikTok',
-    reels: 'Instagram Reels',
+    reels:  'Instagram Reels',
     shorts: 'YouTube Shorts',
-    all: 'TikTok, Instagram Reels y YouTube Shorts'
+    all:    'TikTok, Instagram Reels y YouTube Shorts'
   };
   const platformName = platformNames[platform] || 'TikTok, Instagram Reels y YouTube Shorts';
+
+  const followerContextMap = {
+    new:   'La cuenta es NUEVA (0–1K seguidores). El algoritmo la testea con audiencia fría. El contenido debe enganchar a desconocidos en los primeros 2 segundos. NO hay base de fans que impulse el video. El score debe penalizar formatos que dependen de comunidad previa.',
+    small: 'La cuenta es PEQUEÑA (1K–10K seguidores). Hay una base mínima pero el crecimiento depende casi 100% de alcance orgánico frío. El algoritmo aún está calibrando el perfil. Formatos de nicho muy específico tienen más potencial que contenido genérico.',
+    mid:   'La cuenta es MEDIA (10K–100K seguidores). El algoritmo ya tiene un perfil claro de la audiencia. Las primeras 2 horas de engagement de seguidores existentes son críticas. Un video que no resuena con la audiencia actual será frenado aunque el hook sea bueno.',
+    large: 'La cuenta es GRANDE (100K–500K seguidores). ATENCIÓN CRÍTICA: cuentas grandes tienen mayor riesgo de bajo engagement relativo. Si el contenido cambia de estilo o nicho respecto a lo habitual, los seguidores no interactúan y el algoritmo frena la distribución. Penalizar cambios de formato respecto al estilo establecido.',
+    mega:  'La cuenta es MEGA (500K+ seguidores). El algoritmo distribuye primero a una muestra grande de seguidores. El engagement rate esperado es bajo (~0.5–2%). El contenido debe mantener coherencia total con el nicho establecido. Experimentar con formatos nuevos es de alto riesgo.',
+  };
+
+  const followerContext = followerContextMap[followerRange] || followerContextMap['new'];
 
   return `Eres REDXAX VISION — el sistema de análisis de contenido más preciso del mundo hispanohablante. No eres un chatbot amigable. Eres un algoritmo de predicción viral entrenado con millones de datos de TikTok, Reels e YouTube Shorts. Tu único trabajo es predecir con precisión matemática si un contenido va a retener o perder audiencia, y por qué.
 
 PLATAFORMA OBJETIVO: ${platformName}
 El creador va a publicar en ${platformName}. Calibrá TODO el análisis según las reglas, tendencias y comportamiento del algoritmo de ${platformName}.
+
+CONTEXTO DE LA CUENTA:
+${followerContext}
+Este contexto es OBLIGATORIO para calibrar el score final. Un video técnicamente bueno en una cuenta grande que cambió de nicho debe tener score más bajo que el mismo video en una cuenta nueva. El potencial viral NO es solo calidad del contenido — es calidad del contenido × contexto de la cuenta × momento del algoritmo.
 
 ═══════════════════════════════════════
 PROTOCOLO 0 — IDENTIFICACIÓN DE MODO
@@ -188,34 +210,40 @@ AJUSTES POST-CÁLCULO:
   - Sin razón para quedarse: -20pts automáticos
   - Hook es saludo o presentación: -15pts automáticos
   - Formato saturado o en declive en ${platformName}: -10pts
+  - Cuenta grande con cambio de nicho/formato detectado: -15pts automáticos
+  - Cuenta nueva con contenido que depende de comunidad previa: -10pts automáticos
 
-ESCALA:
-  90-100%: Potencial de hit. Estructura casi perfecta.
+ESCALA (calibrada según tamaño de cuenta):
+  Para cuentas nuevas/pequeñas: el score mide potencial de alcance frío.
+  Para cuentas medias/grandes: el score mide coherencia con audiencia existente + calidad técnica.
+
+  90-100%: Potencial de hit en ese contexto de cuenta.
   75-89%: Sólido. 1-2 ajustes al siguiente nivel.
   55-74%: Funcional pero predecible.
-  35-54%: Concepto con potencial, ejecución limitante.
-  0-34%: Requiere replanteamiento estructural.
+  35-54%: Concepto con potencial, ejecución o contexto limitante.
+  0-34%: Requiere replanteamiento estructural o de estrategia de cuenta.
 
 ═══════════════════════════════════════
 PROTOCOLO 3 — SCORES POR PLATAFORMA
 ═══════════════════════════════════════
-Calculá un score ESPECÍFICO para cada plataforma basado en:
+Calculá un score ESPECÍFICO para cada plataforma considerando también el tamaño de cuenta:
 - Compatibilidad del formato con el algoritmo de esa plataforma
 - Tendencias actuales del nicho en esa plataforma
 - Duración óptima para esa plataforma
 - Estilo de edición preferido por esa plataforma
+- Impacto del tamaño de cuenta en esa plataforma específica
 
 Para cada plataforma incluí:
 - score: número 0-100
 - verdict: diagnóstico en máximo 10 palabras
-- topTip: la acción más impactante específica para ESA plataforma
+- topTip: la acción más impactante específica para ESA plataforma considerando el tamaño de cuenta
 
 ═══════════════════════════════════════
 PSICOLOGÍA DEL FEEDBACK
 ═══════════════════════════════════════
 Sos un coach de alto rendimiento. Estructura obligatoria:
 1. Qué está funcionando
-2. Qué oportunidad de mejora existe
+2. Qué oportunidad de mejora existe considerando el tamaño de cuenta
 3. La acción concreta más impactante hoy
 
 PALABRAS PROHIBIDAS: malo, débil, aburrido, amateur, error, falla, problema, basura, mediocre
@@ -227,25 +255,25 @@ ESQUEMA JSON OBLIGATORIO
 Devolvé ÚNICAMENTE este JSON. Sin texto antes. Sin texto después. Sin bloques de código.
 
 {
-  "potentialScore": <número entero 0-100, score general>,
+  "potentialScore": <número entero 0-100, calibrado según plataforma Y tamaño de cuenta>,
   "performanceScenario": "<máximo 8 palabras: diagnóstico central>",
-  "honestVerdict": "<450-600 caracteres: qué funciona, qué oportunidad, por qué ese score>",
-  "trendContext": "<150-200 caracteres: qué tendencias encontraste en ${platformName} para este nicho ahora mismo>",
+  "honestVerdict": "<450-600 caracteres: qué funciona, qué oportunidad, por qué ese score considerando el contexto de cuenta>",
+  "trendContext": "<150-200 caracteres: tendencias detectadas en ${platformName} para este nicho ahora mismo>",
   "platformScores": {
     "tiktok": {
       "score": <número 0-100>,
       "verdict": "<diagnóstico en máximo 10 palabras>",
-      "topTip": "<acción concreta específica para TikTok>"
+      "topTip": "<acción concreta para TikTok con este tamaño de cuenta>"
     },
     "reels": {
       "score": <número 0-100>,
       "verdict": "<diagnóstico en máximo 10 palabras>",
-      "topTip": "<acción concreta específica para Instagram Reels>"
+      "topTip": "<acción concreta para Instagram Reels con este tamaño de cuenta>"
     },
     "shorts": {
       "score": <número 0-100>,
       "verdict": "<diagnóstico en máximo 10 palabras>",
-      "topTip": "<acción concreta específica para YouTube Shorts>"
+      "topTip": "<acción concreta para YouTube Shorts con este tamaño de cuenta>"
     }
   },
   "styleProfile": {
@@ -268,10 +296,10 @@ Devolvé ÚNICAMENTE este JSON. Sin texto antes. Sin texto después. Sin bloques
   "retentionCurve": [<exactamente 15 números enteros 0-100, decrecen de forma realista>],
   "weakestMoment": "<segundo exacto + causa + cómo evitarlo en 150-200 caracteres>",
   "roadmap": [
-    "<paso 1: mejora concreta — acción + razón>",
-    "<paso 2: mejora concreta — acción + razón>",
-    "<paso 3: mejora concreta — acción + razón>",
-    "<paso 4: técnica de tendencia 2025 adaptada a su voz>"
+    "<paso 1: mejora concreta considerando tamaño de cuenta — acción + razón>",
+    "<paso 2: mejora concreta considerando tamaño de cuenta — acción + razón>",
+    "<paso 3: mejora concreta considerando tamaño de cuenta — acción + razón>",
+    "<paso 4: técnica de tendencia 2025 adaptada a su voz y tamaño de cuenta>"
   ]
 }`;
 };
@@ -280,6 +308,7 @@ const App = () => {
   const [step, setStep] = useState('upload');
   const [analysisMode, setAnalysisMode] = useState('video');
   const [selectedPlatform, setSelectedPlatform] = useState(null);
+  const [selectedFollowerRange, setSelectedFollowerRange] = useState(null);
   const [pendingVideoUrl, setPendingVideoUrl] = useState(null);
   const [scriptText, setScriptText] = useState('');
   const [completedSteps, setCompletedSteps] = useState([]);
@@ -300,7 +329,6 @@ const App = () => {
   const [gemError, setGemError] = useState(null);
 
   const chatEndRef = useRef(null);
-
   const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   useEffect(() => {
@@ -441,7 +469,7 @@ const App = () => {
     }
   };
 
-  const runNeuralAnalysis = async (url, platform) => {
+  const runNeuralAnalysis = async (url, platform, followerRange) => {
     const duration = await new Promise((resolve) => {
       const v = document.createElement('video');
       v.src = url;
@@ -464,7 +492,7 @@ const App = () => {
 
       const { data, error } = await supabase.functions.invoke('gemini-proxy', {
         body: {
-          text: `${buildSystemInstructions(platform)}\n\nAnaliza estos frames del video.`,
+          text: `${buildSystemInstructions(platform, followerRange)}\n\nAnaliza estos frames del video.`,
           frames: base64Frames
         }
       });
@@ -491,7 +519,7 @@ const App = () => {
     }
   };
 
-  const runScriptAnalysis = async (platform) => {
+  const runScriptAnalysis = async (platform, followerRange) => {
     if (!scriptText.trim()) return;
     const approved = await deductGems(80, 'script');
     if (!approved) return;
@@ -504,7 +532,7 @@ const App = () => {
     try {
       const { data, error } = await supabase.functions.invoke('gemini-proxy', {
         body: {
-          text: `${buildSystemInstructions(platform)}\n\nAnaliza este concepto/guion: ${scriptText}`
+          text: `${buildSystemInstructions(platform, followerRange)}\n\nAnaliza este concepto/guion: ${scriptText}`
         }
       });
 
@@ -567,6 +595,7 @@ const App = () => {
       setCompletedSteps([...completedSteps, index]);
     }
   };
+
 
   const progressPercent = (userCount / 500) * 100;
 
