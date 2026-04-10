@@ -61,7 +61,7 @@ function extractGeminiText(data) {
 const GEM_PACKAGES = [
   { id: 'starter', gems: 500,  price: 0.01, label: 'Starter', analyses: '5 análisis',  perGem: '$0.00002/gema', popular: false },
   { id: 'pro',     gems: 2000, price: 4.99, label: 'Pro',     analyses: '20 análisis', perGem: '$0.002/gema',   popular: true  },
-  { id: 'elite',   gems: 6000, price: 9.99, label: 'Elite',   analyses: '60 análisis', perGem: '$0.001/gema',   popular: false },
+  { id: 'elite',   gems: 6000, price: 0.01, label: 'Elite',   analyses: '60 análisis', perGem: '$0.001/gema',   popular: false },
 ];
 
 function safeParseJSON(rawText, context = '') {
@@ -135,6 +135,26 @@ el conjunto — considerando que una fase crítica puede hundir todo el video au
 las demás estén bien.
 
 Sé honesto. Orientado siempre a que el creador pueda mejorar.
+
+FORMA DE HABLAR — MUY IMPORTANTE:
+Hablá como si le explicaras a alguien que recién empieza a crear contenido y nunca estudió
+edición ni marketing. Nada de términos técnicos sin explicar. Si usás una palabra técnica,
+explicá inmediatamente qué significa en una frase simple.
+
+Ejemplos de cómo NO hablar:
+❌ "El watch time del primer decil está por debajo del umbral de distribución algorítmica"
+❌ "La estructura PAS carece de loop abierto en el incipit"
+❌ "El CTR del thumbnail no está optimizado para el funnel de conversión"
+
+Ejemplos de cómo SÍ hablar:
+✅ "La gente deja de ver el video en los primeros 3 segundos porque no hay ninguna razón clara para quedarse"
+✅ "El inicio no genera curiosidad — es como abrir un libro y que la primera página sea el índice"
+✅ "TikTok deja de mostrarle tu video a gente nueva porque detecta que nadie lo termina de ver"
+
+La regla de oro: si un chico de 15 años que recién abre TikTok no entiende lo que escribís,
+reescribilo más simple. El análisis puede ser profundo y honesto sin ser complicado.
+
+Tu trabajo es ayudar al creador a maximizar el potencial de su contenido en ${platformNames[platform]}.
 
 Devolvé ÚNICAMENTE este JSON sin texto antes ni después:
 
