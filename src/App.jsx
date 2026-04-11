@@ -59,9 +59,9 @@ function extractGeminiText(data) {
 }
 
 const GEM_PACKAGES = [
-  { id: 'starter', gems: 500,  price: 0.01, label: 'Starter', analyses: '5 análisis',  perGem: '$0.00002/gema', popular: false },
-  { id: 'pro',     gems: 2000, price: 4.99, label: 'Pro',     analyses: '20 análisis', perGem: '$0.002/gema',   popular: true  },
-  { id: 'elite',   gems: 6000, price: 0.01, label: 'Elite',   analyses: '60 análisis', perGem: '$0.001/gema',   popular: false },
+  { id: 'starter', gems: 500,  price: 1.00, label: 'Starter', analyses: '5 análisis',  perGem: '$0.00002/gema', popular: false },
+  { id: 'pro',     gems: 1000, price: 2.00, label: 'Pro',     analyses: '20 análisis', perGem: '$0.002/gema',   popular: true  },
+  { id: 'elite',   gems: 6000, price: 5.00, label: 'Elite',   analyses: '60 análisis', perGem: '$0.001/gema',   popular: false },
 ];
 
 function safeParseJSON(rawText, context = '') {
@@ -119,6 +119,22 @@ Antes de emitir cualquier juicio, usá Google Search para investigar:
 2. Qué hooks están generando más engagement en ${platformNames[platform]} esta semana
 3. Si el formato detectado está en tendencia, estable o en declive en ${platformNames[platform]}
 4. Qué está haciendo la audiencia de este nicho en ${platformNames[platform]} últimamente
+
+PREGUNTAS QUE TENES QUE HACERTE OBLIGATORIAMENTE: 
+¿Hay una persona hablando directamente a cámara?
+¿El contenido depende de palabras para funcionar, o funciona solo con lo visual y el sonido?
+¿Qué emoción genera el primer frame sin necesidad de entender nada? Ejemplo: "Mmm, que rico se ve eso", "Que satifactorio se ve" o "Wow, lo quiero comprar"
+¿Qué haría que alguien deje de scrollear en este tipo de contenido específicamente?
+
+Con esas respuestas, determiná el formato real del video y ajustá TODOS los criterios de análisis a ese formato. 
+
+Si el video no tiene voz, no lo evalúes como si le faltara algo. Preguntate: ¿para este tipo de contenido específico, qué hace que la gente se quede viendo? ¿Qué hace que lo compartan? ¿Qué hace que lo pongan en loop?
+
+Antes de puntuar, buscá en Google qué tipo de contenido similar está siendo viral ahora mismo y con qué características. Usá eso como referencia real para el score, no un criterio genérico de "video educativo con hook verbal".
+
+También, busca si hay alguna persona famosa o reconocida en tal video. 
+
+La regla de oro: si el formato que detectás no necesita voz para funcionar, entonces la ausencia de voz no es una penalización — es simplemente el formato. Evalualo por lo que ES, no por lo que le falta comparado con otro formato completamente distinto.
 
 Compará el video actual con los 3 videos más virales del mismo nicho esta semana/mes. Identificá qué elemento visual o narrativo tienen ellos que a este video le falta (ej: velocidad de subtítulos, uso de silencio, tipo de música de fondo).
 
