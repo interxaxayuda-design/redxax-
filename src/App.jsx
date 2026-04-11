@@ -86,21 +86,6 @@ function safeParseJSON(rawText, context = '') {
   }
 }
 
-// Hook del efecto giroscopio
-const [tilt, setTilt] = useState({ x: 0, y: 0 });
-
-useEffect(() => {
-  const handleOrientation = (e) => {
-    // beta = inclinación adelante/atrás (-180 a 180)
-    // gamma = inclinación izquierda/derecha (-90 a 90)
-    const x = Math.min(Math.max(e.gamma / 90, -1), 1); // -1 a 1
-    const y = Math.min(Math.max(e.beta / 90, -1), 1);  // -1 a 1
-    setTilt({ x, y });
-  };
-
-  window.addEventListener('deviceorientation', handleOrientation);
-  return () => window.removeEventListener('deviceorientation', handleOrientation);
-}, []);
 
 const buildSystemInstructions = (platform, followerRange, mode = 'video') => {
   const platformNames = {
@@ -244,28 +229,15 @@ Devolvé ÚNICAMENTE este JSON sin texto antes ni después:
 }`;
 };
 
-const ShinyCard = ({ children, className = '' }) => {
-  const sheenX = ((tilt.x + 1) / 2) * 100; // 0% a 100%
-  const sheenY = ((tilt.y + 1) / 2) * 100;
-
+const ShinyCard = ({ children, className = '', tilt }) => {
+  const sheenX = (((tilt?.x ?? 0) + 1) / 2) * 100;
+  const sheenY = (((tilt?.y ?? 0) + 1) / 2) * 100;
   return (
-    <div
-      className={`relative overflow-hidden ${className}`}
-      style={{
-        '--sheen-x': `${sheenX}%`,
-        '--sheen-y': `${sheenY}%`,
-      }}
-    >
-      {/* Capa de reflejo */}
+    <div className={`relative overflow-hidden ${className}`}>
       <div
         className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] transition-all duration-75"
         style={{
-          background: `radial-gradient(
-            circle at var(--sheen-x) var(--sheen-y),
-            rgba(255,255,255,0.18) 0%,
-            rgba(255,255,255,0.06) 30%,
-            transparent 65%
-          )`,
+          background: `radial-gradient(circle at ${sheenX}% ${sheenY}%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 30%, transparent 65%)`,
           mixBlendMode: 'screen',
         }}
       />
@@ -297,6 +269,16 @@ const App = () => {
   const [gems, setGems] = useState(null);
   const [showGemStore, setShowGemStore] = useState(false);
   const [gemError, setGemError] = useState(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+useEffect(() => {
+  const handleOrientation = (e) => {
+    const x = Math.min(Math.max(e.gamma / 90, -1), 1);
+    const y = Math.min(Math.max(e.beta / 90, -1), 1);
+    setTilt({ x, y });
+  };
+  window.addEventListener('deviceorientation', handleOrientation);
+  return () => window.removeEventListener('deviceorientation', handleOrientation);
+}, []);
 
   const chatEndRef = useRef(null);
   const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
