@@ -86,6 +86,22 @@ function safeParseJSON(rawText, context = '') {
   }
 }
 
+// Hook del efecto giroscopio
+const [tilt, setTilt] = useState({ x: 0, y: 0 });
+
+useEffect(() => {
+  const handleOrientation = (e) => {
+    // beta = inclinación adelante/atrás (-180 a 180)
+    // gamma = inclinación izquierda/derecha (-90 a 90)
+    const x = Math.min(Math.max(e.gamma / 90, -1), 1); // -1 a 1
+    const y = Math.min(Math.max(e.beta / 90, -1), 1);  // -1 a 1
+    setTilt({ x, y });
+  };
+
+  window.addEventListener('deviceorientation', handleOrientation);
+  return () => window.removeEventListener('deviceorientation', handleOrientation);
+}, []);
+
 const buildSystemInstructions = (platform, followerRange, mode = 'video') => {
   const platformNames = {
     tiktok: 'TikTok', reels: 'Instagram Reels',
@@ -226,6 +242,36 @@ Devolvé ÚNICAMENTE este JSON sin texto antes ni después:
     "<mejora 4: técnica trending adaptada a su estilo>"
   ]
 }`;
+};
+
+const ShinyCard = ({ children, className = '' }) => {
+  const sheenX = ((tilt.x + 1) / 2) * 100; // 0% a 100%
+  const sheenY = ((tilt.y + 1) / 2) * 100;
+
+  return (
+    <div
+      className={`relative overflow-hidden ${className}`}
+      style={{
+        '--sheen-x': `${sheenX}%`,
+        '--sheen-y': `${sheenY}%`,
+      }}
+    >
+      {/* Capa de reflejo */}
+      <div
+        className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] transition-all duration-75"
+        style={{
+          background: `radial-gradient(
+            circle at var(--sheen-x) var(--sheen-y),
+            rgba(255,255,255,0.18) 0%,
+            rgba(255,255,255,0.06) 30%,
+            transparent 65%
+          )`,
+          mixBlendMode: 'screen',
+        }}
+      />
+      {children}
+    </div>
+  );
 };
 
 const App = () => {
@@ -798,261 +844,261 @@ const App = () => {
         )}
 
         {/* ── RESULTS ── */}
-        {step === 'results' && aiResult && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-right-10 duration-700">
-            <div className="lg:col-span-4 space-y-6">
+{step === 'results' && aiResult && (
+  <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-in slide-in-from-right-10 duration-700">
+    <div className="lg:col-span-4 space-y-6">
 
-              {/* Preview */}
-              {analysisMode === 'video' ? (
-                <div className="bg-[#111] rounded-[3.5rem] overflow-hidden border border-white/10 aspect-[9/16] relative shadow-2xl">
-                  {videoPreviewUrl && <video src={videoPreviewUrl} className="w-full h-full object-cover" controls autoPlay loop muted />}
+      {/* Preview */}
+      {analysisMode === 'video' ? (
+        <ShinyCard tilt={tilt} className="bg-[#111] rounded-[3.5rem] overflow-hidden border border-white/10 aspect-[9/16] relative shadow-2xl">
+          {videoPreviewUrl && <video src={videoPreviewUrl} className="w-full h-full object-cover" controls autoPlay loop muted />}
+        </ShinyCard>
+      ) : (
+        <ShinyCard tilt={tilt} className="bg-[#111] rounded-[3.5rem] p-10 border border-white/10 aspect-[9/16] relative shadow-2xl flex flex-col justify-center">
+          <div className="flex items-center gap-2 mb-4 text-indigo-400">
+            <FileText className="w-5 h-5" />
+            <span className="text-xs font-black uppercase tracking-widest">Guion Escaneado</span>
+          </div>
+          <p className="text-slate-300 italic text-sm font-medium leading-relaxed overflow-y-auto custom-scrollbar flex-1">"{scriptText}"</p>
+        </ShinyCard>
+      )}
+
+      {/* PHASE SCORES */}
+      <div className="space-y-3">
+        {/* Score general */}
+        <ShinyCard tilt={tilt} className="flex items-center justify-between bg-black/40 border border-white/10 rounded-[2rem] px-6 py-4">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1">Score General</p>
+            <p className="text-[10px] font-bold italic text-slate-400">{aiResult.performanceScenario}</p>
+          </div>
+          <span className={`text-5xl font-black italic tabular-nums ${aiResult.potentialScore >= 70 ? 'text-green-400' : aiResult.potentialScore >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
+            {aiResult.potentialScore}%
+          </span>
+        </ShinyCard>
+
+        {/* Tarjetas de fases */}
+        {aiResult.phaseScores && Object.values(aiResult.phaseScores).map((phase, i) => {
+          if (!phase) return null;
+          const isCritical = phase.score < 50;
+          return (
+            <ShinyCard key={i} tilt={tilt} className={`rounded-[2rem] border p-5 transition-all ${
+              isCritical
+                ? 'border-red-500/40 bg-red-500/[0.08]'
+                : phase.score >= 75
+                ? 'border-green-500/30 bg-green-500/5'
+                : 'border-white/10 bg-white/[0.02]'
+            }`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  {isCritical && (
+                    <span className="bg-red-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
+                      CRÍTICO
+                    </span>
+                  )}
+                  <p className={`text-xs font-black uppercase tracking-wider ${isCritical ? 'text-red-400' : 'text-slate-300'}`}>
+                    {phase.label}
+                  </p>
                 </div>
-              ) : (
-                <div className="bg-[#111] rounded-[3.5rem] p-10 border border-white/10 aspect-[9/16] relative shadow-2xl flex flex-col justify-center">
-                  <div className="flex items-center gap-2 mb-4 text-indigo-400">
-                    <FileText className="w-5 h-5" />
-                    <span className="text-xs font-black uppercase tracking-widest">Guion Escaneado</span>
-                  </div>
-                  <p className="text-slate-300 italic text-sm font-medium leading-relaxed overflow-y-auto custom-scrollbar flex-1">"{scriptText}"</p>
+                <span className={`text-2xl font-black italic tabular-nums ${
+                  isCritical ? 'text-red-400' : phase.score >= 75 ? 'text-green-400' : 'text-yellow-400'
+                }`}>
+                  {phase.score}%
+                </span>
+              </div>
+              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
+                <div
+                  className={`h-full rounded-full transition-all duration-700 ${
+                    isCritical ? 'bg-gradient-to-r from-red-600 to-red-400'
+                    : phase.score >= 75 ? 'bg-gradient-to-r from-green-500 to-emerald-400'
+                    : 'bg-gradient-to-r from-yellow-500 to-amber-400'
+                  }`}
+                  style={{ width: `${phase.score}%` }}
+                />
+              </div>
+              <p className={`text-xs font-bold italic ${isCritical ? 'text-red-300/80' : 'text-slate-400'}`}>
+                {phase.verdict}
+              </p>
+              {isCritical && phase.consequence && (
+                <div className="mt-3 flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-[1rem] p-3">
+                  <span className="text-red-400 text-xs mt-0.5">⚠</span>
+                  <p className="text-red-300 text-[11px] font-bold leading-relaxed">{phase.consequence}</p>
                 </div>
               )}
+            </ShinyCard>
+          );
+        })}
 
-              {/* PHASE SCORES */}
-              <div className="space-y-3">
-                {/* Score general */}
-                <div className="flex items-center justify-between bg-black/40 border border-white/10 rounded-[2rem] px-6 py-4">
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1">Score General</p>
-                    <p className="text-[10px] font-bold italic text-slate-400">{aiResult.performanceScenario}</p>
-                  </div>
-                  <span className={`text-5xl font-black italic tabular-nums ${aiResult.potentialScore >= 70 ? 'text-green-400' : aiResult.potentialScore >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
-                    {aiResult.potentialScore}%
-                  </span>
-                </div>
-
-                {/* Tarjetas de fases */}
-                {aiResult.phaseScores && Object.values(aiResult.phaseScores).map((phase, i) => {
-                  if (!phase) return null;
-                  const isCritical = phase.score < 50;
-                  return (
-                    <div key={i} className={`rounded-[2rem] border p-5 transition-all ${
-                      isCritical
-                        ? 'border-red-500/40 bg-red-500/[0.08]'
-                        : phase.score >= 75
-                        ? 'border-green-500/30 bg-green-500/5'
-                        : 'border-white/10 bg-white/[0.02]'
-                    }`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          {isCritical && (
-                            <span className="bg-red-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
-                              CRÍTICO
-                            </span>
-                          )}
-                          <p className={`text-xs font-black uppercase tracking-wider ${isCritical ? 'text-red-400' : 'text-slate-300'}`}>
-                            {phase.label}
-                          </p>
-                        </div>
-                        <span className={`text-2xl font-black italic tabular-nums ${
-                          isCritical ? 'text-red-400' : phase.score >= 75 ? 'text-green-400' : 'text-yellow-400'
-                        }`}>
-                          {phase.score}%
-                        </span>
-                      </div>
-                      <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
-                        <div
-                          className={`h-full rounded-full transition-all duration-700 ${
-                            isCritical ? 'bg-gradient-to-r from-red-600 to-red-400'
-                            : phase.score >= 75 ? 'bg-gradient-to-r from-green-500 to-emerald-400'
-                            : 'bg-gradient-to-r from-yellow-500 to-amber-400'
-                          }`}
-                          style={{ width: `${phase.score}%` }}
-                        />
-                      </div>
-                      <p className={`text-xs font-bold italic ${isCritical ? 'text-red-300/80' : 'text-slate-400'}`}>
-                        {phase.verdict}
-                      </p>
-                      {isCritical && phase.consequence && (
-                        <div className="mt-3 flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-[1rem] p-3">
-                          <span className="text-red-400 text-xs mt-0.5">⚠</span>
-                          <p className="text-red-300 text-[11px] font-bold leading-relaxed">{phase.consequence}</p>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-
-                {/* Trend context */}
-                {aiResult.trendContext && (
-                  <div className="bg-black/30 border border-white/5 rounded-[2rem] p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="w-3 h-3 text-green-400" />
-                      <p className="text-[9px] font-black uppercase tracking-[0.4em] text-green-400">Tendencias Detectadas</p>
-                    </div>
-                    <p className="text-xs font-bold italic leading-relaxed text-slate-400">"{aiResult.trendContext}"</p>
-                  </div>
-                )}
-
-                {/* Veredicto */}
-                <div className="bg-black/30 border border-white/5 rounded-[2rem] p-5">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Target className={`w-3 h-3 ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`} />
-                    <p className={`text-[9px] font-black uppercase tracking-[0.4em] ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`}>Veredicto</p>
-                  </div>
-                  <p className="text-xs font-bold italic leading-relaxed text-slate-300">"{aiResult.honestVerdict}"</p>
-                </div>
-              </div>
+        {/* Trend context */}
+        {aiResult.trendContext && (
+          <ShinyCard tilt={tilt} className="bg-black/30 border border-white/5 rounded-[2rem] p-5">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="w-3 h-3 text-green-400" />
+              <p className="text-[9px] font-black uppercase tracking-[0.4em] text-green-400">Tendencias Detectadas</p>
             </div>
+            <p className="text-xs font-bold italic leading-relaxed text-slate-400">"{aiResult.trendContext}"</p>
+          </ShinyCard>
+        )}
 
-            <div className="lg:col-span-8 space-y-6">
+        {/* Veredicto */}
+        <ShinyCard tilt={tilt} className="bg-black/30 border border-white/5 rounded-[2rem] p-5">
+          <div className="flex items-center gap-2 mb-2">
+            <Target className={`w-3 h-3 ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`} />
+            <p className={`text-[9px] font-black uppercase tracking-[0.4em] ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`}>Veredicto</p>
+          </div>
+          <p className="text-xs font-bold italic leading-relaxed text-slate-300">"{aiResult.honestVerdict}"</p>
+        </ShinyCard>
+      </div>
+    </div>
 
-              {/* PLATFORM SCORES */}
-              {aiResult.platformScores && (
-                <div className="bg-white/[0.02] border border-white/10 p-10 rounded-[4rem] space-y-6">
-                  <div className="flex items-center gap-4">
-                    <TrendingUp className="text-green-400" />
-                    <h3 className="text-2xl font-black italic uppercase tracking-tighter">Score por Plataforma</h3>
-                  </div>
-                  <div className="space-y-4">
-                    {[
-                      { key: 'tiktok',  label: 'TikTok',          emoji: '🎵' },
-                      { key: 'reels',   label: 'Instagram Reels',  emoji: '📸' },
-                      { key: 'shorts',  label: 'YouTube Shorts',   emoji: '▶️' },
-                    ].map(({ key, label, emoji }) => {
-                      const p = aiResult.platformScores[key];
-                      if (!p) return null;
-                      return (
-                        <div key={key} className="bg-black/30 rounded-[2rem] p-6 border border-white/5">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <span className="text-xl">{emoji}</span>
-                              <div>
-                                <p className="font-black italic text-white text-sm">{label}</p>
-                                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{p.verdict}</p>
-                              </div>
-                            </div>
-                            <span className={`text-2xl font-black italic tabular-nums ${platformColors[key]}`}>
-                              {p.score}%
-                            </span>
-                          </div>
-                          <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
-                            <div
-                              className={`h-full rounded-full transition-all duration-700 ${
-                                key === 'tiktok' ? 'bg-gradient-to-r from-pink-500 to-red-500' :
-                                key === 'reels'  ? 'bg-gradient-to-r from-purple-500 to-pink-500' :
-                                'bg-gradient-to-r from-red-500 to-orange-500'
-                              }`}
-                              style={{ width: `${p.score}%` }}
-                            />
-                          </div>
-                          <p className="text-slate-400 text-xs font-bold italic">💡 {p.topTip}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+    <div className="lg:col-span-8 space-y-6">
 
-              {/* VISIÓN */}
-              <div className="bg-white/[0.03] border border-white/5 p-10 rounded-[3.5rem] space-y-6">
-                <div className="flex items-center gap-4">
-                  <Compass className={analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'} />
-                  <h3 className="text-2xl font-black italic uppercase tracking-tighter">La Visión</h3>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-white/5 pt-6">
-                  <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Nicho</p><p className="text-sm font-bold italic text-white">{aiResult.vision.niche}</p></div>
-                  <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Tipo</p><p className="text-sm font-bold italic text-white">{aiResult.vision.type}</p></div>
-                  <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Público</p><p className="text-sm font-bold italic text-white">{aiResult.vision.audience}</p></div>
-                  <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Promesa</p><p className="text-sm font-bold italic text-white">{aiResult.vision.promise}</p></div>
-                </div>
-              </div>
-
-              {/* RETENCIÓN */}
-              <div className="bg-white/[0.02] border border-white/10 p-10 rounded-[4rem]">
-                <div className="flex items-center justify-between mb-10">
-                  <div className="flex items-center gap-4">
-                    <BarChart3 className={analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'} />
-                    <h3 className="text-xl font-black italic uppercase tracking-tight">Proyección de Retención</h3>
-                  </div>
-                  <div className="grid grid-cols-3 gap-8">
-                    <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">3s</p><p className="text-xl font-black italic">{aiResult.retentionData.at3s}</p></div>
-                    <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">10s</p><p className="text-xl font-black italic">{aiResult.retentionData.at10s}</p></div>
-                    <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">Final</p><p className="text-xl font-black italic">{aiResult.retentionData.final}</p></div>
-                  </div>
-                </div>
-                <div className="relative h-48 w-full flex items-end gap-1 px-2 border-b border-white/5">
-                  {(aiResult.retentionCurve || []).map((val, i) => (
-                    <div key={i} className="flex-1 group relative flex flex-col items-center justify-end h-full">
-                      <div
-                        className={`w-full rounded-t-lg transition-all duration-700 ${val < 40 ? 'bg-red-500/30 border-red-500/40' : (analysisMode === 'video' ? 'bg-purple-600/30 border-purple-600/40' : 'bg-indigo-600/30 border-indigo-600/40')} border-x border-t`}
-                        style={{ height: `${val}%` }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* HOJA DE RUTA */}
-              <div className="bg-white/[0.02] border border-white/5 p-10 rounded-[3.5rem] space-y-8">
-                <div className="flex items-center gap-4">
-                  <CheckCircle className="text-green-500" />
-                  <h3 className="text-2xl font-black italic uppercase tracking-tighter">Hoja de Ruta</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(aiResult.roadmap || []).map((step, i) => {
-                    const isCompleted = completedSteps.includes(i);
-                    return (
-                      <div key={i} onClick={() => toggleStep(i)}
-                        className={`flex items-center gap-6 p-6 rounded-[2.5rem] transition-all cursor-pointer border ${isCompleted ? 'bg-green-500/10 border-green-500/30 opacity-50' : 'bg-black/40 border-white/5 hover:border-purple-500/30'}`}>
-                        <div className={`shrink-0 transition-colors ${isCompleted ? 'text-green-400' : 'text-slate-600'}`}>
-                          {isCompleted ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6" />}
-                        </div>
-                        <p className={`font-bold italic text-sm transition-all ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-300'}`}>{step}</p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* CHAT */}
-              {!showChat ? (
-                <button onClick={() => setShowChat(true)} className="w-full flex items-center justify-center gap-3 p-8 bg-zinc-600/10 hover:bg-zinc-600/20 border border-white/10 rounded-[3rem] text-slate-400 font-black italic uppercase tracking-tighter transition-all">
-                  <MessageSquare className="w-5 h-5" /> Consultoría Técnica de Visión
-                </button>
-              ) : (
-                <div className="bg-[#0a0a0c] border border-white/10 rounded-[3.5rem] overflow-hidden flex flex-col h-[550px] shadow-2xl animate-in slide-in-from-bottom-10">
-                  <div className="p-6 border-b border-white/10 flex justify-between items-center bg-zinc-900/50">
+      {/* PLATFORM SCORES */}
+      {aiResult.platformScores && (
+        <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/10 p-10 rounded-[4rem] space-y-6">
+          <div className="flex items-center gap-4">
+            <TrendingUp className="text-green-400" />
+            <h3 className="text-2xl font-black italic uppercase tracking-tighter">Score por Plataforma</h3>
+          </div>
+          <div className="space-y-4">
+            {[
+              { key: 'tiktok',  label: 'TikTok',          emoji: '🎵' },
+              { key: 'reels',   label: 'Instagram Reels',  emoji: '📸' },
+              { key: 'shorts',  label: 'YouTube Shorts',   emoji: '▶️' },
+            ].map(({ key, label, emoji }) => {
+              const p = aiResult.platformScores[key];
+              if (!p) return null;
+              return (
+                <div key={key} className="bg-black/30 rounded-[2rem] p-6 border border-white/5">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">
-                      <div className="bg-zinc-800 p-2 rounded-xl border border-white/10"><Bot className="w-4 h-4 text-white" /></div>
-                      <h3 className="font-black italic uppercase tracking-tighter text-sm text-zinc-400">Analista Vision REDxax</h3>
-                    </div>
-                    <button onClick={() => setShowChat(false)} className="hover:bg-white/10 p-2 rounded-full transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
-                  </div>
-                  <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-                    {chatMessages.map((msg, i) => (
-                      <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                        <div className={`max-w-[85%] p-5 rounded-[2rem] ${msg.role === 'user' ? 'bg-white text-black rounded-br-none' : 'bg-white/5 border border-white/10 text-slate-300 rounded-bl-none'}`}>
-                          <p className="text-sm font-bold italic leading-relaxed">{msg.text}</p>
-                        </div>
+                      <span className="text-xl">{emoji}</span>
+                      <div>
+                        <p className="font-black italic text-white text-sm">{label}</p>
+                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{p.verdict}</p>
                       </div>
-                    ))}
-                    {isTyping && <div className="text-[10px] text-zinc-500 animate-pulse font-black uppercase ml-2 italic tracking-widest">Calculando respuesta técnica...</div>}
-                    <div ref={chatEndRef} />
-                  </div>
-                  <div className="p-6 bg-black/50 border-t border-white/10">
-                    <div className="bg-white/5 rounded-full p-2 flex items-center gap-2 px-6">
-                      <input type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                        placeholder="Escribe tu consulta..."
-                        className="bg-transparent border-none outline-none flex-1 text-sm text-white py-2 italic" />
-                      <button onClick={sendMessage} className="bg-zinc-700 hover:bg-zinc-600 p-3 rounded-full transition-all active:scale-90"><Send className="w-4 h-4" /></button>
                     </div>
+                    <span className={`text-2xl font-black italic tabular-nums ${platformColors[key]}`}>
+                      {p.score}%
+                    </span>
                   </div>
+                  <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
+                    <div
+                      className={`h-full rounded-full transition-all duration-700 ${
+                        key === 'tiktok' ? 'bg-gradient-to-r from-pink-500 to-red-500' :
+                        key === 'reels'  ? 'bg-gradient-to-r from-purple-500 to-pink-500' :
+                        'bg-gradient-to-r from-red-500 to-orange-500'
+                      }`}
+                      style={{ width: `${p.score}%` }}
+                    />
+                  </div>
+                  <p className="text-slate-400 text-xs font-bold italic">💡 {p.topTip}</p>
                 </div>
-              )}
+              );
+            })}
+          </div>
+        </ShinyCard>
+      )}
+
+      {/* VISIÓN */}
+      <ShinyCard tilt={tilt} className="bg-white/[0.03] border border-white/5 p-10 rounded-[3.5rem] space-y-6">
+        <div className="flex items-center gap-4">
+          <Compass className={analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'} />
+          <h3 className="text-2xl font-black italic uppercase tracking-tighter">La Visión</h3>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-white/5 pt-6">
+          <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Nicho</p><p className="text-sm font-bold italic text-white">{aiResult.vision.niche}</p></div>
+          <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Tipo</p><p className="text-sm font-bold italic text-white">{aiResult.vision.type}</p></div>
+          <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Público</p><p className="text-sm font-bold italic text-white">{aiResult.vision.audience}</p></div>
+          <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Promesa</p><p className="text-sm font-bold italic text-white">{aiResult.vision.promise}</p></div>
+        </div>
+      </ShinyCard>
+
+      {/* RETENCIÓN */}
+      <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/10 p-10 rounded-[4rem]">
+        <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center gap-4">
+            <BarChart3 className={analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'} />
+            <h3 className="text-xl font-black italic uppercase tracking-tight">Proyección de Retención</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-8">
+            <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">3s</p><p className="text-xl font-black italic">{aiResult.retentionData.at3s}</p></div>
+            <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">10s</p><p className="text-xl font-black italic">{aiResult.retentionData.at10s}</p></div>
+            <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">Final</p><p className="text-xl font-black italic">{aiResult.retentionData.final}</p></div>
+          </div>
+        </div>
+        <div className="relative h-48 w-full flex items-end gap-1 px-2 border-b border-white/5">
+          {(aiResult.retentionCurve || []).map((val, i) => (
+            <div key={i} className="flex-1 group relative flex flex-col items-center justify-end h-full">
+              <div
+                className={`w-full rounded-t-lg transition-all duration-700 ${val < 40 ? 'bg-red-500/30 border-red-500/40' : (analysisMode === 'video' ? 'bg-purple-600/30 border-purple-600/40' : 'bg-indigo-600/30 border-indigo-600/40')} border-x border-t`}
+                style={{ height: `${val}%` }}
+              />
+            </div>
+          ))}
+        </div>
+      </ShinyCard>
+
+      {/* HOJA DE RUTA */}
+      <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/5 p-10 rounded-[3.5rem] space-y-8">
+        <div className="flex items-center gap-4">
+          <CheckCircle className="text-green-500" />
+          <h3 className="text-2xl font-black italic uppercase tracking-tighter">Hoja de Ruta</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {(aiResult.roadmap || []).map((step, i) => {
+            const isCompleted = completedSteps.includes(i);
+            return (
+              <div key={i} onClick={() => toggleStep(i)}
+                className={`flex items-center gap-6 p-6 rounded-[2.5rem] transition-all cursor-pointer border ${isCompleted ? 'bg-green-500/10 border-green-500/30 opacity-50' : 'bg-black/40 border-white/5 hover:border-purple-500/30'}`}>
+                <div className={`shrink-0 transition-colors ${isCompleted ? 'text-green-400' : 'text-slate-600'}`}>
+                  {isCompleted ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6" />}
+                </div>
+                <p className={`font-bold italic text-sm transition-all ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-300'}`}>{step}</p>
+              </div>
+            );
+          })}
+        </div>
+      </ShinyCard>
+
+      {/* CHAT */}
+      {!showChat ? (
+        <button onClick={() => setShowChat(true)} className="w-full flex items-center justify-center gap-3 p-8 bg-zinc-600/10 hover:bg-zinc-600/20 border border-white/10 rounded-[3rem] text-slate-400 font-black italic uppercase tracking-tighter transition-all">
+          <MessageSquare className="w-5 h-5" /> Consultoría Técnica de Visión
+        </button>
+      ) : (
+        <div className="bg-[#0a0a0c] border border-white/10 rounded-[3.5rem] overflow-hidden flex flex-col h-[550px] shadow-2xl animate-in slide-in-from-bottom-10">
+          <div className="p-6 border-b border-white/10 flex justify-between items-center bg-zinc-900/50">
+            <div className="flex items-center gap-3">
+              <div className="bg-zinc-800 p-2 rounded-xl border border-white/10"><Bot className="w-4 h-4 text-white" /></div>
+              <h3 className="font-black italic uppercase tracking-tighter text-sm text-zinc-400">Analista Vision REDxax</h3>
+            </div>
+            <button onClick={() => setShowChat(false)} className="hover:bg-white/10 p-2 rounded-full transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+            {chatMessages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-[85%] p-5 rounded-[2rem] ${msg.role === 'user' ? 'bg-white text-black rounded-br-none' : 'bg-white/5 border border-white/10 text-slate-300 rounded-bl-none'}`}>
+                  <p className="text-sm font-bold italic leading-relaxed">{msg.text}</p>
+                </div>
+              </div>
+            ))}
+            {isTyping && <div className="text-[10px] text-zinc-500 animate-pulse font-black uppercase ml-2 italic tracking-widest">Calculando respuesta técnica...</div>}
+            <div ref={chatEndRef} />
+          </div>
+          <div className="p-6 bg-black/50 border-t border-white/10">
+            <div className="bg-white/5 rounded-full p-2 flex items-center gap-2 px-6">
+              <input type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                placeholder="Escribe tu consulta..."
+                className="bg-transparent border-none outline-none flex-1 text-sm text-white py-2 italic" />
+              <button onClick={sendMessage} className="bg-zinc-700 hover:bg-zinc-600 p-3 rounded-full transition-all active:scale-90"><Send className="w-4 h-4" /></button>
             </div>
           </div>
-        )}
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
         {/* HISTORIAL */}
         {history.length > 0 && step === 'upload' && (
