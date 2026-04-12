@@ -248,16 +248,25 @@ Devolvé ÚNICAMENTE este JSON sin texto antes ni después:
 const ShinyCard = ({ children, className = '', tilt }) => {
   const sheenX = (((tilt?.x ?? 0) + 1) / 2) * 100;
   const sheenY = (((tilt?.y ?? 0) + 1) / 2) * 100;
+
   return (
-    <div className={`relative overflow-hidden ${className}`}>
+    <div className="relative" style={{ borderRadius: 'inherit' }}>
+      {/* Capa del borde con reflejo */}
       <div
-        className="pointer-events-none absolute inset-0 z-10 rounded-[inherit] transition-all duration-75"
+        className="pointer-events-none absolute inset-0 z-10 transition-all duration-75"
         style={{
-          background: `radial-gradient(circle at ${sheenX}% ${sheenY}%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 30%, transparent 65%)`,
-          mixBlendMode: 'screen',
+          borderRadius: 'inherit',
+          padding: '1px',
+          background: `radial-gradient(circle at ${sheenX}% ${sheenY}%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 40%, transparent 70%)`,
+          WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+          WebkitMaskComposite: 'xor',
+          maskComposite: 'exclude',
         }}
       />
-      {children}
+      {/* Contenido normal sin overlay encima */}
+      <div className={className}>
+        {children}
+      </div>
     </div>
   );
 };
