@@ -395,7 +395,7 @@ useEffect(() => {
         resolve(frames);
       };
     });
-  };
+  };  //Potencial Real
 
   const handleBuyGems = async (pkg) => {
     const userId = localStorage.getItem('redxax_user_id');
@@ -709,45 +709,46 @@ useEffect(() => {
       <main className="relative z-10 max-w-6xl mx-auto p-4 py-12">
 
         {/* ── UPLOAD ── */}
-        {step === 'upload' && (
-          <div className="text-center space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-700">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-                <Microscope className="w-3 h-3" /> Precisión 500% — Analista Neutro
-              </div>
-              <h2 className="text-7xl md:text-9xl font-black italic tracking-tighter leading-none uppercase">
-                POTENCIAL <br/><span className="bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent">REAL.</span>
-              </h2>
-              <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
-                Sin juicios. Sin amabilidad. Solo la verdad técnica <br/>sobre tu probabilidad de éxito.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto px-4">
-              <div onClick={() => setStep('script_input')}
-                className="group relative block border-2 border-dashed border-white/10 hover:border-indigo-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
-                <FileText className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-indigo-400 group-hover:scale-110 transition-all duration-500" />
-                <p className="text-3xl font-black italic tracking-tighter uppercase">Validar Guion</p>
-                <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 0: Estructura y Texto</p>
-              </div>
-              <label className="group relative block border-2 border-dashed border-white/10 hover:border-purple-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
-                <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-purple-400 group-hover:scale-110 transition-all duration-500" />
-                <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
-                <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Edición y Ritmo</p>
-                <input type="file" className="hidden" accept="video/*" onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    const url = URL.createObjectURL(file);
-                    setVideoPreviewUrl(url);
-                    setPendingVideoUrl(url);
-                    setAnalysisMode('video');
-                    setStep('platform_select');
-                  }
-                }} />
-              </label>
-            </div>
-          </div>
-        )}
-
+{step === 'upload' && (
+  <div className="text-center space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-700">
+    <div className="space-y-4">
+      <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
+        <Microscope className="w-3 h-3" /> Precisión 500% — Analista Neutro
+      </div>
+      <h2 className="text-7xl md:text-9xl font-black italic tracking-tighter leading-none uppercase">
+        ¿TU VIDEO<br/>
+        <span className="bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent">VA A VIRAL?</span>
+      </h2>
+      <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
+        La IA analiza tu video y te dice exactamente<br/>
+        <span className="text-slate-500">qué está funcionando y qué te está frenando.</span>
+      </p>
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto px-4">
+      <div onClick={() => setStep('script_input')}
+        className="group relative block border-2 border-dashed border-white/10 hover:border-indigo-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
+        <FileText className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-indigo-400 group-hover:scale-110 transition-all duration-500" />
+        <p className="text-3xl font-black italic tracking-tighter uppercase">Validar Guion</p>
+        <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 0: Estructura y Texto</p>
+      </div>
+      <label className="group relative block border-2 border-dashed border-white/10 hover:border-purple-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
+        <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-purple-400 group-hover:scale-110 transition-all duration-500" />
+        <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
+        <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Edición y Ritmo</p>
+        <input type="file" className="hidden" accept="video/*" onChange={(e) => {
+          const file = e.target.files[0];
+          if (file) {
+            const url = URL.createObjectURL(file);
+            setVideoPreviewUrl(url);
+            setPendingVideoUrl(url);
+            setAnalysisMode('video');
+            setStep('platform_select');
+          }
+        }} />
+      </label>
+    </div>
+  </div>
+)}
         {/* ── SELECCIÓN DE PLATAFORMA ── */}
         {step === 'platform_select' && (
           <div className="max-w-2xl mx-auto animate-in slide-in-from-bottom-10 duration-500">
@@ -1134,7 +1135,7 @@ useEffect(() => {
                   <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">
                     {new Date(item.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
                   </span>
-                </button>
+                </button>  //{/* ── UPLOAD ── */}
               ))}
             </div>
           </div>
