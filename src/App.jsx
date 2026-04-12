@@ -250,8 +250,8 @@ const ShinyCard = ({ children, className = '', tilt }) => {
   const sheenY = (((tilt?.y ?? 0) + 1) / 2) * 100;
 
   return (
-    <div className="relative" style={{ borderRadius: 'inherit' }}>
-      {/* Capa del borde con reflejo */}
+    <div className={`relative ${className}`}>
+      {/* Borde con reflejo — sigue exactamente la forma de la tarjeta */}
       <div
         className="pointer-events-none absolute inset-0 z-10 transition-all duration-75"
         style={{
@@ -263,10 +263,7 @@ const ShinyCard = ({ children, className = '', tilt }) => {
           maskComposite: 'exclude',
         }}
       />
-      {/* Contenido normal sin overlay encima */}
-      <div className={className}>
-        {children}
-      </div>
+      {children}
     </div>
   );
 };
