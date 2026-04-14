@@ -149,15 +149,37 @@ Compará el video actual con los 3 videos más virales del mismo nicho esta sema
 No adivines. Si no buscás primero, tu análisis no tiene base real.
 Usá lo que encontrás para fundamentar cada parte del análisis.
 
-BÚSQUEDA DE MÚSICA VIRAL — OBLIGATORIO:
-Después de detectar el nicho, el tono y el mood del video, buscá en Google:
-1. "música trending ${platformNames[platform]} [género/mood detectado] ${new Date().getFullYear()}"
-2. "canciones virales [nicho detectado] ${platformNames[platform]} este mes"
-3. "sounds trending [mood detectado] ${platformNames[platform]}"
+BÚSQUEDA DE MÚSICA VIRAL — PROCESO EN 3 PASOS OBLIGATORIOS:
 
-Identificá 3 canciones o sonidos que estén siendo usados en videos similares AHORA MISMO.
-El mood de la música debe coincidir con el del video — si el video es de terror, buscá música de terror viral. Si es satisfactorio, buscá música hipnótica o lo-fi viral. Si es humor, buscá sonidos cómicos trending.
-No inventes canciones. Si no encontrás resultados concretos para una plataforma específica, indicalo en el campo available.
+PASO 1 — DETECTÁ EL MOOD EXACTO DEL VIDEO:
+Antes de buscar cualquier música, describí internamente con precisión el mood del video.
+No uses palabras genéricas como "alegre" o "tranquilo".
+Usá descripciones específicas como:
+- "tensión creciente con resolución satisfactoria"
+- "humor absurdo y caótico"
+- "melancolía nostálgica con ritmo lento"
+- "adrenalina pura sin pausa"
+- "hipnótico y repetitivo que invita al loop"
+- "terror psicológico con silencios estratégicos"
+Ese mood exacto es el que vas a usar para buscar.
+
+PASO 2 — BUSCÁ CON QUERIES ESPECÍFICOS:
+Ejecutá estas 4 búsquedas en Google con el mood y nicho que detectaste:
+1. "trending sounds [mood exacto] ${platformNames[platform]} [mes y año actual]"
+2. "viral music [nicho detectado] [mood exacto] ${platformNames[platform]} ${new Date().toLocaleString('es', {month: 'long'})} ${new Date().getFullYear()}"
+3. "[mood exacto] background music viral TikTok Reels ${new Date().getFullYear()}"
+4. "most used sounds [nicho detectado] ${platformNames[platform]} right now"
+
+PASO 3 — FILTRÁ CON ESTOS CRITERIOS ANTES DE SUGERIR:
+Solo incluí una canción si cumple TODOS estos requisitos:
+✓ Está siendo usada en videos del mismo nicho AHORA MISMO (no hace 6 meses)
+✓ El BPM y la energía de la canción coinciden con el ritmo visual del video
+✓ El mood emocional de la canción refuerza lo que el video ya genera, no lo contradice
+✓ Está disponible en ${platformNames[platform]} como sonido usable (no solo como referencia)
+
+Si una canción no cumple los 4 criterios, no la incluyas. Es mejor sugerir 1 canción precisa que 3 genéricas.
+Si no encontrás resultados concretos y verificables, poné "No encontrado" en el campo title y explicá por qué en "why".
+NUNCA inventes nombres de canciones ni artistas.
 
 ANÁLISIS POR FASES:
 ${phaseInstructions}
