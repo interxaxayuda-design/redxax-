@@ -590,7 +590,23 @@ useEffect(() => {
     setUserInput("");
     setIsTyping(true);
     try {
-      const promptPersonalizado = `CONTEXTO INTERNO: Eres el Consultor REDxax. El video analizado tiene un ${aiResult?.potentialScore}% de potencial. Datos: ${JSON.stringify(aiResult)}. Responde breve y brutalmente honesto.`;
+      // ✅ Incluí musicSuggestions y todo el análisis como contexto explícito
+      const musicContext = aiResult?.musicSuggestions?.length
+        ? `\n\nMÚSICA YA INVESTIGADA PARA ESTE VIDEO:\n${aiResult.musicSuggestions.map((m, i) =>
+            `${i + 1}. "${m.title}" de ${m.artist} — ${m.why} (disponible en: ${m.available})`
+          ).join('\n')}`
+        : '';
+
+      const promptPersonalizado = `CONTEXTO INTERNO: Eres el Consultor REDxax VISION. El video analizado tiene un ${aiResult?.potentialScore}% de potencial viral.
+
+ANÁLISIS COMPLETO: ${JSON.stringify(aiResult)}
+${musicContext}
+
+REGLAS:
+- Si el usuario pregunta sobre música, usá EXACTAMENTE las canciones del contexto de arriba. No inventes otras.
+- Respondé siempre breve, directo y brutalmente honesto.
+- Hablá como si le explicaras a alguien que recién empieza a crear contenido.`;
+
       const { data, error } = await supabase.functions.invoke('gemini-proxy', {
         body: { text: `${promptPersonalizado}\n\nUsuario dice: ${userInput}` }
       });
@@ -604,14 +620,6 @@ useEffect(() => {
       setChatMessages([...newMessages, { role: 'bot', text: "Error de conexión." }]);
     } finally {
       setIsTyping(false);
-    }
-  };
-
-  const toggleStep = (index) => {
-    if (completedSteps.includes(index)) {
-      setCompletedSteps(completedSteps.filter(i => i !== index));
-    } else {
-      setCompletedSteps([...completedSteps, index]);
     }
   };
 
