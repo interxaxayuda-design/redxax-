@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js'; //phaseScores
 
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso';
@@ -88,206 +88,104 @@ function safeParseJSON(rawText, context = '') {
 
 
 const buildSystemInstructions = (platform, followerRange, mode = 'video') => {
+  // 1. CONSTANTES DE APOYO (Definidas antes de usarse)
   const platformNames = {
-    tiktok: 'TikTok', reels: 'Instagram Reels',
-    shorts: 'YouTube Shorts', all: 'TikTok, Instagram Reels y YouTube Shorts'
+    tiktok: 'TikTok', 
+    reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts', 
+    all: 'TikTok, Instagram Reels y YouTube Shorts'
   };
+
   const followerLabels = {
-    new: '0–1K seguidores', small: '1K–10K', mid: '10K–100K',
-    large: '100K–500K', mega: '500K+'
+    new: '0–1K seguidores', 
+    small: '1K–10K', 
+    mid: '10K–100K',
+    large: '100K–500K', 
+    mega: '500K+'
   };
 
+  // 2. LÓGICA DE PRECISIÓN MUSICAL
+  const musicLogic = `
+BÚSQUEDA DE MÚSICA VIRAL — PROTOCOLO DE PRECISIÓN QUIRÚRGICA:
+
+PASO 1 — EXTRACCIÓN DE ADN AUDITIVO:
+Antes de buscar, definí estas 3 etiquetas obligatorias:
+1. GÉNERO DEL VIDEO: (Terror, Humor, Educativo, Gaming, Estético, etc.)
+2. INTENSIDAD: (Baja: relajante | Media: constante | Alta: frenética)
+3. TONALIDAD: (Menor: triste/tenso | Mayor: alegre/épico)
+
+PASO 2 — BÚSQUEDA CRUZADA (GOOGLE SEARCH):
+Realizá búsquedas combinando el nicho y el ADN. Ejemplo de queries que DEBES usar:
+- "best viral music for [GÉNERO DEL VIDEO] videos on ${platformNames[platform]} 2026"
+- "trending [INTENSIDAD] bpm background music for [nicho] ${platformNames[platform]}"
+- "what songs are creators using for [GÉNERO DEL VIDEO] right now"
+
+PASO 3 — FILTRO DE COMPATIBILIDAD:
+Prohibido sugerir una canción si su ritmo no coincide con el "Ritmo detectado" del video.
+Si el video es de TERROR, buscá específicamente "Dark Ambient" o "Tension cinematic". 
+Si es de HUMOR, buscá "Silly Jazz" o "Upbeat Lo-fi".`;
+
+  // 3. INSTRUCCIONES DE FASES
   const phaseInstructions = mode === 'video'
-    ? `Antes de evaluar las fases, determiná el formato real del video observando los frames:
-¿Hay una persona hablando? ¿El contenido funciona sin sonido? ¿Qué emoción genera el primer frame?
-¿Qué haría que alguien deje de scrollear en este tipo de contenido específicamente?
+    ? `Analizá estas 4 fases adaptadas al formato visual:
+- FASE 1 — Hook: ¿El primer frame detiene el scroll?
+- FASE 2 — Estructura: ¿Hay un arco o recompensa final?
+- FASE 3 — Edición (Ritmo & Energía): ¿Los cortes coinciden con la energía del video? REGLA CRÍTICA: La clave "edicion" debe estar siempre en el JSON.
+- FASE 4 — Autenticidad: ¿Se siente genuino dentro de su nicho?`
+    : `Analizá estas 3 fases para el guion:
+- FASE 1 — Hook: ¿El texto atrapa en 3 segundos?
+- FASE 2 — Estructura: ¿La narrativa mantiene el interés?
+- FASE 3 — Credibilidad: ¿El lenguaje suena a experto?`;
 
-Con esa detección, adaptá las 4 fases a ese formato. Las preguntas de cada fase cambian según lo que veas:
-
-- FASE 1 — Primer impacto: ¿El primer frame detiene el scroll? No importa cómo lo logra — puede ser visual, sonoro, curioso, apetitoso, hipnótico, sorprendente. ¿Hay razón para quedarse?
-- FASE 2 — Estructura: ¿El contenido tiene un arco? ¿Hay un momento cumbre, una resolución, algo que recompensa al que se queda hasta el final? ¿O podría cortarse en cualquier segundo sin que nadie lo note?
-- FASE 3 — Ritmo y energía: ¿El ritmo es el correcto para este tipo de contenido? Un video hipnótico necesita ritmo pausado. Uno de acción necesita energía. ¿El ritmo sirve al propósito del video o lo contradice?
-- FASE 4 — Autenticidad y nicho: ¿Este video se siente genuino dentro de su nicho? ¿Tiene algo que lo diferencia de los mil videos iguales que ya existen? ¿O es genérico?
-
-REGLA CRÍTICA DE PUNTUACIÓN:
-Evaluá cada fase según lo que el formato NECESITA, no según un estándar genérico.
-Un video sin voz no necesita hook verbal — necesita un primer frame irresistible.
-Un video hipnótico no necesita cuts rápidos — necesita ritmo sostenido.
-Un video de proceso no necesita prueba social — necesita que el resultado final sea deseable.
-Si penalizás algo que el formato no necesita, tu análisis está mal.`
-    : `Evaluá estas 3 fases de forma INDEPENDIENTE (es un guion, no hay edición):
-- FASE 1 — Hook & Primeros 3s: ¿El primer enunciado detiene el scroll? ¿Genera curiosidad inmediata?
-- FASE 2 — Estructura & Narrativa: ¿Hay loop abierto? ¿La estructura lleva al espectador de principio a fin con intención?
-- FASE 3 — Credibilidad & Nicho: ¿El lenguaje demuestra autoridad? ¿Hay especificidad o es genérico?`;
-
+  // 4. EL PROMPT FINAL (Un solo return con todo integrado)
   return `Sos REDXAX VISION, un analista experto en contenido viral para redes sociales.
-
-Tu trabajo es ayudar al creador a maximizar el potencial de su contenido en ${platformNames[platform]}.
+Tu trabajo es ayudar al creador a maximizar el potencial en ${platformNames[platform]}.
 La cuenta tiene ${followerLabels[followerRange]}.
 
-PASO OBLIGATORIO ANTES DE ANALIZAR — INVESTIGACIÓN EN TIEMPO REAL:
-Antes de emitir cualquier juicio, usá Google Search para investigar:
-1. Qué tipo de contenido está siendo viral en ${platformNames[platform]} ahora mismo en este nicho
-2. Qué hooks están generando más engagement en ${platformNames[platform]} esta semana
-3. Si el formato detectado está en tendencia, estable o en declive en ${platformNames[platform]}
-4. Qué está haciendo la audiencia de este nicho en ${platformNames[platform]} últimamente
+${musicLogic}
 
-PREGUNTAS QUE TENES QUE HACERTE OBLIGATORIAMENTE:
-¿Hay una persona hablando directamente a cámara?
-¿El contenido depende de palabras para funcionar, o funciona solo con lo visual y el sonido?
-¿Qué emoción genera el primer frame sin necesidad de entender nada?
-¿Qué haría que alguien deje de scrollear en este tipo de contenido específicamente?
+PASO OBLIGATORIO — INVESTIGACIÓN EN TIEMPO REAL:
+Antes de analizar, buscá en Google qué es viral hoy en el nicho de este video en ${platformNames[platform]}. 
+Compará el video con los 3 más virales del mes. No adivines.
 
-Con esas respuestas, determiná el formato real del video y ajustá TODOS los criterios de análisis a ese formato.
-
-Si el video no tiene voz, no lo evalúes como si le faltara algo. Preguntate: ¿para este tipo de contenido específico, qué hace que la gente se quede viendo? ¿Qué hace que lo compartan? ¿Qué hace que lo pongan en loop?
-
-La regla de oro: si el formato que detectás no necesita voz para funcionar, entonces la ausencia de voz no es una penalización — es simplemente el formato. Evalualo por lo que ES, no por lo que le falta comparado con otro formato completamente distinto.
-
-Compará el video actual con los 3 videos más virales del mismo nicho esta semana/mes. Identificá qué elemento visual o narrativo tienen ellos que a este video le falta.
-
-No adivines. Si no buscás primero, tu análisis no tiene base real.
-Usá lo que encontrás para fundamentar cada parte del análisis.
-
-BÚSQUEDA DE MÚSICA VIRAL — PROCESO EN 3 PASOS OBLIGATORIOS:
-
-PASO 1 — DETECTÁ EL MOOD EXACTO DEL VIDEO:
-Antes de buscar cualquier música, describí internamente con precisión el mood del video.
-No uses palabras genéricas como "alegre" o "tranquilo".
-Usá descripciones específicas como:
-- "tensión creciente con resolución satisfactoria"
-- "humor absurdo y caótico"
-- "melancolía nostálgica con ritmo lento"
-- "adrenalina pura sin pausa"
-- "hipnótico y repetitivo que invita al loop"
-- "terror psicológico con silencios estratégicos"
-Ese mood exacto es el que vas a usar para buscar.
-
-PASO 2 — BUSCÁ CON QUERIES ESPECÍFICOS:
-Ejecutá estas 4 búsquedas en Google con el mood y nicho que detectaste:
-1. "trending sounds [mood exacto] ${platformNames[platform]} [mes y año actual]"
-2. "viral music [nicho detectado] [mood exacto] ${platformNames[platform]} ${new Date().toLocaleString('es', {month: 'long'})} ${new Date().getFullYear()}"
-3. "[mood exacto] background music viral TikTok Reels ${new Date().getFullYear()}"
-4. "most used sounds [nicho detectado] ${platformNames[platform]} right now"
-
-PASO 3 — FILTRÁ CON ESTOS CRITERIOS ANTES DE SUGERIR:
-Solo incluí una canción si cumple TODOS estos requisitos:
-✓ Está siendo usada en videos del mismo nicho AHORA MISMO (no hace 6 meses)
-✓ El BPM y la energía de la canción coinciden con el ritmo visual del video
-✓ El mood emocional de la canción refuerza lo que el video ya genera, no lo contradice
-✓ Está disponible en ${platformNames[platform]} como sonido usable (no solo como referencia)
-
-Si una canción no cumple los 4 criterios, no la incluyas. Es mejor sugerir 1 canción precisa que 3 genéricas.
-Si no encontrás resultados concretos y verificables, poné "No encontrado" en el campo title y explicá por qué en "why".
-NUNCA inventes nombres de canciones ni artistas.
+REGLA DE ORO PARA EL ANÁLISIS:
+Si el video no tiene voz, evaluá el impacto visual. No penalices la falta de voz si el formato es visual/estético.
 
 ANÁLISIS POR FASES:
 ${phaseInstructions}
 
-Para cada fase con score menor a 50, explicá la CONSECUENCIA REAL y concreta que eso va a tener en el rendimiento del video. No teoría — qué va a pasar exactamente.
+FORMA DE HABLAR:
+Hablá como un editor senior de InterXAX: directo, simple, sin términos complejos que un chico de 15 años no entienda.
 
-Cualquier mejora sugerida en el roadmap debe pasar por el filtro del detectedTone. Si el creador es sarcástico, no sugieras un CTA serio. Traducí la técnica viral al lenguaje del creador.
-
-Una vez investigado y analizado por fases, determiná un score general que refleje el conjunto — considerando que una fase crítica puede hundir todo el video aunque las demás estén bien.
-
-FORMA DE HABLAR — MUY IMPORTANTE:
-Hablá como si le explicaras a alguien que recién empieza a crear contenido y nunca estudió edición ni marketing. Nada de términos técnicos sin explicar.
-
-Ejemplos de cómo NO hablar:
-❌ "El watch time del primer decil está por debajo del umbral de distribución algorítmica"
-❌ "La estructura PAS carece de loop abierto en el incipit"
-
-Ejemplos de cómo SÍ hablar:
-✅ "La gente deja de ver el video en los primeros 3 segundos porque no hay ninguna razón clara para quedarse"
-✅ "TikTok deja de mostrarle tu video a gente nueva porque detecta que nadie lo termina de ver"
-
-La regla de oro: si un chico de 15 años que recién abre TikTok no entiende lo que escribís, reescribilo más simple.
-
-
-
-Devolvé ÚNICAMENTE este JSON sin texto antes ni después:
-
+Devolvé ÚNICAMENTE este JSON sin texto extra:
 {
-  "potentialScore": <número 0-100, refleja el conjunto considerando que una fase crítica arrastra todo>,
-  "performanceScenario": "<diagnóstico central en máximo 8 palabras>",
-  "honestVerdict": "<450-600 caracteres: síntesis del análisis basada en tendencias reales y las fases>",
-  "trendContext": "<150-200 caracteres: qué encontraste buscando sobre este nicho en ${platformNames[platform]} ahora mismo>",
+  "potentialScore": 0,
+  "performanceScenario": "",
+  "honestVerdict": "",
+  "trendContext": "",
   "phaseScores": {
-    "hook": {
-      "score": <0-100>,
-      "label": "Hook & Primeros 3s",
-      "verdict": "<diagnóstico en máximo 12 palabras>",
-      "consequence": "<si score < 50: consecuencia real y concreta en 80-120 caracteres. Si score >= 50: null>"
-    },
-    "estructura": {
-      "score": <0-100>,
-      "label": "Estructura & Narrativa",
-      "verdict": "<diagnóstico en máximo 12 palabras>",
-      "consequence": "<si score < 50: consecuencia real y concreta en 80-120 caracteres. Si score >= 50: null>"
-    }${mode === 'video' ? `,
-    "edicion": {
-      "score": <0-100>,
-      "label": "Ritmo & Energía",
-      "verdict": "<diagnóstico en máximo 12 palabras>",
-      "consequence": "<si score < 50: consecuencia real y concreta en 80-120 caracteres. Si score >= 50: null>"
-    }` : ''},
-    "credibilidad": {
-      "score": <0-100>,
-      "label": "Autenticidad & Nicho",
-      "verdict": "<diagnóstico en máximo 12 palabras>",
-      "consequence": "<si score < 50: consecuencia real y concreta en 80-120 caracteres. Si score >= 50: null>"
-    }
+    "hook": { "score": 0, "label": "Hook & Primeros 3s", "verdict": "", "consequence": "" },
+    "estructura": { "score": 0, "label": "Estructura & Narrativa", "verdict": "", "consequence": "" }${mode === 'video' ? `,
+    "edicion": { "score": 0, "label": "Ritmo & Energía", "verdict": "", "consequence": "" }` : ''},
+    "credibilidad": { "score": 0, "label": "Autenticidad & Nicho", "verdict": "", "consequence": "" }
   },
   "platformScores": {
-    "tiktok":  { "score": <0-100>, "verdict": "<máximo 10 palabras>", "topTip": "<acción concreta basada en lo que funciona hoy>" },
-    "reels":   { "score": <0-100>, "verdict": "<máximo 10 palabras>", "topTip": "<acción concreta basada en lo que funciona hoy>" },
-    "shorts":  { "score": <0-100>, "verdict": "<máximo 10 palabras>", "topTip": "<acción concreta basada en lo que funciona hoy>" }
+    "tiktok": { "score": 0, "verdict": "", "topTip": "" },
+    "reels": { "score": 0, "verdict": "", "topTip": "" },
+    "shorts": { "score": 0, "verdict": "", "topTip": "" }
   },
-  "styleProfile": {
-    "detectedTone": "<tono del creador>",
-    "detectedRhythm": "<estilo de producción>",
-    "uniqueStrength": "<qué no debe cambiar>"
-  },
-  "vision": {
-    "niche": "<nicho>",
-    "type": "<formato detectado, descripto con las palabras correctas para ese contenido>",
-    "audience": "<audiencia con edad y contexto>",
-    "promise": "<emoción o promesa implícita que genera el video>"
-  },
-  "hookScore": <número 0-100, igual a phaseScores.hook.score>,
-  "retentionData": {
-    "at3s": "<% proyectado>",
-    "at10s": "<% proyectado>",
-    "final": "<% proyectado>"
-  },
-  "retentionCurve": [<exactamente 15 números enteros 0-100>],
-  "weakestMoment": "<segundo + causa + cómo evitarlo, 150-200 caracteres>",
+  "styleProfile": { "detectedTone": "", "detectedRhythm": "", "uniqueStrength": "" },
+  "vision": { "niche": "", "type": "", "audience": "", "promise": "" },
+  "hookScore": 0,
+  "retentionData": { "at3s": "", "at10s": "", "final": "" },
+  "retentionCurve": [],
+  "weakestMoment": "",
   "musicSuggestions": [
-    {
-      "title": "<nombre de la canción o sonido trending>",
-      "artist": "<artista o 'sonido original'>",
-      "why": "<por qué funciona para este video específico, máximo 60 caracteres>",
-      "available": "<plataformas donde está disponible: TikTok / Reels / Shorts>"
-    },
-    {
-      "title": "<nombre de la canción o sonido trending>",
-      "artist": "<artista o 'sonido original'>",
-      "why": "<por qué funciona para este video específico, máximo 60 caracteres>",
-      "available": "<plataformas donde está disponible>"
-    },
-    {
-      "title": "<nombre de la canción o sonido trending>",
-      "artist": "<artista o 'sonido original'>",
-      "why": "<por qué funciona para este video específico, máximo 60 caracteres>",
-      "available": "<plataformas donde está disponible>"
-    }
+    { "title": "", "artist": "", "why": "", "available": "" },
+    { "title": "", "artist": "", "why": "", "available": "" },
+    { "title": "", "artist": "", "why": "", "available": "" }
   ],
-  "roadmap": [
-    "<mejora 1: respeta el formato y estilo detectado>",
-    "<mejora 2: segunda prioridad dentro del mismo estilo>",
-    "<mejora 3: mejora técnica que amplifica lo que ya funciona>",
-    "<mejora 4: técnica trending adaptada a este formato específico>"
-  ]
+  "roadmap": ["", "", "", ""]
 }`;
 };
 
@@ -587,51 +485,48 @@ useEffect(() => {
 
   const sendMessage = async () => {
   if (!userInput.trim() || isTyping) return;
+
   const newMessages = [...chatMessages, { role: 'user', text: userInput }];
   setChatMessages(newMessages);
   setUserInput("");
   setIsTyping(true);
 
   try {
+    // 1. Preparamos el contexto de música (lo que ya investigó la visión)
     const musicContext = aiResult?.musicSuggestions?.length
-      ? `\n\n⚠️ MÚSICA YA INVESTIGADA Y APROBADA PARA ESTE VIDEO (NO INVENTES OTRAS):
+      ? `\n\n⚠️ MÚSICA INVESTIGADA PARA ESTE VIDEO:
 ${aiResult.musicSuggestions.map((m, i) =>
-  `${i + 1}. "${m.title}" de ${m.artist}
-     → Por qué funciona: ${m.why}
-     → Disponible en: ${m.available}`
-).join('\n')}
-
-REGLA ABSOLUTA: Si el usuario pregunta sobre música, usá SOLO estas canciones. No sugieras ninguna otra. No inventes. No "complementes" con más opciones. Estas ya fueron verificadas y elegidas para este video específico.`
+        `${i + 1}. "${m.title}" de ${m.artist}
+         → Match: ${m.why}
+         → Plataformas: ${m.available}`
+      ).join('\n')}`
       : '';
 
-    const videoContext = aiResult ? `
-PERFIL DEL VIDEO:
-- Nicho: ${aiResult.vision?.niche}
-- Formato: ${aiResult.vision?.type}  
-- Tono detectado: ${aiResult.styleProfile?.detectedTone}
-- Ritmo: ${aiResult.styleProfile?.detectedRhythm}
-- Promesa/emoción: ${aiResult.vision?.promise}
-- Audiencia: ${aiResult.vision?.audience}
-- Mood específico del video (para música): ${aiResult.styleProfile?.detectedRhythm}, ${aiResult.vision?.promise}` : '';
+    // 2. Definimos el System Prompt que te pasé (El que le da el "vibe" de consultor)
+    const systemPrompt = `Sos el Consultor Senior de REDxax VISION. 
+Tu objetivo es que el usuario entienda la relación entre lo que VE y lo que ESCUCHA.
 
-    const systemPrompt = `Sos el Consultor REDxax VISION. El video analizado tiene un ${aiResult?.potentialScore}% de potencial viral.
+ANÁLISIS DE ATMÓSFERA:
+- Nicho: ${aiResult?.vision?.niche || 'General'}
+- Estilo: ${aiResult?.styleProfile?.detectedRhythm || 'Normal'}
+- Tono: ${aiResult?.styleProfile?.detectedTone || 'Neutro'}
 
-${videoContext}
 ${musicContext}
 
-ANÁLISIS COMPLETO: ${JSON.stringify(aiResult)}
+REGLAS CRÍTICAS DE RESPUESTA:
+1. Si preguntan por música: Usá SOLO las de arriba. Explicá el 'Match' técnico (ej. "encaja con tus cortes").
+2. Validación de Universo: Si el video es de ${aiResult?.vision?.niche}, asegurate que la música sea coherente (ej: Phonk para Gaming, Cinematic para Terror).
+3. Honestidad Brutal: Si la música de tendencia no pega con el tono "${aiResult?.styleProfile?.detectedTone}", decilo.
+4. Regla de Cards: Si preguntan por edición, usá los datos de "phaseScores.edicion" del análisis JSON.
 
-REGLAS DE RESPUESTA:
-- Respondé siempre breve, directo y brutalmente honesto.
-- Hablá como si le explicaras a alguien que recién empieza a crear contenido.
-- Si pregunta sobre música: usá ÚNICAMENTE las canciones del bloque de arriba. No agregues otras.
-- Si pregunta sobre edición, hooks, ritmo: basate en el styleProfile y phaseScores del análisis.`;
+ANÁLISIS COMPLETO DEL VIDEO (JSON): ${JSON.stringify(aiResult)}`;
 
     const conversationHistory = newMessages.map(msg => ({
       role: msg.role === 'user' ? 'user' : 'assistant',
       content: msg.text
     }));
 
+    // 3. Llamada a tu proxy de Gemini
     const { data, error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: systemPrompt,
@@ -640,13 +535,16 @@ REGLAS DE RESPUESTA:
     });
 
     if (error) throw error;
+
     const botResponse = extractGeminiText(data);
     const updatedMessages = [...newMessages, { role: 'bot', text: botResponse }];
     setChatMessages(updatedMessages);
+    
     await saveChatToHistory(updatedMessages);
+
   } catch (err) {
     console.error("Error Chat:", err);
-    setChatMessages([...newMessages, { role: 'bot', text: "Error de conexión." }]);
+    setChatMessages([...newMessages, { role: 'bot', text: "Che, se cortó la conexión. Intentá de nuevo." }]);
   } finally {
     setIsTyping(false);
   }
