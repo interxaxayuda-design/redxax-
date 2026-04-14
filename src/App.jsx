@@ -203,6 +203,8 @@ Ejemplos de cómo SÍ hablar:
 
 La regla de oro: si un chico de 15 años que recién abre TikTok no entiende lo que escribís, reescribilo más simple.
 
+
+
 Devolvé ÚNICAMENTE este JSON sin texto antes ni después:
 
 {
@@ -584,45 +586,71 @@ useEffect(() => {
   };
 
   const sendMessage = async () => {
-    if (!userInput.trim() || isTyping) return;
-    const newMessages = [...chatMessages, { role: 'user', text: userInput }];
-    setChatMessages(newMessages);
-    setUserInput("");
-    setIsTyping(true);
-    try {
-      // ✅ Incluí musicSuggestions y todo el análisis como contexto explícito
-      const musicContext = aiResult?.musicSuggestions?.length
-        ? `\n\nMÚSICA YA INVESTIGADA PARA ESTE VIDEO:\n${aiResult.musicSuggestions.map((m, i) =>
-            `${i + 1}. "${m.title}" de ${m.artist} — ${m.why} (disponible en: ${m.available})`
-          ).join('\n')}`
-        : '';
+  if (!userInput.trim() || isTyping) return;
+  const newMessages = [...chatMessages, { role: 'user', text: userInput }];
+  setChatMessages(newMessages);
+  setUserInput("");
+  setIsTyping(true);
 
-      const promptPersonalizado = `CONTEXTO INTERNO: Eres el Consultor REDxax VISION. El video analizado tiene un ${aiResult?.potentialScore}% de potencial viral.
+  try {
+    const musicContext = aiResult?.musicSuggestions?.length
+      ? `\n\n⚠️ MÚSICA YA INVESTIGADA Y APROBADA PARA ESTE VIDEO (NO INVENTES OTRAS):
+${aiResult.musicSuggestions.map((m, i) =>
+  `${i + 1}. "${m.title}" de ${m.artist}
+     → Por qué funciona: ${m.why}
+     → Disponible en: ${m.available}`
+).join('\n')}
 
-ANÁLISIS COMPLETO: ${JSON.stringify(aiResult)}
+REGLA ABSOLUTA: Si el usuario pregunta sobre música, usá SOLO estas canciones. No sugieras ninguna otra. No inventes. No "complementes" con más opciones. Estas ya fueron verificadas y elegidas para este video específico.`
+      : '';
+
+    const videoContext = aiResult ? `
+PERFIL DEL VIDEO:
+- Nicho: ${aiResult.vision?.niche}
+- Formato: ${aiResult.vision?.type}  
+- Tono detectado: ${aiResult.styleProfile?.detectedTone}
+- Ritmo: ${aiResult.styleProfile?.detectedRhythm}
+- Promesa/emoción: ${aiResult.vision?.promise}
+- Audiencia: ${aiResult.vision?.audience}
+- Mood específico del video (para música): ${aiResult.styleProfile?.detectedRhythm}, ${aiResult.vision?.promise}` : '';
+
+    const systemPrompt = `Sos el Consultor REDxax VISION. El video analizado tiene un ${aiResult?.potentialScore}% de potencial viral.
+
+${videoContext}
 ${musicContext}
 
-REGLAS:
-- Si el usuario pregunta sobre música, usá EXACTAMENTE las canciones del contexto de arriba. No inventes otras.
+ANÁLISIS COMPLETO: ${JSON.stringify(aiResult)}
+
+REGLAS DE RESPUESTA:
 - Respondé siempre breve, directo y brutalmente honesto.
-- Hablá como si le explicaras a alguien que recién empieza a crear contenido.`;
+- Hablá como si le explicaras a alguien que recién empieza a crear contenido.
+- Si pregunta sobre música: usá ÚNICAMENTE las canciones del bloque de arriba. No agregues otras.
+- Si pregunta sobre edición, hooks, ritmo: basate en el styleProfile y phaseScores del análisis.`;
 
-      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-        body: { text: `${promptPersonalizado}\n\nUsuario dice: ${userInput}` }
-      });
-      if (error) throw error;
-      const botResponse = extractGeminiText(data);
-      const updatedMessages = [...newMessages, { role: 'bot', text: botResponse }];
-      setChatMessages(updatedMessages);
-      await saveChatToHistory(updatedMessages);
-    } catch (err) {
-      console.error("Error Chat:", err);
-      setChatMessages([...newMessages, { role: 'bot', text: "Error de conexión." }]);
-    } finally {
-      setIsTyping(false);
-    }
-  };
+    const conversationHistory = newMessages.map(msg => ({
+      role: msg.role === 'user' ? 'user' : 'assistant',
+      content: msg.text
+    }));
 
+    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: systemPrompt,
+        messages: conversationHistory
+      }
+    });
+
+    if (error) throw error;
+    const botResponse = extractGeminiText(data);
+    const updatedMessages = [...newMessages, { role: 'bot', text: botResponse }];
+    setChatMessages(updatedMessages);
+    await saveChatToHistory(updatedMessages);
+  } catch (err) {
+    console.error("Error Chat:", err);
+    setChatMessages([...newMessages, { role: 'bot', text: "Error de conexión." }]);
+  } finally {
+    setIsTyping(false);
+  }
+};
 
   const progressPercent = (userCount / 500) * 100;
 
