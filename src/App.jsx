@@ -98,11 +98,23 @@ const buildSystemInstructions = (platform, followerRange, mode = 'video') => {
   };
 
   const phaseInstructions = mode === 'video'
-    ? `Evaluá estas 4 fases de forma INDEPENDIENTE. Cada una tiene su propio score:
-- FASE 1 — Hook & Primeros 3s: ¿El primer frame detiene el scroll? ¿Hay razón para quedarse?
-- FASE 2 — Estructura & Narrativa: ¿Hay loop abierto? ¿Re-enganche? ¿El contenido podría cortarse en cualquier segundo o tiene arco claro?
-- FASE 3 — Edición & Ritmo: ¿Hay cuts frecuentes? ¿Variación visual? ¿Texto en pantalla que suma info? ¿Energía sostenida?
-- FASE 4 — Credibilidad & Nicho: ¿Hay números concretos? ¿Prueba social? ¿El creador demuestra autoridad real en su nicho?`
+    ? `Antes de evaluar las fases, determiná el formato real del video observando los frames:
+¿Hay una persona hablando? ¿El contenido funciona sin sonido? ¿Qué emoción genera el primer frame?
+¿Qué haría que alguien deje de scrollear en este tipo de contenido específicamente?
+
+Con esa detección, adaptá las 4 fases a ese formato. Las preguntas de cada fase cambian según lo que veas:
+
+- FASE 1 — Primer impacto: ¿El primer frame detiene el scroll? No importa cómo lo logra — puede ser visual, sonoro, curioso, apetitoso, hipnótico, sorprendente. ¿Hay razón para quedarse?
+- FASE 2 — Estructura: ¿El contenido tiene un arco? ¿Hay un momento cumbre, una resolución, algo que recompensa al que se queda hasta el final? ¿O podría cortarse en cualquier segundo sin que nadie lo note?
+- FASE 3 — Ritmo y energía: ¿El ritmo es el correcto para este tipo de contenido? Un video hipnótico necesita ritmo pausado. Uno de acción necesita energía. ¿El ritmo sirve al propósito del video o lo contradice?
+- FASE 4 — Autenticidad y nicho: ¿Este video se siente genuino dentro de su nicho? ¿Tiene algo que lo diferencia de los mil videos iguales que ya existen? ¿O es genérico?
+
+REGLA CRÍTICA DE PUNTUACIÓN:
+Evaluá cada fase según lo que el formato NECESITA, no según un estándar genérico.
+Un video sin voz no necesita hook verbal — necesita un primer frame irresistible.
+Un video hipnótico no necesita cuts rápidos — necesita ritmo sostenido.
+Un video de proceso no necesita prueba social — necesita que el resultado final sea deseable.
+Si penalizás algo que el formato no necesita, tu análisis está mal.`
     : `Evaluá estas 3 fases de forma INDEPENDIENTE (es un guion, no hay edición):
 - FASE 1 — Hook & Primeros 3s: ¿El primer enunciado detiene el scroll? ¿Genera curiosidad inmediata?
 - FASE 2 — Estructura & Narrativa: ¿Hay loop abierto? ¿La estructura lleva al espectador de principio a fin con intención?
@@ -120,64 +132,54 @@ Antes de emitir cualquier juicio, usá Google Search para investigar:
 3. Si el formato detectado está en tendencia, estable o en declive en ${platformNames[platform]}
 4. Qué está haciendo la audiencia de este nicho en ${platformNames[platform]} últimamente
 
-PREGUNTAS QUE TENES QUE HACERTE OBLIGATORIAMENTE: 
+PREGUNTAS QUE TENES QUE HACERTE OBLIGATORIAMENTE:
 ¿Hay una persona hablando directamente a cámara?
 ¿El contenido depende de palabras para funcionar, o funciona solo con lo visual y el sonido?
-¿Qué emoción genera el primer frame sin necesidad de entender nada? Ejemplo: "Mmm, que rico se ve eso", "Que satifactorio se ve" o "Wow, lo quiero comprar"
+¿Qué emoción genera el primer frame sin necesidad de entender nada?
 ¿Qué haría que alguien deje de scrollear en este tipo de contenido específicamente?
 
-Con esas respuestas, determiná el formato real del video y ajustá TODOS los criterios de análisis a ese formato. 
+Con esas respuestas, determiná el formato real del video y ajustá TODOS los criterios de análisis a ese formato.
 
 Si el video no tiene voz, no lo evalúes como si le faltara algo. Preguntate: ¿para este tipo de contenido específico, qué hace que la gente se quede viendo? ¿Qué hace que lo compartan? ¿Qué hace que lo pongan en loop?
 
-Antes de puntuar, buscá en Google qué tipo de contenido similar está siendo viral ahora mismo y con qué características. Usá eso como referencia real para el score, no un criterio genérico de "video educativo con hook verbal".
-
-También, busca si hay alguna persona famosa o reconocida en tal video. 
-
 La regla de oro: si el formato que detectás no necesita voz para funcionar, entonces la ausencia de voz no es una penalización — es simplemente el formato. Evalualo por lo que ES, no por lo que le falta comparado con otro formato completamente distinto.
 
-Compará el video actual con los 3 videos más virales del mismo nicho esta semana/mes. Identificá qué elemento visual o narrativo tienen ellos que a este video le falta (ej: velocidad de subtítulos, uso de silencio, tipo de música de fondo).
+Compará el video actual con los 3 videos más virales del mismo nicho esta semana/mes. Identificá qué elemento visual o narrativo tienen ellos que a este video le falta.
 
 No adivines. Si no buscás primero, tu análisis no tiene base real.
 Usá lo que encontrás para fundamentar cada parte del análisis.
 
+BÚSQUEDA DE MÚSICA VIRAL — OBLIGATORIO:
+Después de detectar el nicho, el tono y el mood del video, buscá en Google:
+1. "música trending ${platformNames[platform]} [género/mood detectado] ${new Date().getFullYear()}"
+2. "canciones virales [nicho detectado] ${platformNames[platform]} este mes"
+3. "sounds trending [mood detectado] ${platformNames[platform]}"
+
+Identificá 3 canciones o sonidos que estén siendo usados en videos similares AHORA MISMO.
+El mood de la música debe coincidir con el del video — si el video es de terror, buscá música de terror viral. Si es satisfactorio, buscá música hipnótica o lo-fi viral. Si es humor, buscá sonidos cómicos trending.
+No inventes canciones. Si no encontrás resultados concretos para una plataforma específica, indicalo en el campo available.
+
 ANÁLISIS POR FASES:
 ${phaseInstructions}
 
-Para cada fase con score menor a 50, explicá la CONSECUENCIA REAL y concreta que eso va a tener
-en el rendimiento del video. No teoría — qué va a pasar exactamente (ej: "El algoritmo no va a
-distribuir más allá de tus seguidores porque sin hook el watch time del primer 10% va a ser
-menor al 30% y TikTok congela la distribución en ese punto").
+Para cada fase con score menor a 50, explicá la CONSECUENCIA REAL y concreta que eso va a tener en el rendimiento del video. No teoría — qué va a pasar exactamente.
 
-Cualquier mejora sugerida en el roadmap debe pasar por el filtro del detectedTone. Si el creador es sarcástico, no sugieras un CTA (llamado a la acción) serio. Traducí la técnica viral al lenguaje del creador.
+Cualquier mejora sugerida en el roadmap debe pasar por el filtro del detectedTone. Si el creador es sarcástico, no sugieras un CTA serio. Traducí la técnica viral al lenguaje del creador.
 
-Una vez investigado y analizado por fases, determiná un score general que refleje
-el conjunto — considerando que una fase crítica puede hundir todo el video aunque
-las demás estén bien.
-
-Sé honesto. Orientado siempre a que el creador pueda mejorar.
+Una vez investigado y analizado por fases, determiná un score general que refleje el conjunto — considerando que una fase crítica puede hundir todo el video aunque las demás estén bien.
 
 FORMA DE HABLAR — MUY IMPORTANTE:
-Hablá como si le explicaras a alguien que recién empieza a crear contenido y nunca estudió
-edición ni marketing. Nada de términos técnicos sin explicar. Si usás una palabra técnica,
-explicá inmediatamente qué significa en una frase simple.
-
-
+Hablá como si le explicaras a alguien que recién empieza a crear contenido y nunca estudió edición ni marketing. Nada de términos técnicos sin explicar.
 
 Ejemplos de cómo NO hablar:
 ❌ "El watch time del primer decil está por debajo del umbral de distribución algorítmica"
 ❌ "La estructura PAS carece de loop abierto en el incipit"
-❌ "El CTR del thumbnail no está optimizado para el funnel de conversión"
 
 Ejemplos de cómo SÍ hablar:
 ✅ "La gente deja de ver el video en los primeros 3 segundos porque no hay ninguna razón clara para quedarse"
-✅ "El inicio no genera curiosidad — es como abrir un libro y que la primera página sea el índice"
 ✅ "TikTok deja de mostrarle tu video a gente nueva porque detecta que nadie lo termina de ver"
 
-La regla de oro: si un chico de 15 años que recién abre TikTok no entiende lo que escribís,
-reescribilo más simple. El análisis puede ser profundo y honesto sin ser complicado.
-
-Tu trabajo es ayudar al creador a maximizar el potencial de su contenido en ${platformNames[platform]}.
+La regla de oro: si un chico de 15 años que recién abre TikTok no entiende lo que escribís, reescribilo más simple.
 
 Devolvé ÚNICAMENTE este JSON sin texto antes ni después:
 
@@ -201,13 +203,13 @@ Devolvé ÚNICAMENTE este JSON sin texto antes ni después:
     }${mode === 'video' ? `,
     "edicion": {
       "score": <0-100>,
-      "label": "Edición & Ritmo",
+      "label": "Ritmo & Energía",
       "verdict": "<diagnóstico en máximo 12 palabras>",
       "consequence": "<si score < 50: consecuencia real y concreta en 80-120 caracteres. Si score >= 50: null>"
     }` : ''},
     "credibilidad": {
       "score": <0-100>,
-      "label": "Credibilidad & Nicho",
+      "label": "Autenticidad & Nicho",
       "verdict": "<diagnóstico en máximo 12 palabras>",
       "consequence": "<si score < 50: consecuencia real y concreta en 80-120 caracteres. Si score >= 50: null>"
     }
@@ -224,9 +226,9 @@ Devolvé ÚNICAMENTE este JSON sin texto antes ni después:
   },
   "vision": {
     "niche": "<nicho>",
-    "type": "<formato>",
+    "type": "<formato detectado, descripto con las palabras correctas para ese contenido>",
     "audience": "<audiencia con edad y contexto>",
-    "promise": "<emoción o promesa implícita>"
+    "promise": "<emoción o promesa implícita que genera el video>"
   },
   "hookScore": <número 0-100, igual a phaseScores.hook.score>,
   "retentionData": {
@@ -236,11 +238,31 @@ Devolvé ÚNICAMENTE este JSON sin texto antes ni después:
   },
   "retentionCurve": [<exactamente 15 números enteros 0-100>],
   "weakestMoment": "<segundo + causa + cómo evitarlo, 150-200 caracteres>",
+  "musicSuggestions": [
+    {
+      "title": "<nombre de la canción o sonido trending>",
+      "artist": "<artista o 'sonido original'>",
+      "why": "<por qué funciona para este video específico, máximo 60 caracteres>",
+      "available": "<plataformas donde está disponible: TikTok / Reels / Shorts>"
+    },
+    {
+      "title": "<nombre de la canción o sonido trending>",
+      "artist": "<artista o 'sonido original'>",
+      "why": "<por qué funciona para este video específico, máximo 60 caracteres>",
+      "available": "<plataformas donde está disponible>"
+    },
+    {
+      "title": "<nombre de la canción o sonido trending>",
+      "artist": "<artista o 'sonido original'>",
+      "why": "<por qué funciona para este video específico, máximo 60 caracteres>",
+      "available": "<plataformas donde está disponible>"
+    }
+  ],
   "roadmap": [
-    "<mejora 1: basada en la fase más crítica>",
-    "<mejora 2: segunda prioridad>",
-    "<mejora 3: mejora de soporte>",
-    "<mejora 4: técnica trending adaptada a su estilo>"
+    "<mejora 1: respeta el formato y estilo detectado>",
+    "<mejora 2: segunda prioridad dentro del mismo estilo>",
+    "<mejora 3: mejora técnica que amplifica lo que ya funciona>",
+    "<mejora 4: técnica trending adaptada a este formato específico>"
   ]
 }`;
 };
