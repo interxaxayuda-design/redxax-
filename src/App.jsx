@@ -164,15 +164,15 @@ Devolvé ÚNICAMENTE este JSON sin texto extra:
   "honestVerdict": "",
   "trendContext": "",
   "phaseScores": {
-    "hook": { "score": 0, "label": "Hook & Primeros 3s", "verdict": "", "consequence": "" },
-    "estructura": { "score": 0, "label": "Estructura & Narrativa", "verdict": "", "consequence": "" }${mode === 'video' ? `,
-    "edicion": { "score": 0, "label": "Ritmo & Energía", "verdict": "", "consequence": "" }` : ''},
-    "credibilidad": { "score": 0, "label": "Autenticidad & Nicho", "verdict": "", "consequence": "" }
+    "hook":       { "score": 0, "label": "Hook & Primeros 3s",    "verdict": "", "consequence": "" },
+    "estructura": { "score": 0, "label": "Estructura & Narrativa","verdict": "", "consequence": "" }${mode === 'video' ? `,
+    "edicion":    { "score": 0, "label": "Ritmo & Energía",       "verdict": "", "consequence": "" }` : ''},
+    "credibilidad":{ "score": 0, "label": "Autenticidad & Nicho", "verdict": "", "consequence": "" }
   },
   "platformScores": {
-    "tiktok": { "score": 0, "verdict": "", "topTip": "" },
-    "reels": { "score": 0, "verdict": "", "topTip": "" },
-    "shorts": { "score": 0, "verdict": "", "topTip": "" }
+    "tiktok":  { "score": 0, "verdict": "", "topTip": "" },
+    "reels":   { "score": 0, "verdict": "", "topTip": "" },
+    "shorts":  { "score": 0, "verdict": "", "topTip": "" }
   },
   "styleProfile": { "detectedTone": "", "detectedRhythm": "", "uniqueStrength": "" },
   "vision": { "niche": "", "type": "", "audience": "", "promise": "" },
@@ -188,6 +188,7 @@ Devolvé ÚNICAMENTE este JSON sin texto extra:
   "roadmap": ["", "", "", ""]
 }`;
 };
+
 
 const ShinyCard = ({ children, className = '', tilt }) => {
   const sheenX = (((tilt?.x ?? 0) + 1) / 2) * 100;
