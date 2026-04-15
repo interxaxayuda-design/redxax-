@@ -159,36 +159,35 @@ Hablá como un editor senior de InterXAX: directo, simple, sin términos complej
 
 Devolvé ÚNICAMENTE este JSON sin texto extra:
 {
-  "potentialScore": 0,
-  "performanceScenario": "",
-  "honestVerdict": "",
-  "trendContext": "",
+  "potentialScore": <NUMBER 0-100>,
+  "performanceScenario": "<MAX 8 WORDS>",
+  "honestVerdict": "<450-600 chars>",
+  "trendContext": "<150-200 chars>",
   "phaseScores": {
-    "hook":       { "score": 0, "label": "Hook & Primeros 3s",    "verdict": "", "consequence": "" },
-    "estructura": { "score": 0, "label": "Estructura & Narrativa","verdict": "", "consequence": "" }${mode === 'video' ? `,
-    "edicion":    { "score": 0, "label": "Ritmo & Energía",       "verdict": "", "consequence": "" }` : ''},
-    "credibilidad":{ "score": 0, "label": "Autenticidad & Nicho", "verdict": "", "consequence": "" }
+    "hook":       { "score": <NUMBER 0-100>, "label": "Hook & Primeros 3s",    "verdict": "<MAX 12 WORDS>", "consequence": <"<80-120 chars>" if score<50 else null> },
+    "estructura": { "score": <NUMBER 0-100>, "label": "Estructura & Narrativa", "verdict": "<MAX 12 WORDS>", "consequence": <"<80-120 chars>" if score<50 else null> }${mode === 'video' ? `,
+    "edicion":    { "score": <NUMBER 0-100>, "label": "Ritmo & Energía",        "verdict": "<MAX 12 WORDS>", "consequence": <"<80-120 chars>" if score<50 else null> }` : ''},
+    "credibilidad":{ "score": <NUMBER 0-100>, "label": "Autenticidad & Nicho",  "verdict": "<MAX 12 WORDS>", "consequence": <"<80-120 chars>" if score<50 else null> }
   },
   "platformScores": {
-    "tiktok":  { "score": 0, "verdict": "", "topTip": "" },
-    "reels":   { "score": 0, "verdict": "", "topTip": "" },
-    "shorts":  { "score": 0, "verdict": "", "topTip": "" }
+    "tiktok":  { "score": <NUMBER 0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<concrete action>" },
+    "reels":   { "score": <NUMBER 0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<concrete action>" },
+    "shorts":  { "score": <NUMBER 0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<concrete action>" }
   },
-  "styleProfile": { "detectedTone": "", "detectedRhythm": "", "uniqueStrength": "" },
-  "vision": { "niche": "", "type": "", "audience": "", "promise": "" },
-  "hookScore": 0,
-  "retentionData": { "at3s": "", "at10s": "", "final": "" },
-  "retentionCurve": [],
-  "weakestMoment": "",
+  "styleProfile": { "detectedTone": "<tone>", "detectedRhythm": "<style>", "uniqueStrength": "<what not to change>" },
+  "vision": { "niche": "<niche>", "type": "<format>", "audience": "<age + context>", "promise": "<emotion/promise>" },
+  "hookScore": <NUMBER igual a phaseScores.hook.score>,
+  "retentionData": { "at3s": "<XX%>", "at10s": "<XX%>", "final": "<XX%>" },
+  "retentionCurve": [<15 integers 0-100, reflecting REAL detected retention drop points>],
+  "weakestMoment": "<second + cause + fix, 150-200 chars>",
   "musicSuggestions": [
-    { "title": "", "artist": "", "why": "", "available": "" },
-    { "title": "", "artist": "", "why": "", "available": "" },
-    { "title": "", "artist": "", "why": "", "available": "" }
+    { "title": "<song>", "artist": "<artist>", "why": "<MAX 60 chars>", "available": "<platforms>" },
+    { "title": "<song>", "artist": "<artist>", "why": "<MAX 60 chars>", "available": "<platforms>" },
+    { "title": "<song>", "artist": "<artist>", "why": "<MAX 60 chars>", "available": "<platforms>" }
   ],
-  "roadmap": ["", "", "", ""]
+  "roadmap": ["<improvement 1>", "<improvement 2>", "<improvement 3>", "<improvement 4>"]
 }`;
 };
-
 
 const ShinyCard = ({ children, className = '', tilt }) => {
   const sheenX = (((tilt?.x ?? 0) + 1) / 2) * 100;
@@ -522,18 +521,17 @@ REGLAS CRÍTICAS DE RESPUESTA:
 
 ANÁLISIS COMPLETO DEL VIDEO (JSON): ${JSON.stringify(aiResult)}`;
 
-    const conversationHistory = newMessages.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'assistant',
-      content: msg.text
-    }));
+    // POR esto — todo en un solo campo text:
+const historyText = newMessages
+  .slice(0, -1)
+  .map(m => `${m.role === 'user' ? 'USUARIO' : 'ASISTENTE'}: ${m.text}`)
+  .join('\n\n');
 
-    // 3. Llamada a tu proxy de Gemini
-    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: systemPrompt,
-        messages: conversationHistory
-      }
-    });
+const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    text: `${systemPrompt}\n\n═══ HISTORIAL ═══\n${historyText || '(inicio)'}\n\n═══ MENSAJE ACTUAL ═══\n${userInput}`
+  }
+});
 
     if (error) throw error;
 
