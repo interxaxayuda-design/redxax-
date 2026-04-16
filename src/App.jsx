@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-import { createClient } from '@supabase/supabase-js'; //phaseScores
+import { createClient } from '@supabase/supabase-js'; //phaseScores  //toggleStep
 
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso';
@@ -235,6 +235,11 @@ const App = () => {
   const [gems, setGems] = useState(null);
   const [showGemStore, setShowGemStore] = useState(false);
   const [gemError, setGemError] = useState(null);
+  const toggleStep = (index) => {
+  setCompletedSteps(prev =>
+    prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+  );
+};
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 useEffect(() => {
   const handleOrientation = (e) => {
@@ -405,62 +410,122 @@ useEffect(() => {
 
   try {
     const base64Frames = await captureFrames(url);
-    setAnalysisProgress(80);
-    setStatusText("Investigando tendencias y conectando con REDxax...");
+    setAnalysisProgress(60);
+    setStatusText("Analizando estructura y tendencias...");
 
-    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+    // ── LLAMADA 1: Análisis principal (sin música) ──
+    const analysisPrompt = buildSystemInstructions(platform, followerRange, 'video');
+    const { data: analysisData, error: analysisError } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        // CAMBIO AQUÍ: Se agregó 'video'
-        text: `${buildSystemInstructions(platform, followerRange, 'video')}\n\nAnaliza estos frames del video.`,
+        text: `${analysisPrompt}\n\nAnaliza estos frames del video. En el campo musicSuggestions devolvé un array vacío [] por ahora.`,
         frames: base64Frames
       }
     });
+    if (analysisError) throw analysisError;
 
-    if (error) throw error;
+    const rawAnalysis = extractGeminiText(analysisData);
+    const parsed = safeParseJSON(rawAnalysis, 'runNeuralAnalysis-step1');
 
-    const rawText = extractGeminiText(data);
-    const parsed = safeParseJSON(rawText, 'runNeuralAnalysis');
+    setAnalysisProgress(80);
+    setStatusText("Buscando canciones virales para tu nicho...");
 
-    setAiResult(parsed);
+    // ── LLAMADA 2: Búsqueda de música dedicada con Google Search ──
+    const musicPrompt = `Sos un experto en música viral para redes sociales en 2025-2026.
+
+CONTEXTO DEL VIDEO:
+- Nicho: ${parsed.vision?.niche || 'General'}
+- Tono detectado: ${parsed.styleProfile?.detectedTone || 'Neutro'}
+- Ritmo detectado: ${parsed.styleProfile?.detectedRhythm || 'Normal'}
+- Plataforma objetivo: ${platform}
+- Audiencia: ${parsed.vision?.audience || 'General'}
+
+TAREA:
+Buscá en Google las canciones que están siendo REALMENTE usadas HOY en videos de "${parsed.vision?.niche}" en ${platform}.
+Usá queries como:
+- "trending songs ${parsed.vision?.niche} ${platform} 2026"
+- "viral music ${parsed.styleProfile?.detectedTone} videos ${platform} right now"
+- "most used songs ${platform} ${parsed.vision?.niche} creators 2025 2026"
+
+REGLAS ESTRICTAS:
+1. Solo sugerí canciones que EXISTEN realmente (artista + título verificable). También, estás canciones deben estar en Youtube Music obligatoriamente, y eso le debes aclarar al usuario.
+2. El ritmo de cada canción debe coincidir con "${parsed.styleProfile?.detectedRhythm}".
+3. Si el tono es oscuro/tenso, NO sugerás música alegre o pop. Viceversa.
+4. Priorizá canciones sin copyright o con uso libre en ${platform}.
+
+Devolvé ÚNICAMENTE este JSON sin texto extra:
+{
+  "musicSuggestions": [
+    { "title": "<título real>", "artist": "<artista real>", "why": "<max 60 chars: por qué encaja técnicamente>", "available": "<plataformas donde está disponible>" },
+    { "title": "<título real>", "artist": "<artista real>", "why": "<max 60 chars>", "available": "<plataformas>" },
+    { "title": "<título real>", "artist": "<artista real>", "why": "<max 60 chars>", "available": "<plataformas>" }
+  ]
+}`;
+
+    const { data: musicData, error: musicError } = await supabase.functions.invoke('gemini-proxy', {
+      body: { text: musicPrompt }
+    });
+
+    let finalResult = { ...parsed };
+
+    if (!musicError && musicData) {
+      try {
+        const rawMusic = extractGeminiText(musicData);
+        const parsedMusic = safeParseJSON(rawMusic, 'runNeuralAnalysis-step2');
+        if (parsedMusic?.musicSuggestions?.length > 0) {
+          finalResult.musicSuggestions = parsedMusic.musicSuggestions;
+        }
+      } catch (musicErr) {
+        console.warn("Music step falló, usando fallback:", musicErr);
+        // No rompemos el flujo — el análisis principal ya está listo
+      }
+    }
+
+    setAiResult(finalResult);
     setCompletedSteps([]);
     setChatMessages([{
       role: 'bot',
-      text: `Protocolo REDxax: Análisis de ${parsed.vision?.niche || 'contenido'} finalizado. Potencial: ${parsed.potentialScore}%. ¿Deseas profundizar en la consultoría?`
+      text: `Protocolo REDxax: Análisis de ${finalResult.vision?.niche || 'contenido'} finalizado. Potencial: ${finalResult.potentialScore}%. ¿Deseas profundizar en la consultoría?`
     }]);
 
     setAnalysisProgress(100);
-    await saveAnalysisToHistory(parsed, 'video');
+    await saveAnalysisToHistory(finalResult, 'video');
     setTimeout(() => setStep('results'), 500);
+
   } catch (err) {
     console.error("DETALLE DEL ERROR VIDEO:", err);
     alert("Error en el análisis de video. Revisa la consola.");
     setStep('upload');
   }
 };
+
+  // ==========================================
+  // 2. TU FUNCIÓN (Justo en el medio)
+  // ==========================================
   const runScriptAnalysis = async (platform, followerRange) => {
-  if (!scriptText.trim()) return;
-  const approved = await deductGems(80, 'script');
-  if (!approved) return;
+    if (!scriptText.trim()) return;
+    const approved = await deductGems(80, 'script');
 
-  setStep('analyzing');
-  setAnalysisMode('script');
-  setStatusText("Investigando tendencias y evaluando guion...");
-  setAnalysisProgress(30);
+    if (!approved) return;
 
-  try {
-    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        // CAMBIO AQUÍ: Se agregó 'script'
-        text: `${buildSystemInstructions(platform, followerRange, 'script')}\n\nAnaliza este concepto/guion: ${scriptText}`
-      }
-    });
+    setStep('analyzing');
+    setAnalysisMode('script');
+    setStatusText("Investigando tendencias y evaluando guion...");
+    setAnalysisProgress(30);
 
-    if (error) throw error;
+    try {
+      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          // CAMBIO AQUÍ: Se agregó 'script'
+          text: `${buildSystemInstructions(platform, followerRange, 'script')}\n\nAnaliza este concepto/guion: ${scriptText}`
+        }
+      });
+
+      if (error) throw error;
 
       setAnalysisProgress(90);
       const rawText = extractGeminiText(data);
       const parsed = safeParseJSON(rawText, 'runScriptAnalysis');
-
+      
       setAiResult(parsed);
       setCompletedSteps([]);
       setChatMessages([{
@@ -476,8 +541,7 @@ useEffect(() => {
       alert("Error al analizar el guion.");
       setStep('upload');
     }
-  };
-
+  };  //platform_select
   const saveChatToHistory = async (messages) => {
     if (!currentHistoryId) return;
     await supabase.from('analysis_history').update({ chat_messages: messages }).eq('id', currentHistoryId);
@@ -643,7 +707,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
             </div>
           </div>
         </>
-      )}
+      )} 
 
       {/* CONTADOR */}
       <div className="fixed top-6 right-6 z-50 flex flex-col items-end gap-2">
@@ -726,63 +790,92 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
     </div>
   </div>
 )}
-        {/* ── SELECCIÓN DE PLATAFORMA ── */}
         {step === 'platform_select' && (
-          <div className="max-w-2xl mx-auto animate-in slide-in-from-bottom-10 duration-500">
-            <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-12 md:p-16 shadow-2xl">
-              <div className="mb-10 text-center">
-                <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-                  <TrendingUp className="w-3 h-3" /> Paso previo al análisis
-                </div>
-                <h3 className="text-3xl font-black italic uppercase tracking-tighter">
-                  ¿Dónde vas a publicar?
-                </h3>
-                <p className="text-slate-400 mt-3 font-medium">
-                  Cada plataforma tiene su propio algoritmo.<br/>El análisis se calibra según tu objetivo.
-                </p>
-              </div>
-              <div className="grid grid-cols-1 gap-3 mb-10">
-                {PLATFORMS.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setSelectedPlatform(p.id)}
-                    className={`flex items-center gap-4 p-5 rounded-[2rem] border transition-all text-left
-                      ${selectedPlatform === p.id
-                        ? 'border-purple-500/60 bg-purple-500/15 scale-[1.02]'
-                        : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'}`}
-                  >
-                    <span className="text-2xl">{p.emoji}</span>
-                    <div>
-                      <p className="font-black italic text-white">{p.label}</p>
-                      {selectedPlatform === p.id && (
-                        <p className="text-purple-400 text-[10px] font-black uppercase tracking-wider mt-0.5">✓ Seleccionado</p>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
-              <div className="flex justify-between items-center">
-                <button onClick={() => { setStep('upload'); setPendingVideoUrl(null); setSelectedPlatform(null); }}
-                  className="text-sm font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-widest">
-                  ← Volver
-                </button>
-                <button
-                  disabled={!selectedPlatform}
-                  onClick={() => {
-                    if (analysisMode === 'video' && pendingVideoUrl) {
-                      runNeuralAnalysis(pendingVideoUrl, selectedPlatform);
-                    } else {
-                      runScriptAnalysis(selectedPlatform);
-                    }
-                  }}
-                  className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all"
-                >
-                  Iniciar Análisis →
-                </button>
+  <div className="max-w-2xl mx-auto animate-in slide-in-from-bottom-10 duration-500">
+    <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-12 md:p-16 shadow-2xl">
+      <div className="mb-10 text-center">
+        <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
+          <TrendingUp className="w-3 h-3" /> Paso previo al análisis
+        </div>
+        <h3 className="text-3xl font-black italic uppercase tracking-tighter">
+          Configurá el análisis
+        </h3>
+        <p className="text-slate-400 mt-3 font-medium">
+          El algoritmo se calibra según tu plataforma y tamaño de cuenta.
+        </p>
+      </div>
+
+      {/* Plataforma */}
+      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-3">¿Dónde publicás?</p>
+      <div className="grid grid-cols-1 gap-3 mb-8">
+        {PLATFORMS.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => setSelectedPlatform(p.id)}
+            className={`flex items-center gap-4 p-5 rounded-[2rem] border transition-all text-left
+              ${selectedPlatform === p.id
+                ? 'border-purple-500/60 bg-purple-500/15 scale-[1.02]'
+                : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'}`}
+          >
+            <span className="text-2xl">{p.emoji}</span>
+            <div>
+              <p className="font-black italic text-white">{p.label}</p>
+              {selectedPlatform === p.id && (
+                <p className="text-purple-400 text-[10px] font-black uppercase tracking-wider mt-0.5">✓ Seleccionado</p>
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Seguidores */}
+      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-3">¿Cuántos seguidores tenés?</p>
+      <div className="grid grid-cols-1 gap-3 mb-10">
+        {FOLLOWER_RANGES.map((r) => (
+          <button
+            key={r.id}
+            onClick={() => setSelectedFollowerRange(r.id)}
+            className={`flex items-center justify-between p-5 rounded-[2rem] border transition-all text-left
+              ${selectedFollowerRange === r.id
+                ? 'border-indigo-500/60 bg-indigo-500/15 scale-[1.02]'
+                : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'}`}
+          >
+            <div className="flex items-center gap-4">
+              <span className="text-2xl">{r.emoji}</span>
+              <div>
+                <p className="font-black italic text-white">{r.label}</p>
+                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{r.range}</p>
               </div>
             </div>
-          </div>
-        )}
+            {selectedFollowerRange === r.id && (
+              <p className="text-indigo-400 text-[10px] font-black uppercase tracking-wider">✓</p>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex justify-between items-center">
+        <button onClick={() => { setStep('upload'); setPendingVideoUrl(null); setSelectedPlatform(null); setSelectedFollowerRange(null); }}
+          className="text-sm font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-widest">
+          ← Volver
+        </button>
+        <button
+          disabled={!selectedPlatform || !selectedFollowerRange}
+          onClick={() => {
+            if (analysisMode === 'video' && pendingVideoUrl) {
+              runNeuralAnalysis(pendingVideoUrl, selectedPlatform, selectedFollowerRange);
+            } else {
+              runScriptAnalysis(selectedPlatform, selectedFollowerRange);
+            }
+          }}
+          className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all"
+        >
+          Iniciar Análisis →
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
         {/* ── SCRIPT INPUT ── */}
         {step === 'script_input' && (
