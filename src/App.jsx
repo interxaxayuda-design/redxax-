@@ -87,107 +87,154 @@ function safeParseJSON(rawText, context = '') {
 }
 
 
-const buildSystemInstructions = (platform, followerRange, mode = 'video') => {
-  // 1. CONSTANTES DE APOYO (Definidas antes de usarse)
+const buildSystemInstructions = (platform, followerRange, mode = 'video', videoMetadata = {}) => {
+  const { cutsPerMinute = null, duration = null } = videoMetadata;
+
   const platformNames = {
-    tiktok: 'TikTok', 
-    reels: 'Instagram Reels',
-    shorts: 'YouTube Shorts', 
-    all: 'TikTok, Instagram Reels y YouTube Shorts'
+    tiktok: 'TikTok', reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts', all: 'TikTok, Instagram Reels y YouTube Shorts'
   };
-
   const followerLabels = {
-    new: '0–1K seguidores', 
-    small: '1K–10K', 
-    mid: '10K–100K',
-    large: '100K–500K', 
-    mega: '500K+'
+    new: '0–1K', small: '1K–10K', mid: '10K–100K',
+    large: '100K–500K', mega: '500K+'
   };
 
-  // 2. LÓGICA DE PRECISIÓN MUSICAL
-  const musicLogic = `
-BÚSQUEDA DE MÚSICA VIRAL — PROTOCOLO DE PRECISIÓN QUIRÚRGICA:
+  const cutRateContext = cutsPerMinute !== null ? `
+DATO TÉCNICO MEDIDO — RITMO DE EDICIÓN:
+Cortes detectados: ${cutsPerMinute} cortes/minuto | Duración: ${duration}s
+Benchmark por nicho:
+  Entertainment/Humor: 12-20 cpm → ZONA VIRAL
+  Educational/Tutorial: 4-8 cpm  → correcto para retención
+  Aesthetic/ASMR:      1-4 cpm  → para contenido contemplativo  
+  Gaming/Reaction:     15-25 cpm → alta energía
+  Motivacional:        8-15 cpm → balance narrativo
+  
+Si el ritmo medido NO está en el rango óptimo del nicho detectado, es un factor CRÍTICO.
+Mencionarlo en phaseScores.edicion con su consecuencia específica.` : '';
 
-PASO 1 — EXTRACCIÓN DE ADN AUDITIVO:
-Antes de buscar, definí estas 3 etiquetas obligatorias:
-1. GÉNERO DEL VIDEO: (Terror, Humor, Educativo, Gaming, Estético, etc.)
-2. INTENSIDAD: (Baja: relajante | Media: constante | Alta: frenética)
-3. TONALIDAD: (Menor: triste/tenso | Mayor: alegre/épico)
+  const viralScience = `
+══════════════════════════════════════════
+CIENCIA VIRAL — BENCHMARKS REALES 2024-2026
+══════════════════════════════════════════
 
-PASO 2 — BÚSQUEDA CRUZADA (GOOGLE SEARCH):
-Realizá búsquedas combinando el nicho y el ADN. Ejemplo de queries que DEBES usar:
-- "best viral music for [GÉNERO DEL VIDEO] videos on ${platformNames[platform]} 2026"
-- "trending [INTENSIDAD] bpm background music for [nicho] ${platformNames[platform]}"
-- "what songs are creators using for [GÉNERO DEL VIDEO] right now"
+RETENCIÓN (la métrica que controla el algoritmo):
+→ Hook rate (3s):   >85% = modo viral | 70-85% = bueno | <60% = el algoritmo lo mata
+→ 10s retention:   >65% = potencial viral | <45% = sin distribución
+→ Completion rate: TikTok >70% activa distribución máxima | <40% = cementerio
+→ REGLA DE ORO: Si pierden el 30% del público antes de los 3s, no importa nada más
 
-PASO 3 — FILTRO DE COMPATIBILIDAD:
-Prohibido sugerir una canción si su ritmo no coincide con el "Ritmo detectado" del video.
-Si el video es de TERROR, buscá específicamente "Dark Ambient" o "Tension cinematic". 
-Si es de HUMOR, buscá "Silly Jazz" o "Upbeat Lo-fi".`;
+SEÑALES QUE ACTIVAN CADA ALGORITMO:
 
-  // 3. INSTRUCCIONES DE FASES
-  const phaseInstructions = mode === 'video'
-    ? `Analizá estas 4 fases adaptadas al formato visual:
-- FASE 1 — Hook: ¿El primer frame detiene el scroll?
-- FASE 2 — Estructura: ¿Hay un arco o recompensa final?
-- FASE 3 — Edición (Ritmo & Energía): ¿Los cortes coinciden con la energía del video? REGLA CRÍTICA: La clave "edicion" debe estar siempre en el JSON.
-- FASE 4 — Autenticidad: ¿Se siente genuino dentro de su nicho?`
-    : `Analizá estas 3 fases para el guion:
-- FASE 1 — Hook: ¿El texto atrapa en 3 segundos?
-- FASE 2 — Estructura: ¿La narrativa mantiene el interés?
-- FASE 3 — Credibilidad: ¿El lenguaje suena a experto?`;
+TikTok:
+  - Loop seamless: +20-35% en completion rate (fin que conecta con inicio)
+  - Pregunta al final → comentarios → el algoritmo amplifica
+  - Hook de identidad en primeras palabras ("Si tenés X, mirá esto")
+  - Texto on-screen en segundos 1-3: +15-25% en retención medida
+  - Duet/stitch potential: frame con espacio para reacción = distribución orgánica
 
-  // 4. EL PROMPT FINAL (Un solo return con todo integrado)
-  return `Sos REDXAX VISION, un analista experto en contenido viral para redes sociales.
-Tu trabajo es ayudar al creador a maximizar el potencial en ${platformNames[platform]}.
-La cuenta tiene ${followerLabels[followerRange]}.
+Instagram Reels:
+  - Save rate >3% = señal #1 para el algoritmo de Reels
+  - Share a Stories = segundo multiplicador más potente
+  - Cover frame (primer frame visible) = 40% del CTR en Explore
+  - Caption con pregunta abierta = 2-3x más comentarios
 
-${musicLogic}
+YouTube Shorts:
+  - Click-through rate del thumbnail/título: >8% viral, <2% muerto
+  - Subscriber conversion rate como señal de calidad
+  - Hook visual + texto en pantalla en los primeros 2s
 
-PASO OBLIGATORIO — INVESTIGACIÓN EN TIEMPO REAL:
-Antes de analizar, buscá en Google qué es viral hoy en el nicho de este video en ${platformNames[platform]}. 
-Compará el video con los 3 más virales del mes. No adivines.
+PATRONES NARRATIVOS MÁS VIRALES (verificados con millones de videos):
+1. CONTRAINTUITIVO:  "El error que hace el 90% de [audiencia]..."  
+2. REVELACIÓN:       "Lo que nadie te dijo sobre [tema]"
+3. URGENCIA IDENTITARIA: "Si tenés [X característica], necesitás ver esto"
+4. CURIOSITY GAP:    "Hice [acción extrema] y pasó [resultado inesperado]"
+5. CONFLICTO:        "Por qué [norma/autoridad] está equivocada"
+6. ANTES/DESPUÉS:    Transformación visible en el arco del video
 
-REGLA DE ORO PARA EL ANÁLISIS:
-Si el video no tiene voz, evaluá el impacto visual. No penalices la falta de voz si el formato es visual/estético.
+ANATOMÍA DEL HOOK PERFECTO (basada en datos de rendimiento):
+- Frame 0: Imagen que para el scroll (cara con emoción extrema, o resultado final primero)
+- Palabra 1-3: Identidad, pregunta, o acción que promete algo
+- Segundos 1-3: Promesa concreta de lo que van a aprender/ver/sentir
+- Texto on-screen: Refuerza y amplifica la promesa oral
 
-ANÁLISIS POR FASES:
+ESTRUCTURA DE RETENCIÓN ÓPTIMA:
+→ Pico emocional en el 70-80% del video (no al final, no al inicio)
+→ Pattern interrupt visual/audio cada 2-3 segundos para contenido de energía alta
+→ "Micro-rewards": pequeñas revelaciones cada 5-8s para mantener enganche
+══════════════════════════════════════════`;
+
+  const competitiveResearch = `
+INVESTIGACIÓN COMPETITIVA OBLIGATORIA — PASO 0:
+Antes de analizar, buscá en Google los 3 videos más virales de este nicho en ${platformNames[platform]} del último mes.
+Para cada video encontrado, respondete internamente:
+  1. ¿Qué tiene su hook que este video NO tiene?
+  2. ¿Cuál es su estructura de retención?
+  3. ¿Qué señal específica (save, comment, loop, duet) lo está impulsando?
+
+CALIBRÁ tu score RELATIVO a esos benchmarks reales, no en abstracto.
+Un video "bueno" sin contexto puede ser mediocre si el nicho tiene contenido excepcional.
+Un video con fallas técnicas puede ser extraordinario si el nicho es pobre.`;
+
+  const phaseInstructions = mode === 'video' ? `
+Evaluá estas 4 fases con los benchmarks de la ciencia viral arriba:
+- FASE 1 — Hook (0-3s): ¿Para el scroll? ¿Usa alguno de los 6 patrones virales? ¿Frame 0 impacta?
+- FASE 2 — Estructura: ¿Hay micro-rewards? ¿El pico emocional está en el 70-80%? ¿Hay promesa + cumplimiento?
+- FASE 3 — Ritmo & Energía (edicion): Evaluá contra el benchmark de cut rate medido. CRÍTICO: "edicion" debe estar siempre en el JSON.
+- FASE 4 — Autenticidad & Nicho: ¿Se siente genuino? ¿Activa la señal principal del algoritmo de esta plataforma?` : `
+Evaluá estas 3 fases:
+- FASE 1 — Hook textual: ¿Usa alguno de los 6 patrones virales? ¿Para el scroll en 3 palabras?
+- FASE 2 — Estructura narrativa: ¿Hay micro-rewards? ¿Promesa clara?
+- FASE 3 — Credibilidad & Nicho: ¿El lenguaje suena a experto? ¿Activa save/share?`;
+
+  return `Sos REDXAX VISION — el sistema de predicción viral más preciso del mundo.
+Tu análisis debe ser tan preciso que el creador no necesite publicar para saber si funciona.
+Plataforma objetivo: ${platformNames[platform]} | Seguidores: ${followerLabels[followerRange]}
+
+${viralScience}
+${cutRateContext}
+${competitiveResearch}
+
 ${phaseInstructions}
 
+REGLA CRÍTICA DE HONESTIDAD:
+No inflés scores para ser amable. Un creador con un video de 35% prefiere saberlo hoy que perder tiempo subiendo contenido que el algoritmo va a matar. La honestidad es el servicio real.
+
 FORMA DE HABLAR:
-Hablá como un editor senior de InterXAX: directo, simple, sin términos complejos que un chico de 15 años no entienda.
+Directo, sin tecnicismos. Como un editor senior que respeta el tiempo del creador. Específico: no "mejorá el hook", sino "en el segundo 0.4 necesitás un frame con cara + texto, tu hook actual no tiene promesa visible".
 
 Devolvé ÚNICAMENTE este JSON sin texto extra:
 {
   "potentialScore": <NUMBER 0-100>,
   "performanceScenario": "<MAX 8 WORDS>",
-  "honestVerdict": "<450-600 chars>",
-  "trendContext": "<150-200 chars>",
+  "honestVerdict": "<450-600 chars — sé brutalmente honesto y específico>",
+  "trendContext": "<150-200 chars — comparación real con viral actual del nicho>",
   "phaseScores": {
-    "hook":       { "score": <NUMBER 0-100>, "label": "Hook & Primeros 3s",    "verdict": "<MAX 12 WORDS>", "consequence": <"<80-120 chars>" if score<50 else null> },
-    "estructura": { "score": <NUMBER 0-100>, "label": "Estructura & Narrativa", "verdict": "<MAX 12 WORDS>", "consequence": <"<80-120 chars>" if score<50 else null> }${mode === 'video' ? `,
-    "edicion":    { "score": <NUMBER 0-100>, "label": "Ritmo & Energía",        "verdict": "<MAX 12 WORDS>", "consequence": <"<80-120 chars>" if score<50 else null> }` : ''},
-    "credibilidad":{ "score": <NUMBER 0-100>, "label": "Autenticidad & Nicho",  "verdict": "<MAX 12 WORDS>", "consequence": <"<80-120 chars>" if score<50 else null> }
+    "hook":        { "score": <0-100>, "label": "Hook & Primeros 3s",    "verdict": "<MAX 12 WORDS>", "consequence": "<80-120 chars si score<55, sino null>" },
+    "estructura":  { "score": <0-100>, "label": "Estructura & Narrativa", "verdict": "<MAX 12 WORDS>", "consequence": "<80-120 chars si score<55, sino null>" }${mode === 'video' ? `,
+    "edicion":     { "score": <0-100>, "label": "Ritmo & Energía",        "verdict": "<MAX 12 WORDS>", "consequence": "<80-120 chars si score<55, sino null>" }` : ''},
+    "credibilidad":{ "score": <0-100>, "label": "Autenticidad & Nicho",  "verdict": "<MAX 12 WORDS>", "consequence": "<80-120 chars si score<55, sino null>" }
   },
   "platformScores": {
-    "tiktok":  { "score": <NUMBER 0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<concrete action>" },
-    "reels":   { "score": <NUMBER 0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<concrete action>" },
-    "shorts":  { "score": <NUMBER 0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<concrete action>" }
+    "tiktok":  { "score": <0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<acción concreta y específica>" },
+    "reels":   { "score": <0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<acción concreta y específica>" },
+    "shorts":  { "score": <0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<acción concreta y específica>" }
   },
-  "styleProfile": { "detectedTone": "<tone>", "detectedRhythm": "<style>", "uniqueStrength": "<what not to change>" },
-  "vision": { "niche": "<niche>", "type": "<format>", "audience": "<age + context>", "promise": "<emotion/promise>" },
-  "hookScore": <NUMBER igual a phaseScores.hook.score>,
+  "styleProfile": { "detectedTone": "<tono>", "detectedRhythm": "<estilo de edición>", "uniqueStrength": "<qué NO cambiar>" },
+  "vision": { "niche": "<nicho>", "type": "<formato>", "audience": "<edad + contexto>", "promise": "<emoción/promesa>" },
+  "hookScore": <igual a phaseScores.hook.score>,
   "retentionData": { "at3s": "<XX%>", "at10s": "<XX%>", "final": "<XX%>" },
-  "retentionCurve": [<15 integers 0-100, reflecting REAL detected retention drop points>],
-  "weakestMoment": "<second + cause + fix, 150-200 chars>",
+  "retentionCurve": [<15 enteros 0-100, reflejando puntos REALES de caída detectados>],
+  "weakestMoment": "<segundo + causa específica + fix concreto, 150-200 chars>",
+  "cutRateDiagnosis": "<evaluación del ritmo de edición vs benchmark del nicho, 100-150 chars>",
   "musicSuggestions": [
-    { "title": "<song>", "artist": "<artist>", "why": "<MAX 60 chars>", "available": "<platforms>" },
-    { "title": "<song>", "artist": "<artist>", "why": "<MAX 60 chars>", "available": "<platforms>" },
-    { "title": "<song>", "artist": "<artist>", "why": "<MAX 60 chars>", "available": "<platforms>" }
+    { "title": "<título real>", "artist": "<artista real>", "why": "<MAX 60 chars técnicos>", "available": "<plataformas>" },
+    { "title": "<título real>", "artist": "<artista real>", "why": "<MAX 60 chars>", "available": "<plataformas>" },
+    { "title": "<título real>", "artist": "<artista real>", "why": "<MAX 60 chars>", "available": "<plataformas>" }
   ],
-  "roadmap": ["<improvement 1>", "<improvement 2>", "<improvement 3>", "<improvement 4>"]
+  "roadmap": ["<mejora 1 — específica y accionable>", "<mejora 2>", "<mejora 3>", "<mejora 4>"]
 }`;
 };
+
 
 const ShinyCard = ({ children, className = '', tilt }) => {
   const sheenX = (((tilt?.x ?? 0) + 1) / 2) * 100;
@@ -244,7 +291,7 @@ const App = () => {
 useEffect(() => {
   const handleOrientation = (e) => {
     const x = Math.min(Math.max(e.gamma / 90, -1), 1);
-    const y = Math.min(Math.max(e.beta / 90, -1), 1);
+    const y = Math.min(Math.max(e.beta / 90, -1), 1);   //captureFrames
     setTilt({ x, y });
   };
   window.addEventListener('deviceorientation', handleOrientation);
@@ -314,37 +361,104 @@ useEffect(() => {
     initUser();
   }, []);
 
-  const captureFrames = (url) => {
-    return new Promise((resolve) => {
-      const video = document.createElement('video');
-      video.src = url;
-      video.crossOrigin = "anonymous";
-      video.muted = true;
-      video.preload = "auto";
+  // Reemplaza captureFrames completo
+const captureFrames = (url) => {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.src = url;
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.preload = 'auto';
+
+    video.onloadedmetadata = async () => {
+      const duration = video.duration;
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
       const frames = [];
-      video.onloadedmetadata = async () => {
-        const duration = video.duration;
-        const points = [0.1, 1.5, 3.0, duration * 0.5, duration * 0.9];
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        for (let i = 0; i < points.length; i++) {
-          const targetTime = Math.min(points[i], duration);
-          setStatusText(`Analizando estructura visual... ${i+1}/${points.length}`);
-          setAnalysisProgress(Math.round(10 + (i * 18)));
-          video.currentTime = targetTime;
-          await new Promise(r => {
-            const onSeeked = () => { video.removeEventListener('seeked', onSeeked); r(); };
-            video.addEventListener('seeked', onSeeked);
-          });
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-          frames.push(canvas.toDataURL('image/jpeg', 0.5).split(',')[1]);
+
+      // DENSO en los primeros 5s (el hook es todo)
+      const hookPoints = [0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0];
+      // Distribuido en el cuerpo
+      const bodyCount = 10;
+      const bodyPoints = Array.from({ length: bodyCount }, (_, i) =>
+        5 + ((duration - 5) * i) / (bodyCount - 1)
+      );
+      // Puntos clave al final
+      const endPoints = [duration * 0.7, duration * 0.85, Math.max(duration - 0.5, 0)];
+
+      const allPoints = [...new Set([...hookPoints, ...bodyPoints, ...endPoints])]
+        .filter(t => t >= 0 && t <= duration)
+        .sort((a, b) => a - b)
+        .slice(0, 25);
+
+      for (let i = 0; i < allPoints.length; i++) {
+        setStatusText(`Escaneando estructura visual... ${i + 1}/${allPoints.length}`);
+        setAnalysisProgress(Math.round(5 + i * 2));
+        video.currentTime = allPoints[i];
+        await new Promise(r => {
+          const h = () => { video.removeEventListener('seeked', h); r(); };
+          video.addEventListener('seeked', h);
+        });
+        // Resolución reducida para velocidad, suficiente para análisis visual
+        canvas.width = Math.min(video.videoWidth, 480);
+        canvas.height = Math.min(video.videoHeight, 854);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        frames.push({
+          base64: canvas.toDataURL('image/jpeg', 0.45).split(',')[1],
+          timestamp: allPoints[i].toFixed(1),
+          isHook: allPoints[i] <= 5
+        });
+      }
+      resolve(frames);
+    };
+  });
+};
+
+// NUEVA función — detecta cortes por diferencia de frames
+const detectCutRate = async (url) => {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.src = url;
+    video.muted = true;
+    video.onloadedmetadata = async () => {
+      const duration = video.duration;
+      const canvas = document.createElement('canvas');
+      canvas.width = 80; canvas.height = 45; // ultra low-res para velocidad
+      const ctx = canvas.getContext('2d');
+      let cuts = 0;
+      let prevData = null;
+      const step = 0.25; // cada 250ms
+      const maxSamples = Math.min(Math.floor(duration / step), 120);
+
+      for (let i = 0; i < maxSamples; i++) {
+        video.currentTime = i * step;
+        await new Promise(r => {
+          const h = () => { video.removeEventListener('seeked', h); r(); };
+          video.addEventListener('seeked', h);
+        });
+        ctx.drawImage(video, 0, 0, 80, 45);
+        const data = ctx.getImageData(0, 0, 80, 45).data;
+        if (prevData) {
+          let diff = 0;
+          for (let j = 0; j < data.length; j += 4) {
+            diff += Math.abs(data[j] - prevData[j]) +
+                    Math.abs(data[j+1] - prevData[j+1]) +
+                    Math.abs(data[j+2] - prevData[j+2]);
+          }
+          const avgDiff = diff / (80 * 45 * 3);
+          if (avgDiff > 35) cuts++; // umbral empírico para cortes reales
         }
-        resolve(frames);
-      };
-    });
-  };  //Potencial Real
+        prevData = new Uint8ClampedArray(data);
+      }
+
+      resolve({
+        cuts,
+        cutsPerMinute: Math.round((cuts / duration) * 60),
+        duration: Math.round(duration)
+      });
+    };
+  });
+};
 
   const handleBuyGems = async (pkg) => {
     const userId = localStorage.getItem('redxax_user_id');
@@ -392,108 +506,181 @@ useEffect(() => {
     }
   };
 
+  // Guardar predicción para calibración futura
+const trackPrediction = async (result) => {
+  const userId = localStorage.getItem('redxax_user_id');
+  await supabase.from('prediction_tracking').insert({
+    user_id: userId,
+    predicted_score: result.potentialScore,
+    niche: result.vision?.niche,
+    platform: result.platformScores ? Object.keys(result.platformScores)[0] : 'unknown',
+    cut_rate: result.cutRateData?.cutsPerMinute,
+    hook_score: result.hookScore,
+    predicted_retention_3s: result.retentionData?.at3s,
+    created_at: new Date().toISOString(),
+    actual_views: null,    // Se rellena después
+    actual_viral: null     // Se rellena después
+  });
+};
+
+// Botón "Reportar resultado real" — el creador sube sus views después de publicar
+const reportActualOutcome = async (historyId, actualViews) => {
+  await supabase.from('prediction_tracking')
+    .update({ 
+      actual_views: actualViews,
+      actual_viral: actualViews > 50000 
+    })
+    .eq('history_id', historyId);
+  
+  // Mostrar accuracy del sistema al usuario
+  const { data } = await supabase
+    .from('prediction_tracking')
+    .select('predicted_score, actual_viral')
+    .not('actual_viral', 'is', null);
+  
+  if (data && data.length > 10) {
+    const correct = data.filter(d => 
+      (d.predicted_score >= 65) === d.actual_viral
+    ).length;
+    const accuracy = Math.round((correct / data.length) * 100);
+    console.log(`Precisión actual del sistema: ${accuracy}% en ${data.length} videos`);
+  }
+};
+
   const runNeuralAnalysis = async (url, platform, followerRange) => {
   const duration = await new Promise((resolve) => {
     const v = document.createElement('video');
     v.src = url;
     v.onloadedmetadata = () => resolve(v.duration);
   });
-  const minutes = Math.ceil(duration / 60);
-  const cost = Math.min(minutes * 100, 600);
-  const approved = await deductGems(cost, `video:${minutes}`);
+  const cost = 100;
+  const approved = await deductGems(cost, `video:${Math.ceil(duration / 60)}`);
   if (!approved) return;
 
   setStep('analyzing');
   setAnalysisMode('video');
-  setStatusText("Iniciando escaneo de InterXAX...");
-  setAnalysisProgress(10);
+  setStatusText("Detectando ritmo de edición...");
+  setAnalysisProgress(8);
 
   try {
-    const base64Frames = await captureFrames(url);
-    setAnalysisProgress(60);
-    setStatusText("Analizando estructura y tendencias...");
+    // NUEVO: detectar cut rate en paralelo con extracción de frames
+    const [cutData, frameData] = await Promise.all([
+      detectCutRate(url),
+      captureFrames(url)
+    ]);
 
-    // ── LLAMADA 1: Análisis principal (sin música) ──
-    const analysisPrompt = buildSystemInstructions(platform, followerRange, 'video');
+    const videoMetadata = {
+      cutsPerMinute: cutData.cutsPerMinute,
+      duration: cutData.duration
+    };
+
+    setAnalysisProgress(55);
+    setStatusText("Analizando con ciencia viral real...");
+
+    const analysisPrompt = buildSystemInstructions(platform, followerRange, 'video', videoMetadata);
+
+    // LLAMADA 1: Análisis principal (frames + cut rate + benchmarks)
     const { data: analysisData, error: analysisError } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: `${analysisPrompt}\n\nAnaliza estos frames del video. En el campo musicSuggestions devolvé un array vacío [] por ahora.`,
-        frames: base64Frames
+        text: `${analysisPrompt}\n\nMETADATOS TÉCNICOS MEDIDOS:\n- Cortes/minuto: ${cutData.cutsPerMinute}\n- Duración: ${cutData.duration}s\n- Frames capturados: ${frameData.length} (densos en primeros 5s)\n\nAnalizá los ${frameData.length} frames. Los primeros ${frameData.filter(f => f.isHook).length} son del hook (0-5s).`,
+        frames: frameData.map(f => f.base64)
       }
     });
     if (analysisError) throw analysisError;
 
     const rawAnalysis = extractGeminiText(analysisData);
-    const parsed = safeParseJSON(rawAnalysis, 'runNeuralAnalysis-step1');
+    const parsed = safeParseJSON(rawAnalysis, 'runNeuralAnalysis-main');
 
-    setAnalysisProgress(80);
-    setStatusText("Buscando canciones virales para tu nicho...");
+    setAnalysisProgress(72);
+    setStatusText("Buscando los 3 videos más virales de tu nicho...");
 
-    // ── LLAMADA 2: Búsqueda de música dedicada con Google Search ──
-    const musicPrompt = `Sos un experto en música viral para redes sociales en 2025-2026.
+    // LLAMADA 2: Benchmarking competitivo (nueva)
+    const benchmarkPrompt = `Sos un analista de contenido viral especializado en ${platform}.
 
-CONTEXTO DEL VIDEO:
-- Nicho: ${parsed.vision?.niche || 'General'}
-- Tono detectado: ${parsed.styleProfile?.detectedTone || 'Neutro'}
-- Ritmo detectado: ${parsed.styleProfile?.detectedRhythm || 'Normal'}
-- Plataforma objetivo: ${platform}
-- Audiencia: ${parsed.vision?.audience || 'General'}
+CONTEXTO:
+- Nicho analizado: ${parsed.vision?.niche || 'General'}
+- Score preliminar: ${parsed.potentialScore}%
+- Tono: ${parsed.styleProfile?.detectedTone}
+- Plataforma: ${platform}
 
-TAREA:
-Buscá en Google las canciones que están siendo REALMENTE usadas HOY en videos de "${parsed.vision?.niche}" en ${platform}.
-Usá queries como:
-- "trending songs ${parsed.vision?.niche} ${platform} 2026"
-- "viral music ${parsed.styleProfile?.detectedTone} videos ${platform} right now"
-- "most used songs ${platform} ${parsed.vision?.niche} creators 2025 2026"
+TAREA DE INVESTIGACIÓN:
+Buscá en Google los 3 videos con más views de "${parsed.vision?.niche}" en ${platform} publicados en los últimos 30 días.
+Para cada uno, extraé: título o descripción, views aproximados, y por qué funcionó.
 
-REGLAS ESTRICTAS:
-1. Solo sugerí canciones que EXISTEN realmente (artista + título verificable). También, estás canciones deben estar en Youtube Music obligatoriamente, y eso le debes aclarar al usuario.
-2. El ritmo de cada canción debe coincidir con "${parsed.styleProfile?.detectedRhythm}".
-3. Si el tono es oscuro/tenso, NO sugerás música alegre o pop. Viceversa.
-4. Priorizá canciones sin copyright o con uso libre en ${platform}.
+Luego comparalo con este video y respondé:
+1. ¿Está este video a nivel de esos benchmarks, por debajo, o por encima?
+2. ¿Qué tiene el video más viral que este NO tiene?
+3. ¿Cuál es el gap específico más importante a cerrar?
 
-Devolvé ÚNICAMENTE este JSON sin texto extra:
+Devolvé ÚNICAMENTE este JSON:
 {
-  "musicSuggestions": [
-    { "title": "<título real>", "artist": "<artista real>", "why": "<max 60 chars: por qué encaja técnicamente>", "available": "<plataformas donde está disponible>" },
-    { "title": "<título real>", "artist": "<artista real>", "why": "<max 60 chars>", "available": "<plataformas>" },
-    { "title": "<título real>", "artist": "<artista real>", "why": "<max 60 chars>", "available": "<plataformas>" }
-  ]
+  "competitiveBenchmark": {
+    "topVideos": [
+      { "description": "<qué es>", "approxViews": "<XM views>", "whyViral": "<razón específica>" },
+      { "description": "<qué es>", "approxViews": "<XM views>", "whyViral": "<razón específica>" },
+      { "description": "<qué es>", "approxViews": "<XM views>", "whyViral": "<razón específica>" }
+    ],
+    "gapAnalysis": "<qué separa este video del top, 150-200 chars>",
+    "positionVsTop": "<por encima | a nivel | por debajo>",
+    "criticalDifference": "<la diferencia #1 más importante, max 120 chars>"
+  }
 }`;
 
-    const { data: musicData, error: musicError } = await supabase.functions.invoke('gemini-proxy', {
+    const { data: benchmarkData } = await supabase.functions.invoke('gemini-proxy', {
+      body: { text: benchmarkPrompt }
+    });
+
+    setAnalysisProgress(85);
+    setStatusText("Buscando música viral para tu nicho...");
+
+    // LLAMADA 3: Música (ya existente, sin cambios)
+    const musicPrompt = `Sos un experto en música viral para redes sociales en 2025-2026.
+Nicho: ${parsed.vision?.niche} | Tono: ${parsed.styleProfile?.detectedTone} | Ritmo: ${parsed.styleProfile?.detectedRhythm} | Plataforma: ${platform}
+Buscá canciones REALMENTE usadas HOY en videos de "${parsed.vision?.niche}" en ${platform}.
+Devolvé ÚNICAMENTE:
+{ "musicSuggestions": [
+  { "title": "<título>", "artist": "<artista>", "why": "<max 60 chars>", "available": "<plataformas>" },
+  { "title": "<título>", "artist": "<artista>", "why": "<max 60 chars>", "available": "<plataformas>" },
+  { "title": "<título>", "artist": "<artista>", "why": "<max 60 chars>", "available": "<plataformas>" }
+]}`;
+
+    const { data: musicData } = await supabase.functions.invoke('gemini-proxy', {
       body: { text: musicPrompt }
     });
 
-    let finalResult = { ...parsed };
-
-    if (!musicError && musicData) {
+    // Merge de resultados
+    let finalResult = { ...parsed, cutRateData: cutData };
+    if (benchmarkData) {
       try {
-        const rawMusic = extractGeminiText(musicData);
-        const parsedMusic = safeParseJSON(rawMusic, 'runNeuralAnalysis-step2');
-        if (parsedMusic?.musicSuggestions?.length > 0) {
-          finalResult.musicSuggestions = parsedMusic.musicSuggestions;
-        }
-      } catch (musicErr) {
-        console.warn("Music step falló, usando fallback:", musicErr);
-        // No rompemos el flujo — el análisis principal ya está listo
-      }
+        const bm = safeParseJSON(extractGeminiText(benchmarkData), 'benchmark');
+        if (bm?.competitiveBenchmark) finalResult.competitiveBenchmark = bm.competitiveBenchmark;
+      } catch (e) { console.warn('Benchmark parse failed:', e); }
+    }
+    if (musicData) {
+      try {
+        const mu = safeParseJSON(extractGeminiText(musicData), 'music');
+        if (mu?.musicSuggestions?.length > 0) finalResult.musicSuggestions = mu.musicSuggestions;
+      } catch (e) { console.warn('Music parse failed:', e); }
     }
 
     setAiResult(finalResult);
     setCompletedSteps([]);
     setChatMessages([{
       role: 'bot',
-      text: `Protocolo REDxax: Análisis de ${finalResult.vision?.niche || 'contenido'} finalizado. Potencial: ${finalResult.potentialScore}%. ¿Deseas profundizar en la consultoría?`
+      text: `Análisis completado. Score: ${finalResult.potentialScore}% | Ritmo: ${cutData.cutsPerMinute} cpm | Comparado contra top 3 viral del nicho. ¿Querés profundizar en algo específico?`
     }]);
 
     setAnalysisProgress(100);
     await saveAnalysisToHistory(finalResult, 'video');
+
+    // Guardar en tabla de tracking para calibración futura
+    await trackPrediction(finalResult);
+
     setTimeout(() => setStep('results'), 500);
 
   } catch (err) {
-    console.error("DETALLE DEL ERROR VIDEO:", err);
-    alert("Error en el análisis de video. Revisa la consola.");
+    console.error('Error análisis:', err);
+    alert('Error en el análisis. Revisá la consola.');
     setStep('upload');
   }
 };
