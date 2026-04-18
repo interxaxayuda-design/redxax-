@@ -496,22 +496,48 @@ const detectCutRate = async (url) => {
   };
 
   const deductGems = async (amount, reason) => {
-    const userId = localStorage.getItem('redxax_user_id');
+  // Fix causa 1 y 2: asegurar que userId existe antes de continuar
+  let userId = localStorage.getItem('redxax_user_id');
+  if (!userId) {
+    userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('redxax_user_id', userId);
+    // Crear el usuario en Supabase antes de descontar
+    await supabase.functions.invoke('get-gems', { body: { userId } });
+  }
+
+  try {
     const { data, error } = await supabase.functions.invoke('deduct-gems', {
       body: { userId, amount, reason }
     });
-    if (error || !data?.success) {
+
+    // Fix causa 3: loguear el error real para diagnosticar
+    if (error) {
+      console.error('deduct-gems network/function error:', error);
+      alert('Error de conexión al procesar las gemas. Revisá tu internet e intentá de nuevo.');
+      return false;
+    }
+
+    if (!data?.success) {
       if (data?.error === 'Saldo insuficiente') {
         alert(`Gemas insuficientes. Tenés ${data.balance} y necesitás ${amount}.`);
         setShowGemStore(true);
       } else {
-        alert('Error al procesar las gemas. Intentá de nuevo.');
+        // Mostrar el error real en vez de mensaje genérico
+        console.error('deduct-gems logic error:', data);
+        alert(`Error al procesar las gemas: ${data?.error || 'Error desconocido'}. Intentá de nuevo.`);
       }
       return false;
     }
+
     setGems(data.newBalance);
     return true;
-  };
+
+  } catch (err) {
+    console.error('deduct-gems exception:', err);
+    alert('Error inesperado al procesar las gemas. Intentá de nuevo.');
+    return false;
+  }
+};
 
   const saveAnalysisToHistory = async (result, mode) => {
     const userId = localStorage.getItem('redxax_user_id');
