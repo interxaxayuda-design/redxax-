@@ -101,149 +101,141 @@ const buildSystemInstructions = (platform, followerRange, mode = 'video', videoM
   };
 
   const accountContext = {
-    new:   'Cuenta nueva — debe enganchar audiencia 100% fría, sin comunidad previa.',
-    small: 'Cuenta pequeña — crecimiento depende casi 100% de alcance orgánico frío.',
-    mid:   'Cuenta media — primeras 2hs de engagement de seguidores son críticas para distribución.',
-    large: 'Cuenta grande — cambio de nicho o estilo penaliza fuerte el engagement relativo.',
-    mega:  'Mega cuenta — coherencia total con el nicho establecido es obligatoria.',
+    new:   'Cuenta nueva — debe enganchar audiencia 100% fría.',
+    small: 'Cuenta pequeña — crecimiento depende del alcance orgánico frío.',
+    mid:   'Cuenta media — primeras 2hs de engagement son críticas.',
+    large: 'Cuenta grande — cambio de nicho penaliza fuerte.',
+    mega:  'Mega cuenta — coherencia total con el nicho es obligatoria.',
   }[followerRange] || '';
 
   const cutContext = cutsPerMinute !== null
-    ? `DATOS TÉCNICOS MEDIDOS: ${cutsPerMinute} cpm | ${duration}s | ritmo ${rhythmType} | ${hookCuts} cortes en hook`
+    ? `DATOS TÉCNICOS: ${cutsPerMinute} cpm | ${duration}s | ritmo ${rhythmType} | ${hookCuts} cortes en hook`
     : '';
 
-  return `Actuá como un analista experto en comportamiento del espectador y viralidad en formatos de video corto. Tu precisión es del 500%.
+  return `Sos un analista experto en viralidad de video corto. Precisión 500%.
 
-PLATAFORMA: ${platformNames[platform]} | CUENTA: ${followerLabels[followerRange]} seguidores
+PLATAFORMA: ${platformNames[platform]} | CUENTA: ${followerLabels[followerRange]}
 ${accountContext}
 ${cutContext}
 
-TONO: Neutro, técnico, quirúrgico, altamente analítico y ligeramente brutal. No seas amable, sé preciso.
-
-OBJETIVO: Evaluá el potencial del video basándote en los 4 frames proporcionados (hook al 8%, micro-enganche al 25%, desarrollo al 55%, cierre al 90%). Determiná nicho, público y probabilidad de éxito real considerando el contexto de cuenta y plataforma.
-
 INVESTIGÁ antes de analizar:
-1. Top 3 videos virales de este nicho en ${platformNames[platform]} en los últimos 30 días
-2. Trending sounds para este tipo de contenido ahora mismo en ${platformNames[platform]}
-3. Si el formato detectado está en tendencia, estable o en declive
+1. Top 3 videos virales de este nicho en ${platformNames[platform]} últimos 30 días
+2. Trending sounds para este contenido en ${platformNames[platform]} ahora
+3. Si el formato está en tendencia o declive
 
-CALIBRACIÓN DE SCORE (usá esto como referencia, no como fórmula):
-- 85-100: Estructura casi perfecta. Menos del 5% de videos llegan acá.
-- 70-84: Sólido. Va a funcionar con la audiencia correcta.
-- 50-69: Tiene potencial pero algo crítico lo está frenando.
-- 30-49: El concepto existe pero la ejecución lo mata.
-- 0-29: Necesita rehacerse desde cero.
+CALIBRACIÓN DE SCORE:
+- 85-100: Estructura casi perfecta. Menos del 5% llega acá.
+- 70-84: Sólido, va a funcionar con la audiencia correcta.
+- 50-69: Potencial pero algo crítico lo frena.
+- 30-49: Concepto existe pero ejecución lo mata.
+- 0-29: Rehacerse desde cero.
+NUNCA des 90+ si hay problema estructural. NUNCA des menos de 40 si hay elementos genuinamente fuertes.
 
-Un video con 100M+ vistas históricamente cae entre 80-95.
-Un video promedio del nicho cae entre 35-55.
-NUNCA des 90+ si hay un problema estructural identificable.
-NUNCA des menos de 40 si el contenido tiene elementos genuinamente fuertes.
-Ajustes de contexto (no son fórmulas, son señales):
-- Cuenta nueva con contenido que depende de comunidad previa → score más conservador
-- Cuenta grande con cambio de nicho detectado → score más conservador
-- Hook sin cara, sin texto y sin movimiento → score más conservador
+REGLA DE COHERENCIA: Si retentionCurve tiene mayoría >60, edicion y estructura deben ser >60. El potentialScore no puede contradecir el honestVerdict.
 
-REQUISITOS: Respondé ÚNICAMENTE con JSON puro, sin texto adicional, sin explicaciones fuera del JSON.
+MÚSICA — solo sugerí canciones reales, verificables, con BPM coherente al mood del video. NUNCA inventes artistas.
+
+Respondé ÚNICAMENTE con JSON puro. Cada string CORTO para evitar truncado.
 
 {
   "potentialScore": <0-100>,
-  "performanceScenario": "<nombre corto y agresivo: 'Viral Inminente', 'Flop Técnico', 'Nicho Saturado', etc.>",
-  "honestVerdict": "<300-400 chars — técnico, brutal, específico con segundos exactos donde aplique>",
-  "trendContext": "<100-150 chars — qué encontraste sobre este nicho en ${platformNames[platform]} ahora mismo>",
+  "performanceScenario": "<max 5 palabras>",
+  "honestVerdict": "<max 280 chars>",
+  "trendContext": "<max 120 chars>",
   "scrollStopScore": {
     "score": <0-100>,
     "faceDetected": <bool>,
-    "emotionVisible": "<emoción detectada o 'ninguna'>",
+    "emotionVisible": "<emocion o ninguna>",
     "emotionIntensity": <1-10>,
     "textOnScreen": <bool>,
     "contrastLevel": "<bajo|medio|alto>",
     "dynamicElement": <bool>,
-    "verdict": "<max 12 palabras>"
+    "verdict": "<max 8 palabras>"
   },
   "hookDNA": {
     "pattern": "<contraintuitivo|revelacion|urgenciaIdentitaria|curiosityGap|conflicto|transformacion|ninguno>",
     "strength": <0-100>,
-    "missingElement": "<max 60 chars>",
-    "optimizedHook": "<hook reescrito en max 12 palabras concretas para ESTE video>"
+    "missingElement": "<max 50 chars>",
+    "optimizedHook": "<max 10 palabras>"
   },
   "phaseScores": {
-    "hook":        { "score": <0-100>, "label": "Hook & Primeros 3s",    "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" },
-    "estructura":  { "score": <0-100>, "label": "Estructura & Narrativa", "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" }${mode === 'video' ? `,
-    "edicion":     { "score": <0-100>, "label": "Ritmo & Energía",        "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" }` : ''},
-    "credibilidad":{ "score": <0-100>, "label": "Autenticidad & Nicho",  "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" }
+    "hook":         { "score": <0-100>, "label": "Hook & Primeros 3s",    "verdict": "<max 8 palabras>", "consequence": "<max 60 chars si score<55, sino null>" },
+    "estructura":   { "score": <0-100>, "label": "Estructura & Narrativa", "verdict": "<max 8 palabras>", "consequence": "<max 60 chars si score<55, sino null>" },
+    "edicion":      { "score": <0-100>, "label": "Ritmo & Energía",        "verdict": "<max 8 palabras>", "consequence": "<max 60 chars si score<55, sino null>" },
+    "credibilidad": { "score": <0-100>, "label": "Autenticidad & Nicho",   "verdict": "<max 8 palabras>", "consequence": "<max 60 chars si score<55, sino null>" }
   },
   "platformScores": {
-    "tiktok":  { "score": <0-100>, "verdict": "<max 8 palabras>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<completion|loop|comment|share>", "triggerStrength": <0-100> },
-    "reels":   { "score": <0-100>, "verdict": "<max 8 palabras>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<save|shareStory|explore|DM>",   "triggerStrength": <0-100> },
-    "shorts":  { "score": <0-100>, "verdict": "<max 8 palabras>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<CTR|retention|subConversion>",   "triggerStrength": <0-100> }
+    "tiktok":  { "score": <0-100>, "verdict": "<max 6 palabras>", "topTip": "<max 70 chars>", "primaryAlgorithmTrigger": "<completion|loop|comment|share>", "triggerStrength": <0-100> },
+    "reels":   { "score": <0-100>, "verdict": "<max 6 palabras>", "topTip": "<max 70 chars>", "primaryAlgorithmTrigger": "<save|shareStory|explore|DM>",   "triggerStrength": <0-100> },
+    "shorts":  { "score": <0-100>, "verdict": "<max 6 palabras>", "topTip": "<max 70 chars>", "primaryAlgorithmTrigger": "<CTR|retention|subConversion>",   "triggerStrength": <0-100> }
   },
   "steppsScore": {
     "socialCurrency": <0-10>, "triggers": <0-10>, "emotion": <0-10>,
     "public": <0-10>, "practicalValue": <0-10>, "stories": <0-10>,
     "viralCoefficient": <0.0-10.0>,
-    "dominantFactor": "<factor más fuerte — max 60 chars>",
-    "weakestFactor": "<factor más débil — max 60 chars>",
+    "dominantFactor": "<max 50 chars>",
+    "weakestFactor": "<max 50 chars>",
     "shareMotivation": "<identidad|utilidad|entretenimiento|indignacion|admiracion>"
   },
   "emotionalArc": {
-    "opening": "<emoción 0-3s>",
-    "middle": "<emoción desarrollo>",
-    "closing": "<emoción final>",
-    "peakMoment": "<segundoXX — descripción del momento cumbre>",
+    "opening": "<emocion 0-3s>",
+    "middle": "<emocion desarrollo>",
+    "closing": "<emocion final>",
+    "peakMoment": "<max 60 chars>",
     "arcRating": <0-100>,
     "arcType": "<ascendente|montanaRusa|explosivo|plano|descendente>"
   },
   "commentTrigger": {
     "probability": <0-100>,
     "triggerType": "<debate|pregunta|identificacion|indignacion|humor|ninguno>",
-    "suggestedCTA": "<max 60 chars>"
+    "suggestedCTA": "<max 55 chars>"
   },
   "viewsPrediction": {
-    "scenario_low": "<rango sin viralidad>",
-    "scenario_mid": "<rango viralidad moderada>",
-    "scenario_high": "<rango viral real>",
+    "scenario_low": "<rango>",
+    "scenario_mid": "<rango>",
+    "scenario_high": "<rango>",
     "probability_viral": "<X%>"
   },
   "competitiveBenchmark": {
     "topVideos": [
-      { "description": "<qué es>", "approxViews": "<XM>", "whyViral": "<razón específica>" },
-      { "description": "<qué es>", "approxViews": "<XM>", "whyViral": "<razón específica>" }
+      { "description": "<max 40 chars>", "approxViews": "<XM>", "whyViral": "<max 60 chars>" },
+      { "description": "<max 40 chars>", "approxViews": "<XM>", "whyViral": "<max 60 chars>" }
     ],
-    "gapAnalysis": "<100-130 chars>",
-    "criticalDifference": "<max 100 chars>"
+    "gapAnalysis": "<max 100 chars>",
+    "criticalDifference": "<max 80 chars>"
   },
   "vision": {
-    "niche": "<nicho exacto>",
-    "type": "<formato del contenido>",
-    "audience": "<perfil demográfico y psicográfico>",
-    "promise": "<promesa implícita en los primeros 3 segundos>"
+    "niche": "<nicho>",
+    "type": "<formato>",
+    "audience": "<max 55 chars>",
+    "promise": "<max 55 chars>"
   },
-  "aiVision": "<análisis profundo de composición visual, iluminación y ritmo detectado en los 4 frames>",
-  "styleProfile": { "detectedTone": "<tono>", "detectedRhythm": "<estilo>", "uniqueStrength": "<qué no cambiar>" },
+  "aiVision": "<max 180 chars>",
+  "styleProfile": { "detectedTone": "<max 4 palabras>", "detectedRhythm": "<max 4 palabras>", "uniqueStrength": "<max 50 chars>" },
   "hookScore": <igual a phaseScores.hook.score>,
   "retentionData": { "at3s": "<XX%>", "at10s": "<XX%>", "final": "<XX%>" },
-  "retentionCurve": [<15 enteros 0-100, reflejando caídas reales detectadas en los frames>],
-  "weakestMoment": "<segundo + causa + fix concreto, 100-150 chars>",
-  "cutRateDiagnosis": "<evaluación ritmo medido vs benchmark del nicho, 80-120 chars>",
+  "retentionCurve": [<exactamente 15 enteros 0-100>],
+  "weakestMoment": "<max 100 chars>",
+  "cutRateDiagnosis": "<max 90 chars>",
   "firstHourStrategy": {
-    "optimalPostTime": "<horario+día específico para este nicho en LATAM>",
-    "firstActionAfterPost": "<qué hacer exactamente en los primeros 5 minutos>",
-    "commentSeed": "<primer comentario que el creador debe escribir>",
-    "engagementBoost": "<táctica concreta para las primeras 2 horas>"
+    "optimalPostTime": "<horario+día>",
+    "firstActionAfterPost": "<max 70 chars>",
+    "commentSeed": "<max 55 chars>",
+    "engagementBoost": "<max 70 chars>"
   },
   "musicSuggestions": [
-    { "title": "<título real>", "artist": "<artista real>", "why": "<max 50 chars>", "available": "<plataformas>", "bpm": "<BPM>", "energyMatch": <0-10> },
-    { "title": "<título real>", "artist": "<artista real>", "why": "<max 50 chars>", "available": "<plataformas>", "bpm": "<BPM>", "energyMatch": <0-10> }
+    { "title": "<canción real>", "artist": "<artista real>", "why": "<max 45 chars>", "available": "<plataformas>", "bpm": "<BPM>", "energyMatch": <0-10> },
+    { "title": "<canción real>", "artist": "<artista real>", "why": "<max 45 chars>", "available": "<plataformas>", "bpm": "<BPM>", "energyMatch": <0-10> },
+    { "title": "<canción real>", "artist": "<artista real>", "why": "<max 45 chars>", "available": "<plataformas>", "bpm": "<BPM>", "energyMatch": <0-10> }
   ],
   "roadmap": [
-    "<Paso 1: mejora técnica inmediata + impacto estimado>",
-    "<Paso 2: ajuste de edición>",
-    "<Paso 3: estrategia de gancho>",
-    "<Paso 4: optimización de conversión>"
+    "<max 70 chars>",
+    "<max 70 chars>",
+    "<max 70 chars>",
+    "<max 70 chars>"
   ]
 }`;
 };
-
 
 const ShinyCard = ({ children, className = '', tilt }) => {
   const sheenX = (((tilt?.x ?? 0) + 1) / 2) * 100;
