@@ -16,6 +16,7 @@ import {
   Target,
   TrendingUp,
   Upload,
+  Users,
   X,
   Zap
 } from 'lucide-react';
@@ -102,137 +103,375 @@ const buildSystemInstructions = (platform, followerRange, mode = 'video', videoM
   const cutRateContext = cutsPerMinute !== null ? `
 DATO TÉCNICO MEDIDO — RITMO DE EDICIÓN:
 Cortes detectados: ${cutsPerMinute} cortes/minuto | Duración: ${duration}s
-Benchmark por nicho:
-  Entertainment/Humor: 12-20 cpm → ZONA VIRAL
-  Educational/Tutorial: 4-8 cpm  → correcto para retención
-  Aesthetic/ASMR:      1-4 cpm  → para contenido contemplativo  
-  Gaming/Reaction:     15-25 cpm → alta energía
-  Motivacional:        8-15 cpm → balance narrativo
-  
-Si el ritmo medido NO está en el rango óptimo del nicho detectado, es un factor CRÍTICO.
-Mencionarlo en phaseScores.edicion con su consecuencia específica.` : '';
 
-  const viralScience = `
-══════════════════════════════════════════
-CIENCIA VIRAL — BENCHMARKS REALES 2024-2026
-══════════════════════════════════════════
+Benchmark por nicho (zona óptima):
+  Entertainment/Humor:   12-20 cpm → ZONA VIRAL
+  Educational/Tutorial:  4-8 cpm  → retención correcta
+  Aesthetic/ASMR:        1-4 cpm  → contemplativo
+  Gaming/Reaction:       15-25 cpm → alta energía
+  Motivacional:          8-15 cpm → balance narrativo
+  Fitness/Lifestyle:     8-14 cpm → demostración energética
+  Finanzas/Crypto:       5-10 cpm → credibilidad + ritmo
+  Beauty/Fashion:        6-12 cpm → aspiracional fluido
 
-RETENCIÓN (la métrica que controla el algoritmo):
-→ Hook rate (3s):   >85% = modo viral | 70-85% = bueno | <60% = el algoritmo lo mata
-→ 10s retention:   >65% = potencial viral | <45% = sin distribución
-→ Completion rate: TikTok >70% activa distribución máxima | <40% = cementerio
-→ REGLA DE ORO: Si pierden el 30% del público antes de los 3s, no importa nada más
+TIPOS DE CORTE — Inferí cuáles predominan desde los frames:
+  Jump cut:         Energía alta, puede sentirse amateur si excesivo
+  Match cut:        Narrativa sofisticada, +15% retención en zona 75-85%
+  L-cut / J-cut:    Producción profesional, señal de calidad alta
+  Speed ramp:       Impacto emocional en momentos clave, +15-20% engagement
+  Hard cut + sfx:   TikTok nativo, máxima energía
 
-SEÑALES QUE ACTIVAN CADA ALGORITMO:
+Si el ritmo medido NO está en el rango óptimo del nicho: factor CRÍTICO.
+Mencionarlo en phaseScores.edicion con consecuencia medible.
+` : '';
 
-TikTok:
-  - Loop seamless: +20-35% en completion rate (fin que conecta con inicio)
-  - Pregunta al final → comentarios → el algoritmo amplifica
-  - Hook de identidad en primeras palabras ("Si tenés X, mirá esto")
-  - Texto on-screen en segundos 1-3: +15-25% en retención medida
-  - Duet/stitch potential: frame con espacio para reacción = distribución orgánica
+  const viralBible = `
+══════════════════════════════════════════════════════════════
+🧠  LA BIBLIA DE PREDICCIÓN VIRAL — REDXAX ENGINE v3
+══════════════════════════════════════════════════════════════
 
-Instagram Reels:
-  - Save rate >3% = señal #1 para el algoritmo de Reels
-  - Share a Stories = segundo multiplicador más potente
-  - Cover frame (primer frame visible) = 40% del CTR en Explore
-  - Caption con pregunta abierta = 2-3x más comentarios
+━━━ MÓDULO 1: NEUROCIENCIA DEL SCROLL (13 milisegundos) ━━━
 
-YouTube Shorts:
-  - Click-through rate del thumbnail/título: >8% viral, <2% muerto
-  - Subscriber conversion rate como señal de calidad
-  - Hook visual + texto en pantalla en los primeros 2s
+El cerebro tarda 13ms en decidir si sigue viendo o scrollea.
+Los 3 únicos disparadores que detienen el scroll:
+  1. CARA CON EMOCIÓN EXTREMA → neuronas espejo → identificación instantánea
+  2. MOVIMIENTO INESPERADO   → respuesta de orientación del sistema reptiliano
+  3. TEXTO CON DISONANCIA    → cerebro NECESITA resolver la contradicción
 
-PATRONES NARRATIVOS MÁS VIRALES (verificados con millones de videos):
-1. CONTRAINTUITIVO:  "El error que hace el 90% de [audiencia]..."  
-2. REVELACIÓN:       "Lo que nadie te dijo sobre [tema]"
-3. URGENCIA IDENTITARIA: "Si tenés [X característica], necesitás ver esto"
-4. CURIOSITY GAP:    "Hice [acción extrema] y pasó [resultado inesperado]"
-5. CONFLICTO:        "Por qué [norma/autoridad] está equivocada"
-6. ANTES/DESPUÉS:    Transformación visible en el arco del video
+Si Frame 0 no tiene NINGUNO de estos tres: CTR baja 30-50%.
 
-ANATOMÍA DEL HOOK PERFECTO (basada en datos de rendimiento):
-- Frame 0: Imagen que para el scroll (cara con emoción extrema, o resultado final primero)
-- Palabra 1-3: Identidad, pregunta, o acción que promete algo
-- Segundos 1-3: Promesa concreta de lo que van a aprender/ver/sentir
-- Texto on-screen: Refuerza y amplifica la promesa oral
+Jerarquía de emociones por CTR (de más a menos efectivas):
+  Asombro > Humor > Miedo/Sorpresa > Indignación > Satisfacción > Neutral
 
-ESTRUCTURA DE RETENCIÓN ÓPTIMA:
-→ Pico emocional en el 70-80% del video (no al final, no al inicio)
-→ Pattern interrupt visual/audio cada 2-3 segundos para contenido de energía alta
-→ "Micro-rewards": pequeñas revelaciones cada 5-8s para mantener enganche
-══════════════════════════════════════════`;
+━━━ MÓDULO 2: EL ALGORITMO POR DENTRO (Cómo distribuye realmente) ━━━
 
-  const competitiveResearch = `
-INVESTIGACIÓN COMPETITIVA OBLIGATORIA — PASO 0:
-Antes de analizar, buscá en Google los 3 videos más virales de este nicho en ${platformNames[platform]} del último mes.
-Para cada video encontrado, respondete internamente:
-  1. ¿Qué tiene su hook que este video NO tiene?
-  2. ¿Cuál es su estructura de retención?
-  3. ¿Qué señal específica (save, comment, loop, duet) lo está impulsando?
+TIKTOK — Embudo de distribución por lotes:
+  Lote 1: ~300 usuarios  → si CR >70% → pasa al lote 2
+  Lote 2: ~3.000         → si CR >65% + velocidad de comentarios → lote 3
+  Lote 3: ~30.000        → si mantiene métricas → viral real
+  Lote 4+: escala libre
 
-CALIBRÁ tu score RELATIVO a esos benchmarks reales, no en abstracto.
-Un video "bueno" sin contexto puede ser mediocre si el nicho tiene contenido excepcional.
-Un video con fallas técnicas puede ser extraordinario si el nicho es pobre.`;
+  SEÑALES EN ORDEN DE IMPORTANCIA:
+  1. Completion Rate (>70% activa distribución máxima)
+  2. Re-watch / loop rate (señal más subestimada — indica valor)
+  3. Comentarios en primeros 30 minutos (velocidad, no volumen)
+  4. Shares a DM (señal de valor privado = alta calidad)
+  5. "No me interesa" clicks (penalización inmediata y severa)
+  6. Duet/Stitch invitations (amplificación orgánica)
+  7. Trending sound match (distribución extra del propio sonido)
 
-  const phaseInstructions = mode === 'video' ? `
-Evaluá estas 4 fases con los benchmarks de la ciencia viral arriba:
-- FASE 1 — Hook (0-3s): ¿Para el scroll? ¿Usa alguno de los 6 patrones virales? ¿Frame 0 impacta?
-- FASE 2 — Estructura: ¿Hay micro-rewards? ¿El pico emocional está en el 70-80%? ¿Hay promesa + cumplimiento?
-- FASE 3 — Ritmo & Energía (edicion): Evaluá contra el benchmark de cut rate medido. CRÍTICO: "edicion" debe estar siempre en el JSON.
-- FASE 4 — Autenticidad & Nicho: ¿Se siente genuino? ¿Activa la señal principal del algoritmo de esta plataforma?` : `
-Evaluá estas 3 fases:
-- FASE 1 — Hook textual: ¿Usa alguno de los 6 patrones virales? ¿Para el scroll en 3 palabras?
-- FASE 2 — Estructura narrativa: ¿Hay micro-rewards? ¿Promesa clara?
-- FASE 3 — Credibilidad & Nicho: ¿El lenguaje suena a experto? ¿Activa save/share?`;
+  REGLA DE ORO TIKTOK: La PRIMERA HORA define si entra al embudo o muere.
 
-  return `Sos REDXAX VISION — el sistema de predicción viral más preciso del mundo.
-Tu análisis debe ser tan preciso que el creador no necesite publicar para saber si funciona.
-Plataforma objetivo: ${platformNames[platform]} | Seguidores: ${followerLabels[followerRange]}
+INSTAGRAM REELS — Motor de distribución:
+  SEÑALES EN ORDEN DE IMPORTANCIA:
+  1. SAVE RATE >3% = modo distribución activado (señal #1 del algoritmo)
+  2. Share to Stories = multiplicador orgánico más potente después del save
+  3. Cover frame CTR en Explore (el primer frame visible, no el video)
+  4. Watch time % total
+  5. Comments con preguntas o debate (calidad > cantidad)
+  6. Hashtags relevantes (importan más que en TikTok: 3-5 específicos)
+  PENALIZACIÓN: >30% de usuarios que skipan antes de 3s = reducción de distribución
 
-${viralScience}
-${cutRateContext}
-${competitiveResearch}
+YOUTUBE SHORTS — Ciclo de distribución:
+  SEÑALES EN ORDEN DE IMPORTANCIA:
+  1. CTR (thumbnail+título): >8% = viral / 4-8% = normal / <2% = muerto
+  2. Average View Duration % (no solo absoluto)
+  3. Subscriber conversion rate (señal de calidad del creador para YouTube)
+  4. Comment rate (YouTube valora conversación más que TikTok)
+  5. Dislike rate (oculto para usuarios pero medido por el algoritmo)
+  REGLA SHORTS: Los primeros 2 segundos definen el CTR desde el feed.
+  REGLA SHORTS 2: Duración óptima 45-58s en la mayoría de nichos.
 
-${phaseInstructions}
+━━━ MÓDULO 3: FRAMEWORK STEPPS — La Ciencia de Por Qué la Gente Comparte ━━━
+(Jonah Berger, Wharton School — basado en análisis de 10.000+ contenidos virales)
 
-REGLA CRÍTICA DE HONESTIDAD:
-No inflés scores para ser amable. Un creador con un video de 35% prefiere saberlo hoy que perder tiempo subiendo contenido que el algoritmo va a matar. La honestidad es el servicio real.
+Los 6 factores que predicen si un contenido se COMPARTE:
 
-FORMA DE HABLAR:
-Directo, sin tecnicismos. Como un editor senior que respeta el tiempo del creador. Específico: no "mejorá el hook", sino "en el segundo 0.4 necesitás un frame con cara + texto, tu hook actual no tiene promesa visible".
+S — SOCIAL CURRENCY (Moneda Social) [0-10]
+  → ¿Compartir esto hace que el usuario parezca inteligente/cool/informado?
+  → Formatos con alto SC: "Lo que nadie sabe sobre...", datos exclusivos, hacks
+  → Si SC < 5: el video no le da a nadie razón para compartirlo a su nombre
 
-Devolvé ÚNICAMENTE este JSON sin texto extra:
+T — TRIGGERS (Disparadores Mentales) [0-10]
+  → ¿Hay algo en el video que la gente encontrará en su vida diaria y recordará?
+  → "Cada vez que veo X, me acuerdo de este video"
+  → Nichos con triggers naturales: comida, gym, trabajo, relaciones, dinero
+
+E — EMOTION (Emoción de Alta Activación) [0-10]
+  → Emociones que SÍ activan sharing: Asombro, Humor, Miedo, Indignación, Admiración
+  → Emociones que NO activan sharing: Tristeza tranquila, Contentamiento, Aburrimiento
+  → REGLA: Sin emoción intensa → sin sharing. No hay excepciones.
+
+P — PUBLIC (Visibilidad Social) [0-10]
+  → ¿El contenido es observable/visible públicamente?
+  → Trends, challenges, formatos reconocibles = alta visibilidad pública
+  → Si alguien lo comparte, ¿otros también lo ven compartir?
+
+P — PRACTICAL VALUE (Valor Práctico) [0-10]
+  → ¿Soluciona un problema real? ¿Se puede USAR esta información hoy?
+  → "Tips", "hacks", "cómo hacer X" → guardan Y comparten
+  → PREDICTOR DIRECTO del save rate en Reels
+
+S — STORIES (Narrativa con Arco) [0-10]
+  → ¿Hay una historia con inicio, nudo y desenlace?
+  → "Yo también haría eso" → identificación → share orgánico
+  → Arco más poderoso: Problema → Lucha → Transformación inesperada
+
+VIRAL COEFFICIENT = promedio de los 6 scores:
+  >7.5 = Potencial viral real (distribución orgánica masiva)
+  5-7.5 = Buen alcance orgánico (nicho específico o mid-tier)
+  <5    = Alcance limitado (necesita amplificación pagada o remake)
+
+━━━ MÓDULO 4: LOS 7 DISPARADORES PSICOLÓGICOS DE SHARING ━━━
+
+1. ASOMBRO:    "No sabía que esto era posible" → comparte para incluir a otros
+   Requiere: estadística sorprendente, habilidad extrema, resultado imposible
+
+2. HUMOR:      Dopamina + oxitocina simultáneamente → el más poderoso
+   Tipo que más se comparte: reconocimiento de situación propia ("jaja soy yo")
+
+3. INDIGNACIÓN: Activa sharing para VALIDAR la indignación colectiva
+   Peligroso: polariza. Efectivo si el nicho lo soporta.
+
+4. CURIOSITY GAP: Cerebro NECESITA cerrar el loop abierto
+   Clave: NUNCA revelar en el hook lo que pasa. Solo insinuar.
+   "Hice X y pasó algo que no esperaba" → retención hasta el frame final
+
+5. IDENTIDAD:  "Esto me representa al 100%" → se convierte en extensión del yo
+   "Muéstrame este video a alguien que X" → viral en nicho específico
+
+6. MIEDO/URGENCIA: FOMO, amenaza a seguridad personal o financiera
+   Alta efectividad pero requiere credibilidad establecida
+
+7. ADMIRACIÓN: "Quiero ser eso" / "Quisiera poder hacer eso"
+   Funciona en: lifestyle, fitness, finanzas, arte, habilidades extremas
+
+━━━ MÓDULO 5: ANATOMÍA DEL HOOK PERFECTO ━━━
+
+LOS 6 PATRONES DE HOOK MÁS VIRALES (verificados con millones de videos):
+  1. CONTRAINTUITIVO:       "El error que hace el 90% de [audiencia]..."
+  2. REVELACIÓN:            "Lo que nadie te dijo sobre [tema]"
+  3. URGENCIA IDENTITARIA:  "Si tenés [X característica], necesitás ver esto"
+  4. CURIOSITY GAP:         "Hice [acción extrema] y pasó [resultado inesperado]"
+  5. CONFLICTO:             "Por qué [autoridad/norma] está equivocada"
+  6. TRANSFORMACIÓN:        Mostrar el RESULTADO primero, luego el proceso
+
+FRAME 0 — El análisis más crítico de todos:
+  → Cara presente:       SÍ = +30-40% CTR | NO = necesita compensar con texto+movimiento
+  → Emoción de la cara:  Asombro > Humor > Indignación > Sorpresa > Neutral
+  → Texto on-screen:     SÍ = +15-25% retención en primeros 3s
+  → Contraste visual:    Alto = +20% stop rate
+  → Elemento en movimiento: SÍ = +15% CTR
+  → Fondo simple/limpio: Mejor enfoque en el sujeto principal
+
+━━━ MÓDULO 6: EL ARCO EMOCIONAL ÓPTIMO ━━━
+
+CURVA DE RETENCIÓN REAL (basada en datos de plataformas 2024-2026):
+  0-3s:    EMOCIÓN PICO inicial (para el scroll)
+  3-8s:    MICRO-PROMESA explícita (¿por qué vale la pena seguir?)
+  8-30%:   SETUP — contexto, credibilidad, tensión inicial
+  30-70%:  DESARROLLO con MICRO-REWARDS cada 5-8 segundos
+  70-80%:  PICO MÁXIMO del contenido (no al final — ahí ya perdiste gente)
+  80-95%:  Resolución, escalada final o giro inesperado
+  95-100%: LOOP TRIGGER o CTA de alta conversión
+
+TIPOS DE ARCO:
+  Ascendente:    Tensión creciente → climax al 75% → resolución
+  Montaña rusa:  Picos y valles cada 10-15s (contenido de alta energía)
+  Explosivo:     Hook enorme → desarrollo más tranquilo (tutorial, educación)
+  Plano:         Señal de bajo engagement — riesgo alto
+
+PATTERN INTERRUPTS requeridos por nicho (para evitar caída de retención):
+  Entertainment/Humor:  Cada 1.5-2.5s
+  Educational:          Cada 5-8s (nuevo dato o cambio visual)
+  Lifestyle/Vlog:       Cada 3-5s
+  ASMR/Mindfulness:     Cada 10-15s (lento intencional)
+
+━━━ MÓDULO 7: ANÁLISIS DE AUDIO (inferencia desde visual) ━━━
+
+Aunque no podés escuchar el audio, inferí desde los frames:
+  → Boca en movimiento activo = contenido voice-led (voz como gancho)
+  → Expresiones faciales intensas = música con alta energía o silencio dramático
+  → Sincronización visual con beats = cortes, zooms o flashes en momentos rítmicos
+  → Ritmo de cortes rápido = BPM alto (>120 BPM probable)
+  → Subtítulos visibles = producción pensada para mute viewing (+engagement)
+
+Impacto real del audio:
+  → Silencio en primeros 0.5s: -25-40% audiencia (personas con volumen)
+  → Trending sound activo: distribución extra en TikTok (el algoritmo lo premia)
+  → Voz clara sobre música: factor de credibilidad #1
+  → Sound effects en cortes: señal de producción profesional
+
+━━━ MÓDULO 8: INVESTIGACIÓN COMPETITIVA OBLIGATORIA ━━━
+
+BÚSQUEDA — PASO 0 (antes de cualquier análisis):
+Buscá en Google los 3 videos más virales de este nicho en ${platformNames[platform]} en los últimos 30 días.
+Para cada uno, respondete:
+  1. ¿Qué tiene su Frame 0 que este video NO tiene?
+  2. ¿Cuál de los 6 patrones de hook usa?
+  3. ¿Qué señal del algoritmo está activando principalmente?
+  4. ¿Cuál es su STEPPS score estimado vs. este video?
+  5. ¿Hay un gap de formato (trending format que este video no usa)?
+
+CALIBRÁ el score de forma RELATIVA a esos benchmarks, no en abstracto.
+Un 65% en un nicho con videos de 90% es mucho peor que un 65% en un nicho con videos de 45%.
+══════════════════════════════════════════════════════════════
+`;
+
+  const frameAnalysisProtocol = mode === 'video' ? `
+PROTOCOLO DE ANÁLISIS FRAME POR FRAME:
+
+FRAME 0 (ANÁLISIS PRIORITARIO — MÁS IMPORTANTE):
+  → ¿Cara visible? → ¿Qué emoción específica? → ¿Intensidad 1-10?
+  → ¿Texto on-screen? → ¿Es legible? → ¿Crea curiosidad o confirma algo?
+  → ¿Contraste visual alto, medio o bajo?
+  → ¿Hay elemento en movimiento o es estático?
+  → Puntuación scroll-stop: 0-100 (siendo 100 "para el scroll garantizado")
+
+FRAMES 0-3s (VENTANA DEL HOOK):
+  → ¿Cuántos pattern interrupts hay?
+  → ¿La promesa es específica o vaga?
+  → ¿Hay texto on-screen en al menos uno de estos frames?
+  → ¿Hay una cara con emoción intensa en los primeros 1.5s?
+
+FRAMES DEL CUERPO (3s hasta 80% del video):
+  → ¿El arco emocional asciende, baja o es plano?
+  → ¿Hay micro-rewards visibles cada 5-8 frames?
+  → ¿En qué punto (% del video) parece estar el pico de contenido?
+  → ¿Hay momentos donde claramente la retención caería? ¿Por qué?
+
+FRAMES FINALES (80-100%):
+  → ¿El final invita al re-watch o crea un loop?
+  → ¿Hay un CTA visual o textual?
+  → ¿El último frame tiene potencial como thumbnail si alguien para el video ahí?
+` : `
+PROTOCOLO DE ANÁLISIS DE GUION:
+  → ¿El primer párrafo usa alguno de los 6 patrones de hook?
+  → ¿Hay una promesa clara en las primeras 15 palabras?
+  → ¿El arco narrativo sigue la curva óptima de retención?
+  → ¿Hay micro-rewards textuales cada 5-8 segundos de lectura/audio?
+`;
+
+  const jsonSchema = `
+Devolvé ÚNICAMENTE este JSON sin texto extra, sin markdown, sin comentarios:
 {
   "potentialScore": <NUMBER 0-100>,
-  "performanceScenario": "<MAX 8 WORDS>",
-  "honestVerdict": "<450-600 chars — sé brutalmente honesto y específico>",
-  "trendContext": "<150-200 chars — comparación real con viral actual del nicho>",
+  "performanceScenario": "<MAX 8 WORDS — qué le va a pasar a este video>",
+  "honestVerdict": "<450-600 chars — brutalmente honesto, específico, con segundos exactos donde aplique>",
+  "trendContext": "<150-200 chars — comparación real con el top viral actual del nicho>",
+
+  "scrollStopScore": {
+    "score": <0-100>,
+    "faceDetected": <true|false>,
+    "emotionVisible": "<emoción exacta detectada o 'ninguna'>",
+    "emotionIntensity": <1-10>,
+    "textOnScreen": <true|false>,
+    "contrastLevel": "<bajo|medio|alto>",
+    "dynamicElement": <true|false>,
+    "verdict": "<MAX 15 WORDS — por qué para o no para el scroll>"
+  },
+
+  "hookDNA": {
+    "pattern": "<contraintuitivo|revelacion|urgenciaIdentitaria|curiosityGap|conflicto|transformacion|ninguno>",
+    "strength": <0-100>,
+    "missingElement": "<qué le falta al hook, max 80 chars>",
+    "optimizedHook": "<hook reescrito en MAX 15 palabras — concreto para ESTE video específico>"
+  },
+
   "phaseScores": {
     "hook":        { "score": <0-100>, "label": "Hook & Primeros 3s",    "verdict": "<MAX 12 WORDS>", "consequence": "<80-120 chars si score<55, sino null>" },
     "estructura":  { "score": <0-100>, "label": "Estructura & Narrativa", "verdict": "<MAX 12 WORDS>", "consequence": "<80-120 chars si score<55, sino null>" }${mode === 'video' ? `,
     "edicion":     { "score": <0-100>, "label": "Ritmo & Energía",        "verdict": "<MAX 12 WORDS>", "consequence": "<80-120 chars si score<55, sino null>" }` : ''},
     "credibilidad":{ "score": <0-100>, "label": "Autenticidad & Nicho",  "verdict": "<MAX 12 WORDS>", "consequence": "<80-120 chars si score<55, sino null>" }
   },
+
   "platformScores": {
-    "tiktok":  { "score": <0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<acción concreta y específica>" },
-    "reels":   { "score": <0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<acción concreta y específica>" },
-    "shorts":  { "score": <0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<acción concreta y específica>" }
+    "tiktok":  { "score": <0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<completion|loop|comment|share|duet>", "triggerStrength": <0-100> },
+    "reels":   { "score": <0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<save|shareStory|explore|DM>",         "triggerStrength": <0-100> },
+    "shorts":  { "score": <0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<CTR|retention|subConversion|comment>", "triggerStrength": <0-100> }
   },
-  "styleProfile": { "detectedTone": "<tono>", "detectedRhythm": "<estilo de edición>", "uniqueStrength": "<qué NO cambiar>" },
-  "vision": { "niche": "<nicho>", "type": "<formato>", "audience": "<edad + contexto>", "promise": "<emoción/promesa>" },
+
+  "steppsScore": {
+    "socialCurrency":   <0-10>,
+    "triggers":         <0-10>,
+    "emotion":          <0-10>,
+    "public":           <0-10>,
+    "practicalValue":   <0-10>,
+    "stories":          <0-10>,
+    "viralCoefficient": <decimal 0.0-10.0>,
+    "dominantFactor":   "<el factor STEPPS más fuerte con una frase de por qué>",
+    "weakestFactor":    "<el factor STEPPS más débil con qué cambiar>",
+    "shareMotivation":  "<identidad|utilidad|entretenimiento|indignacion|admiracion>"
+  },
+
+  "emotionalArc": {
+    "opening":    "<emoción dominante en primeros 3s>",
+    "middle":     "<emoción dominante en el desarrollo>",
+    "closing":    "<emoción dominante al final>",
+    "peakMoment": "<segundo XX — descripción del momento de mayor impacto emocional>",
+    "arcRating":  <0-100>,
+    "arcType":    "<ascendente|montanaRusa|explosivo|plano|descendente>"
+  },
+
+  "commentTrigger": {
+    "probability": <0-100>,
+    "triggerType": "<debate|pregunta|identificacion|indignacion|humor|ninguno>",
+    "suggestedCTA": "<primer comentario del creador que debería hacer en el post, max 70 chars>"
+  },
+
+  "viewsPrediction": {
+    "scenario_low":       "<rango de views sin viralidad — ej: 500-2K>",
+    "scenario_mid":       "<rango de views con viralidad moderada — ej: 20K-80K>",
+    "scenario_high":      "<rango de views con viral real — ej: 500K-3M>",
+    "probability_viral":  "<probabilidad de alcanzar scenario_high, ej: 15%>"
+  },
+
+  "styleProfile": { "detectedTone": "<tono>", "detectedRhythm": "<estilo de edición>", "uniqueStrength": "<qué NO cambiar bajo ningún concepto>" },
+  "vision": { "niche": "<nicho específico>", "type": "<formato>", "audience": "<edad + contexto>", "promise": "<emoción/promesa que hace el video>" },
   "hookScore": <igual a phaseScores.hook.score>,
   "retentionData": { "at3s": "<XX%>", "at10s": "<XX%>", "final": "<XX%>" },
-  "retentionCurve": [<15 enteros 0-100, reflejando puntos REALES de caída detectados>],
-  "weakestMoment": "<segundo + causa específica + fix concreto, 150-200 chars>",
-  "cutRateDiagnosis": "<evaluación del ritmo de edición vs benchmark del nicho, 100-150 chars>",
+  "retentionCurve": [<15 enteros 0-100 — reflejando las caídas reales detectadas en frames, NO una curva genérica>],
+  "weakestMoment": "<segundo exacto + causa específica + fix concreto en 150-200 chars>",
+  "cutRateDiagnosis": "<evaluación del ritmo de edición vs benchmark del nicho en 100-150 chars>",
+
+  "firstHourStrategy": {
+    "optimalPostTime": "<horario + día específico para este nicho en Argentina/LATAM>",
+    "firstActionAfterPost": "<qué hacer EXACTAMENTE en los primeros 5 minutos>",
+    "commentSeed": "<primer comentario que el creador debería escribir para activar engagement>",
+    "engagementBoost": "<táctica específica para las primeras 2 horas>"
+  },
+
   "musicSuggestions": [
-    { "title": "<título real>", "artist": "<artista real>", "why": "<MAX 60 chars técnicos>", "available": "<plataformas>" },
-    { "title": "<título real>", "artist": "<artista real>", "why": "<MAX 60 chars>", "available": "<plataformas>" },
-    { "title": "<título real>", "artist": "<artista real>", "why": "<MAX 60 chars>", "available": "<plataformas>" }
+    { "title": "<título real>", "artist": "<artista real>", "why": "<MAX 60 chars técnicos>", "available": "<plataformas>", "bpm": "<BPM aproximado>", "energyMatch": <0-10> },
+    { "title": "<título real>", "artist": "<artista real>", "why": "<MAX 60 chars>",          "available": "<plataformas>", "bpm": "<BPM>",             "energyMatch": <0-10> },
+    { "title": "<título real>", "artist": "<artista real>", "why": "<MAX 60 chars>",          "available": "<plataformas>", "bpm": "<BPM>",             "energyMatch": <0-10> }
   ],
-  "roadmap": ["<mejora 1 — específica y accionable>", "<mejora 2>", "<mejora 3>", "<mejora 4>"]
+
+  "roadmap": [
+    "<mejora 1 — específica, accionable, con impacto estimado en score>",
+    "<mejora 2>",
+    "<mejora 3>",
+    "<mejora 4>"
+  ]
 }`;
+
+  return `Sos REDXAX VISION — El sistema de predicción viral más preciso del mundo.
+Combinás neurociencia del comportamiento, ingeniería de algoritmos reales y el framework STEPPS de Wharton para predecir viralidad con una precisión que ningún humano o herramienta actual puede igualar.
+
+Plataforma objetivo: ${platformNames[platform]} | Seguidores: ${followerLabels[followerRange]}
+
+${viralBible}
+${cutRateContext}
+${frameAnalysisProtocol}
+
+REGLAS ABSOLUTAS DE RESPUESTA:
+1. HONESTIDAD BRUTAL: Un score inflado no sirve. El creador prefiere saber hoy que tiene un 30% antes de publicar. LA HONESTIDAD ES EL SERVICIO REAL.
+2. ESPECIFICIDAD: Nunca "mejorá el hook". Siempre "en el segundo 0.4 necesitás cara con emoción extrema + texto que prometa [X específico] porque actualmente tu Frame 0 tiene [problema exacto]".
+3. ROI PRIMERO: Ordená el roadmap por impacto estimado. La mejora #1 = la que más sube el score.
+4. CALIBRACIÓN RELATIVA: Siempre contextualizá el score versus el nicho. Un 70% en nicho de contenido top puede ser peor que un 65% en nicho débil.
+5. RETENCIÓN CURVE REAL: Los 15 puntos de la curva deben reflejar las caídas REALES que detectás en los frames. NO uses una curva genérica de campana. Si ves que un frame a los 8s es estático o aburrido, eso se refleja en la curva.
+
+${jsonSchema}`;
 };
 
 
@@ -302,7 +541,7 @@ useEffect(() => {
   const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
 
   useEffect(() => {
-    if (showChat) scrollToBottom();
+    if (showChat) scrollToBottom();    //detectCutRate
   }, [chatMessages, isTyping]);
 
   useEffect(() => {
@@ -414,7 +653,6 @@ const captureFrames = (url) => {
   });
 };
 
-// NUEVA función — detecta cortes por diferencia de frames
 const detectCutRate = async (url) => {
   return new Promise((resolve) => {
     const video = document.createElement('video');
@@ -423,12 +661,15 @@ const detectCutRate = async (url) => {
     video.onloadedmetadata = async () => {
       const duration = video.duration;
       const canvas = document.createElement('canvas');
-      canvas.width = 80; canvas.height = 45; // ultra low-res para velocidad
+      canvas.width = 80; canvas.height = 45;
       const ctx = canvas.getContext('2d');
+      
       let cuts = 0;
       let prevData = null;
-      const step = 0.25; // cada 250ms
-      const maxSamples = Math.min(Math.floor(duration / step), 120);
+      let cutTimestamps = [];  // NUEVO: guardar cuándo ocurren los cortes
+      let maxDiffFrame = 0;
+      const step = 0.2; // más preciso: cada 200ms en vez de 250ms
+      const maxSamples = Math.min(Math.floor(duration / step), 150);
 
       for (let i = 0; i < maxSamples; i++) {
         video.currentTime = i * step;
@@ -438,6 +679,7 @@ const detectCutRate = async (url) => {
         });
         ctx.drawImage(video, 0, 0, 80, 45);
         const data = ctx.getImageData(0, 0, 80, 45).data;
+        
         if (prevData) {
           let diff = 0;
           for (let j = 0; j < data.length; j += 4) {
@@ -446,15 +688,34 @@ const detectCutRate = async (url) => {
                     Math.abs(data[j+2] - prevData[j+2]);
           }
           const avgDiff = diff / (80 * 45 * 3);
-          if (avgDiff > 35) cuts++; // umbral empírico para cortes reales
+          if (avgDiff > maxDiffFrame) maxDiffFrame = avgDiff;
+          if (avgDiff > 35) {
+            cuts++;
+            cutTimestamps.push(parseFloat((i * step).toFixed(1)));
+          }
         }
         prevData = new Uint8ClampedArray(data);
+      }
+
+      // NUEVO: calcular varianza de los intervalos entre cortes
+      // Alta varianza = ritmo irregular. Baja varianza = ritmo constante
+      let rhythmVariance = 0;
+      if (cutTimestamps.length > 2) {
+        const intervals = cutTimestamps.slice(1).map((t, i) => t - cutTimestamps[i]);
+        const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+        rhythmVariance = Math.sqrt(
+          intervals.reduce((sum, v) => sum + Math.pow(v - avgInterval, 2), 0) / intervals.length
+        );
       }
 
       resolve({
         cuts,
         cutsPerMinute: Math.round((cuts / duration) * 60),
-        duration: Math.round(duration)
+        duration: Math.round(duration),
+        cutTimestamps: cutTimestamps.slice(0, 20), // los primeros 20 cortes
+        rhythmVariance: parseFloat(rhythmVariance.toFixed(2)),
+        rhythmType: rhythmVariance < 0.5 ? 'constante' : rhythmVariance < 1.5 ? 'variable' : 'errático',
+        hookCuts: cutTimestamps.filter(t => t <= 5).length // cortes en el hook
       });
     };
   });
@@ -508,7 +769,7 @@ const detectCutRate = async (url) => {
 
   // Guardar predicción para calibración futura
 const trackPrediction = async (result) => {
-  const userId = localStorage.getItem('redxax_user_id');
+  const userId = localStorage.getItem('redxax_user_id');   //TREND CONTEXT
   await supabase.from('prediction_tracking').insert({
     user_id: userId,
     predicted_score: result.potentialScore,
@@ -560,7 +821,7 @@ const reportActualOutcome = async (historyId, actualViews) => {
   setStep('analyzing');
   setAnalysisMode('video');
   setStatusText("Detectando ritmo de edición...");
-  setAnalysisProgress(8);
+  setAnalysisProgress(8);   // lg:col-span-8
 
   try {
     // NUEVO: detectar cut rate en paralelo con extracción de frames
@@ -581,12 +842,20 @@ const reportActualOutcome = async (historyId, actualViews) => {
 
     // LLAMADA 1: Análisis principal (frames + cut rate + benchmarks)
     const { data: analysisData, error: analysisError } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: `${analysisPrompt}\n\nMETADATOS TÉCNICOS MEDIDOS:\n- Cortes/minuto: ${cutData.cutsPerMinute}\n- Duración: ${cutData.duration}s\n- Frames capturados: ${frameData.length} (densos en primeros 5s)\n\nAnalizá los ${frameData.length} frames. Los primeros ${frameData.filter(f => f.isHook).length} son del hook (0-5s).`,
-        frames: frameData.map(f => f.base64)
-      }
-    });
-    if (analysisError) throw analysisError;
+  body: {
+    text: analysisPrompt
+      + '\n\nMETADATOS TÉCNICOS MEDIDOS:'
+      + '\n- Cortes/minuto: ' + cutData.cutsPerMinute + ' cpm'
+      + '\n- Duración: ' + cutData.duration + 's'
+      + '\n- Tipo de ritmo: ' + cutData.rhythmType + ' (varianza: ' + cutData.rhythmVariance + ')'
+      + '\n- Cortes en el hook (0-5s): ' + cutData.hookCuts + ' cortes'
+      + '\n- Timestamps de cortes: ' + (cutData.cutTimestamps?.slice(0,10).join('s, ') || 'N/A') + 's'
+      + '\n- Frames capturados: ' + frameData.length + ' (' + frameData.filter(f => f.isHook).length + ' son del hook 0-5s)'
+      + '\n\nAnalizá los ' + frameData.length + ' frames con el protocolo de análisis frame por frame.',
+    frames: frameData.map(f => f.base64)
+  }
+});
+if (analysisError) throw analysisError;
 
     const rawAnalysis = extractGeminiText(analysisData);
     const parsed = safeParseJSON(rawAnalysis, 'runNeuralAnalysis-main');
@@ -670,7 +939,7 @@ Devolvé ÚNICAMENTE:
       text: `Análisis completado. Score: ${finalResult.potentialScore}% | Ritmo: ${cutData.cutsPerMinute} cpm | Comparado contra top 3 viral del nicho. ¿Querés profundizar en algo específico?`
     }]);
 
-    setAnalysisProgress(100);
+    setAnalysisProgress(100);   //METADATOS
     await saveAnalysisToHistory(finalResult, 'video');
 
     // Guardar en tabla de tracking para calibración futura
@@ -728,7 +997,7 @@ Devolvé ÚNICAMENTE:
       alert("Error al analizar el guion.");
       setStep('upload');
     }
-  };  //platform_select
+  };  //platform_select  //{/* Tarjetas de fases */}
   const saveChatToHistory = async (messages) => {
     if (!currentHistoryId) return;
     await supabase.from('analysis_history').update({ chat_messages: messages }).eq('id', currentHistoryId);
@@ -1138,6 +1407,56 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
           </span>
         </ShinyCard>
 
+        {/* SCROLL STOP SCORE */}
+{aiResult.scrollStopScore && (
+  <ShinyCard tilt={tilt} className={`rounded-[2rem] border p-5 ${
+    aiResult.scrollStopScore.score >= 70
+      ? 'border-green-500/30 bg-green-500/5'
+      : aiResult.scrollStopScore.score >= 45
+      ? 'border-yellow-500/30 bg-yellow-500/5'
+      : 'border-red-500/40 bg-red-500/[0.08]'
+  }`}>
+    <div className="flex items-center justify-between mb-3">
+      <div>
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500 mb-1">Scroll-Stop Power</p>
+        <p className="text-[10px] font-bold italic text-slate-400">Frame 0 Analysis</p>
+      </div>
+      <span className={`text-3xl font-black italic tabular-nums ${
+        aiResult.scrollStopScore.score >= 70 ? 'text-green-400' :
+        aiResult.scrollStopScore.score >= 45 ? 'text-yellow-400' : 'text-red-400'
+      }`}>{aiResult.scrollStopScore.score}%</span>
+    </div>
+    <div className="grid grid-cols-3 gap-2 mb-3">
+      {[
+        { label: 'Cara', value: aiResult.scrollStopScore.faceDetected, type: 'bool' },
+        { label: 'Texto', value: aiResult.scrollStopScore.textOnScreen, type: 'bool' },
+        { label: 'Contraste', value: aiResult.scrollStopScore.contrastLevel, type: 'text' },
+      ].map((item, i) => (
+        <div key={i} className="bg-black/40 rounded-[1rem] p-2.5 text-center">
+          <p className="text-[8px] font-black uppercase tracking-wider text-slate-500 mb-1">{item.label}</p>
+          {item.type === 'bool' ? (
+            <span className={`text-xs font-black ${item.value ? 'text-green-400' : 'text-red-400'}`}>
+              {item.value ? '✓ SÍ' : '✗ NO'}
+            </span>
+          ) : (
+            <span className={`text-xs font-black capitalize ${
+              item.value === 'alto' ? 'text-green-400' :
+              item.value === 'medio' ? 'text-yellow-400' : 'text-red-400'
+            }`}>{item.value}</span>
+          )}
+        </div>
+      ))}
+    </div>
+    {aiResult.scrollStopScore.emotionVisible && aiResult.scrollStopScore.emotionVisible !== 'ninguna' && (
+      <p className="text-[10px] font-bold italic text-slate-400">
+        Emoción detectada: <span className="text-white">{aiResult.scrollStopScore.emotionVisible}</span>
+        {aiResult.scrollStopScore.emotionIntensity && ` (intensidad ${aiResult.scrollStopScore.emotionIntensity}/10)`}
+      </p>
+    )}
+    <p className="text-[10px] font-bold italic text-slate-500 mt-1">{aiResult.scrollStopScore.verdict}</p>
+  </ShinyCard>
+)}
+
         {/* Tarjetas de fases */}
         {aiResult.phaseScores && Object.values(aiResult.phaseScores).map((phase, i) => {
           if (!phase) return null;
@@ -1201,6 +1520,30 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
           </ShinyCard>
         )}
 
+        {/* COMMENT TRIGGER */}
+{aiResult.commentTrigger && (
+  <ShinyCard tilt={tilt} className="bg-black/30 border border-white/5 rounded-[2rem] p-5">
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-2">
+        <MessageSquare className="w-3 h-3 text-blue-400" />
+        <p className="text-[9px] font-black uppercase tracking-[0.4em] text-blue-400">Trigger de Comentarios</p>
+      </div>
+      <span className={`text-xl font-black italic tabular-nums ${
+        aiResult.commentTrigger.probability >= 65 ? 'text-green-400' :
+        aiResult.commentTrigger.probability >= 35 ? 'text-yellow-400' : 'text-red-400'
+      }`}>{aiResult.commentTrigger.probability}%</span>
+    </div>
+    <span className="inline-block text-[9px] font-black uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 text-blue-300 px-3 py-1 rounded-full mb-2 capitalize">
+      {aiResult.commentTrigger.triggerType}
+    </span>
+    {aiResult.commentTrigger.suggestedCTA && (
+      <p className="text-[10px] font-bold italic text-slate-400 mt-2">
+        CTA sugerido: <span className="text-white">"{aiResult.commentTrigger.suggestedCTA}"</span>
+      </p>
+    )}
+  </ShinyCard>
+)}
+
         {/* Veredicto */}
         <ShinyCard tilt={tilt} className="bg-black/30 border border-white/5 rounded-[2rem] p-5">
           <div className="flex items-center gap-2 mb-2">
@@ -1213,6 +1556,56 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
     </div>
 
     <div className="lg:col-span-8 space-y-6">
+
+      {/* VIEWS PREDICTION + FIRST HOUR */}
+{(aiResult.viewsPrediction || aiResult.firstHourStrategy) && (
+  <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/10 p-8 rounded-[3.5rem] space-y-6">
+    <div className="flex items-center gap-3">
+      <Users className="text-blue-400 w-5 h-5" />
+      <h3 className="text-xl font-black italic uppercase tracking-tighter">Proyección & Estrategia</h3>
+    </div>
+    
+    {aiResult.viewsPrediction && (
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'Sin viralidad', value: aiResult.viewsPrediction.scenario_low, color: 'text-slate-400', bg: 'bg-white/[0.03] border-white/10' },
+          { label: 'Viralidad mod.', value: aiResult.viewsPrediction.scenario_mid, color: 'text-yellow-400', bg: 'bg-yellow-500/5 border-yellow-500/20' },
+          { label: 'Viral real', value: aiResult.viewsPrediction.scenario_high, color: 'text-green-400', bg: 'bg-green-500/5 border-green-500/20' },
+        ].map((s, i) => (
+          <div key={i} className={`rounded-[1.5rem] p-4 border ${s.bg} text-center`}>
+            <p className="text-[8px] font-black uppercase tracking-wider text-slate-500 mb-1">{s.label}</p>
+            <p className={`text-sm font-black italic ${s.color}`}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+    )}
+    {aiResult.viewsPrediction?.probability_viral && (
+      <p className="text-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+        Probabilidad de viral real: <span className="text-white">{aiResult.viewsPrediction.probability_viral}</span>
+      </p>
+    )}
+
+    {aiResult.firstHourStrategy && (
+      <div className="border-t border-white/5 pt-5 space-y-3">
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-blue-400">Estrategia Primera Hora Post-Publicación</p>
+        {[
+          { icon: '🕐', label: 'Horario óptimo', value: aiResult.firstHourStrategy.optimalPostTime },
+          { icon: '⚡', label: 'Acción inmediata', value: aiResult.firstHourStrategy.firstActionAfterPost },
+          { icon: '💬', label: 'Primer comentario', value: `"${aiResult.firstHourStrategy.commentSeed}"` },
+          { icon: '🚀', label: 'Boost engagement', value: aiResult.firstHourStrategy.engagementBoost },
+        ].map((item, i) => (
+          <div key={i} className="flex items-start gap-3 bg-black/30 rounded-[1.5rem] p-4 border border-white/5">
+            <span className="text-base mt-0.5">{item.icon}</span>
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-wider text-slate-500 mb-0.5">{item.label}</p>
+              <p className="text-xs font-bold italic text-slate-300">{item.value}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </ShinyCard>
+)}
 
       {/* PLATFORM SCORES */}
       {aiResult.platformScores && (
@@ -1260,6 +1653,102 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
           </div>
         </ShinyCard>
       )}
+
+      {/* HOOK DNA */}
+{aiResult.hookDNA && (
+  <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/10 p-8 rounded-[3.5rem]">
+    <div className="flex items-center gap-3 mb-6">
+      <div className="bg-gradient-to-br from-orange-500 to-red-600 p-2 rounded-xl">
+        <Zap className="w-4 h-4 text-white" fill="white" />
+      </div>
+      <h3 className="text-xl font-black italic uppercase tracking-tighter">Hook DNA</h3>
+      <span className={`ml-auto text-2xl font-black italic tabular-nums ${
+        aiResult.hookDNA.strength >= 70 ? 'text-green-400' :
+        aiResult.hookDNA.strength >= 45 ? 'text-yellow-400' : 'text-red-400'
+      }`}>{aiResult.hookDNA.strength}%</span>
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+      <div className="bg-black/40 rounded-[1.5rem] p-4 border border-white/5">
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500 mb-2">Patrón Detectado</p>
+        <p className="text-sm font-black italic text-white capitalize">{aiResult.hookDNA.pattern}</p>
+      </div>
+      <div className="bg-black/40 rounded-[1.5rem] p-4 border border-white/5">
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500 mb-2">Elemento Faltante</p>
+        <p className="text-sm font-bold italic text-orange-300">{aiResult.hookDNA.missingElement}</p>
+      </div>
+    </div>
+    {aiResult.hookDNA.optimizedHook && (
+      <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-[1.5rem] p-5">
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-orange-400 mb-2">✦ Hook Optimizado por REDXAX</p>
+        <p className="text-sm font-bold italic text-white leading-relaxed">"{aiResult.hookDNA.optimizedHook}"</p>
+      </div>
+    )}
+  </ShinyCard>
+)}      
+
+{/* STEPPS VIRAL COEFFICIENT */}
+{aiResult.steppsScore && (
+  <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/10 p-8 rounded-[3.5rem]">
+    <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center gap-3">
+        <BrainCircuit className="text-indigo-400 w-5 h-5" />
+        <h3 className="text-xl font-black italic uppercase tracking-tighter">STEPPS Score</h3>
+        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-1">Wharton Framework</span>
+      </div>
+      <div className="text-right">
+        <span className={`text-3xl font-black italic tabular-nums ${
+          aiResult.steppsScore.viralCoefficient >= 7.5 ? 'text-green-400' :
+          aiResult.steppsScore.viralCoefficient >= 5 ? 'text-yellow-400' : 'text-red-400'
+        }`}>{aiResult.steppsScore.viralCoefficient?.toFixed(1)}</span>
+        <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">/10.0</p>
+      </div>
+    </div>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
+      {[
+        { key: 'socialCurrency', label: 'Social Currency', icon: '💎' },
+        { key: 'triggers', label: 'Triggers', icon: '⚡' },
+        { key: 'emotion', label: 'Emoción', icon: '🔥' },
+        { key: 'public', label: 'Público', icon: '👁' },
+        { key: 'practicalValue', label: 'Valor Práctico', icon: '🛠' },
+        { key: 'stories', label: 'Narrativa', icon: '📖' },
+      ].map(({ key, label, icon }) => {
+        const val = aiResult.steppsScore[key];
+        return (
+          <div key={key} className="bg-black/40 rounded-[1.5rem] p-3 border border-white/5">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm">{icon}</span>
+              <span className={`text-lg font-black italic tabular-nums ${
+                val >= 7 ? 'text-green-400' : val >= 5 ? 'text-yellow-400' : 'text-red-400'
+              }`}>{val}</span>
+            </div>
+            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden mb-1.5">
+              <div className={`h-full rounded-full ${
+                val >= 7 ? 'bg-green-400' : val >= 5 ? 'bg-yellow-400' : 'bg-red-400'
+              }`} style={{ width: `${val * 10}%` }} />
+            </div>
+            <p className="text-[9px] font-black uppercase tracking-wider text-slate-500">{label}</p>
+          </div>
+        );
+      })}
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="bg-green-500/10 border border-green-500/20 rounded-[1.5rem] p-4">
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-green-400 mb-1">✦ Fortaleza</p>
+        <p className="text-xs font-bold italic text-slate-300">{aiResult.steppsScore.dominantFactor}</p>
+      </div>
+      <div className="bg-red-500/10 border border-red-500/20 rounded-[1.5rem] p-4">
+        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-red-400 mb-1">✦ Punto Débil</p>
+        <p className="text-xs font-bold italic text-slate-300">{aiResult.steppsScore.weakestFactor}</p>
+      </div>
+    </div>
+    <div className="mt-4 flex items-center justify-between">
+      <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Motivación de sharing</p>
+      <span className="text-xs font-black italic text-indigo-300 capitalize bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full">
+        {aiResult.steppsScore.shareMotivation}
+      </span>
+    </div>
+  </ShinyCard>
+)}
 
       {/* VISIÓN */}
       <ShinyCard tilt={tilt} className="bg-white/[0.03] border border-white/5 p-10 rounded-[3.5rem] space-y-6">
