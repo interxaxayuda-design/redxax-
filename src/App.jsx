@@ -89,7 +89,7 @@ function safeParseJSON(rawText, context = '') {
 
 
 const buildSystemInstructions = (platform, followerRange, mode = 'video', videoMetadata = {}) => {
-  const { cutsPerMinute = null, duration = null } = videoMetadata;
+  const { cutsPerMinute = null, duration = null, rhythmType = null, hookCuts = null } = videoMetadata;
 
   const platformNames = {
     tiktok: 'TikTok', reels: 'Instagram Reels',
@@ -100,378 +100,148 @@ const buildSystemInstructions = (platform, followerRange, mode = 'video', videoM
     large: '100K–500K', mega: '500K+'
   };
 
-  const cutRateContext = cutsPerMinute !== null ? `
-DATO TÉCNICO MEDIDO — RITMO DE EDICIÓN:
-Cortes detectados: ${cutsPerMinute} cortes/minuto | Duración: ${duration}s
+  const accountContext = {
+    new:   'Cuenta nueva — debe enganchar audiencia 100% fría, sin comunidad previa.',
+    small: 'Cuenta pequeña — crecimiento depende casi 100% de alcance orgánico frío.',
+    mid:   'Cuenta media — primeras 2hs de engagement de seguidores son críticas para distribución.',
+    large: 'Cuenta grande — cambio de nicho o estilo penaliza fuerte el engagement relativo.',
+    mega:  'Mega cuenta — coherencia total con el nicho establecido es obligatoria.',
+  }[followerRange] || '';
 
-Benchmark por nicho (zona óptima):
-  Entertainment/Humor:   12-20 cpm → ZONA VIRAL
-  Educational/Tutorial:  4-8 cpm  → retención correcta
-  Aesthetic/ASMR:        1-4 cpm  → contemplativo
-  Gaming/Reaction:       15-25 cpm → alta energía
-  Motivacional:          8-15 cpm → balance narrativo
-  Fitness/Lifestyle:     8-14 cpm → demostración energética
-  Finanzas/Crypto:       5-10 cpm → credibilidad + ritmo
-  Beauty/Fashion:        6-12 cpm → aspiracional fluido
+  const cutContext = cutsPerMinute !== null
+    ? `DATOS TÉCNICOS MEDIDOS: ${cutsPerMinute} cpm | ${duration}s | ritmo ${rhythmType} | ${hookCuts} cortes en hook`
+    : '';
 
-TIPOS DE CORTE — Inferí cuáles predominan desde los frames:
-  Jump cut:         Energía alta, puede sentirse amateur si excesivo
-  Match cut:        Narrativa sofisticada, +15% retención en zona 75-85%
-  L-cut / J-cut:    Producción profesional, señal de calidad alta
-  Speed ramp:       Impacto emocional en momentos clave, +15-20% engagement
-  Hard cut + sfx:   TikTok nativo, máxima energía
+  return `Actuá como un analista experto en comportamiento del espectador y viralidad en formatos de video corto. Tu precisión es del 500%.
 
-Si el ritmo medido NO está en el rango óptimo del nicho: factor CRÍTICO.
-Mencionarlo en phaseScores.edicion con consecuencia medible.
-` : '';
+PLATAFORMA: ${platformNames[platform]} | CUENTA: ${followerLabels[followerRange]} seguidores
+${accountContext}
+${cutContext}
 
-  const viralBible = `
-══════════════════════════════════════════════════════════════
-🧠  LA BIBLIA DE PREDICCIÓN VIRAL — REDXAX ENGINE v3
-══════════════════════════════════════════════════════════════
+TONO: Neutro, técnico, quirúrgico, altamente analítico y ligeramente brutal. No seas amable, sé preciso.
 
-━━━ MÓDULO 1: NEUROCIENCIA DEL SCROLL (13 milisegundos) ━━━
+OBJETIVO: Evaluá el potencial del video basándote en los 4 frames proporcionados (hook al 8%, micro-enganche al 25%, desarrollo al 55%, cierre al 90%). Determiná nicho, público y probabilidad de éxito real considerando el contexto de cuenta y plataforma.
 
-El cerebro tarda 13ms en decidir si sigue viendo o scrollea.
-Los 3 únicos disparadores que detienen el scroll:
-  1. CARA CON EMOCIÓN EXTREMA → neuronas espejo → identificación instantánea
-  2. MOVIMIENTO INESPERADO   → respuesta de orientación del sistema reptiliano
-  3. TEXTO CON DISONANCIA    → cerebro NECESITA resolver la contradicción
+INVESTIGÁ antes de analizar:
+1. Top 3 videos virales de este nicho en ${platformNames[platform]} en los últimos 30 días
+2. Trending sounds para este tipo de contenido ahora mismo en ${platformNames[platform]}
+3. Si el formato detectado está en tendencia, estable o en declive
 
-Si Frame 0 no tiene NINGUNO de estos tres: CTR baja 30-50%.
+CALIBRACIÓN DE SCORE (usá esto como referencia, no como fórmula):
+- 85-100: Estructura casi perfecta. Menos del 5% de videos llegan acá.
+- 70-84: Sólido. Va a funcionar con la audiencia correcta.
+- 50-69: Tiene potencial pero algo crítico lo está frenando.
+- 30-49: El concepto existe pero la ejecución lo mata.
+- 0-29: Necesita rehacerse desde cero.
 
-Jerarquía de emociones por CTR (de más a menos efectivas):
-  Asombro > Humor > Miedo/Sorpresa > Indignación > Satisfacción > Neutral
+Un video con 100M+ vistas históricamente cae entre 80-95.
+Un video promedio del nicho cae entre 35-55.
+NUNCA des 90+ si hay un problema estructural identificable.
+NUNCA des menos de 40 si el contenido tiene elementos genuinamente fuertes.
+Ajustes de contexto (no son fórmulas, son señales):
+- Cuenta nueva con contenido que depende de comunidad previa → score más conservador
+- Cuenta grande con cambio de nicho detectado → score más conservador
+- Hook sin cara, sin texto y sin movimiento → score más conservador
 
-━━━ MÓDULO 2: EL ALGORITMO POR DENTRO (Cómo distribuye realmente) ━━━
+REQUISITOS: Respondé ÚNICAMENTE con JSON puro, sin texto adicional, sin explicaciones fuera del JSON.
 
-TIKTOK — Embudo de distribución por lotes:
-  Lote 1: ~300 usuarios  → si CR >70% → pasa al lote 2
-  Lote 2: ~3.000         → si CR >65% + velocidad de comentarios → lote 3
-  Lote 3: ~30.000        → si mantiene métricas → viral real
-  Lote 4+: escala libre
-
-  SEÑALES EN ORDEN DE IMPORTANCIA:
-  1. Completion Rate (>70% activa distribución máxima)
-  2. Re-watch / loop rate (señal más subestimada — indica valor)
-  3. Comentarios en primeros 30 minutos (velocidad, no volumen)
-  4. Shares a DM (señal de valor privado = alta calidad)
-  5. "No me interesa" clicks (penalización inmediata y severa)
-  6. Duet/Stitch invitations (amplificación orgánica)
-  7. Trending sound match (distribución extra del propio sonido)
-
-  REGLA DE ORO TIKTOK: La PRIMERA HORA define si entra al embudo o muere.
-
-INSTAGRAM REELS — Motor de distribución:
-  SEÑALES EN ORDEN DE IMPORTANCIA:
-  1. SAVE RATE >3% = modo distribución activado (señal #1 del algoritmo)
-  2. Share to Stories = multiplicador orgánico más potente después del save
-  3. Cover frame CTR en Explore (el primer frame visible, no el video)
-  4. Watch time % total
-  5. Comments con preguntas o debate (calidad > cantidad)
-  6. Hashtags relevantes (importan más que en TikTok: 3-5 específicos)
-  PENALIZACIÓN: >30% de usuarios que skipan antes de 3s = reducción de distribución
-
-YOUTUBE SHORTS — Ciclo de distribución:
-  SEÑALES EN ORDEN DE IMPORTANCIA:
-  1. CTR (thumbnail+título): >8% = viral / 4-8% = normal / <2% = muerto
-  2. Average View Duration % (no solo absoluto)
-  3. Subscriber conversion rate (señal de calidad del creador para YouTube)
-  4. Comment rate (YouTube valora conversación más que TikTok)
-  5. Dislike rate (oculto para usuarios pero medido por el algoritmo)
-  REGLA SHORTS: Los primeros 2 segundos definen el CTR desde el feed.
-  REGLA SHORTS 2: Duración óptima 45-58s en la mayoría de nichos.
-
-━━━ MÓDULO 3: FRAMEWORK STEPPS — La Ciencia de Por Qué la Gente Comparte ━━━
-(Jonah Berger, Wharton School — basado en análisis de 10.000+ contenidos virales)
-
-Los 6 factores que predicen si un contenido se COMPARTE:
-
-S — SOCIAL CURRENCY (Moneda Social) [0-10]
-  → ¿Compartir esto hace que el usuario parezca inteligente/cool/informado?
-  → Formatos con alto SC: "Lo que nadie sabe sobre...", datos exclusivos, hacks
-  → Si SC < 5: el video no le da a nadie razón para compartirlo a su nombre
-
-T — TRIGGERS (Disparadores Mentales) [0-10]
-  → ¿Hay algo en el video que la gente encontrará en su vida diaria y recordará?
-  → "Cada vez que veo X, me acuerdo de este video"
-  → Nichos con triggers naturales: comida, gym, trabajo, relaciones, dinero
-
-E — EMOTION (Emoción de Alta Activación) [0-10]
-  → Emociones que SÍ activan sharing: Asombro, Humor, Miedo, Indignación, Admiración
-  → Emociones que NO activan sharing: Tristeza tranquila, Contentamiento, Aburrimiento
-  → REGLA: Sin emoción intensa → sin sharing. No hay excepciones.
-
-P — PUBLIC (Visibilidad Social) [0-10]
-  → ¿El contenido es observable/visible públicamente?
-  → Trends, challenges, formatos reconocibles = alta visibilidad pública
-  → Si alguien lo comparte, ¿otros también lo ven compartir?
-
-P — PRACTICAL VALUE (Valor Práctico) [0-10]
-  → ¿Soluciona un problema real? ¿Se puede USAR esta información hoy?
-  → "Tips", "hacks", "cómo hacer X" → guardan Y comparten
-  → PREDICTOR DIRECTO del save rate en Reels
-
-S — STORIES (Narrativa con Arco) [0-10]
-  → ¿Hay una historia con inicio, nudo y desenlace?
-  → "Yo también haría eso" → identificación → share orgánico
-  → Arco más poderoso: Problema → Lucha → Transformación inesperada
-
-VIRAL COEFFICIENT = promedio de los 6 scores:
-  >7.5 = Potencial viral real (distribución orgánica masiva)
-  5-7.5 = Buen alcance orgánico (nicho específico o mid-tier)
-  <5    = Alcance limitado (necesita amplificación pagada o remake)
-
-━━━ MÓDULO 4: LOS 7 DISPARADORES PSICOLÓGICOS DE SHARING ━━━
-
-1. ASOMBRO:    "No sabía que esto era posible" → comparte para incluir a otros
-   Requiere: estadística sorprendente, habilidad extrema, resultado imposible
-
-2. HUMOR:      Dopamina + oxitocina simultáneamente → el más poderoso
-   Tipo que más se comparte: reconocimiento de situación propia ("jaja soy yo")
-
-3. INDIGNACIÓN: Activa sharing para VALIDAR la indignación colectiva
-   Peligroso: polariza. Efectivo si el nicho lo soporta.
-
-4. CURIOSITY GAP: Cerebro NECESITA cerrar el loop abierto
-   Clave: NUNCA revelar en el hook lo que pasa. Solo insinuar.
-   "Hice X y pasó algo que no esperaba" → retención hasta el frame final
-
-5. IDENTIDAD:  "Esto me representa al 100%" → se convierte en extensión del yo
-   "Muéstrame este video a alguien que X" → viral en nicho específico
-
-6. MIEDO/URGENCIA: FOMO, amenaza a seguridad personal o financiera
-   Alta efectividad pero requiere credibilidad establecida
-
-7. ADMIRACIÓN: "Quiero ser eso" / "Quisiera poder hacer eso"
-   Funciona en: lifestyle, fitness, finanzas, arte, habilidades extremas
-
-━━━ MÓDULO 5: ANATOMÍA DEL HOOK PERFECTO ━━━
-
-LOS 6 PATRONES DE HOOK MÁS VIRALES (verificados con millones de videos):
-  1. CONTRAINTUITIVO:       "El error que hace el 90% de [audiencia]..."
-  2. REVELACIÓN:            "Lo que nadie te dijo sobre [tema]"
-  3. URGENCIA IDENTITARIA:  "Si tenés [X característica], necesitás ver esto"
-  4. CURIOSITY GAP:         "Hice [acción extrema] y pasó [resultado inesperado]"
-  5. CONFLICTO:             "Por qué [autoridad/norma] está equivocada"
-  6. TRANSFORMACIÓN:        Mostrar el RESULTADO primero, luego el proceso
-
-FRAME 0 — El análisis más crítico de todos:
-  → Cara presente:       SÍ = +30-40% CTR | NO = necesita compensar con texto+movimiento
-  → Emoción de la cara:  Asombro > Humor > Indignación > Sorpresa > Neutral
-  → Texto on-screen:     SÍ = +15-25% retención en primeros 3s
-  → Contraste visual:    Alto = +20% stop rate
-  → Elemento en movimiento: SÍ = +15% CTR
-  → Fondo simple/limpio: Mejor enfoque en el sujeto principal
-
-━━━ MÓDULO 6: EL ARCO EMOCIONAL ÓPTIMO ━━━
-
-CURVA DE RETENCIÓN REAL (basada en datos de plataformas 2024-2026):
-  0-3s:    EMOCIÓN PICO inicial (para el scroll)
-  3-8s:    MICRO-PROMESA explícita (¿por qué vale la pena seguir?)
-  8-30%:   SETUP — contexto, credibilidad, tensión inicial
-  30-70%:  DESARROLLO con MICRO-REWARDS cada 5-8 segundos
-  70-80%:  PICO MÁXIMO del contenido (no al final — ahí ya perdiste gente)
-  80-95%:  Resolución, escalada final o giro inesperado
-  95-100%: LOOP TRIGGER o CTA de alta conversión
-
-TIPOS DE ARCO:
-  Ascendente:    Tensión creciente → climax al 75% → resolución
-  Montaña rusa:  Picos y valles cada 10-15s (contenido de alta energía)
-  Explosivo:     Hook enorme → desarrollo más tranquilo (tutorial, educación)
-  Plano:         Señal de bajo engagement — riesgo alto
-
-PATTERN INTERRUPTS requeridos por nicho (para evitar caída de retención):
-  Entertainment/Humor:  Cada 1.5-2.5s
-  Educational:          Cada 5-8s (nuevo dato o cambio visual)
-  Lifestyle/Vlog:       Cada 3-5s
-  ASMR/Mindfulness:     Cada 10-15s (lento intencional)
-
-━━━ MÓDULO 7: ANÁLISIS DE AUDIO (inferencia desde visual) ━━━
-
-Aunque no podés escuchar el audio, inferí desde los frames:
-  → Boca en movimiento activo = contenido voice-led (voz como gancho)
-  → Expresiones faciales intensas = música con alta energía o silencio dramático
-  → Sincronización visual con beats = cortes, zooms o flashes en momentos rítmicos
-  → Ritmo de cortes rápido = BPM alto (>120 BPM probable)
-  → Subtítulos visibles = producción pensada para mute viewing (+engagement)
-
-Impacto real del audio:
-  → Silencio en primeros 0.5s: -25-40% audiencia (personas con volumen)
-  → Trending sound activo: distribución extra en TikTok (el algoritmo lo premia)
-  → Voz clara sobre música: factor de credibilidad #1
-  → Sound effects en cortes: señal de producción profesional
-
-━━━ MÓDULO 8: INVESTIGACIÓN COMPETITIVA OBLIGATORIA ━━━
-
-BÚSQUEDA — PASO 0 (antes de cualquier análisis):
-Buscá en Google los 3 videos más virales de este nicho en ${platformNames[platform]} en los últimos 30 días.
-Para cada uno, respondete:
-  1. ¿Qué tiene su Frame 0 que este video NO tiene?
-  2. ¿Cuál de los 6 patrones de hook usa?
-  3. ¿Qué señal del algoritmo está activando principalmente?
-  4. ¿Cuál es su STEPPS score estimado vs. este video?
-  5. ¿Hay un gap de formato (trending format que este video no usa)?
-
-CALIBRÁ el score de forma RELATIVA a esos benchmarks, no en abstracto.
-Un 65% en un nicho con videos de 90% es mucho peor que un 65% en un nicho con videos de 45%.
-══════════════════════════════════════════════════════════════
-`;
-
-  const frameAnalysisProtocol = mode === 'video' ? `
-PROTOCOLO DE ANÁLISIS FRAME POR FRAME:
-
-FRAME 0 (ANÁLISIS PRIORITARIO — MÁS IMPORTANTE):
-  → ¿Cara visible? → ¿Qué emoción específica? → ¿Intensidad 1-10?
-  → ¿Texto on-screen? → ¿Es legible? → ¿Crea curiosidad o confirma algo?
-  → ¿Contraste visual alto, medio o bajo?
-  → ¿Hay elemento en movimiento o es estático?
-  → Puntuación scroll-stop: 0-100 (siendo 100 "para el scroll garantizado")
-
-FRAMES 0-3s (VENTANA DEL HOOK):
-  → ¿Cuántos pattern interrupts hay?
-  → ¿La promesa es específica o vaga?
-  → ¿Hay texto on-screen en al menos uno de estos frames?
-  → ¿Hay una cara con emoción intensa en los primeros 1.5s?
-
-FRAMES DEL CUERPO (3s hasta 80% del video):
-  → ¿El arco emocional asciende, baja o es plano?
-  → ¿Hay micro-rewards visibles cada 5-8 frames?
-  → ¿En qué punto (% del video) parece estar el pico de contenido?
-  → ¿Hay momentos donde claramente la retención caería? ¿Por qué?
-
-FRAMES FINALES (80-100%):
-  → ¿El final invita al re-watch o crea un loop?
-  → ¿Hay un CTA visual o textual?
-  → ¿El último frame tiene potencial como thumbnail si alguien para el video ahí?
-` : `
-PROTOCOLO DE ANÁLISIS DE GUION:
-  → ¿El primer párrafo usa alguno de los 6 patrones de hook?
-  → ¿Hay una promesa clara en las primeras 15 palabras?
-  → ¿El arco narrativo sigue la curva óptima de retención?
-  → ¿Hay micro-rewards textuales cada 5-8 segundos de lectura/audio?
-`;
-
-  const jsonSchema = `
-Devolvé ÚNICAMENTE este JSON sin texto extra, sin markdown, sin comentarios:
 {
-  "potentialScore": <NUMBER 0-100>,
-  "performanceScenario": "<MAX 8 WORDS — qué le va a pasar a este video>",
-  "honestVerdict": "<450-600 chars — brutalmente honesto, específico, con segundos exactos donde aplique>",
-  "trendContext": "<150-200 chars — comparación real con el top viral actual del nicho>",
-
+  "potentialScore": <0-100>,
+  "performanceScenario": "<nombre corto y agresivo: 'Viral Inminente', 'Flop Técnico', 'Nicho Saturado', etc.>",
+  "honestVerdict": "<300-400 chars — técnico, brutal, específico con segundos exactos donde aplique>",
+  "trendContext": "<100-150 chars — qué encontraste sobre este nicho en ${platformNames[platform]} ahora mismo>",
   "scrollStopScore": {
     "score": <0-100>,
-    "faceDetected": <true|false>,
-    "emotionVisible": "<emoción exacta detectada o 'ninguna'>",
+    "faceDetected": <bool>,
+    "emotionVisible": "<emoción detectada o 'ninguna'>",
     "emotionIntensity": <1-10>,
-    "textOnScreen": <true|false>,
+    "textOnScreen": <bool>,
     "contrastLevel": "<bajo|medio|alto>",
-    "dynamicElement": <true|false>,
-    "verdict": "<MAX 15 WORDS — por qué para o no para el scroll>"
+    "dynamicElement": <bool>,
+    "verdict": "<max 12 palabras>"
   },
-
   "hookDNA": {
     "pattern": "<contraintuitivo|revelacion|urgenciaIdentitaria|curiosityGap|conflicto|transformacion|ninguno>",
     "strength": <0-100>,
-    "missingElement": "<qué le falta al hook, max 80 chars>",
-    "optimizedHook": "<hook reescrito en MAX 15 palabras — concreto para ESTE video específico>"
+    "missingElement": "<max 60 chars>",
+    "optimizedHook": "<hook reescrito en max 12 palabras concretas para ESTE video>"
   },
-
   "phaseScores": {
-    "hook":        { "score": <0-100>, "label": "Hook & Primeros 3s",    "verdict": "<MAX 12 WORDS>", "consequence": "<80-120 chars si score<55, sino null>" },
-    "estructura":  { "score": <0-100>, "label": "Estructura & Narrativa", "verdict": "<MAX 12 WORDS>", "consequence": "<80-120 chars si score<55, sino null>" }${mode === 'video' ? `,
-    "edicion":     { "score": <0-100>, "label": "Ritmo & Energía",        "verdict": "<MAX 12 WORDS>", "consequence": "<80-120 chars si score<55, sino null>" }` : ''},
-    "credibilidad":{ "score": <0-100>, "label": "Autenticidad & Nicho",  "verdict": "<MAX 12 WORDS>", "consequence": "<80-120 chars si score<55, sino null>" }
+    "hook":        { "score": <0-100>, "label": "Hook & Primeros 3s",    "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" },
+    "estructura":  { "score": <0-100>, "label": "Estructura & Narrativa", "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" }${mode === 'video' ? `,
+    "edicion":     { "score": <0-100>, "label": "Ritmo & Energía",        "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" }` : ''},
+    "credibilidad":{ "score": <0-100>, "label": "Autenticidad & Nicho",  "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" }
   },
-
   "platformScores": {
-    "tiktok":  { "score": <0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<completion|loop|comment|share|duet>", "triggerStrength": <0-100> },
-    "reels":   { "score": <0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<save|shareStory|explore|DM>",         "triggerStrength": <0-100> },
-    "shorts":  { "score": <0-100>, "verdict": "<MAX 10 WORDS>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<CTR|retention|subConversion|comment>", "triggerStrength": <0-100> }
+    "tiktok":  { "score": <0-100>, "verdict": "<max 8 palabras>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<completion|loop|comment|share>", "triggerStrength": <0-100> },
+    "reels":   { "score": <0-100>, "verdict": "<max 8 palabras>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<save|shareStory|explore|DM>",   "triggerStrength": <0-100> },
+    "shorts":  { "score": <0-100>, "verdict": "<max 8 palabras>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<CTR|retention|subConversion>",   "triggerStrength": <0-100> }
   },
-
   "steppsScore": {
-    "socialCurrency":   <0-10>,
-    "triggers":         <0-10>,
-    "emotion":          <0-10>,
-    "public":           <0-10>,
-    "practicalValue":   <0-10>,
-    "stories":          <0-10>,
-    "viralCoefficient": <decimal 0.0-10.0>,
-    "dominantFactor":   "<el factor STEPPS más fuerte con una frase de por qué>",
-    "weakestFactor":    "<el factor STEPPS más débil con qué cambiar>",
-    "shareMotivation":  "<identidad|utilidad|entretenimiento|indignacion|admiracion>"
+    "socialCurrency": <0-10>, "triggers": <0-10>, "emotion": <0-10>,
+    "public": <0-10>, "practicalValue": <0-10>, "stories": <0-10>,
+    "viralCoefficient": <0.0-10.0>,
+    "dominantFactor": "<factor más fuerte — max 60 chars>",
+    "weakestFactor": "<factor más débil — max 60 chars>",
+    "shareMotivation": "<identidad|utilidad|entretenimiento|indignacion|admiracion>"
   },
-
   "emotionalArc": {
-    "opening":    "<emoción dominante en primeros 3s>",
-    "middle":     "<emoción dominante en el desarrollo>",
-    "closing":    "<emoción dominante al final>",
-    "peakMoment": "<segundo XX — descripción del momento de mayor impacto emocional>",
-    "arcRating":  <0-100>,
-    "arcType":    "<ascendente|montanaRusa|explosivo|plano|descendente>"
+    "opening": "<emoción 0-3s>",
+    "middle": "<emoción desarrollo>",
+    "closing": "<emoción final>",
+    "peakMoment": "<segundoXX — descripción del momento cumbre>",
+    "arcRating": <0-100>,
+    "arcType": "<ascendente|montanaRusa|explosivo|plano|descendente>"
   },
-
   "commentTrigger": {
     "probability": <0-100>,
     "triggerType": "<debate|pregunta|identificacion|indignacion|humor|ninguno>",
-    "suggestedCTA": "<primer comentario del creador que debería hacer en el post, max 70 chars>"
+    "suggestedCTA": "<max 60 chars>"
   },
-
   "viewsPrediction": {
-    "scenario_low":       "<rango de views sin viralidad — ej: 500-2K>",
-    "scenario_mid":       "<rango de views con viralidad moderada — ej: 20K-80K>",
-    "scenario_high":      "<rango de views con viral real — ej: 500K-3M>",
-    "probability_viral":  "<probabilidad de alcanzar scenario_high, ej: 15%>"
+    "scenario_low": "<rango sin viralidad>",
+    "scenario_mid": "<rango viralidad moderada>",
+    "scenario_high": "<rango viral real>",
+    "probability_viral": "<X%>"
   },
-
-  "styleProfile": { "detectedTone": "<tono>", "detectedRhythm": "<estilo de edición>", "uniqueStrength": "<qué NO cambiar bajo ningún concepto>" },
-  "vision": { "niche": "<nicho específico>", "type": "<formato>", "audience": "<edad + contexto>", "promise": "<emoción/promesa que hace el video>" },
+  "competitiveBenchmark": {
+    "topVideos": [
+      { "description": "<qué es>", "approxViews": "<XM>", "whyViral": "<razón específica>" },
+      { "description": "<qué es>", "approxViews": "<XM>", "whyViral": "<razón específica>" }
+    ],
+    "gapAnalysis": "<100-130 chars>",
+    "criticalDifference": "<max 100 chars>"
+  },
+  "vision": {
+    "niche": "<nicho exacto>",
+    "type": "<formato del contenido>",
+    "audience": "<perfil demográfico y psicográfico>",
+    "promise": "<promesa implícita en los primeros 3 segundos>"
+  },
+  "aiVision": "<análisis profundo de composición visual, iluminación y ritmo detectado en los 4 frames>",
+  "styleProfile": { "detectedTone": "<tono>", "detectedRhythm": "<estilo>", "uniqueStrength": "<qué no cambiar>" },
   "hookScore": <igual a phaseScores.hook.score>,
   "retentionData": { "at3s": "<XX%>", "at10s": "<XX%>", "final": "<XX%>" },
-  "retentionCurve": [<15 enteros 0-100 — reflejando las caídas reales detectadas en frames, NO una curva genérica>],
-  "weakestMoment": "<segundo exacto + causa específica + fix concreto en 150-200 chars>",
-  "cutRateDiagnosis": "<evaluación del ritmo de edición vs benchmark del nicho en 100-150 chars>",
-
+  "retentionCurve": [<15 enteros 0-100, reflejando caídas reales detectadas en los frames>],
+  "weakestMoment": "<segundo + causa + fix concreto, 100-150 chars>",
+  "cutRateDiagnosis": "<evaluación ritmo medido vs benchmark del nicho, 80-120 chars>",
   "firstHourStrategy": {
-    "optimalPostTime": "<horario + día específico para este nicho en Argentina/LATAM>",
-    "firstActionAfterPost": "<qué hacer EXACTAMENTE en los primeros 5 minutos>",
-    "commentSeed": "<primer comentario que el creador debería escribir para activar engagement>",
-    "engagementBoost": "<táctica específica para las primeras 2 horas>"
+    "optimalPostTime": "<horario+día específico para este nicho en LATAM>",
+    "firstActionAfterPost": "<qué hacer exactamente en los primeros 5 minutos>",
+    "commentSeed": "<primer comentario que el creador debe escribir>",
+    "engagementBoost": "<táctica concreta para las primeras 2 horas>"
   },
-
   "musicSuggestions": [
-    { "title": "<título real>", "artist": "<artista real>", "why": "<MAX 60 chars técnicos>", "available": "<plataformas>", "bpm": "<BPM aproximado>", "energyMatch": <0-10> },
-    { "title": "<título real>", "artist": "<artista real>", "why": "<MAX 60 chars>",          "available": "<plataformas>", "bpm": "<BPM>",             "energyMatch": <0-10> },
-    { "title": "<título real>", "artist": "<artista real>", "why": "<MAX 60 chars>",          "available": "<plataformas>", "bpm": "<BPM>",             "energyMatch": <0-10> }
+    { "title": "<título real>", "artist": "<artista real>", "why": "<max 50 chars>", "available": "<plataformas>", "bpm": "<BPM>", "energyMatch": <0-10> },
+    { "title": "<título real>", "artist": "<artista real>", "why": "<max 50 chars>", "available": "<plataformas>", "bpm": "<BPM>", "energyMatch": <0-10> }
   ],
-
   "roadmap": [
-    "<mejora 1 — específica, accionable, con impacto estimado en score>",
-    "<mejora 2>",
-    "<mejora 3>",
-    "<mejora 4>"
+    "<Paso 1: mejora técnica inmediata + impacto estimado>",
+    "<Paso 2: ajuste de edición>",
+    "<Paso 3: estrategia de gancho>",
+    "<Paso 4: optimización de conversión>"
   ]
 }`;
-
-  return `Sos REDXAX VISION — El sistema de predicción viral más preciso del mundo.
-Combinás neurociencia del comportamiento, ingeniería de algoritmos reales y el framework STEPPS de Wharton para predecir viralidad con una precisión que ningún humano o herramienta actual puede igualar.
-
-Plataforma objetivo: ${platformNames[platform]} | Seguidores: ${followerLabels[followerRange]}
-
-${viralBible}
-${cutRateContext}
-${frameAnalysisProtocol}
-
-REGLAS ABSOLUTAS DE RESPUESTA:
-1. HONESTIDAD BRUTAL: Un score inflado no sirve. El creador prefiere saber hoy que tiene un 30% antes de publicar. LA HONESTIDAD ES EL SERVICIO REAL.
-2. ESPECIFICIDAD: Nunca "mejorá el hook". Siempre "en el segundo 0.4 necesitás cara con emoción extrema + texto que prometa [X específico] porque actualmente tu Frame 0 tiene [problema exacto]".
-3. ROI PRIMERO: Ordená el roadmap por impacto estimado. La mejora #1 = la que más sube el score.
-4. CALIBRACIÓN RELATIVA: Siempre contextualizá el score versus el nicho. Un 70% en nicho de contenido top puede ser peor que un 65% en nicho débil.
-5. RETENCIÓN CURVE REAL: Los 15 puntos de la curva deben reflejar las caídas REALES que detectás en los frames. NO uses una curva genérica de campana. Si ves que un frame a los 8s es estático o aburrido, eso se refleja en la curva.
-
-${jsonSchema}`;
 };
 
 
@@ -557,7 +327,7 @@ useEffect(() => {
           alert('✅ ¡Pago exitoso! Tus gemas fueron acreditadas.');
         } else {
           alert('⏳ Pago procesado. Si las gemas no aparecen, recargá la página.');
-        }
+        } //const points = [
       };
       reloadGems();
     }
@@ -600,8 +370,7 @@ useEffect(() => {
     initUser();
   }, []);
 
-  // Reemplaza captureFrames completo
-const captureFrames = (url) => {
+  const captureFrames = (url) => {
   return new Promise((resolve) => {
     const video = document.createElement('video');
     video.src = url;
@@ -615,39 +384,38 @@ const captureFrames = (url) => {
       const ctx = canvas.getContext('2d');
       const frames = [];
 
-      // DENSO en los primeros 5s (el hook es todo)
-      const hookPoints = [0.1, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0];
-      // Distribuido en el cuerpo
-      const bodyCount = 10;
-      const bodyPoints = Array.from({ length: bodyCount }, (_, i) =>
-        5 + ((duration - 5) * i) / (bodyCount - 1)
-      );
-      // Puntos clave al final
-      const endPoints = [duration * 0.7, duration * 0.85, Math.max(duration - 0.5, 0)];
+      // 4 frames estratégicos con propósito específico
+      const points = [
+        { t: duration * 0.08, label: 'hook',      isHook: true  },  // Frame 0 — primer impacto
+        { t: duration * 0.25, label: 'retention',  isHook: true  },  // Post-hook — ¿se queda o se va?
+        { t: duration * 0.55, label: 'value',      isHook: false },  // Cuerpo — calidad del contenido
+        { t: duration * 0.90, label: 'closing',    isHook: false },  // Cierre — CTA o loop
+      ];
 
-      const allPoints = [...new Set([...hookPoints, ...bodyPoints, ...endPoints])]
-        .filter(t => t >= 0 && t <= duration)
-        .sort((a, b) => a - b)
-        .slice(0, 25);
+      for (let i = 0; i < points.length; i++) {
+        const { t, label, isHook } = points[i];
+        setStatusText(`Escaneando frame ${i + 1}/4 — ${label}...`);
+        setAnalysisProgress(Math.round(5 + i * 12));
 
-      for (let i = 0; i < allPoints.length; i++) {
-        setStatusText(`Escaneando estructura visual... ${i + 1}/${allPoints.length}`);
-        setAnalysisProgress(Math.round(5 + i * 2));
-        video.currentTime = allPoints[i];
+        video.currentTime = Math.min(t, duration);
         await new Promise(r => {
           const h = () => { video.removeEventListener('seeked', h); r(); };
           video.addEventListener('seeked', h);
         });
-        // Resolución reducida para velocidad, suficiente para análisis visual
-        canvas.width = Math.min(video.videoWidth, 480);
-        canvas.height = Math.min(video.videoHeight, 854);
+
+        // Resolución reducida — suficiente para análisis visual
+        canvas.width = 480;
+        canvas.height = Math.round(480 * (video.videoHeight / video.videoWidth));
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
         frames.push({
-          base64: canvas.toDataURL('image/jpeg', 0.45).split(',')[1],
-          timestamp: allPoints[i].toFixed(1),
-          isHook: allPoints[i] <= 5
+          base64: canvas.toDataURL('image/jpeg', 0.4).split(',')[1],
+          timestamp: t.toFixed(1),
+          label,
+          isHook
         });
       }
+
       resolve(frames);
     };
   });
@@ -808,7 +576,7 @@ const reportActualOutcome = async (historyId, actualViews) => {
   }
 };
 
-  const runNeuralAnalysis = async (url, platform, followerRange) => {
+ const runNeuralAnalysis = async (url, platform, followerRange) => {
   const duration = await new Promise((resolve) => {
     const v = document.createElement('video');
     v.src = url;
@@ -821,10 +589,9 @@ const reportActualOutcome = async (historyId, actualViews) => {
   setStep('analyzing');
   setAnalysisMode('video');
   setStatusText("Detectando ritmo de edición...");
-  setAnalysisProgress(8);   // lg:col-span-8
+  setAnalysisProgress(8);
 
   try {
-    // NUEVO: detectar cut rate en paralelo con extracción de frames
     const [cutData, frameData] = await Promise.all([
       detectCutRate(url),
       captureFrames(url)
@@ -832,7 +599,9 @@ const reportActualOutcome = async (historyId, actualViews) => {
 
     const videoMetadata = {
       cutsPerMinute: cutData.cutsPerMinute,
-      duration: cutData.duration
+      duration: cutData.duration,
+      rhythmType: cutData.rhythmType,
+      hookCuts: cutData.hookCuts
     };
 
     setAnalysisProgress(55);
@@ -840,111 +609,37 @@ const reportActualOutcome = async (historyId, actualViews) => {
 
     const analysisPrompt = buildSystemInstructions(platform, followerRange, 'video', videoMetadata);
 
-    // LLAMADA 1: Análisis principal (frames + cut rate + benchmarks)
     const { data: analysisData, error: analysisError } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: analysisPrompt
-      + '\n\nMETADATOS TÉCNICOS MEDIDOS:'
-      + '\n- Cortes/minuto: ' + cutData.cutsPerMinute + ' cpm'
-      + '\n- Duración: ' + cutData.duration + 's'
-      + '\n- Tipo de ritmo: ' + cutData.rhythmType + ' (varianza: ' + cutData.rhythmVariance + ')'
-      + '\n- Cortes en el hook (0-5s): ' + cutData.hookCuts + ' cortes'
-      + '\n- Timestamps de cortes: ' + (cutData.cutTimestamps?.slice(0,10).join('s, ') || 'N/A') + 's'
-      + '\n- Frames capturados: ' + frameData.length + ' (' + frameData.filter(f => f.isHook).length + ' son del hook 0-5s)'
-      + '\n\nAnalizá los ' + frameData.length + ' frames con el protocolo de análisis frame por frame.',
-    frames: frameData.map(f => f.base64)
-  }
-});
-if (analysisError) throw analysisError;
+      body: {
+        text: analysisPrompt
+          + '\n\nMETADATOS TÉCNICOS MEDIDOS:'
+          + '\n- Cortes/minuto: ' + cutData.cutsPerMinute + ' cpm'
+          + '\n- Duración: ' + cutData.duration + 's'
+          + '\n- Tipo de ritmo: ' + cutData.rhythmType + ' (varianza: ' + cutData.rhythmVariance + ')'
+          + '\n- Cortes en el hook (0-5s): ' + cutData.hookCuts + ' cortes'
+          + '\n- Frames capturados: ' + frameData.length,
+        frames: frameData.map(f => f.base64)
+      }
+    });
+    if (analysisError) throw analysisError;
+
+    setAnalysisProgress(90);
+    setStatusText("Procesando resultados...");
 
     const rawAnalysis = extractGeminiText(analysisData);
     const parsed = safeParseJSON(rawAnalysis, 'runNeuralAnalysis-main');
-
-    setAnalysisProgress(72);
-    setStatusText("Buscando los 3 videos más virales de tu nicho...");
-
-    // LLAMADA 2: Benchmarking competitivo (nueva)
-    const benchmarkPrompt = `Sos un analista de contenido viral especializado en ${platform}.
-
-CONTEXTO:
-- Nicho analizado: ${parsed.vision?.niche || 'General'}
-- Score preliminar: ${parsed.potentialScore}%
-- Tono: ${parsed.styleProfile?.detectedTone}
-- Plataforma: ${platform}
-
-TAREA DE INVESTIGACIÓN:
-Buscá en Google los 3 videos con más views de "${parsed.vision?.niche}" en ${platform} publicados en los últimos 30 días.
-Para cada uno, extraé: título o descripción, views aproximados, y por qué funcionó.
-
-Luego comparalo con este video y respondé:
-1. ¿Está este video a nivel de esos benchmarks, por debajo, o por encima?
-2. ¿Qué tiene el video más viral que este NO tiene?
-3. ¿Cuál es el gap específico más importante a cerrar?
-
-Devolvé ÚNICAMENTE este JSON:
-{
-  "competitiveBenchmark": {
-    "topVideos": [
-      { "description": "<qué es>", "approxViews": "<XM views>", "whyViral": "<razón específica>" },
-      { "description": "<qué es>", "approxViews": "<XM views>", "whyViral": "<razón específica>" },
-      { "description": "<qué es>", "approxViews": "<XM views>", "whyViral": "<razón específica>" }
-    ],
-    "gapAnalysis": "<qué separa este video del top, 150-200 chars>",
-    "positionVsTop": "<por encima | a nivel | por debajo>",
-    "criticalDifference": "<la diferencia #1 más importante, max 120 chars>"
-  }
-}`;
-
-    const { data: benchmarkData } = await supabase.functions.invoke('gemini-proxy', {
-      body: { text: benchmarkPrompt }
-    });
-
-    setAnalysisProgress(85);
-    setStatusText("Buscando música viral para tu nicho...");
-
-    // LLAMADA 3: Música (ya existente, sin cambios)
-    const musicPrompt = `Sos un experto en música viral para redes sociales en 2025-2026.
-Nicho: ${parsed.vision?.niche} | Tono: ${parsed.styleProfile?.detectedTone} | Ritmo: ${parsed.styleProfile?.detectedRhythm} | Plataforma: ${platform}
-Buscá canciones REALMENTE usadas HOY en videos de "${parsed.vision?.niche}" en ${platform}.
-Devolvé ÚNICAMENTE:
-{ "musicSuggestions": [
-  { "title": "<título>", "artist": "<artista>", "why": "<max 60 chars>", "available": "<plataformas>" },
-  { "title": "<título>", "artist": "<artista>", "why": "<max 60 chars>", "available": "<plataformas>" },
-  { "title": "<título>", "artist": "<artista>", "why": "<max 60 chars>", "available": "<plataformas>" }
-]}`;
-
-    const { data: musicData } = await supabase.functions.invoke('gemini-proxy', {
-      body: { text: musicPrompt }
-    });
-
-    // Merge de resultados
-    let finalResult = { ...parsed, cutRateData: cutData };
-    if (benchmarkData) {
-      try {
-        const bm = safeParseJSON(extractGeminiText(benchmarkData), 'benchmark');
-        if (bm?.competitiveBenchmark) finalResult.competitiveBenchmark = bm.competitiveBenchmark;
-      } catch (e) { console.warn('Benchmark parse failed:', e); }
-    }
-    if (musicData) {
-      try {
-        const mu = safeParseJSON(extractGeminiText(musicData), 'music');
-        if (mu?.musicSuggestions?.length > 0) finalResult.musicSuggestions = mu.musicSuggestions;
-      } catch (e) { console.warn('Music parse failed:', e); }
-    }
+    const finalResult = { ...parsed, cutRateData: cutData };
 
     setAiResult(finalResult);
     setCompletedSteps([]);
     setChatMessages([{
       role: 'bot',
-      text: `Análisis completado. Score: ${finalResult.potentialScore}% | Ritmo: ${cutData.cutsPerMinute} cpm | Comparado contra top 3 viral del nicho. ¿Querés profundizar en algo específico?`
+      text: `Análisis completado. Score: ${finalResult.potentialScore}% | Ritmo: ${cutData.cutsPerMinute} cpm | Benchmark vs top 3 del nicho incluido. ¿Querés profundizar en algo?`
     }]);
 
-    setAnalysisProgress(100);   //METADATOS
+    setAnalysisProgress(100);
     await saveAnalysisToHistory(finalResult, 'video');
-
-    // Guardar en tabla de tracking para calibración futura
     await trackPrediction(finalResult);
-
     setTimeout(() => setStep('results'), 500);
 
   } catch (err) {
@@ -1787,7 +1482,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
             </div>
           ))}
         </div>
-      </ShinyCard>
+      </ShinyCard>  
 
       {/* HOJA DE RUTA */}
       <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/5 p-10 rounded-[3.5rem] space-y-8">
