@@ -139,6 +139,19 @@ FORMATOS QUE REQUIEREN CRITERIO DIFERENTE:
 La emoción que genera el CIERRE es tan determinante como el hook inicial.
 Usá ese juicio para calibrar el score general — no como fórmula, sino como parte de tu lectura completa del video.
 
+ANÁLISIS DE CONTRASTE ENTRE FRAMES:
+Compará el frame de INICIO (5%) con el frame de CLIMAX (92%).
+¿Hay una diferencia visual notable entre ambos?
+¿Esa diferencia cuenta una historia por sí sola sin necesitar audio?
+Ejemplos de contraste con alto potencial viral:
+- Pocos objetos al inicio → muchos objetos al final (exageración)
+- Persona tranquila al inicio → reacción extrema al final (humor)
+- Espacio vacío al inicio → espacio lleno al final (transformación)
+- Situación normal al inicio → situación absurda al final (comedia)
+Si hay un contraste claro y exagerado entre inicio y cierre,
+ese video tiene alto loop rate y share rate aunque el desarrollo parezca lento.
+Evalualo por el ARCO COMPLETO, no frame a frame de forma aislada.
+
 Devolvé ÚNICAMENTE este JSON sin texto extra:
 {
   "potentialScore": <0-100>,
@@ -374,10 +387,11 @@ useEffect(() => {
 
       // 4 frames estratégicos con propósito específico
       const points = [
-        { t: duration * 0.08, label: 'hook',      isHook: true  },  // Frame 0 — primer impacto
-        { t: duration * 0.25, label: 'retention',  isHook: true  },  // Post-hook — ¿se queda o se va?
-        { t: duration * 0.55, label: 'value',      isHook: false },  // Cuerpo — calidad del contenido
-        { t: duration * 0.90, label: 'closing',    isHook: false },  // Cierre — CTA o loop
+       // DESPUÉS
+{ t: duration * 0.05, label: 'inicio',     isHook: true  },
+{ t: duration * 0.35, label: 'desarrollo', isHook: false },
+{ t: duration * 0.70, label: 'escalada',   isHook: false },
+{ t: duration * 0.92, label: 'climax',     isHook: false },
       ];
 
       for (let i = 0; i < points.length; i++) {
