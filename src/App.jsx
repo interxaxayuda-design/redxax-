@@ -121,13 +121,23 @@ Para tu análisis, usá estos pilares:
 3. Curiosidad y Gap de Información: ¿Genera necesidad de ver el final para resolver una tensión?
 4. Comportamiento del Nicho: ¿El lenguaje, ritmo y estilo visual encajan con lo que esa audiencia valora en ${platformNames[platform]}?
 5. Contexto de Cuenta: Considerá que ${followerLabels[followerRange]} seguidores cambia completamente cómo el algoritmo distribuye el video.
+6. El video después del hook, es lento, no se entiende o da una emoción al espectador al primer instante?
 
-Investigá en Google:
-- Top 3 videos virales de este nicho en ${platformNames[platform]} en los últimos 30 días
-- Trending sounds para este tipo de contenido ahora mismo
-- Si el formato está en tendencia o en declive
+DETECCIÓN DE PAYLOAD EMOCIONAL (ejecutar ANTES de puntuar):
 
-Sé brutal y directo. Un score inflado no sirve. El creador prefiere saber la verdad hoy antes de publicar.
+Preguntate obligatoriamente antes de asignar cualquier score:
+1. ¿Cuál es el objetivo emocional de este video? (humor, intriga, inspiración, sorpresa, información, admiración)
+2. ¿El video logra ese objetivo con los elementos detectados en los frames?
+3. ¿El espectador promedio va a entender fácilmente cuál es la gracia o el punto?
+4. Si el espectador entendió el video, ¿qué emoción le genera? ¿Esa emoción lo impulsa a compartir, comentar o ver de nuevo?
+
+FORMATOS QUE REQUIEREN CRITERIO DIFERENTE:
+→ Humor de setup lento: los frames del medio parecen sin acción pero es el setup del chiste. Si el frame de cierre muestra el punchline o una reacción graciosa, ese video tiene alto share rate y loop rate por naturaleza.
+→ Contenido de reveal o intriga: parece lento hasta el final. Si el cierre muestra algo inesperado, el espectador vuelve a ver desde el principio.
+→ Contenido aspiracional sin voz: sin hook verbal, solo el resultado final hablando. Evalualo por si el resultado genera admiración o deseo, no por ausencia de elementos verbales.
+
+La emoción que genera el CIERRE es tan determinante como el hook inicial.
+Usá ese juicio para calibrar el score general — no como fórmula, sino como parte de tu lectura completa del video.
 
 Devolvé ÚNICAMENTE este JSON sin texto extra:
 {
