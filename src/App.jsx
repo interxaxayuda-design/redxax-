@@ -431,15 +431,14 @@ const detectCutRate = async (url) => {
     video.onloadedmetadata = async () => {
       const duration = video.duration;
       const canvas = document.createElement('canvas');
-      canvas.width = 80; canvas.height = 45;
+      canvas.width = 64; canvas.height = 36; // ← más pequeño
       const ctx = canvas.getContext('2d');
       
       let cuts = 0;
       let prevData = null;
-      let cutTimestamps = [];  // NUEVO: guardar cuándo ocurren los cortes
-      let maxDiffFrame = 0;
-      const step = 0.2; // más preciso: cada 200ms en vez de 250ms
-      const maxSamples = Math.min(Math.floor(duration / step), 150);
+      let cutTimestamps = [];
+      const step = 0.5; // ← cada 500ms en vez de 200ms
+      const maxSamples = Math.min(Math.floor(duration / step), 60); // ← máx 60 samples
 
       for (let i = 0; i < maxSamples; i++) {
         video.currentTime = i * step;
@@ -447,8 +446,8 @@ const detectCutRate = async (url) => {
           const h = () => { video.removeEventListener('seeked', h); r(); };
           video.addEventListener('seeked', h);
         });
-        ctx.drawImage(video, 0, 0, 80, 45);
-        const data = ctx.getImageData(0, 0, 80, 45).data;
+        ctx.drawImage(video, 0, 0, 64, 36);
+        const data = ctx.getImageData(0, 0, 64, 36).data;
         
         if (prevData) {
           let diff = 0;
@@ -457,8 +456,7 @@ const detectCutRate = async (url) => {
                     Math.abs(data[j+1] - prevData[j+1]) +
                     Math.abs(data[j+2] - prevData[j+2]);
           }
-          const avgDiff = diff / (80 * 45 * 3);
-          if (avgDiff > maxDiffFrame) maxDiffFrame = avgDiff;
+          const avgDiff = diff / (64 * 36 * 3);
           if (avgDiff > 35) {
             cuts++;
             cutTimestamps.push(parseFloat((i * step).toFixed(1)));
@@ -467,8 +465,6 @@ const detectCutRate = async (url) => {
         prevData = new Uint8ClampedArray(data);
       }
 
-      // NUEVO: calcular varianza de los intervalos entre cortes
-      // Alta varianza = ritmo irregular. Baja varianza = ritmo constante
       let rhythmVariance = 0;
       if (cutTimestamps.length > 2) {
         const intervals = cutTimestamps.slice(1).map((t, i) => t - cutTimestamps[i]);
@@ -482,10 +478,10 @@ const detectCutRate = async (url) => {
         cuts,
         cutsPerMinute: Math.round((cuts / duration) * 60),
         duration: Math.round(duration),
-        cutTimestamps: cutTimestamps.slice(0, 20), // los primeros 20 cortes
+        cutTimestamps: cutTimestamps.slice(0, 10),
         rhythmVariance: parseFloat(rhythmVariance.toFixed(2)),
         rhythmType: rhythmVariance < 0.5 ? 'constante' : rhythmVariance < 1.5 ? 'variable' : 'errático',
-        hookCuts: cutTimestamps.filter(t => t <= 5).length // cortes en el hook
+        hookCuts: cutTimestamps.filter(t => t <= 5).length
       });
     };
   });
