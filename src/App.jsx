@@ -619,9 +619,16 @@ const reportActualOutcome = async (historyId, actualViews) => {
 
   try {
     // Convertir el archivo a base64 para enviarlo a la Edge Function
-    const arrayBuffer = await videoFile.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
-    const base64Video = btoa(String.fromCharCode(...uint8Array));
+    const base64Video = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result;
+        // Sacar el prefijo "data:video/mp4;base64,"
+        resolve(result.split(',')[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(videoFile);
+    });
 
     setAnalysisProgress(30);
     setStatusText("Procesando con IA cinematográfica...");
