@@ -274,6 +274,7 @@ const App = () => {
   const [analysisMode, setAnalysisMode] = useState('video');
   const [selectedPlatform, setSelectedPlatform] = useState(null);
   const [selectedFollowerRange, setSelectedFollowerRange] = useState(null);
+  const [pendingVideoFile, setPendingVideoFile] = useState(null);
   const [pendingVideoUrl, setPendingVideoUrl] = useState(null);
   const [scriptText, setScriptText] = useState('');
   const [completedSteps, setCompletedSteps] = useState([]);
@@ -416,7 +417,7 @@ useEffect(() => {
           label,
           isHook
         });
-      }
+      } //Cargar Video
 
       resolve(frames);
     };
@@ -556,7 +557,7 @@ const detectCutRate = async (url) => {
     if (!error && data) {
       setHistory(prev => [data, ...prev]);
       setCurrentHistoryId(data.id);
-    }
+    } //className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all"
   };
 
   // Guardar predicción para calibración futura
@@ -597,54 +598,45 @@ const reportActualOutcome = async (historyId, actualViews) => {
     ).length;
     const accuracy = Math.round((correct / data.length) * 100);
     console.log(`Precisión actual del sistema: ${accuracy}% en ${data.length} videos`);
-  }
+  } //onChange={(e) => {
 };
 
- const runNeuralAnalysis = async (url, platform, followerRange) => {
+ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   const duration = await new Promise((resolve) => {
     const v = document.createElement('video');
     v.src = url;
     v.onloadedmetadata = () => resolve(v.duration);
   });
+
   const cost = 100;
   const approved = await deductGems(cost, `video:${Math.ceil(duration / 60)}`);
   if (!approved) return;
 
   setStep('analyzing');
   setAnalysisMode('video');
-  setStatusText("Detectando ritmo de edición...");
-  setAnalysisProgress(8);
+  setStatusText("Subiendo video para análisis nativo...");
+  setAnalysisProgress(10);
 
   try {
-    const [cutData, frameData] = await Promise.all([
-      detectCutRate(url),
-      captureFrames(url)
-    ]);
+    // Convertir el archivo a base64 para enviarlo a la Edge Function
+    const arrayBuffer = await videoFile.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    const base64Video = btoa(String.fromCharCode(...uint8Array));
 
-    const videoMetadata = {
-      cutsPerMinute: cutData.cutsPerMinute,
-      duration: cutData.duration,
-      rhythmType: cutData.rhythmType,
-      hookCuts: cutData.hookCuts
-    };
+    setAnalysisProgress(30);
+    setStatusText("Procesando con IA cinematográfica...");
 
-    setAnalysisProgress(55);
-    setStatusText("Analizando con ciencia viral real...");
-
-    const analysisPrompt = buildSystemInstructions(platform, followerRange, 'video', videoMetadata);
+    const analysisPrompt = buildSystemInstructions(platform, followerRange, 'video', {});
 
     const { data: analysisData, error: analysisError } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: analysisPrompt
-          + '\n\nMETADATOS TÉCNICOS MEDIDOS:'
-          + '\n- Cortes/minuto: ' + cutData.cutsPerMinute + ' cpm'
-          + '\n- Duración: ' + cutData.duration + 's'
-          + '\n- Tipo de ritmo: ' + cutData.rhythmType + ' (varianza: ' + cutData.rhythmVariance + ')'
-          + '\n- Cortes en el hook (0-5s): ' + cutData.hookCuts + ' cortes'
-          + '\n- Frames capturados: ' + frameData.length,
-        frames: frameData.map(f => f.base64)
+        text: analysisPrompt,
+        videoBase64: base64Video,
+        videoMimeType: videoFile.type || 'video/mp4',
+        duration: Math.round(duration)
       }
     });
+
     if (analysisError) throw analysisError;
 
     setAnalysisProgress(90);
@@ -652,13 +644,13 @@ const reportActualOutcome = async (historyId, actualViews) => {
 
     const rawAnalysis = extractGeminiText(analysisData);
     const parsed = safeParseJSON(rawAnalysis, 'runNeuralAnalysis-main');
-    const finalResult = { ...parsed, cutRateData: cutData };
+    const finalResult = { ...parsed };
 
     setAiResult(finalResult);
     setCompletedSteps([]);
     setChatMessages([{
       role: 'bot',
-      text: `Análisis completado. Score: ${finalResult.potentialScore}% | Ritmo: ${cutData.cutsPerMinute} cpm | Benchmark vs top 3 del nicho incluido. ¿Querés profundizar en algo?`
+      text: `Análisis completado con visión nativa. Score: ${finalResult.potentialScore}%. ¿Querés profundizar en algo?`
     }]);
 
     setAnalysisProgress(100);
@@ -672,7 +664,7 @@ const reportActualOutcome = async (historyId, actualViews) => {
     setStep('upload');
   }
 };
-
+ //onChange={(e) => {
   // ==========================================
   // 2. TU FUNCIÓN (Justo en el medio)
   // ==========================================
@@ -737,7 +729,7 @@ const reportActualOutcome = async (historyId, actualViews) => {
 ${aiResult.musicSuggestions.map((m, i) =>
         `${i + 1}. "${m.title}" de ${m.artist}
          → Match: ${m.why}
-         → Plataformas: ${m.available}`
+         → Plataformas: ${m.available}`  //<p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Edición y Ritmo</p>
       ).join('\n')}`
       : '';
 
@@ -746,7 +738,7 @@ ${aiResult.musicSuggestions.map((m, i) =>
 Tu objetivo es que el usuario entienda la relación entre lo que VE y lo que ESCUCHA.
 
 ANÁLISIS DE ATMÓSFERA:
-- Nicho: ${aiResult?.vision?.niche || 'General'}
+- Nicho: ${aiResult?.vision?.niche || 'General'}  
 - Estilo: ${aiResult?.styleProfile?.detectedRhythm || 'Normal'}
 - Tono: ${aiResult?.styleProfile?.detectedTone || 'Neutro'}
 
@@ -956,6 +948,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
           if (file) {
             const url = URL.createObjectURL(file);
             setVideoPreviewUrl(url);
+            setPendingVideoFile(file); // ← nuevo estado
             setPendingVideoUrl(url);
             setAnalysisMode('video');
             setStep('platform_select');
@@ -1038,7 +1031,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
           disabled={!selectedPlatform || !selectedFollowerRange}
           onClick={() => {
             if (analysisMode === 'video' && pendingVideoUrl) {
-              runNeuralAnalysis(pendingVideoUrl, selectedPlatform, selectedFollowerRange);
+             runNeuralAnalysis(pendingVideoUrl, selectedPlatform, selectedFollowerRange, pendingVideoFile); // ← cambiás esta línea
             } else {
               runScriptAnalysis(selectedPlatform, selectedFollowerRange);
             }
@@ -1401,7 +1394,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
         <p className="text-[9px] font-black uppercase tracking-[0.3em] text-orange-400 mb-2">✦ Hook Optimizado por REDXAX</p>
         <p className="text-sm font-bold italic text-white leading-relaxed">"{aiResult.hookDNA.optimizedHook}"</p>
       </div>
-    )}
+    )}  
   </ShinyCard>
 )}      
 
