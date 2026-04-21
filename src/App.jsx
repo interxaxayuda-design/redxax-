@@ -617,28 +617,26 @@ const reportActualOutcome = async (historyId, actualViews) => {
   setStatusText("Subiendo video para análisis nativo...");
   setAnalysisProgress(10);
 
+  const storagePath = `temp-analysis/${Date.now()}-${videoFile.name}`;
+
   try {
-    // Convertir el archivo a base64 para enviarlo a la Edge Function
-    const base64Video = await new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result;
-        // Sacar el prefijo "data:video/mp4;base64,"
-        resolve(result.split(',')[1]);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(videoFile);
-    });
+    // 1. Subir el video a Storage (sin base64, directo)
+    const { error: uploadError } = await supabase.storage
+      .from('videos')
+      .upload(storagePath, videoFile, { upsert: true });
+
+    if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
     setAnalysisProgress(30);
     setStatusText("Procesando con IA cinematográfica...");
 
     const analysisPrompt = buildSystemInstructions(platform, followerRange, 'video', {});
 
+    // 2. Pasarle solo el path a la Edge Function
     const { data: analysisData, error: analysisError } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: analysisPrompt,
-        videoBase64: base64Video,
+        storagePath: storagePath,
         videoMimeType: videoFile.type || 'video/mp4',
         duration: Math.round(duration)
       }
@@ -669,8 +667,12 @@ const reportActualOutcome = async (historyId, actualViews) => {
     console.error('Error análisis:', err);
     alert('Error en el análisis. Revisá la consola.');
     setStep('upload');
+  } finally {
+    // 3. Limpiar el archivo temporal siempre, incluso si hubo error
+    await supabase.storage.from('videos').remove([storagePath]);
   }
 };
+
  //onChange={(e) => {
   // ==========================================
   // 2. TU FUNCIÓN (Justo en el medio)
