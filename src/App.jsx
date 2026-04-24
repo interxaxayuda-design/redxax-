@@ -105,11 +105,11 @@ const buildSystemInstructions = (platform, followerRange, mode = 'video', videoM
     ? `Datos técnicos medidos: ${cutsPerMinute} cortes/minuto | Duración: ${duration}s\n` : '';
 
   const accountBenchmarks = {
-    new:   'Base rate real: 9 de cada 10 videos en cuentas nuevas obtienen menos de 300 views. El algoritmo NO distribuye a audiencia fría sin historial previo. Un video que merece 70 en una cuenta media, merece máximo 52 acá. Ajustá el score en consecuencia.',
-    small: 'Base rate real: 8 de cada 10 videos obtienen menos de 1K views. El crecimiento depende casi 100% de que el video sea compartido externamente por espectadores.',
-    mid:   'Base rate real: 7 de cada 10 videos quedan bajo el promedio del nicho. Las primeras 2 horas post-publicación son críticas para la distribución del algoritmo.',
-    large: 'Cuenta establecida. El algoritmo tiene historial para distribuir amplio, pero la coherencia de nicho es obligatoria. Un cambio de estilo penaliza fuerte.',
-    mega:  'Mega cuenta. El algoritmo distribuye por defecto, pero la expectativa del espectador es alta. Un video mediocre destruye la tasa de retención histórica de la cuenta.',
+    new:   'Base rate real: 9 de cada 10 videos en cuentas nuevas obtienen menos de 300 views. El algoritmo NO distribuye a audiencia fría sin historial previo. Un video que merece 70 en una cuenta media, merece máximo 52 acá.',
+    small: 'Base rate real: 8 de cada 10 videos obtienen menos de 1K views. El crecimiento depende casi 100% de que el video sea compartido externamente.',
+    mid:   'Base rate real: 7 de cada 10 videos quedan bajo el promedio del nicho. Las primeras 2 horas post-publicación son críticas.',
+    large: 'Cuenta establecida. El algoritmo tiene historial para distribuir amplio, pero la coherencia de nicho es obligatoria.',
+    mega:  'Mega cuenta. El algoritmo distribuye por defecto, pero la expectativa del espectador es alta.',
   }[followerRange] || '';
 
   const accountPenalty = {
@@ -127,58 +127,112 @@ ${accountBenchmarks}
 ${cutContext}
 
 ══════════════════════════════════════════
+CAPA 0 — PROPÓSITO REAL DEL VIDEO
+══════════════════════════════════════════
+
+ANTES de clasificar el nicho, antes de evaluar cualquier criterio, respondé esto:
+
+¿Qué está intentando hacer este video en la mente del espectador?
+No el tema superficial — el mecanismo psicológico real.
+
+Tipos de propósito:
+- informar: transmitir datos útiles que el espectador no tenía
+- entretener: generar placer, risa o asombro sin utilidad práctica
+- vender: convencer de comprar o desear un producto/servicio
+- inspirar: generar aspiración, motivación o cambio de perspectiva
+- juego_mental: activar participación cognitiva involuntaria (adivinar, predecir, resolver)
+- shock_reveal: generar sorpresa extrema mediante un reveal inesperado
+- identidad: hacer que el espectador se identifique y quiera compartir porque "lo representa"
+
+REGLA CRÍTICA: El tema superficial del video (inmobiliaria, gaming, etc) puede ser solo el VEHÍCULO.
+El propósito real puede ser completamente diferente.
+Ejemplos:
+- Video de "adivinar precios de casas" → vehículo: inmobiliaria / propósito real: juego_mental
+- Video de agente explicando su agencia → vehículo: inmobiliaria / propósito real: informar
+- Clip de podcast sobre propiedades → vehículo: inmobiliaria / propósito real: inspirar o shock_reveal
+
+Si el propósito real y el tema superficial son distintos → todo el análisis posterior
+debe calibrarse según el PROPÓSITO REAL, no según el tema superficial.
+
+DETECCIÓN DE MECÁNICA DE ENGANCHE:
+Algunos videos tienen una mecánica específica que explica la mayoría de su éxito.
+Identificala antes de evaluar cualquier otra cosa:
+- juego_mental: el espectador adivina, predice o resuelve algo mentalmente mientras mira
+- transformacion: hay un antes y después visual claro que genera tensión hasta el final
+- challenge: el creador intenta algo difícil y el espectador quiere ver si lo logra
+- storytelling: hay una narrativa con conflicto y resolución que engancha emocionalmente
+- shock_reveal: el cierre revela algo que contradice completamente lo que se veía antes
+- comparacion: dos elementos se comparan y el espectador toma partido mentalmente
+- ninguna: el video no tiene mecánica de enganche identificable
+
+Si hay mecánica de enganche activa → ese factor pesa más que cualquier criterio técnico
+de hook, edición o ritmo. Un video con juego_mental activo y loopNatural puede tener
+edición mediocre y aun así viral porque la mecánica lo sostiene.
+
+══════════════════════════════════════════
 CAPA 1 — DETECTOR DE NICHO
 ══════════════════════════════════════════
 
-Analizá los primeros 3 segundos de metraje, el audio y los elementos visuales.
-Clasificá el video en UNA sola categoría. Si es Gaming, clasificá el sub-nicho.
+Ahora que sabés el propósito real, clasificá el tema superficial del video.
+Si detectás que el video mezcla dos nichos, identificá cuál domina el primer segundo visual.
+El nicho dominante es el que determina el scroll-stop — no el tema general del video.
 
 Categorías válidas:
 - inmobiliaria
 - promocion_productos
 - gaming_minecraft_horror_survival
 - gaming_fortnite_competitivo
-- gaming_otros (especificar juego: Valorant, FIFA, LoL, etc)
+- gaming_otros (especificar juego)
 - humor_entretenimiento
-- podcast_clip (clip cortado de episodio largo)
-- podcast_original (formato corto propio)
+- podcast_clip
+- podcast_original
+
+Si el video es híbrido entre dos nichos, identificá ambos.
+El nicho dominante es el que aparece en el primer segundo visual.
 
 ══════════════════════════════════════════
 CAPA 2 — MÓDULOS POR NICHO
 ══════════════════════════════════════════
 
-Aplicá SOLO el módulo que corresponde al nicho detectado en Capa 1.
+Aplicá el módulo del nicho dominante detectado en Capa 1.
+Si hay nicho secundario, tomá los criterios de share/algoritmo del módulo secundario también.
+
+ATENCIÓN: Si en Capa 0 detectaste discrepancia entre propósito y nicho superficial,
+los criterios de scroll-stop y hook del módulo aplican normalmente,
+pero los criterios de share y emoción viral deben tomarse del propósito real, no del módulo.
 
 ─────────────────────────────────────────
 MÓDULO A: INMOBILIARIA
 ─────────────────────────────────────────
-Scroll Stopper: La característica arquitectónica de mayor contraste visual (piscina infinity, vista panorámica, altura extrema) debe aparecer entre el segundo 0.0 y 1.5.
-REGLA DURA: Si el video empieza con la cara del agente hablando → scrollStopScore máximo 35. Sin excepciones.
+Scroll Stopper: La característica arquitectónica de mayor contraste visual debe aparecer entre el segundo 0.0 y 1.5.
+REGLA DURA: Si el video empieza con la cara del agente hablando → scrollStopScore máximo 35.
 
-Hook Probado: Precio + Ubicación + Disparidad de valor. Ejemplo: "Por $500.000, esta casa en Miami esconde algo en el sótano." El shock financiero detiene el scroll.
+Hook Probado: Precio + Ubicación + Disparidad de valor.
+Hook alternativo si propósito es juego_mental: pregunta implícita de "¿cuánto vale esto?" sin revelar el precio todavía.
 
-Error Mortal: Panning lento del exterior. Pasillos vacíos sin corte. El agente hablando de su trayectoria. Si detectás cualquiera de estos → errorMortalDetectado: true.
+Error Mortal: Panning lento del exterior. Pasillos vacíos. El agente hablando de su trayectoria.
 
-Algoritmo en ${platformNames[platform]}: Save rate es la métrica más importante — la gente guarda propiedades para mostrarle a alguien. Geo-tagging crítico en Reels. CTR de búsqueda crítico en Shorts.
+Algoritmo en ${platformNames[platform]}: Save rate es la métrica más importante.
 
 Benchmarks reales:
 - Retención a 3s: >45% (cuenta establecida) | >35% (cuenta nueva)
 - Completion Rate para videos de 45s: >25%
 - Save Rate objetivo: >3% de las vistas
 
-Emociones virales: Aspiración, envidia, shock financiero.
+Emociones virales base: Aspiración, envidia, shock financiero.
+Si propósito es juego_mental: agregar curiosidad activa y satisfacción de resolver.
 
 ─────────────────────────────────────────
 MÓDULO B: PROMOCIÓN DE PRODUCTOS
 ─────────────────────────────────────────
-Scroll Stopper: El producto en acción resolviendo un problema de forma agresiva o visualmente satisfactoria en el segundo 1. No el packaging. No el unboxing. El resultado visible.
+Scroll Stopper: El producto en acción resolviendo un problema en el segundo 1. No el packaging. El resultado visible.
 
-Hook Probado: "Nosotros vs. Ellos" o Inversión de Expectativas. Ejemplo: "Dejé de usar [Marca Líder] porque descubrí esto." La promesa implícita de superioridad detiene el scroll.
+Hook Probado: "Nosotros vs. Ellos" o Inversión de Expectativas.
 
-Error Mortal: "Hola chicos, hoy les traigo el unboxing de..." → insta-skip garantizado. El espectador sabe que viene publicidad antes de verla.
-REGLA DURA: Si detectás este patrón de intro → errorMortalDetectado: true, hook score máximo 40.
+Error Mortal: "Hola chicos, hoy les traigo el unboxing de..."
+REGLA DURA: Si detectás este patrón → errorMortalDetectado: true, hook score máximo 40.
 
-Algoritmo en ${platformNames[platform]}: El algoritmo ignora los likes en este nicho. Lo que importa son Guardados y Shares por DM exclusivamente.
+Algoritmo en ${platformNames[platform]}: Guardados y Shares por DM son las únicas métricas que importan.
 
 Benchmarks reales:
 - Share Rate objetivo: >1.5% de las vistas
@@ -189,120 +243,94 @@ Emociones virales: Urgencia, alivio del dolor, curiosidad extrema.
 ─────────────────────────────────────────
 MÓDULO C: GAMING — MINECRAFT HORROR / SURVIVAL
 ─────────────────────────────────────────
-Scroll Stopper: Oscuridad rota por un elemento antinatural (pixel rojo, anomalía en la interfaz, entidad donde no debería haber nada), o distorsión abrupta del audio estéreo.
-REGLA DURA: Menús de inicio de Bedrock o Java en el primer frame → scrollStopScore máximo 20.
+Scroll Stopper: Oscuridad rota por elemento antinatural, o distorsión abrupta del audio estéreo.
+REGLA DURA: Menú de inicio en el primer frame → scrollStopScore máximo 20.
 
-Hook Probado: Cero voz humana en los primeros 5 segundos. Silencio ambiental interrumpido por sonido perturbador, o texto estático que rompe la cuarta pared. El misterio no se explica — se experimenta.
+Hook Probado: Cero voz humana en los primeros 5 segundos. El misterio no se explica — se experimenta.
 
-Error Mortal: Sobre-explicación. "Hoy vamos a probar este Add-on de terror..." destruye el suspenso inmediatamente.
-REGLA DURA: Si detectás sobre-explicación en los primeros 5s → errorMortalDetectado: true, credibilidad score máximo 40.
+Error Mortal: Sobre-explicación en los primeros 5s.
+REGLA DURA: Si detectás sobre-explicación → credibilidad score máximo 40.
 
-Algoritmo en ${platformNames[platform]}: Premia brutalmente el Loop Rate — gente que vuelve a ver para entender qué pasó. Loop Rate >1.2 genera distribución exponencial.
+Algoritmo en ${platformNames[platform]}: Loop Rate >1.2 genera distribución exponencial.
 
 Benchmarks reales:
 - Completion Rate en Shorts <20s: >80%
 - Loop Rate objetivo: >1.2
-- Si los benchmarks de este nicho no se cumplen → potentialScore máximo 55.
 
 Emociones virales: Miedo, tensión, síndrome de "qué acabo de ver".
 
 ─────────────────────────────────────────
 MÓDULO D: GAMING — FORTNITE COMPETITIVO
 ─────────────────────────────────────────
-Scroll Stopper: Audio sincronizado a la perfección con el primer frame visual (sonido de eliminación exactamente cuando aparece el kill), o edit course a velocidad que parece imposible.
+Scroll Stopper: Audio sincronizado a la perfección con el primer frame visual.
 
-Hook Probado: Afirmación audaz sobre el meta actual del juego. "Este exploit de movimiento rompe la temporada." El espectador competitivo necesita saber si hay algo que él no sabe.
+Hook Probado: Afirmación audaz sobre el meta actual del juego.
 
-Error Mortal: Pantalla de carga. Looting lento. Tiempo muerto corriendo por el mapa.
-REGLA DURA: Cualquier segundo sin acción en los primeros 5s → errorMortalDetectado: true.
-
-Algoritmo en ${platformNames[platform]}: Retención pura de los primeros 5 segundos. Si la mecánica no impresiona en ese tiempo, el CTR cae y el algoritmo deja de distribuir.
+Error Mortal: Cualquier segundo sin acción en los primeros 5s.
+REGLA DURA: Si detectás tiempo muerto → errorMortalDetectado: true.
 
 Benchmarks reales:
 - Retención a 3s: >60%
-- Este nicho tiene el umbral de atención más corto de todos los módulos.
 
 Emociones virales: Adrenalina, competitividad, respeto técnico.
 
 ─────────────────────────────────────────
 MÓDULO E: GAMING — OTROS
 ─────────────────────────────────────────
-Primero identificá el juego específico detectado en Capa 1. Luego aplicá:
+Identificá el juego específico y aplicá:
 
-VALORANT / SHOOTERS TÁCTICOS:
-- Scroll Stopper: La jugada excepcional en el primer segundo, sin contexto previo.
-- Error Mortal: Scoreboard, pantalla de compra de armas, tiempo muerto entre rondas.
-- Emoción viral: Precisión técnica que parece imposible.
+VALORANT / SHOOTERS: Scroll Stopper = jugada excepcional en segundo 1. Error Mortal = scoreboard o tiempo muerto.
+FIFA / DEPORTES: Scroll Stopper = gol o jugada excepcional inmediatamente. Error Mortal = secuencias de pase normal.
+LOL / MOBAs: Scroll Stopper = teamfight desde el primer frame. Error Mortal = laning phase sin acción.
 
-FIFA / DEPORTES:
-- Scroll Stopper: El gol o jugada excepcional inmediatamente. Sin replays de medio campo.
-- Error Mortal: Secuencias de pase normal, menús de Ultimate Team, pantallas de carga.
-- Emoción viral: Euforia, identificación del hincha.
-
-LEAGUE OF LEGENDS / MOBAs:
-- Scroll Stopper: El teamfight o pentakill desde el primer frame.
-- Error Mortal: Vista del mapa durante laning phase sin acción visible.
-- Emoción viral: La jugada que no debería ser posible.
-
-Benchmarks reales: Retención >55% a los 3s para todos los sub-nichos de esta categoría.
+Benchmarks: Retención >55% a los 3s.
 
 ─────────────────────────────────────────
 MÓDULO F: HUMOR Y ENTRETENIMIENTO
 ─────────────────────────────────────────
-Scroll Stopper: Contexto visual absurdo o fuera de lugar en el segundo 1. La premisa del chiste debe ser visible antes de que el espectador tenga tiempo de deslizar.
+Scroll Stopper: Contexto visual absurdo o fuera de lugar en el segundo 1.
 
-Hook Probado: El setup entregado visualmente o en menos de 2 segundos de audio. El espectador debe entender "esto va a ser gracioso" sin necesitar contexto previo de la cuenta.
+Hook Probado: El setup entregado visualmente o en menos de 2 segundos de audio.
 
-Error Mortal: Build-up largo sin micro-recompensas. Si pasan más de 4 segundos sin algo divertido, visualmente interesante o sorpresivo → retención colapsa.
+Error Mortal: Build-up largo sin micro-recompensas cada 4 segundos.
 
-ATENCIÓN — FORMATOS ESPECIALES EN ESTE NICHO:
-→ Humor de setup lento: los frames del medio pueden parecer sin acción pero son el setup del chiste. Si el frame de cierre muestra el punchline o reacción graciosa, ese video tiene alto share rate y loop rate por naturaleza. Evalualo por el ARCO COMPLETO.
-→ Contenido de reveal: parece lento hasta el final. Si el cierre muestra algo inesperado, el espectador vuelve desde el principio. El loop involuntario es oro.
+ATENCIÓN — FORMATOS ESPECIALES:
+→ Humor de setup lento: evaluá por el ARCO COMPLETO, no frame a frame.
+→ Si el propósito es juego_mental o shock_reveal: el desarrollo lento es parte de la mecánica, no un error.
 
-Algoritmo en ${platformNames[platform]}: Watch time y Loop Rate. El algoritmo empuja este formato cuando la gente no se da cuenta de que el video terminó y lo vuelve a ver.
+Algoritmo en ${platformNames[platform]}: Loop Rate involuntario es la métrica más valiosa.
 
 Benchmarks reales:
 - Completion Rate: >40%
 - Loop Rate objetivo: >1.1
 
-Emociones virales: Diversión, identificación ("a mí me pasa"), sorpresa.
+Emociones virales: Diversión, identificación, sorpresa.
 
 ─────────────────────────────────────────
 MÓDULO G: PODCAST CLIP
 ─────────────────────────────────────────
-Este formato tiene una ventaja y una trampa. Ventaja: el contenido fue validado en formato largo. Trampa: el clip debe funcionar SIN contexto del episodio completo.
+Scroll Stopper: El momento más polarizante en el segundo 0. No la intro — el pico del argumento.
 
-Scroll Stopper: El momento más polarizante del episodio en el segundo 0. No la introducción al tema — el pico del argumento directamente.
+Error Mortal: Empezar con contexto del episodio.
+REGLA DURA: Sin subtítulos dinámicos → scrollStopScore máximo 45.
 
-Hook Probado: Una declaración que divide opiniones en la primera sílaba. El espectador que está de acuerdo y el que está en desacuerdo ambos se quedan.
+Algoritmo en ${platformNames[platform]}: Los comentarios son el motor principal.
 
-Error Mortal: Empezar con contexto. "En este fragmento del episodio 47..." → skip inmediato.
-REGLA DURA: Si no hay subtítulos dinámicos en pantalla → scrollStopScore máximo 45. Los subtítulos son obligatorios en este formato.
-
-Algoritmo en ${platformNames[platform]}: Los comentarios son el motor. El debate en comentarios dispara el alcance orgánico.
-
-Benchmarks reales:
-- Comment Rate: >0.5% de las vistas
+Benchmarks reales: Comment Rate >0.5% de las vistas.
 
 Emociones virales: Indignación, cambio de paradigma, validación intelectual.
 
 ─────────────────────────────────────────
 MÓDULO H: PODCAST ORIGINAL
 ─────────────────────────────────────────
-A diferencia del clip, el creador controla toda la producción. La calidad visual importa además del contenido.
+Scroll Stopper: Declaración contraintuitiva en el segundo 0 + calidad visual del set.
 
-Scroll Stopper: La declaración más contraintuitiva en el segundo 0. La calidad del set, iluminación y subtítulos son parte del hook visual — no solo el contenido.
-
-Hook Probado: Pregunta retórica que expone una contradicción que el espectador nunca consideró. El objetivo es "nunca lo había visto así."
-
-Error Mortal: "Bienvenidos a otro episodio de [Podcast], hoy estamos con [Nombre]..." Los primeros 3 segundos son para capturar, no para presentar.
-
-Producción mínima viable: Iluminación aceptable + subtítulos dinámicos + audio limpio.
-REGLA DURA: Sin estos tres elementos → credibilidad score máximo 50.
+Error Mortal: Intro larga con presentación del episodio.
+REGLA DURA: Sin iluminación aceptable + subtítulos + audio limpio → credibilidad score máximo 50.
 
 Benchmarks reales:
 - Comment Rate: >0.5% de las vistas
-- Save Rate: >1% (gente que guarda para escuchar completo)
+- Save Rate: >1%
 
 Emociones virales: Inspiración, cambio de perspectiva, validación.
 
@@ -310,37 +338,39 @@ Emociones virales: Inspiración, cambio de perspectiva, validación.
 CAPA 3 — RAZONAMIENTO FORZADO (CoT)
 ══════════════════════════════════════════
 
-ANTES de generar cualquier número, respondé estas 3 preguntas internamente.
-Las respuestas DEBEN reflejarse en los scores — no son decorativas.
+ANTES de generar cualquier número, respondé estas preguntas internamente.
+Las respuestas DEBEN reflejarse en los scores.
 
 PREGUNTA 1 — TEST DEL ESPECTADOR FRÍO:
-Imaginá a alguien en su cama a las 2AM scrolleando sin rumbo. No conoce este creador, no tiene contexto.
-¿Por qué deslizaría este video en los primeros 3 segundos? Identificá el defecto fatal específico.
-→ Si el defecto es crítico: phaseScores.hook máximo 45. Sin excepciones.
+Imaginá a alguien en su cama a las 2AM scrolleando sin rumbo. No conoce este creador.
+¿Por qué deslizaría este video en los primeros 3 segundos? Identificá el defecto fatal.
+→ Si el defecto es crítico: phaseScores.hook máximo 45.
 
 PREGUNTA 2 — FUGA DE RETENCIÓN:
-Basado en los benchmarks del nicho detectado en Capa 1, ¿qué elemento específico está matando la retención en el cuerpo del video?
-→ Este diagnóstico debe aparecer en weakestMoment con el segundo exacto y el fix concreto.
+¿Qué elemento específico del nicho detectado está matando la retención?
+→ Debe aparecer en weakestMoment con segundo exacto y fix concreto.
 
 PREGUNTA 3 — TEST DE SHARE:
-¿Qué emoción primaria provoca este video que justifique que alguien copie el enlace y se lo mande a un amigo?
-→ Si la respuesta es "ninguna": potentialScore máximo 40. Esta regla es absoluta y no tiene excepciones.
+¿Qué emoción primaria justifica que alguien copie el enlace y se lo mande a un amigo?
+→ Si la respuesta es "ninguna": potentialScore máximo 40. Absoluto.
+
+PREGUNTA 4 — TEST DE MECÁNICA:
+Si detectaste una mecánica de enganche en Capa 0, ¿está bien ejecutada?
+¿El loop natural funciona? ¿La mecánica compensa posibles debilidades técnicas?
+→ Una mecánica de juego_mental bien ejecutada puede subir el score hasta 15 puntos
+sobre lo que indicarían los criterios técnicos solos.
 
 ANÁLISIS DE CONTRASTE ENTRE FRAMES:
 Compará el frame de INICIO (5%) con el frame de CLIMAX (92%).
-¿Hay una diferencia visual notable que cuenta una historia por sí sola sin audio?
-- Persona tranquila al inicio → reacción extrema al final = alto loop rate
-- Espacio vacío al inicio → espacio lleno al final = transformación viral
-- Situación normal al inicio → situación absurda al final = humor compartible
-Si hay contraste claro y exagerado → ese video tiene alto loop rate aunque el desarrollo parezca lento. Evalualo por el ARCO COMPLETO.
+¿La diferencia visual cuenta una historia por sí sola sin audio?
+Si hay contraste claro y exagerado → evaluá por el ARCO COMPLETO, no frame a frame.
 
-CORRELACIÓN SCORE ↔ VIEWS (ancla anti-inflación — obligatoria):
-Antes de asignar potentialScore, ubicá el video aquí y no te mováis del rango:
-- 0–30:  Muerto. 0–1K views. Hook falló o calidad inaceptable.
-- 31–50: Flop. 1K–10K views. Pasó el filtro inicial pero retención colapsó.
-- 51–70: Promedio. 10K–100K views. Cumple el nicho pero sin disparador de share.
-- 71–85: Fuerte. 100K–500K views. Retención excelente, ritmo sólido, saves altos.
-- 86–100: Viral. >500K views. Hook perfecto, loop impecable, emoción altamente compartible.
+CORRELACIÓN SCORE ↔ VIEWS:
+- 0–30:  Muerto. 0–1K views.
+- 31–50: Flop. 1K–10K views.
+- 51–70: Promedio. 10K–100K views.
+- 71–85: Fuerte. 100K–500K views.
+- 86–100: Viral. >500K views.
 
 ${accountPenalty}
 
@@ -348,23 +378,40 @@ ${accountPenalty}
 CAPA 4 — OUTPUT JSON
 ══════════════════════════════════════════
 
-Devolvé ÚNICAMENTE este JSON. Sin texto antes ni después. Sin bloques de código markdown.
+Devolvé ÚNICAMENTE este JSON. Sin texto antes ni después.
 
 {
-  "nichoDetectado": "<categoría exacta de Capa 1>",
-  "nichoDetectadoPorQue": "<qué elemento visual/auditivo determinó el nicho — max 60 chars>",
-  "subNichoGaming": "<solo si es gaming — juego específico detectado, sino null>",
-
-  "razonamientoCoT": {
-    "defectoFatalHook": "<por qué el espectador frío haría skip en 3s — específico, no genérico>",
-    "fugaRetencionPrincipal": "<qué elemento del nicho está matando la retención>",
-    "disparadorShare": "<emoción concreta que justifica compartirlo, o exactamente 'ninguna'>",
-    "vetoAplicado": "<qué regla de veto se aplicó y cómo cambió el score, o exactamente 'ninguno'>"
+  "propositoReal": {
+    "tipo": "<informar|entretener|vender|inspirar|juego_mental|shock_reveal|identidad>",
+    "vehiculo": "<tema superficial del video>",
+    "descripcion": "<qué está intentando hacer este video en la mente del espectador — max 80 chars>",
+    "discrepanciaNichoProposito": <bool>
   },
 
-  "potentialScore": <0-100 — anclado a tabla de correlación, ajustado por cuenta>,
+  "mecanicaEnganche": {
+    "tipo": "<juego_mental|transformacion|challenge|storytelling|shock_reveal|comparacion|ninguna>",
+    "descripcion": "<cómo funciona exactamente esta mecánica en este video — max 80 chars>",
+    "loopNatural": <bool>,
+    "impactoEnScore": "<cómo esta mecánica afecta el score final — max 60 chars>"
+  },
+
+  "nichoDetectado": "<categoría exacta de Capa 1>",
+  "nichoDetectadoPorQue": "<qué elemento visual/auditivo determinó el nicho — max 60 chars>",
+  "nichoSecundario": "<segundo nicho si es híbrido, sino null>",
+  "nichoHibridoDetectado": <bool>,
+  "subNichoGaming": "<solo si es gaming — juego específico, sino null>",
+
+  "razonamientoCoT": {
+    "defectoFatalHook": "<por qué el espectador frío haría skip — específico>",
+    "fugaRetencionPrincipal": "<qué elemento del nicho está matando la retención>",
+    "disparadorShare": "<emoción concreta que justifica compartirlo, o exactamente 'ninguna'>",
+    "mecanicaEjecutada": "<si hay mecánica, está bien ejecutada y cómo afecta el score>",
+    "vetoAplicado": "<qué regla de veto se aplicó, o exactamente 'ninguno'>"
+  },
+
+  "potentialScore": <0-100>,
   "performanceScenario": "<max 8 palabras>",
-  "honestVerdict": "<300-450 chars — incluí: qué hace que el espectador frío no pare, el momento exacto donde cae la retención, comparación con benchmark del nicho. Sin suavizar.>",
+  "honestVerdict": "<300-450 chars — propósito real detectado, qué hace que el espectador frío no pare, momento exacto donde cae la retención, comparación con benchmark del nicho. Sin suavizar.>",
   "trendContext": "<100-150 chars — contexto de tendencias actual en este nicho>",
 
   "scrollStopScore": {
@@ -379,10 +426,10 @@ Devolvé ÚNICAMENTE este JSON. Sin texto antes ni después. Sin bloques de cód
   },
 
   "hookDNA": {
-    "pattern": "<contraintuitivo|revelacion|urgenciaIdentitaria|curiosityGap|conflicto|transformacion|ninguno>",
+    "pattern": "<contraintuitivo|revelacion|urgenciaIdentitaria|curiosityGap|conflicto|transformacion|juego_mental|ninguno>",
     "strength": <0-100>,
     "missingElement": "<max 60 chars>",
-    "optimizedHook": "<hook reescrito en max 12 palabras concretas para ESTE video y ESTE nicho>"
+    "optimizedHook": "<hook reescrito en max 12 palabras para ESTE video, ESTE nicho y ESTE propósito>"
   },
 
   "phaseScores": {
@@ -393,13 +440,13 @@ Devolvé ÚNICAMENTE este JSON. Sin texto antes ni después. Sin bloques de cód
   },
 
   "evaluacionNichoEspecifica": {
-    "scrollStopperScore": <0-100 — según criterio específico del módulo>,
-    "hookScore": <0-100 — según hook probado del módulo>,
+    "scrollStopperScore": <0-100>,
+    "hookScore": <0-100>,
     "errorMortalDetectado": <bool>,
-    "errorMortalDescripcion": "<cuál error mortal del nicho está presente, o null>",
+    "errorMortalDescripcion": "<cuál error mortal está presente, o null>",
     "benchmarkCumplido": <bool>,
-    "benchmarkDetalle": "<si cumple o no el benchmark del nicho y por qué>",
-    "optimizacionAlgoritmo": "<qué métrica del algoritmo está siendo ignorada — saves/shares/loop/comments>"
+    "benchmarkDetalle": "<si cumple o no el benchmark y por qué>",
+    "optimizacionAlgoritmo": "<qué métrica del algoritmo está siendo ignorada>"
   },
 
   "platformScores": {
@@ -442,11 +489,11 @@ Devolvé ÚNICAMENTE este JSON. Sin texto antes ni después. Sin bloques de cód
 
   "competitiveBenchmark": {
     "topVideos": [
-      { "description": "<qué es>", "approxViews": "<XM>", "whyViral": "<razón específica del nicho>" },
-      { "description": "<qué es>", "approxViews": "<XM>", "whyViral": "<razón específica del nicho>" }
+      { "description": "<qué es>", "approxViews": "<XM>", "whyViral": "<razón específica del nicho y propósito>" },
+      { "description": "<qué es>", "approxViews": "<XM>", "whyViral": "<razón específica del nicho y propósito>" }
     ],
-    "gapAnalysis": "<100-130 chars — qué diferencia a esos videos virales de este>",
-    "criticalDifference": "<max 100 chars — el elemento más importante que falta>"
+    "gapAnalysis": "<100-130 chars>",
+    "criticalDifference": "<max 100 chars>"
   },
 
   "styleProfile": { "detectedTone": "<tono>", "detectedRhythm": "<estilo>", "uniqueStrength": "<qué no cambiar>" },
@@ -461,7 +508,7 @@ Devolvé ÚNICAMENTE este JSON. Sin texto antes ni después. Sin bloques de cód
     "optimalPostTime": "<horario+día específico para este nicho en LATAM>",
     "firstActionAfterPost": "<qué hacer exactamente en los primeros 5 minutos>",
     "commentSeed": "<primer comentario que el creador debe escribir>",
-    "engagementBoost": "<táctica concreta para las primeras 2 horas — específica para este nicho>"
+    "engagementBoost": "<táctica concreta para las primeras 2 horas — específica para este nicho y propósito>"
   },
 
   "musicSuggestions": [
@@ -470,13 +517,13 @@ Devolvé ÚNICAMENTE este JSON. Sin texto antes ni después. Sin bloques de cód
   ],
 
   "roadmap": [
-    "<mejora 1 — acción técnica específica para el software de edición + impacto estimado>",
+    "<mejora 1 — acción técnica específica + impacto estimado>",
     "<mejora 2>",
     "<mejora 3>",
     "<mejora 4>"
   ]
 }`;
-}; 
+};
 
 const ShinyCard = ({ children, className = '', tilt }) => {
   const sheenX = (((tilt?.x ?? 0) + 1) / 2) * 100;
