@@ -362,6 +362,7 @@ const App = () => {
   const [analysisMode, setAnalysisMode] = useState('video');
   const [selectedPlatform, setSelectedPlatform] = useState(null);
   const [selectedFollowerRange, setSelectedFollowerRange] = useState(null);
+  const [selectedObjetivo, setSelectedObjetivo] = useState('ventas'); // ← agregá esto
   const [pendingVideoFile, setPendingVideoFile] = useState(null);
   const [pendingVideoUrl, setPendingVideoUrl] = useState(null);
   const [scriptText, setScriptText] = useState('');
@@ -551,7 +552,7 @@ const detectCutRate = async (url) => {
             cutTimestamps.push(parseFloat((i * step).toFixed(1)));
           }
         }
-        prevData = new Uint8ClampedArray(data);
+        prevData = new Uint8ClampedArray(data);   //const [selectedObjetivo, setSelectedObjetivo] = useState('ventas'); // ← agregá esto
       }
 
       let rhythmVariance = 0;
@@ -629,7 +630,7 @@ const detectCutRate = async (url) => {
 
   } catch (err) {
     console.error('deduct-gems exception:', err);
-    alert('Error inesperado al procesar las gemas. Intentá de nuevo.');
+    alert('Error inesperado al procesar las gemas. Intentá de nuevo.'); //const [selectedPlatform, setSelectedPlatform] = useState(null);
     return false;
   }
 };
