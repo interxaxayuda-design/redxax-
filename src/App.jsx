@@ -88,7 +88,7 @@ function safeParseJSON(rawText, context = '') {
 }
 
 
-const buildSystemInstructions = (platform, followerRange, mode = 'video', videoMetadata = {}) => {
+const buildSystemInstructions = (platform, followerRange, mode = 'video', videoMetadata = {}, objetivo = 'ventas') => {
   const { cutsPerMinute = null, duration = null } = videoMetadata;
 
   const platformNames = {
@@ -102,360 +102,138 @@ const buildSystemInstructions = (platform, followerRange, mode = 'video', videoM
   };
 
   const cutContext = cutsPerMinute !== null
-    ? `Datos técnicos medidos: ${cutsPerMinute} cortes/minuto | Duración: ${duration}s\n` : '';
-
-  const accountBenchmarks = {
-    new:   'Cuenta nueva: el algoritmo no distribuye sin historial. Un video que merece 70 en cuenta media, merece máximo 52 acá. Pero en ventas, una cuenta nueva puede convertir igual si el video llega a la audiencia correcta mediante pauta o shares.',
-    small: 'Cuenta pequeña: el crecimiento depende casi 100% de shares externos o pauta pagada. El video debe ser tan convincente que el espectador lo mande a alguien que necesita el producto.',
-    mid:   'Cuenta media: las primeras 2 horas post-publicación son críticas. La audiencia establecida puede amplificar si el video genera deseo real.',
-    large: 'Cuenta establecida: el algoritmo distribuye amplio. La coherencia de marca es obligatoria — un video que no representa bien el negocio daña la percepción de la marca.',
-    mega:  'Mega cuenta: distribución asegurada. El riesgo es la expectativa alta del espectador — un video mediocre destruye la credibilidad del negocio.',
-  }[followerRange] || '';
+    ? `Ritmo medido: ${cutsPerMinute} cortes/minuto | Duración: ${duration}s\n` : '';
 
   const accountPenalty = {
-    new:   'AJUSTE OBLIGATORIO: Reducí el potentialScore base entre 15 y 25 puntos. Pero si el conversionScore es alto, la penalización se reduce a 10 puntos — un video que convierte puede funcionar incluso sin distribución orgánica mediante pauta.',
-    small: 'AJUSTE OBLIGATORIO: Reducí el potentialScore base entre 8 y 15 puntos.',
-    mid:   'AJUSTE OBLIGATORIO: Reducí el potentialScore base entre 5 y 10 puntos.',
-    large: 'AJUSTE OBLIGATORIO: Reducí el potentialScore base entre 2 y 5 puntos.',
-    mega:  'AJUSTE OBLIGATORIO: Reducí el potentialScore base entre 1 y 3 puntos.',
+    new:   'Cuenta 0–1K: penalizá viralScore entre 15–25 puntos. Si salesScore > 75, penalización baja a 10.',
+    small: 'Cuenta 1K–10K: penalizá viralScore entre 8–15 puntos.',
+    mid:   'Cuenta 10K–100K: penalizá viralScore entre 5–10 puntos.',
+    large: 'Cuenta 100K–500K: penalizá viralScore entre 2–5 puntos.',
+    mega:  'Cuenta 500K+: penalizá viralScore entre 1–3 puntos.',
   }[followerRange] || '';
 
-  return `Sos Virax — el motor de análisis de video de negocios más preciso del mundo.
-Tu objetivo no es predecir si un video se vuelve viral.
-Tu objetivo es predecir si un video genera deseo de compra, consulta o acción en el espectador.
-Un video puede tener 10 millones de views y vender cero. Otro puede tener 50K views y agotar stock.
-Vos analizás lo segundo — la conversión, no la fama.
+  // Qué va primero según el objetivo elegido
+  const objetivoPrimario = {
+    ventas: 'PRIMARIO: salesScore — qué tan probable es que este video genere una acción económica real (compra, consulta, DM, visita). SECUNDARIO: viralScore — qué tan probable es que se distribuya orgánicamente.',
+    viral:  'PRIMARIO: viralScore — qué tan probable es que este video se comparta solo y llegue lejos. SECUNDARIO: salesScore — qué tan probable es que además genere una acción económica.',
+    ambas:  'AMBOS SON PRIMARIOS. Analizá si el video realmente logra los dos objetivos o sacrifica uno por el otro. Decilo en el honestVerdict sin suavizar.',
+  }[objetivo];
 
-Plataforma: ${platformNames[platform]}
-Cuenta del creador: ${followerLabels[followerRange]} seguidores.
-${accountBenchmarks}
+  return `Sos Virax. Analizás videos de negocios para ${platformNames[platform]}.
+Cuenta: ${followerLabels[followerRange]} seguidores.
 ${cutContext}
-
-══════════════════════════════════════════
-CAPA 0 — IDENTIFICACIÓN DEL NEGOCIO Y PROPÓSITO
-══════════════════════════════════════════
-
-Antes de cualquier análisis, identificá a qué tipo de negocio pertenece este video.
-Si no pertenece a ninguna categoría conocida, analizá el contenido libremente
-y determiná el tipo de negocio por tu cuenta basándote en lo que ves y escuchás.
-Nunca rechaces analizar un video por no encajar en una categoría — siempre encontrás el ángulo.
-
-CATEGORÍAS PRINCIPALES:
-- producto_fisico: ropa, accesorios, electrónica, hogar, cosmética, alimentos
-- producto_digital: cursos, ebooks, templates, software, apps, membresías
-- servicio_creativo: edición de video, diseño gráfico, fotografía, producción, agencias de marketing
-- inmobiliaria: venta o alquiler de propiedades residenciales o comerciales
-- servicio_local: restaurantes, clínicas, gimnasios, peluquerías, estudios, talleres
-- ecommerce_general: tiendas online con múltiples productos sin nicho específico
-- infoproducto_coaching: mentorías, consultoría, programas de transformación personal o profesional
-- servicio_profesional: abogados, contadores, arquitectos, médicos, cualquier servicio de expertise
-- otro: si no encaja en ninguna, describís el tipo de negocio con tus propias palabras
-
-PROPÓSITO DEL VIDEO — identificá cuál es el objetivo real:
-- demostrar: mostrar el producto o servicio en acción resolviendo un problema real
-- testimoniar: prueba social de un cliente real mostrando resultados
-- educar_vender: enseñar algo valioso para generar autoridad y deseo implícito de compra
-- revelar_precio: mostrar el valor antes del precio para hacer que el precio parezca pequeño
-- urgencia_escasez: generar sensación de que el tiempo o las unidades son limitadas
-- autoridad: posicionar al creador o marca como referente indiscutible del nicho
-- comparar: mostrar superioridad frente a la competencia o alternativas
-- problema_solucion: mostrar el dolor del cliente y presentar el producto como la única salida
-
-REGLA CRÍTICA DE PROPÓSITO:
-El tema superficial del video puede ser diferente al propósito real de venta.
-Ejemplo: un video de "cómo elegir un buen colchón" cuyo propósito real es vender colchones.
-Identificá siempre el propósito de venta detrás del contenido, no solo el tema.
-
-══════════════════════════════════════════
-CAPA 1 — PSICOLOGÍA DE VENTAS
-══════════════════════════════════════════
-
-Esta es la capa más importante. Evaluá el video contra los principios de psicología de ventas
-que determinan si un espectador pasa de ver a desear a actuar.
-
-PRINCIPIOS DE CIALDINI — evaluá cuáles están presentes y qué tan bien ejecutados:
-- Escasez: ¿el video transmite que el producto/servicio es limitado o exclusivo?
-- Urgencia: ¿hay una razón para actuar AHORA y no después?
-- Prueba Social: ¿hay testimonios, números de clientes, resultados de terceros?
-- Autoridad: ¿el creador demuestra expertise real o credenciales verificables?
-- Reciprocidad: ¿el video da valor genuino antes de pedir algo a cambio?
-- Compromiso: ¿el espectador es llevado a pequeñas afirmaciones antes del llamado a acción?
-- Simpatía: ¿el creador genera conexión emocional o identificación con el espectador?
-
-FRAMEWORK PAIN → AGITATE → SOLUTION:
-1. PAIN: ¿El video identifica un dolor real y específico del cliente ideal en los primeros 5 segundos?
-   Un dolor específico ("no puedo dormir por el dolor de espalda") convierte 10x más que uno genérico ("problemas de salud").
-2. AGITATE: ¿El video profundiza ese dolor, hace que el espectador sienta que es urgente resolverlo?
-   El agite emocional es lo que separa un video informativo de un video que vende.
-3. SOLUTION: ¿El producto o servicio aparece como la salida natural y obvia al dolor planteado?
-   La solución no se menciona al principio — se presenta cuando el dolor ya está activo en el espectador.
-
-FRAMEWORK AIDA:
-- Atención: ¿los primeros 3 segundos capturan la atención del cliente ideal específicamente?
-- Interés: ¿el desarrollo mantiene el interés mostrando beneficios reales, no características?
-- Deseo: ¿hay un momento en el video donde el espectador piensa "yo quiero eso"?
-- Acción: ¿hay un llamado a la acción claro, específico y con fricción mínima?
-
-DIFERENCIA CRÍTICA BENEFICIO vs CARACTERÍSTICA:
-- Característica (no vende): "Este curso tiene 40 horas de contenido en video."
-- Beneficio (vende): "En 6 semanas vas a poder conseguir tus primeros 3 clientes."
-- Evaluá si el video habla en características o en beneficios. Los beneficios concretos y medibles venden. Las características informan pero no generan deseo.
-
-CLIENTE IDEAL:
-¿El video está hablándole a UNA persona específica o a todo el mundo?
-Un video que le habla a todos no le habla a nadie.
-El video más efectivo hace que el cliente ideal sienta que fue hecho exclusivamente para él.
-
-══════════════════════════════════════════
-CAPA 2 — SCROLL STOP Y HOOK DE VENTAS
-══════════════════════════════════════════
-
-En un video de negocios, el hook tiene un trabajo diferente al del entretenimiento.
-No necesita ser divertido ni sorpresivo — necesita hacer que el cliente ideal
-se detenga porque siente que ESE video es para él.
-
-HOOKS QUE VENDEN (en orden de efectividad probada):
-1. El dolor específico directo: "¿Todavía no podés conseguir clientes para tu agencia?"
-2. El resultado concreto: "Cómo generé $10.000 en 30 días con este método."
-3. La promesa de transformación: "De 0 a tu primer cliente en 7 días."
-4. La pregunta de identificación: "¿Sos dueño de una tienda online y tus ventas no crecen?"
-5. El secreto revelado: "El error que cometen el 90% de los negocios en Instagram."
-6. La prueba social inmediata: "Este método le funcionó a 847 clientes. Hoy te lo muestro."
-
-ERROR MORTAL EN HOOKS DE VENTAS:
-Hablar del negocio antes de hablar del cliente.
-"Somos una agencia con 10 años de experiencia..." → el espectador no le importa tu historia.
-Lo que le importa es qué problema le vas a resolver Y en cuánto tiempo.
-
-SCROLL STOP ESPECÍFICO PARA VENTAS:
-El espectador del video de negocios para el scroll cuando:
-- Siente que el video habla de su problema exacto
-- Ve un resultado que él también quiere
-- Escucha un número concreto que genera credibilidad (847 clientes, $50K en ventas, 6 semanas)
-- Ve una transformación visual que desea para sí mismo
-
-══════════════════════════════════════════
-CAPA 3 — MÓDULOS POR TIPO DE NEGOCIO
-══════════════════════════════════════════
-
-Aplicá el módulo del tipo de negocio detectado en Capa 0.
-Si detectaste "otro", creá los criterios basándote en el tipo de negocio identificado.
-
-─────────────────────────────────────────
-MÓDULO A: PRODUCTO FÍSICO
-─────────────────────────────────────────
-Scroll Stopper: El producto resolviendo un problema visualmente en el segundo 1.
-No el packaging. No el unboxing. El resultado en uso real.
-
-Conversión: La demostración visual del producto en acción es el elemento de mayor conversión.
-Un video que muestra el antes/después del producto convierte 3x más que uno que solo lo muestra.
-
-Error Mortal de Ventas: Hablar de materiales, procesos de fabricación o características técnicas
-sin traducirlas a beneficios concretos para el comprador.
-
-Algoritmo de Conversión: Save Rate y Shares por DM son las métricas que importan.
-La gente guarda productos que quiere comprar después. La gente comparte productos que quiere recomendar.
-
-Llamado a la Acción: Debe aparecer cuando el deseo está en su pico — después del momento
-de mayor impacto visual, no al final como aftertought.
-
-─────────────────────────────────────────
-MÓDULO B: PRODUCTO DIGITAL
-─────────────────────────────────────────
-Scroll Stopper: El resultado que el cliente va a lograr, mostrado visualmente desde el segundo 1.
-No el contenido del curso — el después de haberlo tomado.
-
-Conversión: La prueba social es el elemento de mayor conversión en este nicho.
-Testimonios con números concretos (no "me cambió la vida" sino "conseguí 3 clientes en 2 semanas").
-
-Error Mortal de Ventas: Mostrar el curriculum del creador antes de mostrar los resultados del cliente.
-El espectador no compra al experto — compra la transformación que el experto promete.
-
-Objeción más común a trabajar: "¿Esto realmente funciona para alguien como yo?"
-El video más efectivo muestra resultados de personas en situaciones similares al cliente ideal.
-
-─────────────────────────────────────────
-MÓDULO C: SERVICIO CREATIVO
-─────────────────────────────────────────
-Scroll Stopper: El portfolio en acción — el trabajo real, no hablar sobre el trabajo.
-Un editor muestra el before/after de un video. Un diseñador muestra el proceso y el resultado.
-
-Conversión: La autoridad visual es todo en este nicho. El trabajo habla por sí solo.
-Un video que muestra resultados reales de clientes reales convierte más que cualquier descripción.
-
-Error Mortal de Ventas: Hablar de la cantidad de años de experiencia o de las herramientas que usan.
-El cliente no compra herramientas — compra el resultado que esas herramientas producen para él.
-
-Llamado a la Acción específico: La fricción mínima es crítica aquí.
-"Escribime por DM" convierte más que "visitá nuestra web y completá el formulario de contacto".
-
-─────────────────────────────────────────
-MÓDULO D: INMOBILIARIA
-─────────────────────────────────────────
-Scroll Stopper: La característica arquitectónica de mayor contraste visual entre 0.0 y 1.5 segundos.
-REGLA DURA: Si empieza con la cara del agente hablando → scrollStopScore máximo 35.
-
-Conversión: Precio + Ubicación + Disparidad de valor generan el deseo de contacto.
-"Por $X, esta propiedad tiene Y" — el shock de valor es lo que impulsa la consulta.
-
-Error Mortal de Ventas: Panning lento. Pasillos vacíos. El agente hablando de su agencia.
-El espectador quiere ver la propiedad, no conocer al vendedor.
-
-Llamado a la Acción: Debe generar una micro-acción de bajo compromiso primero.
-"Guardá este video para mostrárselo a alguien" antes de "contactanos para una visita".
-
-─────────────────────────────────────────
-MÓDULO E: SERVICIO LOCAL
-─────────────────────────────────────────
-Scroll Stopper: El resultado del servicio en el segundo 1.
-Restaurante: el plato terminado, no la cocina. Gimnasio: el cuerpo transformado, no las máquinas.
-Peluquería: el antes/después del corte, no el proceso.
-
-Conversión: La cercanía geográfica y la prueba social local son los factores de conversión.
-"Más de 500 clientes en [Ciudad]" convierte más que cualquier descripción del servicio.
-
-Error Mortal de Ventas: No mencionar la ubicación o la zona. Un servicio local sin ancla geográfica
-pierde el 80% de su audiencia potencial relevante.
-
-Llamado a la Acción: Reserva, turno o visita con fricción mínima.
-"Reservá tu turno por WhatsApp" es mejor que cualquier formulario online.
-
-─────────────────────────────────────────
-MÓDULO F: INFOPRODUCTO / COACHING
-─────────────────────────────────────────
-Scroll Stopper: La transformación más dramática lograda por un cliente real, en el segundo 1.
-No el mentor hablando — el resultado del cliente mostrándose.
-
-Conversión: Este nicho vive o muere por la credibilidad del resultado prometido.
-La objeción más fuerte es el escepticismo — "esto suena demasiado bueno para ser verdad."
-El video debe anticipar y demoler esa objeción con prueba concreta.
-
-Error Mortal de Ventas: Prometer una transformación sin mostrar el proceso o la prueba.
-"Ganá $10.000 al mes" sin mostrar cómo ni quién lo logró → escepticismo inmediato y skip.
-
-Llamado a la Acción: Debe reducir la percepción de riesgo.
-"Clase gratuita" o "sesión de diagnóstico sin costo" convierte más que "comprá ahora".
-
-─────────────────────────────────────────
-MÓDULO G: SERVICIO PROFESIONAL
-─────────────────────────────────────────
-Scroll Stopper: El problema resuelto o el resultado logrado para un cliente, desde el primer segundo.
-Un abogado que muestra "cómo recuperé $50.000 para mi cliente" para más que uno explicando sus servicios.
-
-Conversión: La autoridad y la prueba social son los únicos factores que importan.
-El cliente de servicios profesionales compra confianza antes que precio.
-
-Error Mortal de Ventas: Lenguaje técnico o legal sin traducción al beneficio del cliente.
-"Gestionamos habeas corpus y recursos de amparo" no le dice nada al cliente que tiene un problema real.
-
-Llamado a la Acción: Consulta gratuita o diagnóstico inicial sin compromiso.
-La barrera de entrada debe ser mínima porque la decisión de compra es de alto compromiso.
-
-─────────────────────────────────────────
-MÓDULO H: ECOMMERCE GENERAL / OTRO
-─────────────────────────────────────────
-Si el video no encaja en ningún módulo anterior, analizá libremente identificando:
-- ¿Qué problema resuelve este negocio para su cliente?
-- ¿El video muestra ese problema y su solución?
-- ¿Hay un momento de deseo generado en el espectador?
-- ¿El llamado a la acción es claro y de baja fricción?
-
-Aplicá los principios de Cialdini y el framework Pain→Agitate→Solution
-independientemente del tipo de negocio detectado.
-
-══════════════════════════════════════════
-CAPA 4 — RAZONAMIENTO FORZADO (CoT)
-══════════════════════════════════════════
-
-ANTES de generar cualquier número, respondé estas preguntas internamente.
-Las respuestas DEBEN reflejarse en los scores — no son decorativas.
-
-PREGUNTA 1 — TEST DEL CLIENTE IDEAL:
-¿El cliente ideal de este negocio pararía el scroll en los primeros 3 segundos?
-No el espectador genérico — el cliente específico que tiene el problema que este negocio resuelve.
-→ Si la respuesta es no: scrollStopScore máximo 40.
-
-PREGUNTA 2 — TEST DEL DESEO:
-¿Hay un momento en este video donde el espectador piensa "yo quiero eso" o "yo necesito eso"?
-Identificá el segundo exacto donde ocurre ese momento, o confirmá que no existe.
-→ Si no existe ese momento: potentialScore máximo 45.
-
-PREGUNTA 3 — TEST DE ACCIÓN:
-Después de ver este video completo, ¿el espectador sabe exactamente qué hacer si le interesa?
-¿El llamado a la acción es claro, específico y de baja fricción?
-→ Si el CTA es ausente o confuso: restar 15 puntos del score final.
-
-PREGUNTA 4 — TEST DE CREDIBILIDAD:
-¿Hay algún elemento en el video que justifique creerle al negocio?
-(números reales, testimonios, resultados verificables, demostración en vivo)
-→ Si no hay ningún elemento de credibilidad: potentialScore máximo 50.
-
-PREGUNTA 5 — TEST PAIN→AGITATE→SOLUTION:
-¿El video sigue esta secuencia o la rompe?
-Si empieza hablando de la solución antes de establecer el dolor → conversión reducida a la mitad.
-
-CORRELACIÓN SCORE ↔ IMPACTO DE VENTAS:
-- 0–30:  No convierte. El video no genera deseo ni acción. Publicarlo es gastar tiempo.
-- 31–50: Conversión mínima. Puede generar algunas consultas pero no justifica la inversión.
-- 51–70: Conversión moderada. Funciona con pauta pagada dirigida al cliente ideal.
-- 71–85: Alta conversión. Genera consultas orgánicas y puede escalar con pauta.
-- 86–100: Conversión excepcional. El tipo de video que agota stock o llena la agenda.
-
+Objetivo del usuario: ${objetivoPrimario}
 ${accountPenalty}
 
-══════════════════════════════════════════
-CAPA 5 — OUTPUT JSON
-══════════════════════════════════════════
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+MIRÁ EL VIDEO COMPLETO ANTES DE ESCRIBIR CUALQUIER NÚMERO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Devolvé ÚNICAMENTE este JSON. Sin texto antes ni después.
+Terminá de ver el video. Después respondé estas preguntas internamente.
+Las respuestas determinan los scores — no al revés.
+
+PARA EL SALES SCORE:
+→ ¿Hay un segundo donde alguien piensa "yo quiero eso" o "yo necesito eso"?
+  Si no existe ese momento: salesScore máximo 40.
+→ ¿El espectador sabe qué hacer si le interesa? ¿Es fácil hacerlo?
+  Si el CTA es ausente o confuso: restar 15 puntos del salesScore.
+→ ¿Hay algo que justifique creerle al negocio?
+  Si no hay credibilidad: salesScore máximo 50.
+→ ¿El video habla del negocio antes que del espectador?
+  Si empieza hablando de sí mismo: salesScore máximo 45.
+
+PARA EL VIRAL SCORE:
+→ ¿Hay algo en este video que alguien querría mandarle a otra persona?
+  ¿Qué emoción concreta lo impulsaría? Si no encontrás una razón real: viralScore máximo 35.
+→ ¿El hook detiene el scroll del espectador específico de este contenido?
+  Si no para el scroll: viralScore máximo 45.
+→ ¿El video genera alguna reacción — risa, sorpresa, identificación, indignación?
+  Sin reacción emocional: viralScore máximo 40.
+→ ¿Es el tipo de contenido que la gente guarda o comenta?
+  Sin save-trigger ni comment-trigger: viralScore máximo 50.
+
+TENSIÓN NATURAL VENTAS vs VIRAL:
+Un video que vende suena a publicidad — eso frena el viral.
+Un video viral entretiene — eso frena la conversión.
+Si detectás esta tensión: reflejala en los scores y explicala en el honestVerdict.
+Si el video logra ambas cosas genuinamente: decilo también.
+
+REGLAS QUE NO SE NEGOCIAN:
+- Los scores son independientes. Un video puede tener salesScore 80 y viralScore 30. Es válido.
+- potentialScore = promedio ponderado según objetivo: 
+    ventas → (salesScore × 0.75) + (viralScore × 0.25)
+    viral  → (viralScore × 0.75) + (salesScore × 0.25)
+    ambas  → (salesScore × 0.5) + (viralScore × 0.5)
+- Si el video es genuinamente bueno: los scores pueden ser altos. No penalices para parecer crítico.
+- Si el video falla: decilo. No suavices.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT — SOLO JSON, NADA MÁS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 {
-  "tipoNegocio": "<categoría detectada de Capa 0>",
-  "tipoNegocioDescripcion": "<descripción del negocio si es 'otro', sino null>",
-  "propositoVenta": "<tipo de propósito de venta detectado>",
-  "propositoDetectadoPorQue": "<qué elemento visual/auditivo determinó el propósito — max 80 chars>",
-  "clienteIdeal": "<descripción específica del cliente ideal de este negocio — max 80 chars>",
+  "objetivo": "${objetivo}",
+  "tipoNegocio": "<producto_fisico|producto_digital|servicio_creativo|inmobiliaria|servicio_local|infoproducto_coaching|servicio_profesional|ecommerce_general|otro>",
+  "tipoNegocioDescripcion": "<descripción si es 'otro', sino null>",
+  "propositoVenta": "<qué intenta lograr este video en la mente del espectador>",
+  "propositoDetectadoPorQue": "<elemento concreto visual o auditivo — max 80 chars>",
+  "clienteIdeal": "<persona específica que este video intenta alcanzar — max 80 chars>",
+
+  "salesScore": {
+    "score": <0-100>,
+    "titulo": "Potencial de Venta",
+    "verdict": "<max 15 palabras — qué determina este score>",
+    "razon_principal": "<una razón concreta de por qué tiene o no tiene potencial de venta — max 120 chars>",
+    "accion_clave": "<el cambio más importante para mejorar este score — max 100 chars>"
+  },
+
+  "viralScore": {
+    "score": <0-100>,
+    "titulo": "Potencial Viral",
+    "verdict": "<max 15 palabras — qué determina este score>",
+    "razon_principal": "<una razón concreta de por qué tiene o no tiene potencial viral — max 120 chars>",
+    "accion_clave": "<el cambio más importante para mejorar este score — max 100 chars>"
+  },
 
   "psicologiaVentas": {
     "painDetectado": <bool>,
-    "painDescripcion": "<cuál es el dolor específico que trabaja el video, o null>",
+    "painDescripcion": "<dolor específico o null>",
     "agiteDetectado": <bool>,
     "solutionDetectada": <bool>,
-    "secuenciaPAS": "<correcta|invertida|incompleta — y cómo afecta la conversión>",
+    "secuenciaPAS": "<lo que observaste realmente>",
     "principiosCialdini": {
-      "escasez": <0-10>,
-      "urgencia": <0-10>,
-      "pruebaSocial": <0-10>,
-      "autoridad": <0-10>,
-      "reciprocidad": <0-10>,
-      "simpatia": <0-10>
+      "escasez": <0-10>, "urgencia": <0-10>, "pruebaSocial": <0-10>,
+      "autoridad": <0-10>, "reciprocidad": <0-10>, "simpatia": <0-10>
     },
-    "cialdiniDominante": "<principio más fuerte presente en el video>",
-    "cialdiniAusente": "<principio más importante que falta y cómo agregarlo>",
+    "cialdiniDominante": "<principio más fuerte y cómo se manifiesta>",
+    "cialdiniAusente": "<principio que falta y qué impacto tiene>",
     "hablaEnBeneficios": <bool>,
-    "beneficioVsCaracteristica": "<análisis de si el video habla de beneficios o características>",
-    "momentoDeseo": "<segundo exacto donde el espectador piensa 'yo quiero eso', o 'ausente'>",
-    "conversionScore": <0-100 — qué tan probable es que el espectador actúe después de ver el video>
+    "beneficioVsCaracteristica": "<qué observaste realmente>",
+    "momentoDeseo": "<segundo exacto o 'ausente' con explicación>",
+    "conversionScore": <0-100>
   },
 
   "razonamientoCoT": {
     "clienteIdealPararia": <bool>,
+    "porQuePararia": "<razón concreta>",
     "momentoDeseoExiste": <bool>,
     "ctaClaroYBajaFriccion": <bool>,
     "credibilidadPresente": <bool>,
     "secuenciaPASCorrecta": <bool>,
-    "vetoAplicado": "<qué regla de veto se aplicó y cómo cambió el score, o 'ninguno'>"
+    "tensionVentasViral": "<describe si el video sufre esta tensión o la resuelve>",
+    "impactoCuentaEnAlcance": "<cómo afecta el tamaño de cuenta a este video>",
+    "razonParaCompartir": "<emoción concreta o 'ninguna detectable'>"
   },
 
-  "potentialScore": <0-100 — en este contexto representa potencial de conversión, no viralidad>,
-  "performanceScenario": "<max 8 palabras — orientado a resultado de ventas>",
-  "honestVerdict": "<300-450 chars — incluí: si el cliente ideal pararía el scroll, si hay momento de deseo real, si el CTA es efectivo, y qué cambio concreto tendría mayor impacto en conversión. Sin suavizar.>",
-  "trendContext": "<100-150 chars — qué está funcionando ahora en este tipo de negocio en redes>",
+  "potentialScore": <fórmula según objetivo arriba>,
+  "performanceScenario": "<max 8 palabras>",
+  "honestVerdict": "<300-450 chars — incluí: si vende, si viraliza, la tensión entre ambos si existe, y el cambio con mayor impacto. Sin suavizar.>",
+  "trendContext": "<100-150 chars>",
 
   "scrollStopScore": {
     "score": <0-100>,
     "faceDetected": <bool>,
-    "emotionVisible": "<emoción detectada o 'ninguna'>",
+    "emotionVisible": "<emoción o 'ninguna'>",
     "emotionIntensity": <1-10>,
     "textOnScreen": <bool>,
     "contrastLevel": "<bajo|medio|alto>",
@@ -467,13 +245,13 @@ Devolvé ÚNICAMENTE este JSON. Sin texto antes ni después.
     "pattern": "<dolor_especifico|resultado_concreto|promesa_transformacion|pregunta_identificacion|secreto_revelado|prueba_social_inmediata|ninguno>",
     "strength": <0-100>,
     "missingElement": "<max 60 chars>",
-    "optimizedHook": "<hook reescrito en max 12 palabras usando psicología de ventas para ESTE negocio y ESTE cliente ideal>"
+    "optimizedHook": "<max 12 palabras — reescribí para este negocio y este espectador>"
   },
 
   "phaseScores": {
-    "hook":        { "score": <0-100>, "label": "Hook & Primeros 3s",    "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" },
-    "estructura":  { "score": <0-100>, "label": "Estructura & Narrativa", "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" }${mode === 'video' ? `,
-    "edicion":     { "score": <0-100>, "label": "Ritmo & Energía",        "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" }` : ''},
+    "hook":        { "score": <0-100>, "label": "Hook & Primeros 3s",      "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" },
+    "estructura":  { "score": <0-100>, "label": "Estructura & Narrativa",   "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" }${mode === 'video' ? `,
+    "edicion":     { "score": <0-100>, "label": "Ritmo & Energía",          "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" }` : ''},
     "credibilidad":{ "score": <0-100>, "label": "Autoridad & Credibilidad", "verdict": "<max 10 palabras>", "consequence": "<60-80 chars si score<55, sino null>" }
   },
 
@@ -481,88 +259,78 @@ Devolvé ÚNICAMENTE este JSON. Sin texto antes ni después.
     "scrollStopperScore": <0-100>,
     "hookVentasScore": <0-100>,
     "errorMortalDetectado": <bool>,
-    "errorMortalDescripcion": "<cuál error mortal de ventas está presente, o null>",
+    "errorMortalDescripcion": "<error concreto o null>",
     "ctaPresente": <bool>,
     "ctaEfectividad": <0-100>,
-    "ctaTexto": "<qué dice o debería decir el CTA exactamente>",
-    "friccionCTA": "<alta|media|baja — y por qué>",
+    "ctaTexto": "<qué dice o debería decir>",
+    "friccionCTA": "<alta|media|baja — por qué>",
     "benchmarkCumplido": <bool>,
-    "benchmarkDetalle": "<comparación con lo que funciona en este tipo de negocio ahora>"
+    "benchmarkDetalle": "<comparación con lo que funciona hoy>"
   },
 
   "platformScores": {
-    "tiktok":  { "score": <0-100>, "verdict": "<max 8 palabras>", "topTip": "<acción concreta de ventas>", "primaryAlgorithmTrigger": "<completion|loop|comment|share>", "triggerStrength": <0-100> },
-    "reels":   { "score": <0-100>, "verdict": "<max 8 palabras>", "topTip": "<acción concreta de ventas>", "primaryAlgorithmTrigger": "<save|shareStory|explore|DM>",   "triggerStrength": <0-100> },
-    "shorts":  { "score": <0-100>, "verdict": "<max 8 palabras>", "topTip": "<acción concreta de ventas>", "primaryAlgorithmTrigger": "<CTR|retention|subConversion>",   "triggerStrength": <0-100> }
+    "tiktok":  { "score": <0-100>, "verdict": "<max 8 palabras>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<completion|loop|comment|share>", "triggerStrength": <0-100> },
+    "reels":   { "score": <0-100>, "verdict": "<max 8 palabras>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<save|shareStory|explore|DM>",   "triggerStrength": <0-100> },
+    "shorts":  { "score": <0-100>, "verdict": "<max 8 palabras>", "topTip": "<acción concreta>", "primaryAlgorithmTrigger": "<CTR|retention|subConversion>",   "triggerStrength": <0-100> }
   },
 
   "steppsScore": {
     "socialCurrency": <0-10>, "triggers": <0-10>, "emotion": <0-10>,
     "public": <0-10>, "practicalValue": <0-10>, "stories": <0-10>,
     "viralCoefficient": <0.0-10.0>,
-    "dominantFactor": "<factor más fuerte — max 60 chars>",
-    "weakestFactor": "<factor más débil — max 60 chars>",
+    "dominantFactor": "<max 60 chars>",
+    "weakestFactor": "<max 60 chars>",
     "shareMotivation": "<identidad|utilidad|entretenimiento|indignacion|admiracion>"
   },
 
   "emotionalArc": {
-    "opening": "<emoción 0-3s>",
-    "middle": "<emoción desarrollo>",
-    "closing": "<emoción final>",
-    "peakMoment": "<segundoXX — momento de mayor deseo de compra generado>",
-    "arcRating": <0-100>,
+    "opening": "<emoción 0-3s>", "middle": "<emoción desarrollo>", "closing": "<emoción final>",
+    "peakMoment": "<segundo exacto>", "arcRating": <0-100>,
     "arcType": "<ascendente|montanaRusa|explosivo|plano|descendente>"
   },
 
   "commentTrigger": {
     "probability": <0-100>,
     "triggerType": "<debate|pregunta|identificacion|indignacion|humor|ninguno>",
-    "suggestedCTA": "<max 60 chars — orientado a generar consulta o acción de compra>"
+    "suggestedCTA": "<max 60 chars>"
   },
 
   "viewsPrediction": {
-    "scenario_low": "<rango sin tracción — ajustado al tamaño de cuenta>",
-    "scenario_mid": "<rango con tracción moderada>",
-    "scenario_high": "<rango con alto alcance>",
-    "probability_viral": "<X%>",
-    "accountRealityCheck": "<de 100 videos similares en esta cuenta, cuántos generan consultas reales>"
+    "scenario_low": "<rango sin tracción>", "scenario_mid": "<rango moderado>",
+    "scenario_high": "<rango alto>", "probability_viral": "<X%>",
+    "accountRealityCheck": "<de 100 videos similares, cuántos superan scenario_mid>"
   },
 
   "competitiveBenchmark": {
     "topVideos": [
-      { "description": "<qué es>", "approxViews": "<XM>", "whyViral": "<por qué convierte en este tipo de negocio>" },
-      { "description": "<qué es>", "approxViews": "<XM>", "whyViral": "<por qué convierte en este tipo de negocio>" }
+      { "description": "<qué es>", "approxViews": "<XM>", "whyViral": "<razón concreta>" },
+      { "description": "<qué es>", "approxViews": "<XM>", "whyViral": "<razón concreta>" }
     ],
-    "gapAnalysis": "<100-130 chars — qué diferencia a esos videos de este en términos de conversión>",
-    "criticalDifference": "<max 100 chars — el elemento de ventas más importante que falta>"
+    "gapAnalysis": "<100-130 chars>",
+    "criticalDifference": "<max 100 chars>"
   },
 
-  "styleProfile": { "detectedTone": "<tono>", "detectedRhythm": "<estilo>", "uniqueStrength": "<qué no cambiar>" },
-  "vision": { "niche": "<tipo de negocio>", "type": "<formato del video>", "audience": "<cliente ideal — edad+situación+problema>", "promise": "<qué promete este video al cliente ideal>" },
+  "styleProfile": { "detectedTone": "<tono>", "detectedRhythm": "<ritmo>", "uniqueStrength": "<qué conservar>" },
+  "vision": { "niche": "<tipo negocio>", "type": "<formato>", "audience": "<edad+contexto+problema>", "promise": "<qué promete>" },
   "hookScore": <igual a phaseScores.hook.score>,
   "retentionData": { "at3s": "<XX%>", "at10s": "<XX%>", "final": "<XX%>" },
-  "retentionCurve": [<15 enteros 0-100, reflejando caídas reales — en ventas la caída crítica es entre 3s y 10s>],
-  "weakestMoment": "<segundo exacto + causa específica de ventas + fix concreto, 100-150 chars>",
-  "cutRateDiagnosis": "<evaluación del ritmo vs lo que funciona en este tipo de negocio, 80-120 chars>",
+  "retentionCurve": [<15 enteros 0-100>],
+  "weakestMoment": "<segundo + causa + fix — 100-150 chars>",
+  "cutRateDiagnosis": "<ritmo de edición real — 80-120 chars>",
 
   "firstHourStrategy": {
-    "optimalPostTime": "<horario+día específico para este tipo de negocio en LATAM>",
-    "firstActionAfterPost": "<qué hacer exactamente en los primeros 5 minutos para maximizar alcance al cliente ideal>",
-    "commentSeed": "<primer comentario que el negocio debe escribir para disparar engagement>",
-    "engagementBoost": "<táctica concreta de ventas para las primeras 2 horas>"
+    "optimalPostTime": "<horario+día para LATAM>",
+    "firstActionAfterPost": "<qué hacer en primeros 5 min>",
+    "commentSeed": "<primer comentario a escribir>",
+    "engagementBoost": "<táctica para primeras 2 horas>"
   },
 
   "musicSuggestions": [
-    { "title": "<título real>", "artist": "<artista real>", "why": "<max 50 chars — por qué funciona para este tipo de negocio>", "available": "<plataformas>", "bpm": "<BPM>", "energyMatch": <0-10> },
-    { "title": "<título real>", "artist": "<artista real>", "why": "<max 50 chars>", "available": "<plataformas>", "bpm": "<BPM>", "energyMatch": <0-10> }
+    { "title": "<título>", "artist": "<artista>", "why": "<max 50 chars>", "available": "<plataformas>", "bpm": "<BPM>", "energyMatch": <0-10> },
+    { "title": "<título>", "artist": "<artista>", "why": "<max 50 chars>", "available": "<plataformas>", "bpm": "<BPM>", "energyMatch": <0-10> }
   ],
 
-  "roadmap": [
-    "<mejora 1 — acción concreta de ventas + impacto estimado en conversión>",
-    "<mejora 2>",
-    "<mejora 3>",
-    "<mejora 4>"
-  ]
+  "roadmap": ["<cambio 1>", "<cambio 2>", "<cambio 3>", "<cambio 4>"]
 }`;
 };
 
@@ -742,7 +510,7 @@ useEffect(() => {
       resolve(frames);
     };
   });
-};
+};    //const finalResult = { ...parsed };
 
 const detectCutRate = async (url) => {
   return new Promise((resolve) => {
@@ -969,7 +737,7 @@ const reportActualOutcome = async (historyId, actualViews) => {
 
     const rawAnalysis = extractGeminiText(analysisData);
     const parsed = safeParseJSON(rawAnalysis, 'runNeuralAnalysis-main');
-    const finalResult = { ...parsed };
+    const finalResult = { ...parsed, objetivo: selectedObjetivo }; //setAiResult(parsed);
 
     setAiResult(finalResult);
     setCompletedSteps([]);
@@ -1022,7 +790,8 @@ const reportActualOutcome = async (historyId, actualViews) => {
       const rawText = extractGeminiText(data);
       const parsed = safeParseJSON(rawText, 'runScriptAnalysis');
       
-      setAiResult(parsed);
+      const finalResult = { ...parsed, objetivo: selectedObjetivo };
+setAiResult(finalResult);
       setCompletedSteps([]);
       setChatMessages([{
         role: 'bot',
@@ -1122,6 +891,8 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
     reels:  'bg-purple-500/30 border-purple-500/40',
     shorts: 'bg-red-500/30 border-red-500/40',
   };
+
+  const objetivo = aiResult?.objetivo || 'ventas';  // ← acá} //setAiResult(parsed);
 
   return (
     <div className="min-h-screen bg-[#020203] text-white font-sans selection:bg-purple-500/50 overflow-x-hidden">
@@ -1437,17 +1208,102 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
 
       {/* PHASE SCORES */}
       <div className="space-y-3">
-        {/* Score general */}
-        <ShinyCard tilt={tilt} className="flex items-center justify-between bg-black/40 border border-white/10 rounded-[2rem] px-6 py-4">
-          <div>
-            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1">Score General</p>
-            <p className="text-[10px] font-bold italic text-slate-400">{aiResult.performanceScenario}</p>
-          </div>
-          <span className={`text-5xl font-black italic tabular-nums ${aiResult.potentialScore >= 70 ? 'text-green-400' : aiResult.potentialScore >= 50 ? 'text-yellow-400' : 'text-red-400'}`}>
-            {aiResult.potentialScore}%
-          </span>
-        </ShinyCard>
+       {/* DUAL SCORE — Ventas + Viral */}
+{aiResult.salesScore && aiResult.viralScore && (() => {
+  const primero = objetivo === 'viral'
+    ? aiResult.viralScore
+    : aiResult.salesScore;
+  const segundo = objetivo === 'viral'
+    ? aiResult.salesScore
+    : aiResult.viralScore;
+  const colorPrimero = primero.score >= 70 ? 'text-green-400' : primero.score >= 50 ? 'text-yellow-400' : 'text-red-400';
+  const colorSegundo = segundo.score >= 70 ? 'text-green-400' : segundo.score >= 50 ? 'text-yellow-400' : 'text-red-400';
+  const borderPrimero = primero.score >= 70 ? 'border-green-500/40 bg-green-500/5' : primero.score >= 50 ? 'border-yellow-500/40 bg-yellow-500/5' : 'border-red-500/40 bg-red-500/5';
+  const borderSegundo = 'border-white/10 bg-white/[0.02]';
 
+  return (
+    <div className="space-y-3">
+      {/* Tarjeta primaria — grande */}
+      <ShinyCard tilt={tilt} className={`rounded-[2.5rem] border p-6 ${borderPrimero}`}>
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500">
+                {objetivo === 'ambas' ? '⚡ Objetivo Principal' : '★ Tu Objetivo'}
+              </span>
+            </div>
+            <p className="text-base font-black italic uppercase tracking-tight text-white">
+              {primero.titulo}
+            </p>
+            <p className="text-xs font-bold italic text-slate-400 mt-1 max-w-[180px] leading-relaxed">
+              {primero.verdict}
+            </p>
+          </div>
+          <span className={`text-6xl font-black italic tabular-nums ${colorPrimero}`}>
+            {primero.score}%
+          </span>
+        </div>
+        <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
+          <div className={`h-full rounded-full transition-all duration-700 ${
+            primero.score >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-400' :
+            primero.score >= 50 ? 'bg-gradient-to-r from-yellow-500 to-amber-400' :
+            'bg-gradient-to-r from-red-600 to-red-400'
+          }`} style={{ width: `${primero.score}%` }} />
+        </div>
+        <p className="text-[11px] font-bold italic text-slate-400 leading-relaxed">
+          {primero.razon_principal}
+        </p>
+        {primero.accion_clave && (
+          <div className="mt-3 flex items-start gap-2 bg-white/5 border border-white/10 rounded-[1rem] p-3">
+            <span className="text-xs">→</span>
+            <p className="text-[11px] font-black italic text-white">{primero.accion_clave}</p>
+          </div>
+        )}
+      </ShinyCard>
+
+      {/* Tarjeta secundaria — más pequeña */}
+      <ShinyCard tilt={tilt} className={`rounded-[2rem] border p-5 ${borderSegundo}`}>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1">
+              También medimos
+            </p>
+            <p className="text-sm font-black italic uppercase tracking-tight text-slate-300">
+              {segundo.titulo}
+            </p>
+          </div>
+          <span className={`text-3xl font-black italic tabular-nums ${colorSegundo}`}>
+            {segundo.score}%
+          </span>
+        </div>
+        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
+          <div className={`h-full rounded-full transition-all duration-700 ${
+            segundo.score >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-400' :
+            segundo.score >= 50 ? 'bg-gradient-to-r from-yellow-500 to-amber-400' :
+            'bg-gradient-to-r from-red-600 to-red-400'
+          }`} style={{ width: `${segundo.score}%` }} />
+        </div>
+        <p className="text-[10px] font-bold italic text-slate-500">{segundo.verdict}</p>
+        {segundo.accion_clave && (
+          <p className="text-[10px] font-bold italic text-slate-400 mt-2">
+            → {segundo.accion_clave}
+          </p>
+        )}
+      </ShinyCard>
+
+      {/* Score combinado — pequeño, abajo */}
+      <ShinyCard tilt={tilt} className="flex items-center justify-between bg-black/40 border border-white/10 rounded-[1.5rem] px-5 py-3">
+        <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500">
+          Score Combinado · {aiResult.performanceScenario}
+        </p>
+        <span className={`text-2xl font-black italic tabular-nums ${
+          aiResult.potentialScore >= 70 ? 'text-green-400' :
+          aiResult.potentialScore >= 50 ? 'text-yellow-400' : 'text-red-400'
+        }`}>{aiResult.potentialScore}%</span>
+      </ShinyCard>
+    </div>
+  );
+})()}
         {/* SCROLL STOP SCORE */}
 {aiResult.scrollStopScore && (
   <ShinyCard tilt={tilt} className={`rounded-[2rem] border p-5 ${
@@ -1645,7 +1501,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
         ))}
       </div>
     )}
-  </ShinyCard>
+  </ShinyCard>  //potentialScore
 )}
 
       {/* PLATFORM SCORES */}
@@ -1692,7 +1548,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
               );
             })}
           </div>
-        </ShinyCard>
+        </ShinyCard> //Score general 
       )}
 
       {/* HOOK DNA */}
