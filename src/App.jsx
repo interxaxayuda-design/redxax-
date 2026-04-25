@@ -60,7 +60,7 @@ function extractGeminiText(data) {
 }
 
 const GEM_PACKAGES = [
-  { id: 'starter', gems: 500,  price: 1.00, label: 'Starter', analyses: '5 análisis',  perGem: '$0.00002/gema', popular: false },
+  { id: 'starter', gems: 500,  price: 0.001, label: 'Starter', analyses: '5 análisis',  perGem: '$0.00002/gema', popular: false },
   { id: 'pro',     gems: 1000, price: 2.00, label: 'Pro',     analyses: '20 análisis', perGem: '$0.002/gema',   popular: true  },
   { id: 'elite',   gems: 6000, price: 5.00, label: 'Elite',   analyses: '60 análisis', perGem: '$0.001/gema',   popular: false },
 ];
