@@ -696,122 +696,113 @@ const reportActualOutcome = async (historyId, actualViews) => {
     v.src = url;
     v.onloadedmetadata = () => resolve(v.duration);
   });
-
+ 
   const cost = 100;
   const approved = await deductGems(cost, `video:${Math.ceil(duration / 60)}`);
   if (!approved) return;
-
+ 
   setStep('analyzing');
   setAnalysisMode('video');
   setStatusText("Subiendo video para análisis nativo...");
   setAnalysisProgress(10);
-
+ 
   const storagePath = `temp-analysis/${Date.now()}-${videoFile.name}`;
-
+ 
   try {
-    // 1. Subir el video a Storage (sin base64, directo)
     const { error: uploadError } = await supabase.storage
       .from('videos')
       .upload(storagePath, videoFile, { upsert: true });
-
+ 
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
-
+ 
     setAnalysisProgress(30);
     setStatusText("Procesando con IA cinematográfica...");
-
-    const analysisPrompt = buildSystemInstructions(platform, followerRange, 'video', {});
-
-    // 2. Pasarle solo el path a la Edge Function
+ 
+    // ✅ FIX 1: selectedObjetivo llega al prompt
+    const analysisPrompt = buildSystemInstructions(platform, followerRange, 'video', {}, selectedObjetivo);
+ 
     const { data: analysisData, error: analysisError } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: analysisPrompt,
-        storagePath: storagePath,
+        storagePath,
         videoMimeType: videoFile.type || 'video/mp4',
         duration: Math.round(duration)
       }
     });
-
+ 
     if (analysisError) throw analysisError;
-
+ 
     setAnalysisProgress(90);
     setStatusText("Procesando resultados...");
-
+ 
     const rawAnalysis = extractGeminiText(analysisData);
     const parsed = safeParseJSON(rawAnalysis, 'runNeuralAnalysis-main');
-    const finalResult = { ...parsed, objetivo: selectedObjetivo }; //setAiResult(parsed);
-
+    const finalResult = { ...parsed, objetivo: selectedObjetivo };
+ 
     setAiResult(finalResult);
     setCompletedSteps([]);
     setChatMessages([{
       role: 'bot',
-      text: `Análisis completado con visión nativa. Score: ${finalResult.potentialScore}%. ¿Querés profundizar en algo?`
+      text: `Análisis completado. Potencial de venta: ${finalResult.salesScore?.score ?? '—'}% | Potencial viral: ${finalResult.viralScore?.score ?? '—'}%. ¿Querés profundizar en algo?`
     }]);
-
+ 
     setAnalysisProgress(100);
     await saveAnalysisToHistory(finalResult, 'video');
     await trackPrediction(finalResult);
     setTimeout(() => setStep('results'), 500);
-
+ 
   } catch (err) {
     console.error('Error análisis:', err);
     alert('Error en el análisis. Revisá la consola.');
     setStep('upload');
   } finally {
-    // 3. Limpiar el archivo temporal siempre, incluso si hubo error
     await supabase.storage.from('videos').remove([storagePath]);
   }
 };
-
- //onChange={(e) => {
-  // ==========================================
-  // 2. TU FUNCIÓN (Justo en el medio)
-  // ==========================================
-  const runScriptAnalysis = async (platform, followerRange) => {
-    if (!scriptText.trim()) return;
-    const approved = await deductGems(80, 'script');
-
-    if (!approved) return;
-
-    setStep('analyzing');
-    setAnalysisMode('script');
-    setStatusText("Investigando tendencias y evaluando guion...");
-    setAnalysisProgress(30);
-
-    try {
-      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          // CAMBIO AQUÍ: Se agregó 'script'
-          text: `${buildSystemInstructions(platform, followerRange, 'script')}\n\nAnaliza este concepto/guion: ${scriptText}`
-        }
-      });
-
-      if (error) throw error;
-
-      setAnalysisProgress(90);
-      const rawText = extractGeminiText(data);
-      const parsed = safeParseJSON(rawText, 'runScriptAnalysis');
-      
-      const finalResult = { ...parsed, objetivo: selectedObjetivo };
-setAiResult(finalResult);
-      setCompletedSteps([]);
-      setChatMessages([{
-        role: 'bot',
-        text: `Protocolo REDxax: Análisis de Pre-producción listo. Potencial proyectado: ${parsed.potentialScore}%. ¿Deseas optimizar el texto?`
-      }]);
-
-      setAnalysisProgress(100);
-      await saveAnalysisToHistory(parsed, 'script');
-      setTimeout(() => setStep('results'), 500);
-    } catch (err) {
-      console.error("Error Script:", err);
-      alert("Error al analizar el guion.");
-      setStep('upload');
-    }
-  };  //platform_select  //{/* Tarjetas de fases */}
-  const saveChatToHistory = async (messages) => {
-    if (!currentHistoryId) return;
-    await supabase.from('analysis_history').update({ chat_messages: messages }).eq('id', currentHistoryId);
-  };
+ 
+const runScriptAnalysis = async (platform, followerRange) => {
+  if (!scriptText.trim()) return;
+  const approved = await deductGems(80, 'script');
+  if (!approved) return;
+ 
+  setStep('analyzing');
+  setAnalysisMode('script');
+  setStatusText("Investigando tendencias y evaluando guion...");
+  setAnalysisProgress(30);
+ 
+  try {
+    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        // ✅ FIX 2: selectedObjetivo llega al prompt
+        text: `${buildSystemInstructions(platform, followerRange, 'script', {}, selectedObjetivo)}\n\nAnaliza este concepto/guion: ${scriptText}`
+      }
+    });
+ 
+    if (error) throw error;
+ 
+    setAnalysisProgress(90);
+    const rawText = extractGeminiText(data);
+    const parsed = safeParseJSON(rawText, 'runScriptAnalysis');
+    const finalResult = { ...parsed, objetivo: selectedObjetivo };
+ 
+    setAiResult(finalResult);
+    setCompletedSteps([]);
+    setChatMessages([{
+      role: 'bot',
+      text: `Análisis de pre-producción listo. Potencial de venta: ${finalResult.salesScore?.score ?? '—'}% | Potencial viral: ${finalResult.viralScore?.score ?? '—'}%. ¿Querés optimizar el texto?`
+    }]);
+ 
+    setAnalysisProgress(100);
+    // ✅ FIX 3: guarda finalResult, no parsed
+    await saveAnalysisToHistory(finalResult, 'script');
+    setTimeout(() => setStep('results'), 500);
+ 
+  } catch (err) {
+    console.error("Error Script:", err);
+    alert("Error al analizar el guion.");
+    setStep('upload');
+  }
+};
 
   const sendMessage = async () => {
   if (!userInput.trim() || isTyping) return;
@@ -1096,6 +1087,33 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
           </button>
         ))}
       </div>
+
+      {/* Objetivo */}
+<p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-3">
+  ¿Qué querés lograr con este video?
+</p>
+<div className="grid grid-cols-1 gap-3 mb-10">
+  {[
+    { id: 'ventas', emoji: '💰', label: 'Quiero vender',        desc: 'Consultas, compras, DMs, visitas' },
+    { id: 'viral',  emoji: '🔥', label: 'Quiero alcance viral', desc: 'Shares, views masivos, llegar a nuevas personas' },
+    { id: 'ambas',  emoji: '⚡', label: 'Las dos cosas',        desc: 'Viralizarse Y convertir' },
+  ].map((o) => (
+    <button key={o.id} onClick={() => setSelectedObjetivo(o.id)}
+      className={`flex items-center gap-4 p-5 rounded-[2rem] border transition-all text-left
+        ${selectedObjetivo === o.id
+          ? 'border-yellow-500/60 bg-yellow-500/10 scale-[1.02]'
+          : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'}`}>
+      <span className="text-2xl">{o.emoji}</span>
+      <div>
+        <p className="font-black italic text-white">{o.label}</p>
+        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{o.desc}</p>
+        {selectedObjetivo === o.id && (
+          <p className="text-yellow-400 text-[10px] font-black uppercase tracking-wider mt-0.5">✓ Seleccionado</p>
+        )}
+      </div>
+    </button>
+  ))}
+</div>
 
       {/* Seguidores */}
       <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-3">¿Cuántos seguidores tenés?</p>
