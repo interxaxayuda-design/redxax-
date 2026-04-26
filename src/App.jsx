@@ -483,7 +483,7 @@ const detectCutRate = async (url) => {
     console.error('deduct-gems exception:', err);
     alert('Error inesperado al procesar las gemas. Intentá de nuevo.'); //const [selectedPlatform, setSelectedPlatform] = useState(null);
     return false;
-  }
+  } //RETENCIÓN
 };
 
   const saveAnalysisToHistory = async (result, mode) => {
@@ -662,7 +662,7 @@ const runScriptAnalysis = async (platform, followerRange) => {
   const newMessages = [...chatMessages, { role: 'user', text: userInput }];
   setChatMessages(newMessages); //maxOutputTokens
   setUserInput("");
-  setIsTyping(true);
+  setIsTyping(true);  //Proyección de Retención
 
   try {
     // 1. Preparamos el contexto de música (lo que ya investigó la visión)
@@ -1531,31 +1531,32 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
           <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Promesa</p><p className="text-sm font-bold italic text-white">{aiResult.vision.promise}</p></div>
         </div>
       </ShinyCard>
-
-      {/* RETENCIÓN */}
-      <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/10 p-10 rounded-[4rem]">
-        <div className="flex items-center justify-between mb-10">
-          <div className="flex items-center gap-4">
-            <BarChart3 className={analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'} />
-            <h3 className="text-xl font-black italic uppercase tracking-tight">Proyección de Retención</h3>
-          </div>
-          <div className="grid grid-cols-3 gap-8">
-            <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">3s</p><p className="text-xl font-black italic">{aiResult.retentionData.at3s}</p></div>
-            <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">10s</p><p className="text-xl font-black italic">{aiResult.retentionData.at10s}</p></div>
-            <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">Final</p><p className="text-xl font-black italic">{aiResult.retentionData.final}</p></div>
-          </div>
+{/* RETENCIÓN */}
+{aiResult.retentionData && (
+  <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/10 p-10 rounded-[4rem]">
+    <div className="flex items-center justify-between mb-10">
+      <div className="flex items-center gap-4">
+        <BarChart3 className={analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'} />
+        <h3 className="text-xl font-black italic uppercase tracking-tight">Proyección de Retención</h3>
+      </div>
+      <div className="grid grid-cols-3 gap-8">
+        <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">3s</p><p className="text-xl font-black italic">{aiResult.retentionData?.at3s ?? '—'}</p></div>
+        <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">10s</p><p className="text-xl font-black italic">{aiResult.retentionData?.at10s ?? '—'}</p></div>
+        <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">Final</p><p className="text-xl font-black italic">{aiResult.retentionData?.final ?? '—'}</p></div>
+      </div>
+    </div>
+    <div className="relative h-48 w-full flex items-end gap-1 px-2 border-b border-white/5">
+      {(aiResult.retentionCurve || []).map((val, i) => (
+        <div key={i} className="flex-1 group relative flex flex-col items-center justify-end h-full">
+          <div
+            className={`w-full rounded-t-lg transition-all duration-700 ${val < 40 ? 'bg-red-500/30 border-red-500/40' : (analysisMode === 'video' ? 'bg-purple-600/30 border-purple-600/40' : 'bg-indigo-600/30 border-indigo-600/40')} border-x border-t`}
+            style={{ height: `${val}%` }}
+          />
         </div>
-        <div className="relative h-48 w-full flex items-end gap-1 px-2 border-b border-white/5">
-          {(aiResult.retentionCurve || []).map((val, i) => (
-            <div key={i} className="flex-1 group relative flex flex-col items-center justify-end h-full">
-              <div
-                className={`w-full rounded-t-lg transition-all duration-700 ${val < 40 ? 'bg-red-500/30 border-red-500/40' : (analysisMode === 'video' ? 'bg-purple-600/30 border-purple-600/40' : 'bg-indigo-600/30 border-indigo-600/40')} border-x border-t`}
-                style={{ height: `${val}%` }}
-              />
-            </div>
-          ))}
-        </div>
-      </ShinyCard>  
+      ))}
+    </div>
+  </ShinyCard>
+)}
 
       {/* HOJA DE RUTA */}
       <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/5 p-10 rounded-[3.5rem] space-y-8">
