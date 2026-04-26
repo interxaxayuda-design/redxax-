@@ -32,7 +32,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 
 const PLATFORMS = [
-  { id: 'tiktok',   label: 'TikTok',               emoji: '🎵' },
+  { id: 'tiktok',   label: 'TikTok',               emoji: '🎵' }, //text: `${buildSystemInstructions(platform, followerRange, 'script', {}, selectedObjetivo)}\n\nAnaliza este concepto/guion: ${scriptText}`
   { id: 'reels',    label: 'Instagram Reels',        emoji: '📸' },
   { id: 'shorts',   label: 'YouTube Shorts',         emoji: '▶️' },
   { id: 'all',      label: 'Todas las plataformas',  emoji: '🌐' },
@@ -722,13 +722,14 @@ const reportActualOutcome = async (historyId, actualViews) => {
     const analysisPrompt = buildSystemInstructions(platform, followerRange, 'video', {}, selectedObjetivo);
  
     const { data: analysisData, error: analysisError } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: analysisPrompt,
-        storagePath,
-        videoMimeType: videoFile.type || 'video/mp4',
-        duration: Math.round(duration)
-      }
-    });
+   body: {
+    text: analysisPrompt,
+    storagePath,
+    videoMimeType: videoFile.type || 'video/mp4',
+    duration: Math.round(duration),  // ← coma acá
+    maxOutputTokens: 8192
+  }
+});
  
     if (analysisError) throw analysisError;
  
@@ -773,8 +774,8 @@ const runScriptAnalysis = async (platform, followerRange) => {
   try {
     const { data, error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        // ✅ FIX 2: selectedObjetivo llega al prompt
-        text: `${buildSystemInstructions(platform, followerRange, 'script', {}, selectedObjetivo)}\n\nAnaliza este concepto/guion: ${scriptText}`
+        text: `${buildSystemInstructions(platform, followerRange, 'script', {}, selectedObjetivo)}\n\nAnaliza este concepto/guion: ${scriptText}`,  // ← coma acá
+        maxOutputTokens: 4096  // ← nueva línea
       }
     });
  
@@ -803,12 +804,12 @@ const runScriptAnalysis = async (platform, followerRange) => {
     setStep('upload');
   }
 };
-
+//duration: Math.round(duration)
   const sendMessage = async () => {
   if (!userInput.trim() || isTyping) return;
 
   const newMessages = [...chatMessages, { role: 'user', text: userInput }];
-  setChatMessages(newMessages);
+  setChatMessages(newMessages); //maxOutputTokens
   setUserInput("");
   setIsTyping(true);
 
