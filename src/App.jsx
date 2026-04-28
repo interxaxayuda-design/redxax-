@@ -143,12 +143,36 @@ Antes de calcular nada, respondé mentalmente:
 5. ¿La voz/locución tiene energía o es monótona?
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FASE 2 — CALCULA viralScore
+FASE 2 — TECHO VIRAL DEL NICHO
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ANCLA: Antes de puntuar, pensá en un video típico de este nicho en ${platformNames[platform]}. Tus scores son RELATIVOS a ese estándar — no al mejor video del mundo.
+Antes de calcular viralScore, clasificá el contenido:
 
-Cada factor: 0 a 10.
-Guía de escala: 0-2 = muy por debajo del promedio del nicho | 3-4 = por debajo | 5 = promedio del nicho | 6-7 = por encima | 8-9 = destacado | 10 = excepcional (reservalo para casos reales).
+TECHO ALTO — escala 0-10 completa disponible
+Contenido que la gente comparte por identidad o emoción fuerte:
+entretenimiento, humor, controversia, revelación sorprendente,
+transformación visible, info que da estatus social al que la comparte.
+
+TECHO MEDIO — escala máxima disponible: 7
+Contenido útil pero sin fuerte motor de sharing:
+tutoriales, comparativas, reviews con opinión, educativo con gancho emocional.
+
+TECHO BAJO — escala máxima disponible: 4
+Contenido que convierte bien pero nadie comparte por identidad social:
+productos utilitarios de bajo costo, demos de producto sin narrativa,
+servicios locales, ofertas directas, soluciones a problemas silenciosos
+(ej: quitapelusa, organizador de cajón, limpiador de pantalla).
+→ La gente LO COMPRA en silencio, no LO COMPARTE con amigos.
+
+Declarar en 00_razonamiento_interno: "Techo: ALTO/MEDIO/BAJO — porque [razón en 10 palabras]"
+El viralScore final no puede superar el techo asignado.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FASE 3 — CALCULA viralScore
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ANCLA: Pensá en un video típico de este nicho en ${platformNames[platform]}. Tus scores son RELATIVOS a ese estándar — no al mejor video del mundo.
+
+Cada factor: 0 al máximo permitido por el techo del nicho.
+Guía: 0-2 = muy por debajo del promedio | 3-4 = por debajo | 5 = promedio | 6-7 = por encima | 8-9 = destacado | 10 = excepcional.
 La mayoría de videos reales caen entre 3 y 7. Un 8+ requiere justificación.
 
 V1 — Emoción de alta excitación en los primeros 10s
@@ -165,14 +189,15 @@ V4 — Identidad tribal
 
 viralScore = Math.round(((V1 + V2 + V3 + V4) / 40) * 100)
 
-VALIDACIÓN OBLIGATORIA: Si viralScore > 78 o < 22, justificá en razon_principal por qué este video es una excepción estadística para su nicho. Si no podés justificarlo con un elemento concreto del video, bajá o subí el score más cerca del rango 30-70.
+VALIDACIÓN: Si viralScore > 78 o < 22, justificá con un elemento concreto del video o ajustá hacia el rango 25-70.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FASE 3 — CALCULA salesScore
+FASE 4 — CALCULA salesScore
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ANCLA: Mismo video de referencia del nicho. Scores relativos al estándar, no al ideal.
+ANCLA: Mismo video de referencia del nicho. Scores relativos al estándar.
 
 Cada factor: 0 a 10. Misma guía de escala que arriba.
+No hay techo en salesScore — un producto utilitario PUEDE tener salesScore alto.
 
 S1 — El hook filtra al comprador ideal (no a curiosos)
 (¿alguien sin intención de compra scrollea después de los primeros 3s?)
@@ -188,10 +213,10 @@ S4 — El CTA tiene urgencia real o fricción baja
 
 salesScore = Math.round(((S1 + S2 + S3 + S4) / 40) * 100)
 
-VALIDACIÓN OBLIGATORIA: Misma regla — si salesScore > 78 o < 22, justificá con un elemento concreto o ajustá hacia el rango 30-70.
+VALIDACIÓN: Si salesScore > 78 o < 22, justificá con un elemento concreto o ajustá hacia el rango 25-70.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FASE 4 — ROADMAP (3 acciones)
+FASE 5 — ROADMAP (3 acciones)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Segundo exacto o elemento específico + cambio concreto + por qué mueve la aguja en ESTE nicho en ${platformNames[platform]}.
 Sin consejos genéricos. Si mencionás el hook, reescribilo para este producto y esta audiencia.
@@ -200,7 +225,7 @@ Sin consejos genéricos. Si mencionás el hook, reescribilo para este producto y
 OUTPUT — JSON ESTRICTO, CERO TEXTO EXTRA
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
-  "00_razonamiento_interno": "<Lecturas 1-5 + valores V1/V2/V3/V4 con justificación + S1/S2/S3/S4 con justificación. Incluí la ancla de referencia usada. 300-400 chars.>",
+  "00_razonamiento_interno": "<Lecturas 1-5 + techo viral asignado con razón + V1/V2/V3/V4 con justificación + S1/S2/S3/S4 con justificación. 300-400 chars.>",
 
   "objetivo": "${objetivo}",
 
@@ -213,6 +238,7 @@ OUTPUT — JSON ESTRICTO, CERO TEXTO EXTRA
 
   "viralScore": {
     "score": <viralScore calculado>,
+    "techo": "<ALTO|MEDIO|BAJO>",
     "vectores": { "emocion": <V1>, "moneda_social": <V2>, "valor_practico": <V3>, "identidad": <V4> },
     "titulo": "Potencial Viral",
     "verdict": "<máx 10 palabras>",
