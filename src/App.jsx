@@ -541,6 +541,13 @@ const reportActualOutcome = async (historyId, actualViews) => {
 };
 
  const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
+
+  // ✅ VALIDACIÓN DE TAMAÑO — va PRIMERO, antes de todo
+  if (videoFile.size > 45 * 1024 * 1024) {
+    alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB. Comprimí el video antes de subirlo.`);
+    return;
+  }
+
   const duration = await new Promise((resolve) => {
     const v = document.createElement('video');
     v.src = url;
@@ -568,18 +575,17 @@ const reportActualOutcome = async (historyId, actualViews) => {
     setAnalysisProgress(30);
     setStatusText("Procesando con IA cinematográfica...");
  
-    // ✅ FIX 1: selectedObjetivo llega al prompt
     const analysisPrompt = buildSystemInstructions(platform, followerRange, 'video', {}, selectedObjetivo);
  
     const { data: analysisData, error: analysisError } = await supabase.functions.invoke('gemini-proxy', {
-   body: {
-    text: analysisPrompt,
-    storagePath,
-    videoMimeType: videoFile.type || 'video/mp4',
-    duration: Math.round(duration),  // ← coma acá
-    maxOutputTokens: 8192
-  }
-});
+      body: {
+        text: analysisPrompt,
+        storagePath,
+        videoMimeType: videoFile.type || 'video/mp4',
+        duration: Math.round(duration),
+        maxOutputTokens: 8192
+      }
+    });
  
     if (analysisError) throw analysisError;
  
