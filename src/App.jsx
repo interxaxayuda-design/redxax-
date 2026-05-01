@@ -127,6 +127,17 @@ Debes analizar el video desde 3 perspectivas:
 2. Cliente potencial (¿me interesa comprar?)
 3. Experto en marketing (¿qué está mal?)
 
+Un video SOLO vende si cumple al menos 3 de estos 5 elementos:
+
+1. Problema claro (el espectador se identifica)
+2. Deseo fuerte (muestra el resultado que quiere)
+3. Prueba o credibilidad (confianza)
+4. Claridad de oferta (qué es exactamente)
+5. Llamado a la acción (qué hacer ahora)
+
+Debes evaluar explícitamente cuáles están presentes y cuáles faltan.
+Si faltan más de 2, el video NO vende.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 VISUALIZACIONES Y RETENCIÓN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -147,6 +158,28 @@ Analiza el hook en base a:
 
 Si el video dura menos de 15s → el hook debe estar en el segundo 0-1
 Si dura más de 30s → debe haber micro-hooks cada 5-8 segundos
+
+Un video SOLO retiene si cumple estos principios:
+
+1. Hook fuerte en los primeros 1-3 segundos
+2. Cambio constante (cada 2-5s pasa algo nuevo)
+3. Curiosidad abierta (el cerebro quiere ver más)
+4. Recompensa visual o emocional
+5. Ritmo acorde a la plataforma
+
+Debes evaluar cada uno.
+Si 2 o más fallan, la retención será baja.
+
+Primero debes identificar el tipo de producto:
+
+- Alto valor (ej: inmobiliaria, autos)
+- Bajo valor (ej: productos simples)
+- Digital (cursos, servicios)
+- Impulsivo (compra rápida)
+
+Cada tipo requiere distinta estrategia de venta.
+
+Debes adaptar tu análisis según el tipo.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 COMO EJECUTAR (REGLA ESTRICTA DE COMUNICACIÓN)
@@ -212,6 +245,12 @@ Tu respuesta debe ser ÚNICAMENTE el siguiente JSON. Asegúrate de que los texto
     "razon_principal": "<Por qué el usuario se quedaría mirando o por qué se aburriría. Explicado fácil.>",
     "accion_clave": "<Cambio concreto para mejorar el inicio o no aburrir>"
   },
+
+  "productAnalysis": {
+  "type": "<alto valor / bajo valor / digital / impulsivo>",
+  "buyingBehavior": "<cómo decide comprar ese cliente>",
+  "missingElements": ["<qué falta para que venda>"]
+}
 
    "dropOffPoints": [
     {
