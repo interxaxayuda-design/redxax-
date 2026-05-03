@@ -778,13 +778,14 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     setAnalysisProgress(65);
     setStatusText("Investigando tendencias reales para tu nicho...");
 
+    // ✅ Ahora
     const { data: fase2Data, error: fase2Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildResearchPrompt(parsed, platform, selectedObjetivo),
-        useSearch: true,
-        maxOutputTokens: 2048
-      }
-    });
+    body: {
+    text: buildResearchPrompt(parsed, platform, selectedObjetivo),
+    useSearch: true,
+    maxOutputTokens: 4096  // ← cambiado
+  }
+});
 
     if (fase2Error) throw fase2Error;
 
