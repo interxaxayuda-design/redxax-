@@ -346,24 +346,24 @@ REGLAS:
 - No mezcles tu opinión con los datos encontrados
 - Sé específico: ejemplos concretos, no generalidades
 
-RESPONDE SOLO EN ESTE JSON:
+RESPONDE SOLO EN ESTE JSON, SÉ CONCISO:
 {
   "trendResearch": {
-    "hooksWorking": "<Qué hooks están funcionando HOY para este nicho, con ejemplos concretos>",
-    "topStructure": "<Estructura de video que más convierte en este nicho actualmente>",
-    "sourceQuality": "<alta | media | baja — qué tan buenos datos encontraste>",
-    "researchDate": "<Fecha de los datos más recientes que encontraste>"
+    "hooksWorking": "<Máx 100 chars: hooks que funcionan HOY>",
+    "topStructure": "<Máx 100 chars: estructura que más convierte>",
+    "sourceQuality": "<alta | media | baja>",
+    "researchDate": "<fecha>"
   },
   "gapAnalysis": {
-    "biggestGap": "<La diferencia más grande entre el video y lo que funciona hoy>",
-    "quickWin": "<El cambio único que más impacto tendría>",
-    "competitiveAdvantage": "<Qué hace bien este video vs la competencia, si algo>"
+    "biggestGap": "<Máx 80 chars: diferencia más grande>",
+    "quickWin": "<Máx 80 chars: cambio de mayor impacto>",
+    "competitiveAdvantage": "<Máx 80 chars: qué hace bien el video>"
   },
-  "updatedHook": "<Hook optimizado combinando el análisis del video + las tendencias reales encontradas>",
+  "updatedHook": "<Máx 120 chars: hook optimizado>",
   "updatedRoadmap": [
-    "<Acción basada en tendencias reales, no en opinión>",
-    "<Acción 2>",
-    "<Acción 3>"
+    "<Acción 1, máx 80 chars>",
+    "<Acción 2, máx 80 chars>",
+    "<Acción 3, máx 80 chars>"
   ]
 }`;
 };
@@ -783,7 +783,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     body: {
     text: buildResearchPrompt(parsed, platform, selectedObjetivo),
     useSearch: true,
-    maxOutputTokens: 4096  // ← cambiado
+    maxOutputTokens: 8192  // ← subís a 8192
   }
 });
 
