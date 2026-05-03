@@ -760,14 +760,14 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     setStatusText("Analizando tu video con IA...");
 
     const { data: fase1Data, error: fase1Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildVideoAnalysisPrompt(platform, followerRange, selectedObjetivo),
-        storagePath,
-        videoMimeType: videoFile.type || 'video/mp4',
-        duration: Math.round(duration),
-        maxOutputTokens: 4096
-      }
-    });
+  body: {
+    text: buildVideoAnalysisPrompt(platform, followerRange, selectedObjetivo),
+    storagePath,
+    videoMimeType: videoFile.type || 'video/mp4',
+    duration: Math.round(duration),
+    maxOutputTokens: 8192  // ← cambiado
+  }
+});
 
     if (fase1Error) throw fase1Error;
 
