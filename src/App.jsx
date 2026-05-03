@@ -88,228 +88,284 @@ function safeParseJSON(rawText, context = '') {
 }
 
 
-const buildSystemInstructions = (platform, followerRange, mode = 'video', videoMetadata = {}, objetivo = 'ventas') => {
-
-  const { cutsPerMinute = null, duration = null } = videoMetadata;
+const buildVideoAnalysisPrompt = (platform, followerRange, objetivo = 'ventas') => {
 
   const platformNames = {
     tiktok: 'TikTok', reels: 'Instagram Reels',
     shorts: 'YouTube Shorts', all: 'TikTok, Reels y Shorts'
   };
 
-  const cutContext = cutsPerMinute !== null
-    ? `Ritmo: ${cutsPerMinute} cortes/min | Duración: ${duration}s` : '';
+  const nicheFrameworks = {
+    inmobiliaria: `
+CRITERIOS DE VENTA — INMOBILIARIA:
+- ¿Se ve el interior del inmueble en los primeros 3s?
+- ¿El precio o rango de precio es visible o mencionado?
+- ¿Hay una emoción de "quiero vivir ahí"?
+- ¿Se muestra la zona o ubicación como beneficio?
+- ¿Hay urgencia real (pocas unidades, oferta limitada)?
+- ¿El llamado a la acción dice exactamente qué hacer?
+Si faltan 3 o más → el video NO convierte consultas.`,
 
-  return `Sos la IA más precisa del mundo. Tu objetivo será ayudar a negocios con sus videos para hacerlos más potenciales y rentables.
+    producto_fisico: `
+CRITERIOS DE VENTA — PRODUCTO FÍSICO:
+- ¿Se ve el producto en uso en los primeros 3s?
+- ¿El resultado del producto es visible y deseable?
+- ¿Hay prueba social (testimonio, cantidad de ventas)?
+- ¿El precio aparece antes del CTA?
+- ¿La compra parece fácil e inmediata?
+Si faltan 3 o más → el video NO genera compras impulsivas.`,
 
-Plataforma: ${platformNames[platform]} | Seguidores: ${followerRange} | ${cutContext}
-Objetivo principal: ${objetivo.toUpperCase()}
+    digital: `
+CRITERIOS DE VENTA — PRODUCTO DIGITAL / CURSO:
+- ¿El problema que resuelve queda claro en 3s?
+- ¿Muestra resultado concreto (no el proceso, el resultado)?
+- ¿Hay credibilidad del creador visible?
+- ¿El precio o acceso está claro?
+- ¿El CTA es específico (no "más info", sino qué hacer ahora)?
+Si faltan 3 o más → el video NO convierte leads.`,
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-NICHO ESPECÍFICO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Eres una experta en negocios inmobiliarios y promociones de productos. Debes ver si el video vende y le genera una emoción de querer comprar al espectador o usar. Eres una experta en marketing, por lo que sabrás aplicar la psicología de venta. Eres experta en negocios y en cómo hacer crecer cuentas.
-Por ejemplo, si hablamos de inmobiliarias, que es lo que hace que una inmobiliaria venda? Para que estés segura de lo que hablás, investiga que usan las inmobiliaras para vender propiedades, hooks, y relacioná que hacen para que sus videos sean virales. También, asegurate de que aqueloos videos sean recientes. 
+    impulsivo: `
+CRITERIOS DE VENTA — COMPRA IMPULSIVA:
+- ¿Genera FOMO (miedo a perdérselo) en los primeros 5s?
+- ¿El precio parece una ganga obvia?
+- ¿La compra se puede hacer en menos de 2 clics?
+- ¿Hay escasez visible (últimas unidades, tiempo limitado)?
+Si faltan 2 o más → el video pierde la venta por fricción.`
+  };
 
-También, para casos más específicos, para promociones de productos o cursos (ya sean productos digitales o físicos, como anuncios), como sos una experta profesional de 20 años de experiencia con más de 1000 casos de éxito, vas a saber exactamente lo que falla o funciona. Cualquier cosa invesiga si tenés alguna duda o querés estar más segura de lo que decis.
+  const retentionRules = {
+    tiktok:  'Corte cada 2-3s. Hook en segundo 0. Texto en pantalla obligatorio.',
+    reels:   'Hook visual en segundo 0-1. Ritmo constante. Audio trending suma.',
+    shorts:  'Primer frame debe ser el momento más impactante. Sin intros.',
+    all:     'Hook en segundo 0. Ritmo alto. Texto en pantalla. Sin intros.'
+  };
 
-SIEMPRE: Siempre debes investigar videos virale recientes (según el nicho), y relacionar. Si ves que podrías mejorar tal cosa, dile. También, el hook es importante investigar.
+  return `Sos un analizador de videos de ventas para redes sociales. Tu trabajo es evaluar si este video específico vende y retiene, usando criterios concretos. No investigues. No supongas. Solo analizá lo que ves.
 
-Eres experta, recuerda. 
-
-Evalúa si una persona en 3 segundos entiende:
-- Qué se vende
-- Para quién es
-- Por qué debería importarle
-
-Debes analizar el video desde 3 perspectivas:
-1. Espectador distraído (¿me quedo o scrolleo?)
-2. Cliente potencial (¿me interesa comprar?)
-3. Experto en marketing (¿qué está mal?)
-
-Un video SOLO vende si cumple al menos 3 de estos 5 elementos:
-
-1. Problema claro (el espectador se identifica)
-2. Deseo fuerte (muestra el resultado que quiere)
-3. Prueba o credibilidad (confianza)
-4. Claridad de oferta (qué es exactamente)
-5. Llamado a la acción (qué hacer ahora)
-
-Debes evaluar explícitamente cuáles están presentes y cuáles faltan.
-Si faltan más de 2, el video NO vende.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-VISUALIZACIONES Y RETENCIÓN
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Debes estar enfocada también a que el usuario mire el video completo. Al espectador no le debe de aburrir o no interesar.
-- Debes captar cada segundo del video.
-- Observar detenidamente las transiciones.
-- Analizar el hook (gancho inicial) del video, que es de suma importancia.
-- Entiendes al 100% el algoritmo de TikTok, Instagram, YouTube y sabes perfectamente qué funciona para promociones de productos, propiedades, entre otras.
-
-Debes detectar momentos donde el espectador podría abandonar el video.
-Marca esos momentos y explica por qué.
-
-Analiza el hook en base a:
-- Interrupción de patrón (¿frena el scroll?)
-- Claridad inmediata
-- Curiosidad generada
-- Promesa implícita
-
-Si el video dura menos de 15s → el hook debe estar en el segundo 0-1
-Si dura más de 30s → debe haber micro-hooks cada 5-8 segundos
-
-Un video SOLO retiene si cumple estos principios:
-
-1. Hook fuerte en los primeros 1-3 segundos
-2. Cambio constante (cada 2-5s pasa algo nuevo)
-3. Curiosidad abierta (el cerebro quiere ver más)
-4. Recompensa visual o emocional
-5. Ritmo acorde a la plataforma
-
-Debes evaluar cada uno.
-Si 2 o más fallan, la retención será baja.
-
-Primero debes identificar el tipo de producto:
-
-- Alto valor (ej: inmobiliaria, autos)
-- Bajo valor (ej: productos simples)
-- Digital (cursos, servicios)
-- Impulsivo (compra rápida)
-
-Simula el comportamiento de un usuario real:
-
-Para cada video, responde:
-
-1. ¿Paro el scroll en el segundo 0-1? ¿Por qué?
-2. ¿Sigo viendo hasta el segundo 3? ¿Por qué?
-3. ¿Pierdo interés? ¿En qué segundo?
-4. ¿Siento algo (emoción)? ¿Qué exactamente?
-5. ¿Tengo razones para seguir viendo?
-
-Debes ser crítico y realista.
-El usuario está distraído y busca entretenimiento inmediato.
-Si el video no detendría a alguien scrolleando sin pensar, penaliza fuerte.
-
-Cada tipo requiere distinta estrategia de venta.
-
-Debes adaptar tu análisis según el tipo.
+CONTEXTO:
+Plataforma: ${platformNames[platform]}
+Seguidores: ${followerRange}
+Objetivo del creador: ${objetivo.toUpperCase()}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-COMO EJECUTAR (REGLA ESTRICTA DE COMUNICACIÓN)
+PASO 1 — IDENTIFICÁ EL NICHO
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Debes ser sumamente CLARA en lo que dices. 
-- No le hables al usuario de cosas muy técnicas.
-- Explícale cada palabra técnica difícil (ej: si hablas de "Hook", "Transiciones" o "Llamado a la acción", explícale brevemente qué significa).
-- Al análisis al final que hagas, cuéntalo al usuario como si fuera alguien que NO sabe nada de viralidad ni psicología de ventas.
-- Debes poner 100% de atención a lo que analizas y usar todas tus herramientas. Tú puedes.
+Determiná a cuál pertenece este video:
+- Inmobiliaria / Real Estate
+- Producto Físico
+- Producto Digital / Curso
+- Compra Impulsiva / Ecommerce
 
-Debes calcular los scores en base a estos factores:
-
-1. Analiza libremente por qué el video funciona o no.
-
-2. Detecta patrones importantes sin limitarte.
-
-3. Traduce ese análisis en puntuaciones usando estos factores...
-RETENCIÓN:
-- Hook inicial (0-25)
-- Ritmo / cortes (0-25)
-- Claridad del mensaje (0-25)
-- Curiosidad / emoción (0-25)
-
-VENTA:
-- Claridad de oferta (0-25)
-- Deseo generado (0-25)
-- Confianza (0-25)
-- Llamado a la acción (0-25)
-
-Luego suma y normaliza a 0-100.
-
-Primero debes razonar libremente.
-Luego debes justificar y convertir ese razonamiento en puntuaciones estructuradas.
-Si hay contradicción, ajusta los scores.
-
-No puedes dar un score alto si no puedes explicar claramente por qué.
-Si la explicación es débil, el score debe bajar.
-
-No debes asumir. Si falta información, trabaja con probabilidades y dilo.
-Evita inventar datos específicos del video.
+Esto define qué criterios aplicar.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTPUT — JSON ESTRICTO
+PASO 2 — EVALUÁ LA RETENCIÓN
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Tu respuesta debe ser ÚNICAMENTE el siguiente JSON. Asegúrate de que los textos dentro del JSON cumplan con la regla de hablar de forma sencilla y sin jerga técnica para el cliente final.
+Reglas fijas para ${platformNames[platform]}:
+${retentionRules[platform]}
 
+Evaluá estos 5 puntos con SÍ o NO y por qué:
+1. ¿El hook detiene el scroll en 0-2 segundos?
+2. ¿Hay cambio visual o de información cada 3-5 segundos?
+3. ¿El cerebro tiene razones para seguir viendo?
+4. ¿Genera una emoción concreta (curiosidad, deseo, sorpresa)?
+5. ¿El ritmo es acorde a la plataforma?
+
+Si 2 o más son NO → retención baja. Penalizá fuerte el score.
+
+HOOK — analizalo con estos 4 criterios:
+- ¿Interrumpe el patrón visual del feed?
+- ¿En 2 segundos queda claro de qué trata?
+- ¿Genera curiosidad o hace una promesa implícita?
+- ¿Hay emoción o movimiento visible desde el primer frame?
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASO 3 — EVALUÁ LA VENTA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Aplicá el framework según el nicho detectado:
+
+${Object.values(nicheFrameworks).join('\n')}
+
+Además, evaluá estos 5 elementos universales de venta:
+1. Problema claro → el espectador se identifica
+2. Deseo fuerte → muestra el resultado que quiere
+3. Prueba o credibilidad → genera confianza
+4. Claridad de oferta → qué es exactamente lo que se vende
+5. Llamado a la acción → qué hacer ahora mismo
+
+Si faltan más de 2 → el video NO vende. Decilo claro.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASO 4 — SIMULÁ UN USUARIO REAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Este usuario está scrolleando sin pensar, distraído, buscando entretenimiento.
+Respondé:
+1. ¿Para el scroll en el segundo 0-1? ¿Por qué sí o no?
+2. ¿Sigue viendo hasta el segundo 3?
+3. ¿En qué segundo exacto pierde interés?
+4. ¿Siente alguna emoción? ¿Cuál?
+5. ¿Tiene razones para quedarse hasta el final?
+
+Sé brutal y realista. Si el video no frenaría a alguien distraído, penalizá fuerte.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASO 5 — CALCULÁ LOS SCORES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RETENCIÓN (suma estos 4, resultado sobre 100):
+- Hook inicial: 0-25
+- Ritmo y cortes: 0-25
+- Claridad del mensaje: 0-25
+- Curiosidad o emoción generada: 0-25
+
+VENTA (suma estos 4, resultado sobre 100):
+- Claridad de oferta: 0-25
+- Deseo generado: 0-25
+- Confianza transmitida: 0-25
+- Llamado a la acción: 0-25
+
+REGLA ESTRICTA: No podés dar un score alto si tu explicación es débil. Si dudás, bajá el score.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CÓMO ESCRIBIR LAS RESPUESTAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Escribí como si le hablaras a alguien que nunca estudió marketing
+- Si usás una palabra técnica, explicala entre paréntesis
+- Sé directo: si el video no vende, decilo sin rodeos pero con empatía
+- Nada de frases vacías como "es un buen comienzo"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT — SOLO JSON, NADA MÁS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
-  "00_razonamiento_interno": "<Tu análisis privado sobre psicología de venta y algoritmos. Aquí puedes ser técnica porque el usuario no leerá esto directamente. Máx 300 chars.>",
-
+  "00_razonamiento_interno": "<Análisis técnico interno. Máx 300 chars.>",
   "objetivo": "${objetivo}",
+  "nicheDetected": "<inmobiliaria | producto_fisico | digital | impulsivo>",
 
   "vision": {
-    "niche": "<Nicho detectado (ej: Inmobiliaria, Producto Físico)>",
+    "niche": "<Nicho detectado en palabras simples>",
     "type": "<Formato del video>",
-    "audience": "<Descripción sencilla del cliente que miraría esto (ej: 'Familias buscando casa')>",
-    "promise": "<Qué promete el video de forma clara>"
+    "audience": "<Quién miraría esto, explicado simple>",
+    "promise": "<Qué promete el video>"
   },
 
   "viralScore": {
     "score": <0-100>,
     "titulo": "Potencial de Visualizaciones",
-    "verdict": "<Veredicto en lenguaje sencillo y amigable, máx 10 palabras>",
-    "razon_principal": "<Por qué el usuario se quedaría mirando o por qué se aburriría. Explicado fácil.>",
-    "accion_clave": "<Cambio concreto para mejorar el inicio o no aburrir>"
+    "verdict": "<Veredicto simple, máx 10 palabras>",
+    "razon_principal": "<Por qué se quedarían mirando o no. Sin tecnicismos.>",
+    "accion_clave": "<Un cambio concreto para mejorar la retención>"
   },
-
-  "productAnalysis": {
-  "type": "<alto valor / bajo valor / digital / impulsivo>",
-  "buyingBehavior": "<cómo decide comprar ese cliente>",
-  "missingElements": ["<qué falta para que venda>"]
-}
-
-   "dropOffPoints": [
-    {
-      "second": <number>,
-      "reason": "<Qué hace que la gente se vaya, explicado simple>",
-      "fix": "<Cambio concreto para evitarlo>"
-    }
-  ],
-
-
-  "salesAngle": {
-  "type": "Problema / Deseo / Oportunidad / Prueba social",
-  "clarity": 0-100,
-  "improvement": "..."
- },
 
   "salesScore": {
     "score": <0-100>,
     "titulo": "Potencial de Venta",
-    "verdict": "<Veredicto en lenguaje sencillo y amigable, máx 10 palabras>",
-    "razon_principal": "<Por qué genera emoción de comprar (o por qué no). Explicado fácil.>",
-    "accion_clave": "<Cambio concreto para que el video venda más>"
+    "verdict": "<Veredicto simple, máx 10 palabras>",
+    "razon_principal": "<Por qué genera o no ganas de comprar. Simple.>",
+    "accion_clave": "<Un cambio concreto para vender más>"
+  },
+
+  "productAnalysis": {
+    "type": "<alto valor | bajo valor | digital | impulsivo>",
+    "buyingBehavior": "<Cómo decide comprar ese cliente, explicado simple>",
+    "missingElements": ["<Qué falta para que venda, uno por item>"]
+  },
+
+  "salesAngle": {
+    "type": "<Problema | Deseo | Oportunidad | Prueba social>",
+    "clarity": <0-100>,
+    "improvement": "<Cómo mejorar el ángulo de venta, simple>"
   },
 
   "psicologiaVentas": {
-    "emocionGenerada": "<Ej: 'Urgencia por comprar', 'Deseo de vivir ahí', 'Curiosidad'>",
-    "momentoDeseo": "<Segundo exacto donde dan ganas de comprar o contactar>",
+    "emocionGenerada": "<Qué emoción genera o debería generar>",
+    "momentoDeseo": "<Segundo donde dan ganas de comprar, o 'ninguno'>",
     "conversionScore": <0-100>
   },
 
-  "honestVerdict": "<Párrafo de 300-400 chars. Resumen del análisis para el usuario. Recuerda: explícale como si no supiera NADA de marketing. Sé empática, clara, explica los términos difíciles y dile directamente si su video vende o aburre.>",
+  "dropOffPoints": [
+    {
+      "second": <número>,
+      "reason": "<Por qué la gente se va en ese momento, simple>",
+      "fix": "<Qué cambiar para evitarlo>"
+    }
+  ],
 
   "hookDNA": {
-    "pattern": "<De qué trata el gancho (ej: Curiosidad, Problema)>",
+    "pattern": "<Tipo de gancho: Curiosidad | Problema | Sorpresa | Deseo>",
     "strength": <0-100>,
-    "optimizedHook": "<Dale un ejemplo de cómo empezar el video de una forma que atrape más, escrito de manera sencilla>"
+    "missingElement": "<Qué le falta al gancho>",
+    "optimizedHook": "<Ejemplo concreto de cómo empezar el video para atrapar más>"
   },
 
+  "honestVerdict": "<300-400 chars. Resumen directo y empático. Como si le hablaras a alguien que no sabe nada de marketing. Decile si vende o no, y por qué.>",
+
   "roadmap": [
-    "<Acción 1: [Segundo exacto] -> [Qué cambiar] -> [Explícale al usuario POR QUÉ esto funciona, sin palabras raras]>",
-    "<Acción 2: [Segundo exacto] -> [Qué ajustar para no aburrir] -> [Explicación sencilla]>",
-    "<Acción 3: [Cambio rápido y fácil] -> [Explicación de por qué aumenta ventas o vistas]>"
+    "<Acción 1: [Segundo exacto] → [Qué cambiar] → [Por qué funciona, sin tecnicismos]>",
+    "<Acción 2: [Segundo exacto] → [Qué ajustar] → [Explicación simple]>",
+    "<Acción 3: [Cambio rápido] → [Por qué aumenta ventas o vistas]>"
   ]
 }`;
+};
 
+const buildResearchPrompt = (fase1Result, platform, objetivo) => {
+
+  const platformNames = {
+    tiktok: 'TikTok', reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts', all: 'TikTok, Reels y Shorts'
+  };
+
+  return `Sos un investigador de tendencias de contenido para redes sociales. 
+Tenés los datos de un video ya analizado y tu trabajo es buscar qué está funcionando HOY para ese nicho específico.
+
+DATOS DEL VIDEO ANALIZADO:
+- Nicho: ${fase1Result.vision?.niche}
+- Tipo de producto: ${fase1Result.productAnalysis?.type}
+- Hook detectado: ${fase1Result.hookDNA?.pattern} (fuerza: ${fase1Result.hookDNA?.strength}/100)
+- Plataforma: ${platformNames[platform]}
+- Objetivo: ${objetivo}
+- Lo que le falta al hook: ${fase1Result.hookDNA?.missingElement}
+- Elementos de venta que faltan: ${fase1Result.productAnalysis?.missingElements?.join(', ')}
+
+TU TAREA — Investigá estas 3 cosas con búsqueda real:
+
+1. HOOKS VIRALES HOY
+¿Qué tipo de hooks están funcionando en ${platformNames[platform]} para el nicho "${fase1Result.vision?.niche}" en este momento?
+Buscá ejemplos recientes. No inventes. Si no encontrás datos concretos, decilo.
+
+2. ESTRUCTURA QUE CONVIERTE
+¿Qué estructura de video está generando más ventas o consultas para este tipo de producto en ${platformNames[platform]} actualmente?
+
+3. COMPARACIÓN DIRECTA
+Comparando lo que tiene este video con lo que está funcionando hoy:
+¿Cuál es la brecha más grande?
+¿Qué cambio único generaría el mayor impacto?
+
+REGLAS:
+- Solo reportá lo que encontrés con búsqueda real
+- Si algo no está claro, decí "no encontré datos suficientes sobre esto"
+- No mezcles tu opinión con los datos encontrados
+- Sé específico: ejemplos concretos, no generalidades
+
+RESPONDE SOLO EN ESTE JSON:
+{
+  "trendResearch": {
+    "hooksWorking": "<Qué hooks están funcionando HOY para este nicho, con ejemplos concretos>",
+    "topStructure": "<Estructura de video que más convierte en este nicho actualmente>",
+    "sourceQuality": "<alta | media | baja — qué tan buenos datos encontraste>",
+    "researchDate": "<Fecha de los datos más recientes que encontraste>"
+  },
+  "gapAnalysis": {
+    "biggestGap": "<La diferencia más grande entre el video y lo que funciona hoy>",
+    "quickWin": "<El cambio único que más impacto tendría>",
+    "competitiveAdvantage": "<Qué hace bien este video vs la competencia, si algo>"
+  },
+  "updatedHook": "<Hook optimizado combinando el análisis del video + las tendencias reales encontradas>",
+  "updatedRoadmap": [
+    "<Acción basada en tendencias reales, no en opinión>",
+    "<Acción 2>",
+    "<Acción 3>"
+  ]
+}`;
 };
 
 const ShinyCard = ({ children, className = '', tilt }) => {
@@ -668,9 +724,8 @@ const reportActualOutcome = async (historyId, actualViews) => {
   } //onChange={(e) => {
 };
 
- const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
+const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
-  // ✅ VALIDACIÓN DE TAMAÑO — va PRIMERO, antes de todo
   if (videoFile.size > 45 * 1024 * 1024) {
     alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB. Comprimí el video antes de subirlo.`);
     return;
@@ -681,61 +736,86 @@ const reportActualOutcome = async (historyId, actualViews) => {
     v.src = url;
     v.onloadedmetadata = () => resolve(v.duration);
   });
- 
+
   const cost = 100;
   const approved = await deductGems(cost, `video:${Math.ceil(duration / 60)}`);
   if (!approved) return;
- 
+
   setStep('analyzing');
   setAnalysisMode('video');
-  setStatusText("Subiendo video para análisis nativo...");
+  setStatusText("Subiendo video para análisis...");
   setAnalysisProgress(10);
- 
+
   const storagePath = `temp-analysis/${Date.now()}-${videoFile.name}`;
- 
+
   try {
     const { error: uploadError } = await supabase.storage
       .from('videos')
       .upload(storagePath, videoFile, { upsert: true });
- 
+
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
- 
+
+    // ── FASE 1 — Análisis del video ──
     setAnalysisProgress(30);
-    setStatusText("Procesando con IA cinematográfica...");
- 
-    const analysisPrompt = buildSystemInstructions(platform, followerRange, 'video', {}, selectedObjetivo);
- 
-    const { data: analysisData, error: analysisError } = await supabase.functions.invoke('gemini-proxy', {
+    setStatusText("Analizando tu video con IA...");
+
+    const { data: fase1Data, error: fase1Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: analysisPrompt,
+        text: buildVideoAnalysisPrompt(platform, followerRange, selectedObjetivo),
         storagePath,
         videoMimeType: videoFile.type || 'video/mp4',
         duration: Math.round(duration),
-        maxOutputTokens: 8192
+        maxOutputTokens: 4096
       }
     });
- 
-    if (analysisError) throw analysisError;
- 
+
+    if (fase1Error) throw fase1Error;
+
+    const rawFase1 = extractGeminiText(fase1Data);
+    const parsed = safeParseJSON(rawFase1, 'fase1-video');
+
+    // ── FASE 2 — Investigación con Search ──
+    setAnalysisProgress(65);
+    setStatusText("Investigando tendencias reales para tu nicho...");
+
+    const { data: fase2Data, error: fase2Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildResearchPrompt(parsed, platform, selectedObjetivo),
+        useSearch: true,
+        maxOutputTokens: 2048
+      }
+    });
+
+    if (fase2Error) throw fase2Error;
+
+    const rawFase2 = extractGeminiText(fase2Data);
+    const fase2Result = safeParseJSON(rawFase2, 'fase2-research');
+
+    // ── MERGE — Combinamos los dos resultados ──
     setAnalysisProgress(90);
-    setStatusText("Procesando resultados...");
- 
-    const rawAnalysis = extractGeminiText(analysisData);
-    const parsed = safeParseJSON(rawAnalysis, 'runNeuralAnalysis-main');
-    const finalResult = { ...parsed, objetivo: selectedObjetivo };
- 
+    setStatusText("Preparando tu análisis completo...");
+
+    const finalResult = {
+      ...parsed,
+      objetivo: selectedObjetivo,
+      trendResearch: fase2Result.trendResearch,
+      gapAnalysis: fase2Result.gapAnalysis,
+      updatedHook: fase2Result.updatedHook,
+      updatedRoadmap: fase2Result.updatedRoadmap
+    };
+
     setAiResult(finalResult);
     setCompletedSteps([]);
     setChatMessages([{
       role: 'bot',
       text: `Análisis completado. Potencial de venta: ${finalResult.salesScore?.score ?? '—'}% | Potencial viral: ${finalResult.viralScore?.score ?? '—'}%. ¿Querés profundizar en algo?`
     }]);
- 
+
     setAnalysisProgress(100);
     await saveAnalysisToHistory(finalResult, 'video');
     await trackPrediction(finalResult);
     setTimeout(() => setStep('results'), 500);
- 
+
   } catch (err) {
     console.error('Error análisis:', err);
     alert('Error en el análisis. Revisá la consola.');
