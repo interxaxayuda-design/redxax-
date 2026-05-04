@@ -1063,7 +1063,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
       <h1 className="text-2xl font-black tracking-tighter italic uppercase text-white">
         VIR<span className="text-red-500">AX</span>
       </h1>
-      <span className="text-[10px] italic text-slate-500 font-medium tracking-wide">Hecha por REDxax</span>
+      <span className="text-[10px] italic text-slate-500 font-medium tracking-wide">Hecha por InterXAX</span>
     </div>
   </div>
   <div className="flex items-center gap-4">
