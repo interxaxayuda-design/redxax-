@@ -1099,19 +1099,67 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
           animation: slideBlurIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 1s forwards;
         }
         @keyframes ventasPulse {
-          0%   { opacity: 1; transform: translateY(0px);   background-position: -200% center; }
-          8%   { opacity: 0; transform: translateY(-18px); background-position: -200% center; }
-          9%   { opacity: 0; transform: translateY(18px);  background-position:  200% center; }
-          24%  { opacity: 1; transform: translateY(0px);   background-position: -200% center; }
-          100% { opacity: 1; transform: translateY(0px);   background-position: -200% center; }
+          /* —— Reposo —— */
+          0% {
+            opacity: 1;
+            transform: translateY(0px) scaleX(1) scaleY(1);
+            filter: blur(0px) drop-shadow(0 0 0px transparent);
+            background-position: -200% center;
+          }
+          /* —— Salida: compresión + desliz arriba + blur —— */
+          6% {
+            opacity: 1;
+            transform: translateY(-4px) scaleX(1.06) scaleY(0.88);
+            filter: blur(0px) drop-shadow(0 0 8px #4ade8066);
+            background-position: -200% center;
+          }
+          12% {
+            opacity: 0;
+            transform: translateY(-28px) scaleX(0.92) scaleY(0.7);
+            filter: blur(10px) drop-shadow(0 0 0px transparent);
+            background-position: -200% center;
+          }
+          /* —— Reset invisible abajo —— */
+          13% {
+            opacity: 0;
+            transform: translateY(32px) scaleX(0.92) scaleY(0.7);
+            filter: blur(10px);
+            background-position: 200% center;
+          }
+          /* —— Entrada: sube + desenfoca + shimmer sweep —— */
+          26% {
+            opacity: 1;
+            transform: translateY(-5px) scaleX(1.04) scaleY(1.08);
+            filter: blur(0px) drop-shadow(0 0 18px #4ade8088);
+            background-position: 0% center;
+          }
+          /* —— Rebote de asentamiento —— */
+          30% {
+            transform: translateY(3px) scaleX(0.99) scaleY(0.97);
+            filter: blur(0px) drop-shadow(0 0 6px #4ade8044);
+            background-position: -60% center;
+          }
+          35% {
+            transform: translateY(0px) scaleX(1) scaleY(1);
+            filter: blur(0px) drop-shadow(0 0 0px transparent);
+            background-position: -200% center;
+          }
+          /* —— Reposo hasta próximo ciclo —— */
+          100% {
+            opacity: 1;
+            transform: translateY(0px) scaleX(1) scaleY(1);
+            filter: blur(0px) drop-shadow(0 0 0px transparent);
+            background-position: -200% center;
+          }
         }
         .shimmer-ventas {
+          display: inline-block;
           background: linear-gradient(90deg, #16a34a 0%, #4ade80 35%, #bbf7d0 50%, #4ade80 65%, #16a34a 100%);
           background-size: 250% auto;
           -webkit-background-clip: text;
           background-clip: text;
           -webkit-text-fill-color: transparent;
-          animation: ventasPulse 5s ease-in-out 2.5s infinite;
+          animation: ventasPulse 5s cubic-bezier(0.22, 1, 0.36, 1) 2.5s infinite;
         }
         .gold-viral {
           background: linear-gradient(90deg, #b8860b, #ffd700, #fffacd, #ffd700, #b8860b);
@@ -1175,82 +1223,6 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
         <p className="text-slate-400 mt-3 font-medium">
           El algoritmo se calibra según tu plataforma y tamaño de cuenta.
         </p>
-      </div>
-
-      {/* Plataforma */}
-      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-3">¿Dónde publicás?</p>
-      <div className="grid grid-cols-1 gap-3 mb-8">
-        {PLATFORMS.map((p) => (
-          <button
-            key={p.id}
-            onClick={() => setSelectedPlatform(p.id)}
-            className={`flex items-center gap-4 p-5 rounded-[2rem] border transition-all text-left
-              ${selectedPlatform === p.id
-                ? 'border-purple-500/60 bg-purple-500/15 scale-[1.02]'
-                : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'}`}
-          >
-            <span className="text-2xl">{p.emoji}</span>
-            <div>
-              <p className="font-black italic text-white">{p.label}</p>
-              {selectedPlatform === p.id && (
-                <p className="text-purple-400 text-[10px] font-black uppercase tracking-wider mt-0.5">✓ Seleccionado</p>
-              )}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Objetivo */}
-<p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-3">
-  ¿Qué querés lograr con este video?
-</p>
-<div className="grid grid-cols-1 gap-3 mb-10">
-  {[
-    { id: 'ventas', emoji: '💰', label: 'Quiero vender',        desc: 'Consultas, compras, DMs, visitas' },
-    { id: 'viral',  emoji: '🔥', label: 'Quiero alcance viral', desc: 'Shares, views masivos, llegar a nuevas personas' },
-    { id: 'ambas',  emoji: '⚡', label: 'Las dos cosas',        desc: 'Viralizarse Y convertir' },
-  ].map((o) => (
-    <button key={o.id} onClick={() => setSelectedObjetivo(o.id)}
-      className={`flex items-center gap-4 p-5 rounded-[2rem] border transition-all text-left
-        ${selectedObjetivo === o.id
-          ? 'border-yellow-500/60 bg-yellow-500/10 scale-[1.02]'
-          : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'}`}>
-      <span className="text-2xl">{o.emoji}</span>
-      <div>
-        <p className="font-black italic text-white">{o.label}</p>
-        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{o.desc}</p>
-        {selectedObjetivo === o.id && (
-          <p className="text-yellow-400 text-[10px] font-black uppercase tracking-wider mt-0.5">✓ Seleccionado</p>
-        )}
-      </div>
-    </button>
-  ))}
-</div>
-
-      {/* Seguidores */}
-      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-3">¿Cuántos seguidores tenés?</p>
-      <div className="grid grid-cols-1 gap-3 mb-10">
-        {FOLLOWER_RANGES.map((r) => (
-          <button
-            key={r.id}
-            onClick={() => setSelectedFollowerRange(r.id)}
-            className={`flex items-center justify-between p-5 rounded-[2rem] border transition-all text-left
-              ${selectedFollowerRange === r.id
-                ? 'border-indigo-500/60 bg-indigo-500/15 scale-[1.02]'
-                : 'border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]'}`}
-          >
-            <div className="flex items-center gap-4">
-              <span className="text-2xl">{r.emoji}</span>
-              <div>
-                <p className="font-black italic text-white">{r.label}</p>
-                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{r.range}</p>
-              </div>
-            </div>
-            {selectedFollowerRange === r.id && (
-              <p className="text-indigo-400 text-[10px] font-black uppercase tracking-wider">✓</p>
-            )}
-          </button>
-        ))}
       </div>
 
       <div className="flex justify-between items-center">
