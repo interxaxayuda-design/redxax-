@@ -801,7 +801,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       objetivo: selectedObjetivo,
       trendResearch: fase2Result.trendResearch,
       gapAnalysis: fase2Result.gapAnalysis,
-      updatedHook: fase2Result.updatedHook,
+      updatedHook: fase2Result.updatedHook,  //tu video
       updatedRoadmap: fase2Result.updatedRoadmap
     };
 
@@ -1078,12 +1078,41 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
 {step === 'upload' && (
   <div className="text-center space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-700">
     <div className="space-y-4">
+      <style>{`
+        @keyframes slideBlurIn {
+          from { opacity: 0; transform: translateY(30px); filter: blur(14px); }
+          to   { opacity: 1; transform: translateY(0px);  filter: blur(0px);  }
+        }
+        @keyframes shimmer {
+          0%   { background-position: -200% center; }
+          100% { background-position:  200% center; }
+        }
+        .title-line1 {
+          animation: slideBlurIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        .title-line2 {
+          opacity: 0;
+          animation: slideBlurIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 1s forwards;
+        }
+        .shimmer-ventas {
+          background: linear-gradient(90deg, #16a34a 0%, #4ade80 35%, #bbf7d0 50%, #4ade80 65%, #16a34a 100%);
+          background-size: 250% auto;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: shimmer 1.4s linear 1.2s 1 both;
+        }
+      `}</style>
       <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
         <Microscope className="w-3 h-3" /> Precisión 500% — Analista Neutro
       </div>
       <h2 className="text-7xl md:text-9xl font-black italic tracking-tighter leading-none uppercase">
-        ¿TU VIDEO<br/>
-        <span className="bg-gradient-to-r from-purple-400 to-indigo-500 bg-clip-text text-transparent">VA A VIRAL?</span>
+        <span className="block title-line1">
+          No es viral<br/>lo que necesitás.
+        </span>
+        <span className="block title-line2">
+          Son <span className="shimmer-ventas">Ventas.</span>
+        </span>
       </h2>
       <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
         La IA analiza tu video y te dice exactamente<br/>
@@ -1106,7 +1135,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
           if (file) {
             const url = URL.createObjectURL(file);
             setVideoPreviewUrl(url);
-            setPendingVideoFile(file); // ← nuevo estado
+            setPendingVideoFile(file);
             setPendingVideoUrl(url);
             setAnalysisMode('video');
             setStep('platform_select');
