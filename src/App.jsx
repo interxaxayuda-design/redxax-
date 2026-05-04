@@ -1082,7 +1082,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
 
       <main className="relative z-10 max-w-6xl mx-auto p-4 py-12">
 
-       {/* ── UPLOAD ── */}
+      {/* ── UPLOAD ── */}
 {step === 'upload' && (
   <div className="text-center space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-700">
     <div className="space-y-4">
@@ -1091,10 +1091,6 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
           from { opacity: 0; transform: translateY(30px); filter: blur(14px); }
           to   { opacity: 1; transform: translateY(0px);  filter: blur(0px);  }
         }
-        @keyframes shimmer {
-          0%   { background-position: -200% center; }
-          100% { background-position:  200% center; }
-        }
         .title-line1 {
           animation: slideBlurIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
@@ -1102,13 +1098,20 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
           opacity: 0;
           animation: slideBlurIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 1s forwards;
         }
+        @keyframes ventasPulse {
+          0%   { opacity: 1; transform: translateY(0px);   background-position: -200% center; }
+          8%   { opacity: 0; transform: translateY(-18px); background-position: -200% center; }
+          9%   { opacity: 0; transform: translateY(18px);  background-position:  200% center; }
+          24%  { opacity: 1; transform: translateY(0px);   background-position: -200% center; }
+          100% { opacity: 1; transform: translateY(0px);   background-position: -200% center; }
+        }
         .shimmer-ventas {
           background: linear-gradient(90deg, #16a34a 0%, #4ade80 35%, #bbf7d0 50%, #4ade80 65%, #16a34a 100%);
           background-size: 250% auto;
           -webkit-background-clip: text;
           background-clip: text;
           -webkit-text-fill-color: transparent;
-          animation: shimmer 1.4s linear 1.2s 1 both;
+          animation: ventasPulse 5s ease-in-out 2.5s infinite;
         }
         .gold-viral {
           background: linear-gradient(90deg, #b8860b, #ffd700, #fffacd, #ffd700, #b8860b);
