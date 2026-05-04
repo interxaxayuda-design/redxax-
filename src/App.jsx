@@ -21,6 +21,7 @@ import {
   Zap
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import logo from './assets/logo.png';
 
 import { createClient } from '@supabase/supabase-js'; //phaseScores  //toggleStep
 
@@ -72,7 +73,7 @@ function safeParseJSON(rawText, context = '') {
     console.warn(`JSON inválido en [${context}], intentando reparar...`);
     try {
       const match = rawText.match(/\{[\s\S]*\}/);
-      if (match) return JSON.parse(match[0]);
+      if (match) return JSON.parse(match[0]);       //REDxax VISION
     } catch {}
     try {
       const cleaned = rawText
@@ -433,7 +434,7 @@ useEffect(() => {
 }, []);
 
   const chatEndRef = useRef(null);
-  const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });   //<header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
 
   useEffect(() => {
     if (showChat) scrollToBottom();    //detectCutRate
@@ -763,7 +764,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   body: {
     text: buildVideoAnalysisPrompt(platform, followerRange, selectedObjetivo),
     storagePath,
-    videoMimeType: videoFile.type || 'video/mp4',
+    videoMimeType: videoFile.type || 'video/mp4',   //<header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
     duration: Math.round(duration),
     maxOutputTokens: 8192  // ← cambiado
   }
@@ -1051,26 +1052,33 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
         )}
       </div>
 
-      <header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
-        <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
-          <div className="bg-gradient-to-br from-purple-600 to-indigo-700 p-2 rounded-xl shadow-lg transition-transform group-hover:scale-110">
-            <Zap className="w-5 h-5 text-white" fill="white" />
-          </div>
-          <h1 className="text-2xl font-black tracking-tighter italic uppercase">RED<span className="text-purple-500">xax</span> VISION</h1>
-        </div>
-        <div className="flex items-center gap-4">
-          <div onClick={() => setShowGemStore(true)}
-            className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.1)] transition-all hover:bg-purple-500/20 cursor-pointer">
-            <Gem className="w-4 h-4 text-purple-400" fill="currentColor" />
-            <span className="text-purple-300 font-black italic tracking-tighter tabular-nums text-lg leading-none">{gems}</span>
-          </div>
-          {step === 'results' && (
-            <button onClick={() => window.location.reload()} className="bg-white/5 border border-white/10 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 hover:bg-white/20 active:scale-95">
-              <RotateCcw className="w-3 h-3" /> Nuevo Test
-            </button>
-          )}
-        </div>
-      </header>
+<header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
+  <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
+    <img
+      src={logo}
+      alt="Viraz logo"
+      className="w-10 h-10 rounded-xl object-contain transition-transform group-hover:scale-110 shadow-lg"
+    />
+    <div className="flex flex-col leading-tight">
+      <h1 className="text-2xl font-black tracking-tighter italic uppercase text-white">
+        VIR<span className="text-red-500">AZ</span>
+      </h1>
+      <span className="text-[10px] italic text-slate-500 font-medium tracking-wide">Hecha por REDxax</span>
+    </div>
+  </div>
+  <div className="flex items-center gap-4">
+    <div onClick={() => setShowGemStore(true)}
+      className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.1)] transition-all hover:bg-purple-500/20 cursor-pointer">
+      <Gem className="w-4 h-4 text-purple-400" fill="currentColor" />
+      <span className="text-purple-300 font-black italic tracking-tighter tabular-nums text-lg leading-none">{gems}</span>
+    </div>
+    {step === 'results' && (
+      <button onClick={() => window.location.reload()} className="bg-white/5 border border-white/10 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 hover:bg-white/20 active:scale-95">
+        <RotateCcw className="w-3 h-3" /> Nuevo Test
+      </button>
+    )}
+  </div>
+</header>
 
       <main className="relative z-10 max-w-6xl mx-auto p-4 py-12">
 
