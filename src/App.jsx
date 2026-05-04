@@ -1074,7 +1074,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
 
       <main className="relative z-10 max-w-6xl mx-auto p-4 py-12">
 
-        {/* ── UPLOAD ── */}
+       {/* ── UPLOAD ── */}
 {step === 'upload' && (
   <div className="text-center space-y-12 animate-in fade-in slide-in-from-bottom-10 duration-700">
     <div className="space-y-4">
@@ -1102,13 +1102,19 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
           -webkit-text-fill-color: transparent;
           animation: shimmer 1.4s linear 1.2s 1 both;
         }
+        .gold-viral {
+          background: linear-gradient(90deg, #b8860b, #ffd700, #fffacd, #ffd700, #b8860b);
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
       `}</style>
       <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
         <Microscope className="w-3 h-3" /> Precisión 500% — Analista Neutro
       </div>
       <h2 className="text-7xl md:text-9xl font-black italic tracking-tighter leading-none uppercase">
         <span className="block title-line1">
-          No es viral<br/>lo que necesitás.
+          No es <span className="gold-viral">viral</span><br/>lo que necesitás.
         </span>
         <span className="block title-line2">
           Son <span className="shimmer-ventas">Ventas.</span>
