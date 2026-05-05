@@ -1255,18 +1255,34 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
 
       {/* ── PLATAFORMA ── */}
 <div className="mb-8">
-  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-4">Plataforma objetivo</p>
-  <div className="grid grid-cols-3 gap-3">
-    {['tiktok', 'reels', 'shorts'].map((p) => (
+  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-600 mb-4">
+    Plataforma objetivo
+  </p>
+  <div className="grid grid-cols-3 gap-2">
+    {[
+      { id: 'tiktok', name: 'TikTok',  sub: 'FYP',     icon: '🎵' },
+      { id: 'reels',  name: 'Reels',   sub: 'Explorar', icon: '📸' },
+      { id: 'shorts', name: 'Shorts',  sub: 'Feed',     icon: '▶️' },
+    ].map((p) => (
       <button
-        key={p}
-        onClick={() => setSelectedPlatform(p)}
-        className={`p-4 rounded-[2rem] border font-black italic text-sm uppercase tracking-tight transition-all
-          ${selectedPlatform === p
-            ? 'border-purple-500/60 bg-purple-500/20 text-white'
-            : 'border-white/10 bg-white/[0.02] text-slate-400 hover:border-white/20'}`}
+        key={p.id}
+        onClick={() => setSelectedPlatform(p.id)}
+        className={`relative flex flex-col items-center gap-1.5 p-4 rounded-[1.25rem] border transition-all duration-200 overflow-hidden
+          ${selectedPlatform === p.id
+            ? 'border-purple-500/50 bg-purple-500/[0.08]'
+            : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:bg-white/[0.04] hover:-translate-y-px'}`}
       >
-        {p === 'tiktok' ? '🎵 TikTok' : p === 'reels' ? '📸 Reels' : '▶️ Shorts'}
+        <div className={`absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full border transition-all duration-200
+          ${selectedPlatform === p.id ? 'bg-purple-500 border-purple-500' : 'border-purple-500/40'}`} />
+        <span className="text-lg leading-none">{p.icon}</span>
+        <span className={`text-[11px] font-black uppercase tracking-wide transition-colors duration-200
+          ${selectedPlatform === p.id ? 'text-slate-200' : 'text-slate-500'}`}>
+          {p.name}
+        </span>
+        <span className={`text-[10px] italic font-bold transition-colors duration-200
+          ${selectedPlatform === p.id ? 'text-purple-400' : 'text-slate-700'}`}>
+          {p.sub}
+        </span>
       </button>
     ))}
   </div>
@@ -1274,23 +1290,39 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
 
 {/* ── SEGUIDORES ── */}
 <div className="mb-8">
-  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 mb-4">Tamaño de cuenta</p>
-  <div className="grid grid-cols-2 gap-3">
+  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-600 mb-4">
+    Tamaño de cuenta
+  </p>
+  <div className="grid grid-cols-2 gap-2">
     {[
-      { id: 'nano', label: '0 – 1K' },
-      { id: 'micro', label: '1K – 10K' },
-      { id: 'mid', label: '10K – 100K' },
-      { id: 'macro', label: '100K+' },
+      { id: 'nano',  range: '0 – 1K',      label: 'Nano'  },
+      { id: 'micro', range: '1K – 10K',    label: 'Micro' },
+      { id: 'mid',   range: '10K – 100K',  label: 'Mid'   },
+      { id: 'macro', range: '100K+',       label: 'Macro' },
     ].map((r) => (
       <button
         key={r.id}
         onClick={() => setSelectedFollowerRange(r.id)}
-        className={`p-4 rounded-[2rem] border font-black italic text-sm uppercase tracking-tight transition-all
+        className={`relative flex items-center justify-between px-5 py-4 rounded-[1.25rem] border transition-all duration-200 overflow-hidden text-left
           ${selectedFollowerRange === r.id
-            ? 'border-purple-500/60 bg-purple-500/20 text-white'
-            : 'border-white/10 bg-white/[0.02] text-slate-400 hover:border-white/20'}`}
+            ? 'border-purple-500/50 bg-purple-500/[0.08]'
+            : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:-translate-y-px'}`}
       >
-        {r.label} seguidores
+        <div>
+          <p className={`text-[15px] font-black italic tracking-tight transition-colors duration-200
+            ${selectedFollowerRange === r.id ? 'text-white' : 'text-slate-500'}`}>
+            {r.range}
+          </p>
+          <p className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-200
+            ${selectedFollowerRange === r.id ? 'text-purple-700' : 'text-slate-800'}`}>
+            {r.label}
+          </p>
+        </div>
+        <div className={`w-1.5 h-1.5 rounded-full border transition-all duration-200 shrink-0
+          ${selectedFollowerRange === r.id ? 'bg-purple-500 border-purple-500' : 'border-purple-500/40'}`} />
+        {/* barra inferior animada */}
+        <div className={`absolute bottom-0 left-0 h-[2px] bg-purple-500 rounded-r-full transition-all duration-300
+          ${selectedFollowerRange === r.id ? 'w-full' : 'w-0'}`} />
       </button>
     ))}
   </div>
