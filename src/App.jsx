@@ -869,68 +869,80 @@ const runScriptAnalysis = async (platform, followerRange) => {
     setStep('upload');
   }
 };
-//duration: Math.round(duration)
-  const sendMessage = async () => {
+// ── WORD COUNTER helper ──
+const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
+const CHAT_WORD_LIMIT = 1000;
+
+const sendMessage = async () => {
   if (!userInput.trim() || isTyping) return;
 
   const newMessages = [...chatMessages, { role: 'user', text: userInput }];
-  setChatMessages(newMessages); //maxOutputTokens
+  setChatMessages(newMessages);
   setUserInput("");
-  setIsTyping(true);  //Proyección de Retención
+  setIsTyping(true);
 
   try {
-    // 1. Preparamos el contexto de música (lo que ya investigó la visión)
     const musicContext = aiResult?.musicSuggestions?.length
-      ? `\n\n⚠️ MÚSICA INVESTIGADA PARA ESTE VIDEO:
-${aiResult.musicSuggestions.map((m, i) =>
-        `${i + 1}. "${m.title}" de ${m.artist}
-         → Match: ${m.why}
-         → Plataformas: ${m.available}`  //<p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Edición y Ritmo</p>
-      ).join('\n')}`
+      ? `\n\n⚠️ MÚSICA INVESTIGADA:\n${aiResult.musicSuggestions.map((m, i) =>
+          `${i + 1}. "${m.title}" de ${m.artist} → Match: ${m.why} → Plataformas: ${m.available}`
+        ).join('\n')}`
       : '';
 
-    // 2. Definimos el System Prompt que te pasé (El que le da el "vibe" de consultor)
-    const systemPrompt = `Sos el Consultor Senior de REDxax VISION. 
+    const systemPrompt = `Sos el Consultor Senior de REDxax VISION.
 Tu objetivo es que el usuario entienda la relación entre lo que VE y lo que ESCUCHA.
 
 ANÁLISIS DE ATMÓSFERA:
-- Nicho: ${aiResult?.vision?.niche || 'General'}  
+- Nicho: ${aiResult?.vision?.niche || 'General'}
 - Estilo: ${aiResult?.styleProfile?.detectedRhythm || 'Normal'}
 - Tono: ${aiResult?.styleProfile?.detectedTone || 'Neutro'}
-
 ${musicContext}
 
-REGLAS CRÍTICAS DE RESPUESTA:
-1. Si preguntan por música: Usá SOLO las de arriba. Explicá el 'Match' técnico (ej. "encaja con tus cortes").
-2. Validación de Universo: Si el video es de ${aiResult?.vision?.niche}, asegurate que la música sea coherente (ej: Phonk para Gaming, Cinematic para Terror).
-3. Honestidad Brutal: Si la música de tendencia no pega con el tono "${aiResult?.styleProfile?.detectedTone}", decilo.
-4. Regla de Cards: Si preguntan por edición, usá los datos de "phaseScores.edicion" del análisis JSON.
+REGLAS:
+1. Música: usá SOLO las investigadas arriba si las hay.
+2. Honestidad brutal: si algo no pega, decilo.
+3. Respuestas cortas y directas, máximo 3 párrafos.
+4. Para edición usá los datos de phaseScores del JSON.
 
-ANÁLISIS COMPLETO DEL VIDEO (JSON): ${JSON.stringify(aiResult)}`;
+ANÁLISIS COMPLETO (JSON): ${JSON.stringify(aiResult)}`;
 
-    // POR esto — todo en un solo campo text:
-const historyText = newMessages
-  .slice(0, -1)
-  .map(m => `${m.role === 'user' ? 'USUARIO' : 'ASISTENTE'}: ${m.text}`)
-  .join('\n\n');
+    const historyText = newMessages
+      .slice(0, -1)
+      .map(m => `${m.role === 'user' ? 'USUARIO' : 'ASISTENTE'}: ${m.text}`)
+      .join('\n\n');
 
-const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: `${systemPrompt}\n\n═══ HISTORIAL ═══\n${historyText || '(inicio)'}\n\n═══ MENSAJE ACTUAL ═══\n${userInput}`
-  }
-});
+    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: `${systemPrompt}\n\n═══ HISTORIAL ═══\n${historyText || '(inicio)'}\n\n═══ MENSAJE ACTUAL ═══\n${userInput}`,
+        maxOutputTokens: 1024,
+        temperature: 0.7,
+      }
+    });
 
-    if (error) throw error;
+    if (error) throw new Error(`Supabase invoke error: ${JSON.stringify(error)}`);
+    if (!data) throw new Error('Respuesta vacía del proxy');
 
-    const botResponse = extractGeminiText(data);
+    // ── Extraer texto de la respuesta Gemini ──
+    const botResponse =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text
+      ?? data?.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join('')
+      ?? data?.text
+      ?? null;
+
+    if (!botResponse) {
+      console.error('Respuesta inesperada del proxy:', JSON.stringify(data));
+      throw new Error('No se pudo extraer texto de la respuesta');
+    }
+
     const updatedMessages = [...newMessages, { role: 'bot', text: botResponse }];
     setChatMessages(updatedMessages);
-    
     await saveChatToHistory(updatedMessages);
 
   } catch (err) {
     console.error("Error Chat:", err);
-    setChatMessages([...newMessages, { role: 'bot', text: "Che, se cortó la conexión. Intentá de nuevo." }]);
+    setChatMessages([...newMessages, {
+      role: 'bot',
+      text: `Error: ${err.message || 'Se cortó la conexión. Intentá de nuevo.'}`
+    }]);
   } finally {
     setIsTyping(false);
   }
@@ -1411,6 +1423,38 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
           <p className="text-slate-300 italic text-sm font-medium leading-relaxed overflow-y-auto custom-scrollbar flex-1">"{scriptText}"</p>
         </ShinyCard>
       )}
+
+
+<div className="p-6 bg-black/50 border-t border-white/10">
+  {/* contador */}
+  {countWords(userInput) > 800 && (
+    <p className={`text-[10px] font-black uppercase tracking-wider mb-2 text-right transition-colors ${
+      countWords(userInput) >= CHAT_WORD_LIMIT ? 'text-red-400' : 'text-yellow-500'
+    }`}>
+      {countWords(userInput)}/{CHAT_WORD_LIMIT} palabras
+    </p>
+  )}
+  <div className="bg-white/5 rounded-full p-2 flex items-center gap-2 px-6">
+    <input
+      type="text"
+      value={userInput}
+      onChange={(e) => {
+        const words = countWords(e.target.value);
+        if (words <= CHAT_WORD_LIMIT) setUserInput(e.target.value);
+      }}
+      onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+      placeholder={countWords(userInput) >= CHAT_WORD_LIMIT ? 'Límite alcanzado...' : 'Escribe tu consulta...'}
+      className="bg-transparent border-none outline-none flex-1 text-sm text-white py-2 italic"
+    />
+    <button
+      onClick={sendMessage}
+      disabled={isTyping || !userInput.trim()}
+      className="bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 p-3 rounded-full transition-all active:scale-90"
+    >
+      <Send className="w-4 h-4" />
+    </button>
+  </div>
+</div>
 
 {/* PHASE SCORES */}
 <div className="space-y-3">
