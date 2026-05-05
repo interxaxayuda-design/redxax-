@@ -550,7 +550,7 @@ useEffect(() => {
 const detectCutRate = async (url) => {
   return new Promise((resolve) => {
     const video = document.createElement('video');
-    video.src = url;
+    video.src = url; //viralScore
     video.muted = true;
     video.onloadedmetadata = async () => {
       const duration = video.duration;
@@ -1337,104 +1337,167 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
         </ShinyCard>
       )}
 
-      {/* PHASE SCORES */}
+{/* PHASE SCORES */}
+<div className="space-y-3">
+  {/* DUAL SCORE — Ventas + Viral */}
+  {aiResult.salesScore && aiResult.viralScore && (() => {
+    const primero = objetivo === 'viral'
+      ? aiResult.viralScore
+      : aiResult.salesScore;
+    const segundo = objetivo === 'viral'
+      ? aiResult.salesScore
+      : aiResult.viralScore;
+    const colorPrimero = primero.score >= 70 ? 'text-green-400' : primero.score >= 50 ? 'text-yellow-400' : 'text-red-400';
+    const colorSegundo = segundo.score >= 70 ? 'text-green-400' : segundo.score >= 50 ? 'text-yellow-400' : 'text-red-400';
+    const borderPrimero = primero.score >= 70 ? 'border-green-500/40 bg-green-500/5' : primero.score >= 50 ? 'border-yellow-500/40 bg-yellow-500/5' : 'border-red-500/40 bg-red-500/5';
+    const borderSegundo = 'border-white/10 bg-white/[0.02]';
+
+    return (
       <div className="space-y-3">
-       {/* DUAL SCORE — Ventas + Viral */}
-{aiResult.salesScore && aiResult.viralScore && (() => {
-  const primero = objetivo === 'viral'
-    ? aiResult.viralScore
-    : aiResult.salesScore;
-  const segundo = objetivo === 'viral'
-    ? aiResult.salesScore
-    : aiResult.viralScore;
-  const colorPrimero = primero.score >= 70 ? 'text-green-400' : primero.score >= 50 ? 'text-yellow-400' : 'text-red-400';
-  const colorSegundo = segundo.score >= 70 ? 'text-green-400' : segundo.score >= 50 ? 'text-yellow-400' : 'text-red-400';
-  const borderPrimero = primero.score >= 70 ? 'border-green-500/40 bg-green-500/5' : primero.score >= 50 ? 'border-yellow-500/40 bg-yellow-500/5' : 'border-red-500/40 bg-red-500/5';
-  const borderSegundo = 'border-white/10 bg-white/[0.02]';
 
-  return (
-    <div className="space-y-3">
-      {/* Tarjeta primaria — grande */}
-      <ShinyCard tilt={tilt} className={`rounded-[2.5rem] border p-6 ${borderPrimero}`}>
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500">
-                {objetivo === 'ambas' ? '⚡ Objetivo Principal' : '★ Tu Objetivo'}
-              </span>
+        {/* Tarjeta primaria — grande */}
+        <ShinyCard tilt={tilt} className={`rounded-[2.5rem] border p-6 ${borderPrimero}`}>
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500">
+                  {objetivo === 'ambas' ? '⚡ Objetivo Principal' : '★ Tu Objetivo'}
+                </span>
+              </div>
+              <p className="text-base font-black italic uppercase tracking-tight text-white">
+                {primero.titulo}
+              </p>
+              <p className="text-xs font-bold italic text-slate-400 mt-1 max-w-[180px] leading-relaxed">
+                {primero.verdict}
+              </p>
             </div>
-            <p className="text-base font-black italic uppercase tracking-tight text-white">
-              {primero.titulo}
-            </p>
-            <p className="text-xs font-bold italic text-slate-400 mt-1 max-w-[180px] leading-relaxed">
-              {primero.verdict}
-            </p>
+            <span className={`text-6xl font-black italic tabular-nums ${colorPrimero}`}>
+              {primero.score}%
+            </span>
           </div>
-          <span className={`text-6xl font-black italic tabular-nums ${colorPrimero}`}>
-            {primero.score}%
-          </span>
-        </div>
-        <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
-          <div className={`h-full rounded-full transition-all duration-700 ${
-            primero.score >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-400' :
-            primero.score >= 50 ? 'bg-gradient-to-r from-yellow-500 to-amber-400' :
-            'bg-gradient-to-r from-red-600 to-red-400'
-          }`} style={{ width: `${primero.score}%` }} />
-        </div>
-        <p className="text-[11px] font-bold italic text-slate-400 leading-relaxed">
-          {primero.razon_principal}
-        </p>
-        {primero.accion_clave && (
-          <div className="mt-3 flex items-start gap-2 bg-white/5 border border-white/10 rounded-[1rem] p-3">
-            <span className="text-xs">→</span>
-            <p className="text-[11px] font-black italic text-white">{primero.accion_clave}</p>
+          <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
+            <div className={`h-full rounded-full transition-all duration-700 ${
+              primero.score >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-400' :
+              primero.score >= 50 ? 'bg-gradient-to-r from-yellow-500 to-amber-400' :
+              'bg-gradient-to-r from-red-600 to-red-400'
+            }`} style={{ width: `${primero.score}%` }} />
           </div>
-        )}
-      </ShinyCard>
-
-      {/* Tarjeta secundaria — más pequeña */}
-      <ShinyCard tilt={tilt} className={`rounded-[2rem] border p-5 ${borderSegundo}`}>
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1">
-              También medimos
-            </p>
-            <p className="text-sm font-black italic uppercase tracking-tight text-slate-300">
-              {segundo.titulo}
-            </p>
-          </div>
-          <span className={`text-3xl font-black italic tabular-nums ${colorSegundo}`}>
-            {segundo.score}%
-          </span>
-        </div>
-        <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
-          <div className={`h-full rounded-full transition-all duration-700 ${
-            segundo.score >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-400' :
-            segundo.score >= 50 ? 'bg-gradient-to-r from-yellow-500 to-amber-400' :
-            'bg-gradient-to-r from-red-600 to-red-400'
-          }`} style={{ width: `${segundo.score}%` }} />
-        </div>
-        <p className="text-[10px] font-bold italic text-slate-500">{segundo.verdict}</p>
-        {segundo.accion_clave && (
-          <p className="text-[10px] font-bold italic text-slate-400 mt-2">
-            → {segundo.accion_clave}
+          <p className="text-[11px] font-bold italic text-slate-400 leading-relaxed">
+            {primero.razon_principal}
           </p>
-        )}
-      </ShinyCard>
+          {primero.accion_clave && (
+            <div className="mt-3 flex items-start gap-2 bg-white/5 border border-white/10 rounded-[1rem] p-3">
+              <span className="text-xs">→</span>
+              <p className="text-[11px] font-black italic text-white">{primero.accion_clave}</p>
+            </div>
+          )}
+        </ShinyCard>
 
-      {/* Score combinado — pequeño, abajo */}
-      <ShinyCard tilt={tilt} className="flex items-center justify-between bg-black/40 border border-white/10 rounded-[1.5rem] px-5 py-3">
-        <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500">
-          Score Combinado · {aiResult.performanceScenario}
-        </p>
-        <span className={`text-2xl font-black italic tabular-nums ${
-          aiResult.potentialScore >= 70 ? 'text-green-400' :
-          aiResult.potentialScore >= 50 ? 'text-yellow-400' : 'text-red-400'
-        }`}>{aiResult.potentialScore}%</span>
-      </ShinyCard>
-    </div>
-  );
-})()}
+        {/* Tarjeta secundaria — más pequeña */}
+        <ShinyCard tilt={tilt} className={`rounded-[2rem] border p-5 ${borderSegundo}`}>
+          <div className="flex items-center justify-between mb-2">
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1">
+                También medimos
+              </p>
+              <p className="text-sm font-black italic uppercase tracking-tight text-slate-300">
+                {segundo.titulo}
+              </p>
+            </div>
+            <span className={`text-3xl font-black italic tabular-nums ${colorSegundo}`}>
+              {segundo.score}%
+            </span>
+          </div>
+          <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
+            <div className={`h-full rounded-full transition-all duration-700 ${
+              segundo.score >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-400' :
+              segundo.score >= 50 ? 'bg-gradient-to-r from-yellow-500 to-amber-400' :
+              'bg-gradient-to-r from-red-600 to-red-400'
+            }`} style={{ width: `${segundo.score}%` }} />
+          </div>
+          <p className="text-[10px] font-bold italic text-slate-500">{segundo.verdict}</p>
+          {segundo.accion_clave && (
+            <p className="text-[10px] font-bold italic text-slate-400 mt-2">
+              → {segundo.accion_clave}
+            </p>
+          )}
+        </ShinyCard>
+
+        {/* Score combinado — pequeño, abajo */}
+        <ShinyCard tilt={tilt} className="flex items-center justify-between bg-black/40 border border-white/10 rounded-[1.5rem] px-5 py-3">
+          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500">
+            Score Combinado · {aiResult.performanceScenario}
+          </p>
+          <span className={`text-2xl font-black italic tabular-nums ${
+            aiResult.potentialScore >= 70 ? 'text-green-400' :
+            aiResult.potentialScore >= 50 ? 'text-yellow-400' : 'text-red-400'
+          }`}>{aiResult.potentialScore}%</span>
+        </ShinyCard>
+
+        {/* ── FACTORES EXTERNOS ── */}
+        <ShinyCard tilt={tilt} className="bg-yellow-500/[0.03] border border-yellow-500/20 rounded-[2.5rem] p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-yellow-400 text-base">⚠️</span>
+            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-yellow-400">
+              Este score evalúa el video, no tu cuenta
+            </p>
+          </div>
+          <p className="text-xs font-bold italic text-slate-400 mb-5 leading-relaxed">
+            El contenido es solo una parte de la viralidad (Próximas actuzalizaciones, se integra Investigación de tu contenido para una mayor precisión.). Estos 7 factores externos
+            pueden reducir el potencial real hasta un <span className="text-yellow-300 font-black">40%</span> si no los tenés en cuenta:
+          </p>
+          <div className="space-y-3">
+            {[
+              {
+                icon: '',
+                titulo: 'Audio sin tendencia',
+                desc: '¿Usaste un sonido que está de moda ahora? Si no, el algoritmo te muestra a menos gente aunque el video sea muy bueno.'
+              },
+              {
+                icon: '',
+                titulo: 'Engagement en la primera hora',
+                desc: 'Likes, comentarios y guardados en los primeros 60 minutos le dicen al algoritmo que el video vale la pena. Sin eso, se frena solo.'
+              },
+              {
+                icon: '',
+                titulo: 'Falta de consistencia',
+                desc: 'Las cuentas que postean regularmente tienen más alcance porque el algoritmo ya las conoce y confía en ellas.'
+              },
+              {
+                icon: '',
+                titulo: 'Fatiga de formato',
+                desc: 'Si todos tus videos se ven igual, tu audiencia empieza a ignorarlos. El algoritmo lo nota y deja de mostrarte. Cambiar el estilo de vez en cuando resetea la atención.'
+              },
+              {
+                icon: '',
+                titulo: 'Shadowban silencioso',
+                desc: 'Tu cuenta puede estar penalizada sin que te avisaron. Señales: tus videos dejaron de llegar a gente nueva de golpe. Causas comunes: hashtags prohibidos, música con copyright, o postear demasiado seguido.'
+              },
+              {
+                icon: '',
+                titulo: 'Hashtags mal usados',
+                desc: 'Los hashtags incorrectos o prohibidos no solo no ayudan, te penalizan. Usar siempre los mismos activa filtros de spam. Menos hashtags, más relevantes, es mejor.'
+              },
+              {
+                icon: '',
+                titulo: 'Audiencia equivocada',
+                desc: 'Si tu cuenta mezcla temas muy distintos, el algoritmo no sabe a quién mostrarte y te distribuye a gente que no le interesa tu contenido. Eso baja la retención y frena todo.'
+              },
+            ].map((factor, i) => (
+              <div key={i} className="flex items-start gap-3 bg-black/30 border border-white/5 rounded-[1.5rem] p-4">
+                <span className="text-lg mt-0.5 shrink-0">{factor.icon}</span>
+                <div>
+                  <p className="text-xs font-black italic text-white mb-0.5">{factor.titulo}</p>
+                  <p className="text-[11px] font-bold italic text-slate-500 leading-relaxed">{factor.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </ShinyCard>
+
+      </div>
+    );
+  })()}
         {/* SCROLL STOP SCORE */}
 {aiResult.scrollStopScore && (
   <ShinyCard tilt={tilt} className={`rounded-[2rem] border p-5 ${
