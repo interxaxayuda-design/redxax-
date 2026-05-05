@@ -1053,19 +1053,64 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
       </div>
 
 <header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
+  <style>{`
+    @keyframes logoPulse {
+      0%   { transform: scale(1);             filter: drop-shadow(0 0 0px transparent); }
+      5%   { transform: scale(1.06) rotate(-1deg); filter: drop-shadow(0 0 8px #ef4444aa); }
+      11%  { transform: scale(1.11) rotate(0deg);  filter: drop-shadow(0 0 18px #ef4444dd); }
+      17%  { transform: scale(0.96);          filter: drop-shadow(0 0 4px #ef444433); }
+      23%  { transform: scale(1);             filter: drop-shadow(0 0 0px transparent); }
+      100% { transform: scale(1);             filter: drop-shadow(0 0 0px transparent); }
+    }
+    @keyframes virazShimmer {
+      0%   { background-position: 200% center;  letter-spacing: -0.05em; }
+      14%  { background-position: -200% center; letter-spacing: -0.04em; }
+      20%  { background-position: -200% center; letter-spacing: -0.05em; }
+      100% { background-position: -200% center; letter-spacing: -0.05em; }
+    }
+    @keyframes subtagPulse {
+      0%   { opacity: 0.4; transform: translateX(0px); }
+      12%  { opacity: 0.9; transform: translateX(3px); }
+      20%  { opacity: 0.4; transform: translateX(0px); }
+      100% { opacity: 0.4; transform: translateX(0px); }
+    }
+    .logo-pulse {
+      animation: logoPulse 5s cubic-bezier(0.22, 1, 0.36, 1) 2s infinite;
+    }
+    .viraz-text {
+      background: linear-gradient(90deg,
+        #ffffff 0%, #ffffff 25%,
+        #ff6b6b 38%, #ffaaaa 50%, #ff6b6b 62%,
+        #ffffff 75%, #ffffff 100%
+      );
+      background-size: 250% auto;
+      background-position: 200% center;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: virazShimmer 5s cubic-bezier(0.22, 1, 0.36, 1) 2.1s infinite;
+    }
+    .subtag-pulse {
+      animation: subtagPulse 5s cubic-bezier(0.22, 1, 0.36, 1) 2.2s infinite;
+    }
+  `}</style>
+
   <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
     <img
       src={logo}
       alt="Viraz logo"
-      className="w-10 h-10 rounded-xl object-contain transition-transform group-hover:scale-110 shadow-lg"
+      className="logo-pulse w-10 h-10 rounded-xl object-contain shadow-lg"
     />
     <div className="flex flex-col leading-tight">
-      <h1 className="text-2xl font-black tracking-tighter italic uppercase text-white">
-        VIR<span className="text-red-500">AX</span>
+      <h1 className="viraz-text text-2xl font-black tracking-tighter italic uppercase">
+        VIRAZ
       </h1>
-      <span className="text-[10px] italic text-slate-500 font-medium tracking-wide">Hecha por InterXAX</span>
+      <span className="subtag-pulse text-[10px] italic text-slate-500 font-medium tracking-wide">
+        Hecha por InterXAX
+      </span>
     </div>
   </div>
+
   <div className="flex items-center gap-4">
     <div onClick={() => setShowGemStore(true)}
       className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.1)] transition-all hover:bg-purple-500/20 cursor-pointer">
@@ -1604,7 +1649,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
         ))}
       </div>
     )}
-  </ShinyCard>  //potentialScore
+  </ShinyCard>  //potentialScore  //AX
 )}
 
       {/* PLATFORM SCORES */}
