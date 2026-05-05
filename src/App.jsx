@@ -1060,7 +1060,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
     .logo-pulse {
       animation: logoPulse 5s cubic-bezier(0.22, 1, 0.36, 1) 2s infinite;
     }
-    .viraz-text {
+    .virax-text {
       background: linear-gradient(90deg,
         #ffffff 0%, #ffffff 25%,
         #ff6b6b 38%, #ffaaaa 50%, #ff6b6b 62%,
@@ -1071,7 +1071,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
       -webkit-background-clip: text;
       background-clip: text;
       -webkit-text-fill-color: transparent;
-      animation: virazShimmer 5s cubic-bezier(0.22, 1, 0.36, 1) 2.1s infinite;
+      animation: viraxShimmer 5s cubic-bezier(0.22, 1, 0.36, 1) 2.1s infinite;
     }
     .subtag-pulse {
       animation: subtagPulse 5s cubic-bezier(0.22, 1, 0.36, 1) 2.2s infinite;
