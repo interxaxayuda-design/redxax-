@@ -1,104 +1,171 @@
-// functions/gemini-proxy/index.ts
 import "@supabase/functions-js/edge-runtime.d.ts";
 
-console.log("Starting gemini-proxy function (debug mode)");
+console.log("Starting gemini-proxy (REDxax Vision)");
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 
 async function callLLMWithLogging(url: string, options: RequestInit) {
-  console.log('--- DEBUG START ---');
-  console.log('ENV GEN_API_KEY present:', !!Deno.env.get('GEN_API_KEY'));
-  console.log('ENV MODEL_ID:', Deno.env.get('MODEL_ID') || 'no MODEL_ID env var');
+  console.log("--- DEBUG START ---");
   try {
-    console.log('Calling LLM URL:', url);
     const resp = await fetch(url, options);
-    const status = resp.status;
     const text = await resp.text();
-    console.log('LLM status:', status);
-    console.log('LLM raw response (truncated 2000 chars):', text.slice(0, 2000));
+    console.log("LLM status:", resp.status, "| preview:", text.slice(0, 500));
+
     try {
       const json = JSON.parse(text);
-      console.log('LLM parsed JSON keys:', Object.keys(json || {}));
-      return { ok: true, json };
-    } catch (parseErr) {
-      console.error('JSON.parse failed:', parseErr);
+      const finishReason = json?.candidates?.[0]?.finishReason ?? null;
+      if (finishReason === "MAX_TOKENS") {
+        console.warn("⚠️ Respuesta cortada por MAX_TOKENS.");
+      }
+      return { ok: resp.ok, status: resp.status, json, raw: text };
+    } catch {
+      console.error("JSON.parse failed, intentando rescate por regex...");
       const match = text.match(/\{[\s\S]*\}/);
       if (match) {
         try {
           const json2 = JSON.parse(match[0]);
-          console.log('Parsed embedded JSON keys:', Object.keys(json2 || {}));
-          return { ok: true, json: json2 };
-        } catch (e) {
-          console.error('Embedded JSON parse failed:', e);
+          return { ok: resp.ok, status: resp.status, json: json2, raw: text };
+        } catch {
+          console.error("Rescate por regex también falló.");
         }
       }
-      return { ok: false, error: 'invalid_llm_response', raw: text };
+      return { ok: resp.ok, status: resp.status, error: "invalid_llm_response", raw: text };
     }
   } catch (err) {
-    console.error('Network or fetch error calling LLM:', err);
-    return { ok: false, error: 'fetch_error', detail: String(err) };
+    console.error("Error de red llamando a LLM:", err);
+    return { ok: false, error: "fetch_error", detail: String(err) };
   } finally {
-    console.log('--- DEBUG END ---');
+    console.log("--- DEBUG END ---");
   }
 }
 
 Deno.serve(async (req: Request) => {
+  // Preflight CORS
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   try {
     const url = new URL(req.url);
+    const apiKey = Deno.env.get("GEN_API_KEY") || "";
 
-    // GET /list-models
-    if (url.pathname.endsWith('/list-models')) {
-      const apiKey = Deno.env.get('GEN_API_KEY') || '';
-      if (!apiKey) {
-        console.error('GEN_API_KEY missing in environment');
-        return new Response(JSON.stringify({ error: 'missing_gen_api_key' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-      }
-
-      const llmUrl = `https://generativelanguage.googleapis.com/v1/models?key=${encodeURIComponent(apiKey)}`;
-      const result = await callLLMWithLogging(llmUrl, { method: 'GET' });
-
-      if (!result.ok) {
-        return new Response(JSON.stringify({ error: result.error, raw: result.raw || result.detail }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-      }
-      return new Response(JSON.stringify(result.json), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    if (!apiKey) {
+      return new Response(JSON.stringify({ error: "missing_gen_api_key" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // POST /generate
-    if (url.pathname.endsWith('/generate') && req.method === 'POST') {
-      const apiKey = Deno.env.get('GEN_API_KEY') || '';
-      const modelId = Deno.env.get('MODEL_ID') || 'models/gemini-1.5';
-      if (!apiKey) {
-        console.error('GEN_API_KEY missing in environment');
-        return new Response(JSON.stringify({ error: 'missing_gen_api_key' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-      }
+    // ── GET /list-models ──────────────────────────────────────────────────────
+    if (url.pathname.endsWith("/list-models")) {
+      const listModelsUrl = `https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`;
+      const result = await callLLMWithLogging(listModelsUrl, { method: "GET" });
+      return new Response(JSON.stringify(result.ok ? result.json : result), {
+        status: result.ok ? 200 : 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ── POST (análisis principal) ─────────────────────────────────────────────
+    if (req.method === "POST") {
+      // Modelo: usá la variable de entorno MODEL_ID en Supabase,
+      // o el fallback gemini-2.0-flash-001 que soporta grounding + v1beta
+      const modelId = Deno.env.get("MODEL_ID") || "models/gemini-2.0-flash-001";
 
       const incoming = await req.json().catch(() => null);
       if (!incoming) {
-        return new Response(JSON.stringify({ error: 'invalid_request_body' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        return new Response(JSON.stringify({ error: "invalid_request_body" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
 
-      const genUrl = `https://generativelanguage.googleapis.com/v1/${modelId}:generateText?key=${encodeURIComponent(apiKey)}`;
+      // Armar parts: texto + frames opcionales
+      const parts: any[] = [
+        { text: incoming.text ?? "Analiza este contenido para REDxax Vision" },
+      ];
+
+      if (incoming.frames && Array.isArray(incoming.frames)) {
+        incoming.frames.forEach((base64Data: string) => {
+          if (typeof base64Data === "string" && base64Data.length > 0) {
+            parts.push({ inlineData: { mimeType: "image/jpeg", data: base64Data } });
+          }
+        });
+      }
+
+      // maxOutputTokens: respeta lo que mande el frontend, default 8192
+      const maxOutputTokens =
+        typeof incoming.maxOutputTokens === "number" && incoming.maxOutputTokens > 0
+          ? incoming.maxOutputTokens
+          : 8192;
+
+      const temperature =
+        typeof incoming.temperature === "number" ? incoming.temperature : 0.2;
+
+      console.log(
+        `📤 Gemini | modelo: ${modelId} | maxTokens: ${maxOutputTokens} | ` +
+        `temp: ${temperature} | frames: ${incoming.frames?.length ?? 0}`
+      );
+
+      // v1beta requerido para Google Search Grounding
+      const genUrl = `https://generativelanguage.googleapis.com/v1beta/${modelId}:generateContent?key=${apiKey}`;
+
       const payload = {
-        prompt: incoming.prompt ?? { text: String(incoming.text ?? '') },
-        maxOutputTokens: incoming.maxOutputTokens ?? 256
+        contents: [{ parts }],
+        generationConfig: { maxOutputTokens, temperature },
+        tools: [{ googleSearch: {} }], // Search Grounding activado
       };
 
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const result = await callLLMWithLogging(genUrl, { method: 'POST', headers, body: JSON.stringify(payload) });
+      const result = await callLLMWithLogging(genUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       if (!result.ok) {
-        return new Response(JSON.stringify({ error: result.error, raw: result.raw || result.detail }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+        const errBody = {
+          error: "llm_error",
+          llm_status: result.status ?? null,
+          message: result.error ?? null,
+          raw: result.raw ?? null,
+        };
+        console.error("LLM error:", errBody);
+        return new Response(JSON.stringify(errBody), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-      return new Response(JSON.stringify(result.json), { status: 200, headers: { 'Content-Type': 'application/json' } });
+
+      const finishReason = result.json?.candidates?.[0]?.finishReason ?? "UNKNOWN";
+      if (finishReason === "MAX_TOKENS") {
+        console.warn("⚠️ Respuesta cortada — subí maxOutputTokens o simplificá el prompt.");
+      } else {
+        console.log(`✅ finishReason: ${finishReason}`);
+      }
+
+      return new Response(JSON.stringify(result.json), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    // Ruta por defecto (sanity)
-    if (req.method === 'POST') {
-      const body = await req.json().catch(() => ({}));
-      return new Response(JSON.stringify({ message: 'OK', received: body }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-    }
+    // ── Default ───────────────────────────────────────────────────────────────
+    return new Response(JSON.stringify({ message: "REDxax Vision API Online ✅" }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
-    return new Response(JSON.stringify({ message: 'Use /list-models, /generate or POST' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
-    console.error('Unhandled error in handler:', err);
-    return new Response(JSON.stringify({ error: 'internal', detail: String(err) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    console.error("Error global:", err);
+    return new Response(JSON.stringify({ error: "internal", detail: String(err) }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
+

@@ -1,5 +1,4 @@
 import {
-  Activity,
   BarChart3,
   Bot,
   BrainCircuit,
@@ -1035,22 +1034,6 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
         </>
       )} 
 
-      {/* CONTADOR */}
-      <div className="fixed top-6 right-6 z-50 flex flex-col items-end gap-2">
-        {!isLoadingCount && (
-          <>
-            <div className="flex items-center gap-2 bg-black/60 border border-white/10 px-4 py-2 rounded-full backdrop-blur-md">
-              <Activity className="w-4 h-4 text-green-400" />
-              <span className="text-sm font-black italic tracking-tight">{userCount}/500 usuarios</span>
-            </div>
-            <div className="w-64 h-2 bg-white/5 border border-white/10 rounded-full overflow-hidden shadow-lg">
-              <div className={`h-full rounded-full transition-all duration-500 ${userCount >= 500 ? 'bg-gradient-to-r from-green-400 to-green-600' : 'bg-gradient-to-r from-green-500 to-emerald-500'}`}
-                style={{ width: `${progressPercent}%` }} />
-            </div>
-            {userCount >= 500 && <div className="text-2xl animate-bounce">🎉</div>}
-          </>
-        )}
-      </div>
 
 <header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
   <style>{`
@@ -1103,7 +1086,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
     />
     <div className="flex flex-col leading-tight">
       <h1 className="viraz-text text-2xl font-black tracking-tighter italic uppercase">
-        VIRAZ
+        VIRAX
       </h1>
       <span className="subtag-pulse text-[10px] italic text-slate-500 font-medium tracking-wide">
         Hecha por InterXAX

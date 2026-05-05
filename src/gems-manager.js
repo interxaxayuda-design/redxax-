@@ -25,7 +25,7 @@ export const gemsManager = {
     } catch {
       return DEFAULT_GEMS;
     }
-  },
+  },   //TempVideo
 
   setGems(amount) {
     const value = Math.max(0, amount);
