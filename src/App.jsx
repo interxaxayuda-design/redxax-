@@ -1045,7 +1045,7 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
       23%  { transform: scale(1);             filter: drop-shadow(0 0 0px transparent); }
       100% { transform: scale(1);             filter: drop-shadow(0 0 0px transparent); }
     }
-    @keyframes virazShimmer {
+    @keyframes viraxShimmer {
       0%   { background-position: 200% center;  letter-spacing: -0.05em; }
       14%  { background-position: -200% center; letter-spacing: -0.04em; }
       20%  { background-position: -200% center; letter-spacing: -0.05em; }
@@ -1081,11 +1081,11 @@ const { data, error } = await supabase.functions.invoke('gemini-proxy', {
   <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
     <img
       src={logo}
-      alt="Viraz logo"
+      alt="Virax logo"
       className="logo-pulse w-10 h-10 rounded-xl object-contain shadow-lg"
     />
     <div className="flex flex-col leading-tight">
-      <h1 className="viraz-text text-2xl font-black tracking-tighter italic uppercase">
+      <h1 className="virax-text text-2xl font-black tracking-tighter italic uppercase">
         VIRAX
       </h1>
       <span className="subtag-pulse text-[10px] italic text-slate-500 font-medium tracking-wide">
