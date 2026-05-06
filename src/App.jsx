@@ -873,6 +873,16 @@ const runScriptAnalysis = async (platform, followerRange) => {
 const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
 const CHAT_WORD_LIMIT = 1000;
 
+
+const saveChatToHistory = async (messages) => {
+  const userId = localStorage.getItem('redxax_user_id');
+  if (!userId || !currentHistoryId) return;
+  await supabase
+    .from('analysis_history')
+    .update({ chat_messages: messages })
+    .eq('id', currentHistoryId);
+};
+
 const sendMessage = async () => {
   if (!userInput.trim() || isTyping) return;
 
