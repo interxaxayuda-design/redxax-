@@ -888,8 +888,22 @@ const sendMessage = async () => {
         ).join('\n')}`
       : '';
 
-    const systemPrompt = `Sos el Consultor Senior de REDxax VISION.
-Tu objetivo es que el usuario entienda la relación entre lo que VE y lo que ESCUCHA.
+    // ── Contexto reducido — solo lo que el chat necesita ──
+    const aiContext = {
+      vision: aiResult?.vision,
+      salesScore: aiResult?.salesScore,
+      viralScore: aiResult?.viralScore,
+      hookDNA: aiResult?.hookDNA,
+      honestVerdict: aiResult?.honestVerdict,
+      roadmap: aiResult?.roadmap,
+      dropOffPoints: aiResult?.dropOffPoints,
+      styleProfile: aiResult?.styleProfile,
+      musicSuggestions: aiResult?.musicSuggestions,
+      phaseScores: aiResult?.phaseScores,
+    };
+
+    const systemPrompt = `Sos el Consultor Senior de VIRAX.
+Tu objetivo es ayudar al usuario a entender su análisis y mejorar su contenido.
 
 ANÁLISIS DE ATMÓSFERA:
 - Nicho: ${aiResult?.vision?.niche || 'General'}
@@ -903,7 +917,7 @@ REGLAS:
 3. Respuestas cortas y directas, máximo 3 párrafos.
 4. Para edición usá los datos de phaseScores del JSON.
 
-ANÁLISIS COMPLETO (JSON): ${JSON.stringify(aiResult)}`;
+ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
 
     const historyText = newMessages
       .slice(0, -1)
@@ -918,7 +932,14 @@ ANÁLISIS COMPLETO (JSON): ${JSON.stringify(aiResult)}`;
       }
     });
 
-    if (error) throw new Error(`Supabase invoke error: ${JSON.stringify(error)}`);
+    // ── DEBUG TEMPORAL ──
+    if (error) {
+      const errorBody = await error.context?.response?.text?.();
+      console.error('Error completo:', error);
+      console.error('Body del error:', errorBody);
+      throw new Error(`Supabase error: ${errorBody || JSON.stringify(error)}`);
+    }
+
     if (!data) throw new Error('Respuesta vacía del proxy');
 
     // ── Extraer texto de la respuesta Gemini ──
