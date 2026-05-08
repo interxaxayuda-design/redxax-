@@ -125,12 +125,82 @@ CRITERIOS DE VENTA — PRODUCTO DIGITAL / CURSO:
 Si faltan 3 o más → el video NO convierte leads.`,
 
     impulsivo: `
-CRITERIOS DE VENTA — COMPRA IMPULSIVA:
+CRITERIOS DE VENTA — COMPRA IMPULSIVA / ECOMMERCE:
 - ¿Genera FOMO (miedo a perdérselo) en los primeros 5s?
 - ¿El precio parece una ganga obvia?
 - ¿La compra se puede hacer en menos de 2 clics?
 - ¿Hay escasez visible (últimas unidades, tiempo limitado)?
-Si faltan 2 o más → el video pierde la venta por fricción.`
+Si faltan 2 o más → el video pierde la venta por fricción.`,
+
+    servicios_creativos: `
+CRITERIOS DE VENTA — SERVICIOS CREATIVOS (edición, diseño, fotografía, video):
+- ¿Se ve trabajo real y concreto en los primeros 3s (no texto, no logo)?
+- ¿Hay un antes/después visible o implícito?
+- ¿Se transmite velocidad, calidad o estilo diferencial?
+- ¿Hay prueba social real (cliente reconocible, cantidad de proyectos)?
+- ¿El CTA dice exactamente cómo contratar o consultar?
+- ¿El video genera la sensación de "quiero que hagan eso para mi negocio"?
+Si faltan 3 o más → el video NO genera consultas de clientes.`,
+
+    agencia_marketing: `
+CRITERIOS DE VENTA — AGENCIA / SERVICIO B2B (marketing, publicidad, consultoría):
+- ¿Muestra un resultado de negocio concreto (ventas, leads, ROI) en los primeros 5s?
+- ¿Habla del problema del cliente, no de la agencia?
+- ¿Hay casos reales con números específicos?
+- ¿Se diferencia claramente de otras agencias?
+- ¿El proceso de contratación parece simple?
+- ¿El tono es de igual a igual (no vendedor desesperado)?
+Si faltan 3 o más → el video NO genera reuniones ni consultas.`,
+
+    gastronomia: `
+CRITERIOS DE VENTA — GASTRONOMÍA (restaurantes, delivery, productos de comida):
+- ¿Se ve el plato o producto en su mejor versión en los primeros 2s?
+- ¿Hay movimiento apetitoso (corte, vapor, textura)?
+- ¿Se transmite el ambiente o la experiencia, no solo la comida?
+- ¿Hay precio o promoción visible si es delivery/takeout?
+- ¿El CTA dice dónde ir, cómo pedir o cómo llegar?
+- ¿Genera hambre o antojo inmediato?
+Si faltan 3 o más → el video NO genera visitas ni pedidos.`,
+
+    fitness_salud: `
+CRITERIOS DE VENTA — FITNESS / SALUD (entrenadores, gimnasios, suplementos, bienestar):
+- ¿Hay una transformación visible o un resultado físico concreto en los primeros 3s?
+- ¿Se muestra el dolor/frustración del antes antes del resultado?
+- ¿El entrenador o figura tiene credibilidad visible (cuerpo, logros, clientes)?
+- ¿El método o producto está explicado en términos simples?
+- ¿Hay urgencia o llamado a empezar ahora?
+- ¿Evita términos técnicos que alejan al cliente promedio?
+Si faltan 3 o más → el video NO convierte curiosos en clientes.`,
+
+    coaching_mentoria: `
+CRITERIOS DE VENTA — COACHING / MENTORÍA 1:1:
+- ¿El problema específico del cliente ideal queda claro en los primeros 3s?
+- ¿El coach muestra autoridad con resultados propios o de clientes reales?
+- ¿Hay una promesa de transformación concreta (no vaga)?
+- ¿El precio o inversión está contextualizado (por qué vale lo que vale)?
+- ¿El CTA lleva a una llamada, no a "más información"?
+- ¿El tono genera confianza sin sonar arrogante?
+Si faltan 3 o más → el video NO agenda llamadas de ventas.`,
+
+    moda_belleza: `
+CRITERIOS DE VENTA — MODA / BELLEZA (ropa, accesorios, cosméticos, skincare):
+- ¿El producto se ve en uso real en los primeros 2s?
+- ¿Hay aspiracionalidad (quiero verme así / tener eso)?
+- ¿Se muestran detalles del producto (textura, fit, calidad)?
+- ¿Hay prueba social o validación (reviews, cantidad de ventas)?
+- ¿El precio o descuento aparece antes del CTA?
+- ¿El video genera el impulso de "lo quiero ahora"?
+Si faltan 3 o más → el video NO convierte vistas en compras.`,
+
+    tecnologia_saas: `
+CRITERIOS DE VENTA — TECNOLOGÍA / SOFTWARE / APP:
+- ¿El problema que resuelve queda claro sin explicación técnica?
+- ¿Se muestra el producto en uso real en los primeros 5s?
+- ¿El beneficio principal es obvio para alguien no técnico?
+- ¿Hay una demo o resultado visible?
+- ¿El CTA lleva a probar gratis o ver demo (no a "saber más")?
+- ¿Evita lenguaje técnico que confunde al usuario promedio?
+Si faltan 3 o más → el video NO genera registros ni pruebas.`
   };
 
   const retentionRules = {
@@ -150,12 +220,20 @@ Objetivo del creador: ${objetivo.toUpperCase()}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PASO 1 — IDENTIFICÁ EL NICHO
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Determiná a cuál pertenece este video:
+Determiná a cuál de estos nichos pertenece este video:
 - Inmobiliaria / Real Estate
 - Producto Físico
 - Producto Digital / Curso
 - Compra Impulsiva / Ecommerce
+- Servicios Creativos (edición, diseño, fotografía, video)
+- Agencia / Servicio B2B (marketing, consultoría, publicidad)
+- Gastronomía (restaurante, delivery, comida)
+- Fitness / Salud (entrenador, gimnasio, suplementos)
+- Coaching / Mentoría 1:1
+- Moda / Belleza (ropa, cosméticos, skincare)
+- Tecnología / Software / App
 
+Si el video no encaja exactamente en ninguno, elegí el más cercano y explicá por qué.
 Esto define qué criterios aplicar.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -182,7 +260,8 @@ HOOK — analizalo con estos 4 criterios:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PASO 3 — EVALUÁ LA VENTA
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Aplicá el framework según el nicho detectado:
+Aplicá ÚNICAMENTE el framework del nicho que detectaste en el Paso 1.
+Ignorá los frameworks de los otros nichos.
 
 ${Object.values(nicheFrameworks).join('\n')}
 
@@ -239,7 +318,7 @@ OUTPUT — SOLO JSON, NADA MÁS
 {
   "00_razonamiento_interno": "<Análisis técnico interno. Máx 300 chars.>",
   "objetivo": "${objetivo}",
-  "nicheDetected": "<inmobiliaria | producto_fisico | digital | impulsivo>",
+  "nicheDetected": "<inmobiliaria | producto_fisico | digital | impulsivo | servicios_creativos | agencia_marketing | gastronomia | fitness_salud | coaching_mentoria | moda_belleza | tecnologia_saas>",
 
   "vision": {
     "niche": "<Nicho detectado en palabras simples>",
@@ -265,7 +344,7 @@ OUTPUT — SOLO JSON, NADA MÁS
   },
 
   "productAnalysis": {
-    "type": "<alto valor | bajo valor | digital | impulsivo>",
+    "type": "<alto valor | bajo valor | digital | impulsivo | servicio | b2b>",
     "buyingBehavior": "<Cómo decide comprar ese cliente, explicado simple>",
     "missingElements": ["<Qué falta para que venda, uno por item>"]
   },
@@ -778,31 +857,54 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     setAnalysisProgress(65);
     setStatusText("Investigando tendencias reales para tu nicho...");
 
-    // ✅ Ahora
-    const { data: fase2Data, error: fase2Error } = await supabase.functions.invoke('gemini-proxy', {
-    body: {
-    text: buildResearchPrompt(parsed, platform, selectedObjetivo),
-    useSearch: true,
-    maxOutputTokens: 8192  // ← subís a 8192
+   // Una sola llamada que hace todo
+const { data: analisisData, error: analisisError } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    text: buildVideoAnalysisPrompt(platform, followerRange, selectedObjetivo),
+    storagePath,
+    videoMimeType: videoFile.type || 'video/mp4',
+    duration: Math.round(duration),
+    useSearch: true,        // ← búsqueda incluida en la misma llamada
+    maxOutputTokens: 4096   // ← reducido de 8192
   }
 });
 
-    if (fase2Error) throw fase2Error;
+    // ── FASE 2 — Solo si el video tiene potencial ──
+    let fase2Result = null;
 
-    const rawFase2 = extractGeminiText(fase2Data);
-    const fase2Result = safeParseJSON(rawFase2, 'fase2-research');
+    if ((parsed.salesScore?.score ?? 0) > 40 || (parsed.viralScore?.score ?? 0) > 40) {
+      setAnalysisProgress(65);
+      setStatusText("Investigando tendencias para tu nicho...");
 
-    // ── MERGE — Combinamos los dos resultados ──
+      const { data: fase2Data, error: fase2Error } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildResearchPrompt(parsed, platform, selectedObjetivo),
+          useSearch: true,
+          maxOutputTokens: 2048
+        }
+      });
+
+      if (!fase2Error && fase2Data) {
+        try {
+          const rawFase2 = extractGeminiText(fase2Data);
+          fase2Result = safeParseJSON(rawFase2, 'fase2-research');
+        } catch (e) {
+          console.warn('Fase 2 falló silenciosamente:', e.message);
+        }
+      }
+    }
+
+    // ── MERGE — Combinamos los resultados ──
     setAnalysisProgress(90);
     setStatusText("Preparando tu análisis completo...");
 
     const finalResult = {
       ...parsed,
       objetivo: selectedObjetivo,
-      trendResearch: fase2Result.trendResearch,
-      gapAnalysis: fase2Result.gapAnalysis,
-      updatedHook: fase2Result.updatedHook,  //tu video
-      updatedRoadmap: fase2Result.updatedRoadmap
+      trendResearch: fase2Result?.trendResearch ?? null,
+      gapAnalysis:   fase2Result?.gapAnalysis   ?? null,
+      updatedHook:   fase2Result?.updatedHook   ?? null,
+      updatedRoadmap: fase2Result?.updatedRoadmap ?? null,
     };
 
     setAiResult(finalResult);
