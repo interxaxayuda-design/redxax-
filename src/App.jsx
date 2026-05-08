@@ -247,6 +247,53 @@ Criterios universales (aplican a todos):
 }`;
 };
 
+const buildResearchPrompt = (fase1Result, platform, objetivo) => {
+
+  const platformNames = {
+    tiktok: 'TikTok', reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts', all: 'TikTok, Reels y Shorts'
+  };
+
+  return `Investigador de tendencias para redes sociales. Tenés datos de un video analizado y buscás qué funciona HOY para ese nicho.
+
+DATOS:
+- Nicho: ${fase1Result.vision?.niche}
+- Tipo: ${fase1Result.productAnalysis?.type}
+- Hook actual: ${fase1Result.hookDNA?.pattern} (fuerza: ${fase1Result.hookDNA?.strength}/100)
+- Le falta al hook: ${fase1Result.hookDNA?.missingElement}
+- Plataforma: ${platformNames[platform]}
+- Objetivo: ${objetivo}
+- Elementos que faltan: ${fase1Result.productAnalysis?.missingElements?.join(', ')}
+
+BUSCÁ con datos reales:
+1. ¿Qué hooks funcionan HOY en ${platformNames[platform]} para "${fase1Result.vision?.niche}"?
+2. ¿Qué estructura de video convierte más para este nicho ahora?
+3. ¿Cuál es la brecha más grande entre este video y lo que funciona?
+
+Si no encontrás datos concretos, decilo. No inventes.
+
+SOLO JSON:
+{
+  "trendResearch": {
+    "hooksWorking": "<máx 100 chars>",
+    "topStructure": "<máx 100 chars>",
+    "sourceQuality": "<alta | media | baja>",
+    "researchDate": "<fecha>"
+  },
+  "gapAnalysis": {
+    "biggestGap": "<máx 80 chars>",
+    "quickWin": "<máx 80 chars>",
+    "competitiveAdvantage": "<máx 80 chars>"
+  },
+  "updatedHook": "<máx 120 chars>",
+  "updatedRoadmap": [
+    "<acción 1, máx 80 chars>",
+    "<acción 2, máx 80 chars>",
+    "<acción 3, máx 80 chars>"
+  ]
+}`;
+};
+
 const ShinyCard = ({ children, className = '', tilt }) => {
   const sheenX = (((tilt?.x ?? 0) + 1) / 2) * 100;
   const sheenY = (((tilt?.y ?? 0) + 1) / 2) * 100;
