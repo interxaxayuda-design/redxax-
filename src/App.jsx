@@ -96,353 +96,153 @@ const buildVideoAnalysisPrompt = (platform, followerRange, objetivo = 'ventas') 
   };
 
   const nicheFrameworks = {
-    inmobiliaria: `
-CRITERIOS DE VENTA — INMOBILIARIA:
-- ¿Se ve el interior del inmueble en los primeros 3s?
-- ¿El precio o rango de precio es visible o mencionado?
-- ¿Hay una emoción de "quiero vivir ahí"?
-- ¿Se muestra la zona o ubicación como beneficio?
-- ¿Hay urgencia real (pocas unidades, oferta limitada)?
-- ¿El llamado a la acción dice exactamente qué hacer?
-Si faltan 3 o más → el video NO convierte consultas.`,
-
-    producto_fisico: `
-CRITERIOS DE VENTA — PRODUCTO FÍSICO:
-- ¿Se ve el producto en uso en los primeros 3s?
-- ¿El resultado del producto es visible y deseable?
-- ¿Hay prueba social (testimonio, cantidad de ventas)?
-- ¿El precio aparece antes del CTA?
-- ¿La compra parece fácil e inmediata?
-Si faltan 3 o más → el video NO genera compras impulsivas.`,
-
-    digital: `
-CRITERIOS DE VENTA — PRODUCTO DIGITAL / CURSO:
-- ¿El problema que resuelve queda claro en 3s?
-- ¿Muestra resultado concreto (no el proceso, el resultado)?
-- ¿Hay credibilidad del creador visible?
-- ¿El precio o acceso está claro?
-- ¿El CTA es específico (no "más info", sino qué hacer ahora)?
-Si faltan 3 o más → el video NO convierte leads.`,
-
-    impulsivo: `
-CRITERIOS DE VENTA — COMPRA IMPULSIVA / ECOMMERCE:
-- ¿Genera FOMO (miedo a perdérselo) en los primeros 5s?
-- ¿El precio parece una ganga obvia?
-- ¿La compra se puede hacer en menos de 2 clics?
-- ¿Hay escasez visible (últimas unidades, tiempo limitado)?
-Si faltan 2 o más → el video pierde la venta por fricción.`,
-
-    servicios_creativos: `
-CRITERIOS DE VENTA — SERVICIOS CREATIVOS (edición, diseño, fotografía, video):
-- ¿Se ve trabajo real y concreto en los primeros 3s (no texto, no logo)?
-- ¿Hay un antes/después visible o implícito?
-- ¿Se transmite velocidad, calidad o estilo diferencial?
-- ¿Hay prueba social real (cliente reconocible, cantidad de proyectos)?
-- ¿El CTA dice exactamente cómo contratar o consultar?
-- ¿El video genera la sensación de "quiero que hagan eso para mi negocio"?
-Si faltan 3 o más → el video NO genera consultas de clientes.`,
-
-    agencia_marketing: `
-CRITERIOS DE VENTA — AGENCIA / SERVICIO B2B (marketing, publicidad, consultoría):
-- ¿Muestra un resultado de negocio concreto (ventas, leads, ROI) en los primeros 5s?
+    servicios_creativos: `- ¿Se ve trabajo real en los primeros 3s (no texto, no logo)?
+- ¿Hay antes/después visible o resultado concreto?
+- ¿El CTA dice exactamente cómo contratar?`,
+    agencia_marketing: `- ¿Muestra resultado de negocio con número concreto en los primeros 5s?
 - ¿Habla del problema del cliente, no de la agencia?
-- ¿Hay casos reales con números específicos?
-- ¿Se diferencia claramente de otras agencias?
-- ¿El proceso de contratación parece simple?
-- ¿El tono es de igual a igual (no vendedor desesperado)?
-Si faltan 3 o más → el video NO genera reuniones ni consultas.`,
-
-    gastronomia: `
-CRITERIOS DE VENTA — GASTRONOMÍA (restaurantes, delivery, productos de comida):
-- ¿Se ve el plato o producto en su mejor versión en los primeros 2s?
+- ¿El proceso de contratación parece simple?`,
+    inmobiliaria: `- ¿Se ve el interior en los primeros 3s?
+- ¿Hay precio o rango visible?
+- ¿Hay urgencia real (pocas unidades, oferta limitada)?`,
+    producto_fisico: `- ¿Se ve el producto en uso en los primeros 3s?
+- ¿El resultado es visible y deseable?
+- ¿El precio aparece antes del CTA?`,
+    digital: `- ¿El problema que resuelve queda claro en 3s?
+- ¿Muestra resultado concreto (no el proceso)?
+- ¿El CTA dice exactamente qué hacer ahora?`,
+    impulsivo: `- ¿Genera FOMO en los primeros 5s?
+- ¿El precio parece una ganga obvia?
+- ¿Hay escasez visible?`,
+    gastronomia: `- ¿Se ve el plato en su mejor versión en los primeros 2s?
 - ¿Hay movimiento apetitoso (corte, vapor, textura)?
-- ¿Se transmite el ambiente o la experiencia, no solo la comida?
-- ¿Hay precio o promoción visible si es delivery/takeout?
-- ¿El CTA dice dónde ir, cómo pedir o cómo llegar?
-- ¿Genera hambre o antojo inmediato?
-Si faltan 3 o más → el video NO genera visitas ni pedidos.`,
-
-    fitness_salud: `
-CRITERIOS DE VENTA — FITNESS / SALUD (entrenadores, gimnasios, suplementos, bienestar):
-- ¿Hay una transformación visible o un resultado físico concreto en los primeros 3s?
-- ¿Se muestra el dolor/frustración del antes antes del resultado?
-- ¿El entrenador o figura tiene credibilidad visible (cuerpo, logros, clientes)?
-- ¿El método o producto está explicado en términos simples?
-- ¿Hay urgencia o llamado a empezar ahora?
-- ¿Evita términos técnicos que alejan al cliente promedio?
-Si faltan 3 o más → el video NO convierte curiosos en clientes.`,
-
-    coaching_mentoria: `
-CRITERIOS DE VENTA — COACHING / MENTORÍA 1:1:
-- ¿El problema específico del cliente ideal queda claro en los primeros 3s?
-- ¿El coach muestra autoridad con resultados propios o de clientes reales?
-- ¿Hay una promesa de transformación concreta (no vaga)?
-- ¿El precio o inversión está contextualizado (por qué vale lo que vale)?
-- ¿El CTA lleva a una llamada, no a "más información"?
-- ¿El tono genera confianza sin sonar arrogante?
-Si faltan 3 o más → el video NO agenda llamadas de ventas.`,
-
-    moda_belleza: `
-CRITERIOS DE VENTA — MODA / BELLEZA (ropa, accesorios, cosméticos, skincare):
-- ¿El producto se ve en uso real en los primeros 2s?
-- ¿Hay aspiracionalidad (quiero verme así / tener eso)?
-- ¿Se muestran detalles del producto (textura, fit, calidad)?
-- ¿Hay prueba social o validación (reviews, cantidad de ventas)?
-- ¿El precio o descuento aparece antes del CTA?
-- ¿El video genera el impulso de "lo quiero ahora"?
-Si faltan 3 o más → el video NO convierte vistas en compras.`,
-
-    tecnologia_saas: `
-CRITERIOS DE VENTA — TECNOLOGÍA / SOFTWARE / APP:
-- ¿El problema que resuelve queda claro sin explicación técnica?
-- ¿Se muestra el producto en uso real en los primeros 5s?
-- ¿El beneficio principal es obvio para alguien no técnico?
-- ¿Hay una demo o resultado visible?
-- ¿El CTA lleva a probar gratis o ver demo (no a "saber más")?
-- ¿Evita lenguaje técnico que confunde al usuario promedio?
-Si faltan 3 o más → el video NO genera registros ni pruebas.`
+- ¿El CTA dice dónde ir o cómo pedir?`,
+    fitness_salud: `- ¿Hay transformación o resultado físico concreto en los primeros 3s?
+- ¿El método está explicado en términos simples?
+- ¿Hay credibilidad visible (cuerpo, logros, clientes reales)?`,
+    coaching_mentoria: `- ¿El problema del cliente ideal queda claro en 3s?
+- ¿Hay promesa de transformación concreta (no vaga)?
+- ¿El CTA lleva a una llamada, no a "más info"?`,
+    moda_belleza: `- ¿El producto se ve en uso real en los primeros 2s?
+- ¿Genera el impulso de "lo quiero ahora"?
+- ¿El precio o descuento aparece antes del CTA?`,
+    tecnologia_saas: `- ¿El problema que resuelve queda claro sin tecnicismos?
+- ¿Hay demo o resultado visible?
+- ¿El CTA lleva a probar gratis (no a "saber más")?`
   };
 
-  const retentionRules = {
-    tiktok:  'Corte cada 2-3s. Hook en segundo 0. Texto en pantalla obligatorio.',
-    reels:   'Hook visual en segundo 0-1. Ritmo constante. Audio trending suma.',
-    shorts:  'Primer frame debe ser el momento más impactante. Sin intros.',
-    all:     'Hook en segundo 0. Ritmo alto. Texto en pantalla. Sin intros.'
-  };
+  const allNicheText = Object.entries(nicheFrameworks)
+    .map(([key, val]) => `[${key}]\n${val}`)
+    .join('\n\n');
 
-  return `Sos un analizador de videos de ventas para redes sociales. Tu trabajo es evaluar si este video específico vende y retiene, usando criterios concretos. No investigues. No supongas. Solo analizá lo que ves.
+  return `Sos VIRAX AI, un analizador brutal y preciso de videos para redes sociales. Decís la verdad aunque duela. Sos conocido por dar scores bajos cuando los merecen.
 
-CONTEXTO:
-Plataforma: ${platformNames[platform]}
-Seguidores: ${followerRange}
-Objetivo del creador: ${objetivo.toUpperCase()}
+PLATAFORMA: ${platformNames[platform]} | SEGUIDORES: ${followerRange} | OBJETIVO: ${objetivo.toUpperCase()}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PASO 1 — IDENTIFICÁ EL NICHO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Determiná a cuál de estos nichos pertenece este video:
-- Inmobiliaria / Real Estate
-- Producto Físico
-- Producto Digital / Curso
-- Compra Impulsiva / Ecommerce
-- Servicios Creativos (edición, diseño, fotografía, video)
-- Agencia / Servicio B2B (marketing, consultoría, publicidad)
-- Gastronomía (restaurante, delivery, comida)
-- Fitness / Salud (entrenador, gimnasio, suplementos)
-- Coaching / Mentoría 1:1
-- Moda / Belleza (ropa, cosméticos, skincare)
-- Tecnología / Software / App
+━━━ CALIBRACIÓN OBLIGATORIA — LEÉ ANTES DE PUNTUAR ━━━
+viralScore:
+- 10-30% → Video que nadie ve más de 2 segundos. Hook inexistente.
+- 31-50% → Video promedio. Pasa desapercibido. Nada lo diferencia.
+- 51-65% → Tiene algo, pero falla en retener o en el hook.
+- 66-80% → Buen video. Genera engagement real. Hook sólido.
+- 81-100% → Potencial viral real. Hook excepcional. Muy pocos llegan acá.
 
-Si el video no encaja exactamente en ninguno, elegí el más cercano y explicá por qué.
-Esto define qué criterios aplicar.
+salesScore:
+- 10-30% → No vende nada. El cliente no entiende qué se ofrece o no le importa.
+- 31-50% → Se entiende qué vende pero no genera ganas de comprar.
+- 51-65% → Despierta interés pero falta prueba, urgencia o CTA claro.
+- 66-80% → Convierte. Tiene oferta clara, deseo y llamado a la acción.
+- 81-100% → Muy alto poder de conversión. Casi ningún video llega acá.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PASO 2 — EVALUÁ LA RETENCIÓN
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Reglas fijas para ${platformNames[platform]}:
-${retentionRules[platform]}
+La mayoría de videos están entre 30-55%. Si ponés 70%+ tiene que ser porque realmente lo justifica.
 
-Evaluá estos 5 puntos con SÍ o NO y por qué:
-1. ¿El hook detiene el scroll en 0-2 segundos?
-2. ¿Hay cambio visual o de información cada 3-5 segundos?
-3. ¿El cerebro tiene razones para seguir viendo?
-4. ¿Genera una emoción concreta (curiosidad, deseo, sorpresa)?
-5. ¿El ritmo es acorde a la plataforma?
+━━━ PASO 1 — DETECTÁ EL NICHO ━━━
+Elegí UNO: inmobiliaria | producto_fisico | digital | impulsivo | servicios_creativos | agencia_marketing | gastronomia | fitness_salud | coaching_mentoria | moda_belleza | tecnologia_saas
 
-Si 2 o más son NO → retención baja. Penalizá fuerte el score.
+━━━ PASO 2 — RAZONAMIENTO INTERNO (obligatorio antes de puntuar) ━━━
+Antes de dar cualquier score, respondé internamente:
+1. ¿Qué pasa exactamente en el segundo 0-3? ¿Para el scroll o no?
+2. ¿En qué segundo aparece la oferta o el CTA? (Si pasa del segundo 20, penalizá salesScore)
+3. ¿Qué emoción concreta genera o debería generar?
+4. ¿Por qué compraría o no compraría alguien distraído?
+Solo después de responder esto, calculá los scores.
 
-HOOK — analizalo con estos 4 criterios:
-- ¿Interrumpe el patrón visual del feed?
-- ¿En 2 segundos queda claro de qué trata?
-- ¿Genera curiosidad o hace una promesa implícita?
-- ¿Hay emoción o movimiento visible desde el primer frame?
+━━━ PASO 3 — CRITERIOS DEL NICHO DETECTADO ━━━
+Aplicá SOLO los criterios del nicho que elegiste:
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PASO 3 — EVALUÁ LA VENTA
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Aplicá ÚNICAMENTE el framework del nicho que detectaste en el Paso 1.
-Ignorá los frameworks de los otros nichos.
+${allNicheText}
 
-${Object.values(nicheFrameworks).join('\n')}
+Criterios universales (aplican a todos):
+- ¿La oferta aparece antes del segundo 15? (después = penalizar)
+- ¿Hay prueba real (número, testimonio, resultado visible)?
+- ¿El CTA es específico y fácil de ejecutar?
 
-Además, evaluá estos 5 elementos universales de venta:
-1. Problema claro → el espectador se identifica
-2. Deseo fuerte → muestra el resultado que quiere
-3. Prueba o credibilidad → genera confianza
-4. Claridad de oferta → qué es exactamente lo que se vende
-5. Llamado a la acción → qué hacer ahora mismo
+━━━ REGLAS DE SCORING ━━━
+- Si la oferta aparece después del segundo 25 → salesScore máximo 45
+- Si no hay CTA claro → salesScore máximo 40
+- Si el hook no para el scroll en 3s → viralScore máximo 45
+- Si el video habla más del creador que del beneficio para el cliente → salesScore -20
+- No podés dar score alto si tu razonamiento es débil. Si dudás, bajá.
 
-Si faltan más de 2 → el video NO vende. Decilo claro.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PASO 4 — SIMULÁ UN USUARIO REAL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Este usuario está scrolleando sin pensar, distraído, buscando entretenimiento.
-Respondé:
-1. ¿Para el scroll en el segundo 0-1? ¿Por qué sí o no?
-2. ¿Sigue viendo hasta el segundo 3?
-3. ¿En qué segundo exacto pierde interés?
-4. ¿Siente alguna emoción? ¿Cuál?
-5. ¿Tiene razones para quedarse hasta el final?
-
-Sé brutal y realista. Si el video no frenaría a alguien distraído, penalizá fuerte.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PASO 5 — CALCULÁ LOS SCORES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-RETENCIÓN (suma estos 4, resultado sobre 100):
-- Hook inicial: 0-25
-- Ritmo y cortes: 0-25
-- Claridad del mensaje: 0-25
-- Curiosidad o emoción generada: 0-25
-
-VENTA (suma estos 4, resultado sobre 100):
-- Claridad de oferta: 0-25
-- Deseo generado: 0-25
-- Confianza transmitida: 0-25
-- Llamado a la acción: 0-25
-
-REGLA ESTRICTA: No podés dar un score alto si tu explicación es débil. Si dudás, bajá el score.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CÓMO ESCRIBIR LAS RESPUESTAS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-- Escribí como si le hablaras a alguien que nunca estudió marketing
-- Si usás una palabra técnica, explicala entre paréntesis
-- Sé directo: si el video no vende, decilo sin rodeos pero con empatía
-- Nada de frases vacías como "es un buen comienzo"
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-OUTPUT — SOLO JSON, NADA MÁS
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━ OUTPUT — SOLO JSON ━━━
 {
-  "00_razonamiento_interno": "<Análisis técnico interno. Máx 300 chars.>",
+  "00_razonamiento_interno": "<Qué viste realmente. Segundo a segundo. Máx 200 chars.>",
   "objetivo": "${objetivo}",
-  "nicheDetected": "<inmobiliaria | producto_fisico | digital | impulsivo | servicios_creativos | agencia_marketing | gastronomia | fitness_salud | coaching_mentoria | moda_belleza | tecnologia_saas>",
+  "nicheDetected": "<nicho>",
 
   "vision": {
-    "niche": "<Nicho detectado en palabras simples>",
-    "type": "<Formato del video>",
-    "audience": "<Quién miraría esto, explicado simple>",
-    "promise": "<Qué promete el video>"
+    "niche": "<simple>",
+    "type": "<formato>",
+    "audience": "<quién lo vería>",
+    "promise": "<qué promete>"
   },
 
   "viralScore": {
     "score": <0-100>,
     "titulo": "Potencial de Visualizaciones",
-    "verdict": "<Veredicto simple, máx 10 palabras>",
-    "razon_principal": "<Por qué se quedarían mirando o no. Sin tecnicismos.>",
-    "accion_clave": "<Un cambio concreto para mejorar la retención>"
+    "verdict": "<máx 10 palabras>",
+    "razon_principal": "<por qué retiene o no, sin tecnicismos>",
+    "accion_clave": "<un cambio concreto>"
   },
 
   "salesScore": {
     "score": <0-100>,
     "titulo": "Potencial de Venta",
-    "verdict": "<Veredicto simple, máx 10 palabras>",
-    "razon_principal": "<Por qué genera o no ganas de comprar. Simple.>",
-    "accion_clave": "<Un cambio concreto para vender más>"
+    "verdict": "<máx 10 palabras>",
+    "razon_principal": "<por qué comprarían o no>",
+    "accion_clave": "<un cambio concreto>"
+  },
+
+  "sellSpeed": {
+    "offerAppearsAt": <segundo o 999>,
+    "ctaAppearsAt": <segundo o 999>,
+    "penalty": <puntos descontados>,
+    "verdict": "<Rápido | Demorado pero recuperable | Demasiado tarde>"
+  },
+
+  "hookDNA": {
+    "pattern": "<Curiosidad | Problema | Sorpresa | Deseo | Ninguno>",
+    "strength": <0-100>,
+    "missingElement": "<qué le falta>",
+    "optimizedHook": "<cómo empezar el video para atrapar más>"
   },
 
   "productAnalysis": {
     "type": "<alto valor | bajo valor | digital | impulsivo | servicio | b2b>",
-    "buyingBehavior": "<Cómo decide comprar ese cliente, explicado simple>",
-    "missingElements": ["<Qué falta para que venda, uno por item>"]
-  },
-
-  "salesAngle": {
-    "type": "<Problema | Deseo | Oportunidad | Prueba social>",
-    "clarity": <0-100>,
-    "improvement": "<Cómo mejorar el ángulo de venta, simple>"
-  },
-
-  "psicologiaVentas": {
-    "emocionGenerada": "<Qué emoción genera o debería generar>",
-    "momentoDeseo": "<Segundo donde dan ganas de comprar, o 'ninguno'>",
-    "conversionScore": <0-100>
+    "buyingBehavior": "<cómo decide comprar ese cliente>",
+    "missingElements": ["<qué falta, uno por item>"]
   },
 
   "dropOffPoints": [
-    {
-      "second": <número>,
-      "reason": "<Por qué la gente se va en ese momento, simple>",
-      "fix": "<Qué cambiar para evitarlo>"
-    }
+    { "second": <n>, "reason": "<por qué se van>", "fix": "<qué cambiar>" }
   ],
 
-  "hookDNA": {
-    "pattern": "<Tipo de gancho: Curiosidad | Problema | Sorpresa | Deseo>",
-    "strength": <0-100>,
-    "missingElement": "<Qué le falta al gancho>",
-    "optimizedHook": "<Ejemplo concreto de cómo empezar el video para atrapar más>"
-  },
-
-  "honestVerdict": "<300-400 chars. Resumen directo y empático. Como si le hablaras a alguien que no sabe nada de marketing. Decile si vende o no, y por qué.>",
+  "honestVerdict": "<200-300 chars. Directo. Decile si vende o no y por qué. Sin frases vacías.>",
 
   "roadmap": [
-    "<Acción 1: [Segundo exacto] → [Qué cambiar] → [Por qué funciona, sin tecnicismos]>",
-    "<Acción 2: [Segundo exacto] → [Qué ajustar] → [Explicación simple]>",
-    "<Acción 3: [Cambio rápido] → [Por qué aumenta ventas o vistas]>"
-  ]
-}`;
-};
-
-const buildResearchPrompt = (fase1Result, platform, objetivo) => {
-
-  const platformNames = {
-    tiktok: 'TikTok', reels: 'Instagram Reels',
-    shorts: 'YouTube Shorts', all: 'TikTok, Reels y Shorts'
-  };
-
-  return `Sos un investigador de tendencias de contenido para redes sociales. 
-Tenés los datos de un video ya analizado y tu trabajo es buscar qué está funcionando HOY para ese nicho específico.
-
-DATOS DEL VIDEO ANALIZADO:
-- Nicho: ${fase1Result.vision?.niche}
-- Tipo de producto: ${fase1Result.productAnalysis?.type}
-- Hook detectado: ${fase1Result.hookDNA?.pattern} (fuerza: ${fase1Result.hookDNA?.strength}/100)
-- Plataforma: ${platformNames[platform]}
-- Objetivo: ${objetivo}
-- Lo que le falta al hook: ${fase1Result.hookDNA?.missingElement}
-- Elementos de venta que faltan: ${fase1Result.productAnalysis?.missingElements?.join(', ')}
-
-TU TAREA — Investigá estas 3 cosas con búsqueda real:
-
-1. HOOKS VIRALES HOY
-¿Qué tipo de hooks están funcionando en ${platformNames[platform]} para el nicho "${fase1Result.vision?.niche}" en este momento?
-Buscá ejemplos recientes. No inventes. Si no encontrás datos concretos, decilo.
-
-2. ESTRUCTURA QUE CONVIERTE
-¿Qué estructura de video está generando más ventas o consultas para este tipo de producto en ${platformNames[platform]} actualmente?
-
-3. COMPARACIÓN DIRECTA
-Comparando lo que tiene este video con lo que está funcionando hoy:
-¿Cuál es la brecha más grande?
-¿Qué cambio único generaría el mayor impacto?
-
-REGLAS:
-- Solo reportá lo que encontrés con búsqueda real
-- Si algo no está claro, decí "no encontré datos suficientes sobre esto"
-- No mezcles tu opinión con los datos encontrados
-- Sé específico: ejemplos concretos, no generalidades
-
-RESPONDE SOLO EN ESTE JSON, SÉ CONCISO:
-{
-  "trendResearch": {
-    "hooksWorking": "<Máx 100 chars: hooks que funcionan HOY>",
-    "topStructure": "<Máx 100 chars: estructura que más convierte>",
-    "sourceQuality": "<alta | media | baja>",
-    "researchDate": "<fecha>"
-  },
-  "gapAnalysis": {
-    "biggestGap": "<Máx 80 chars: diferencia más grande>",
-    "quickWin": "<Máx 80 chars: cambio de mayor impacto>",
-    "competitiveAdvantage": "<Máx 80 chars: qué hace bien el video>"
-  },
-  "updatedHook": "<Máx 120 chars: hook optimizado>",
-  "updatedRoadmap": [
-    "<Acción 1, máx 80 chars>",
-    "<Acción 2, máx 80 chars>",
-    "<Acción 3, máx 80 chars>"
+    "<Acción 1: segundo exacto → qué cambiar → por qué funciona>",
+    "<Acción 2: segundo exacto → qué ajustar>",
+    "<Acción 3: cambio rápido → impacto esperado>"
   ]
 }`;
 };
