@@ -88,324 +88,185 @@ function safeParseJSON(rawText, context = '') {
 }
 
 
-const buildVideoAnalysisPrompt = (
-  platform,
-  followerRange,
-  objetivo = 'ventas'
+const buildViewerBrainPrompt = (platform) => {
+
+const platformNames = {
+tiktok: 'TikTok',
+reels: 'Instagram Reels',
+shorts: 'YouTube Shorts',
+all: 'TikTok, Reels y Shorts'
+};
+
+return `
+Sos una persona normal usando ${platformNames[platform]}.
+
+NO sos experto en marketing.
+NO analizás técnicamente.
+NO pensás en algoritmos.
+
+Solo reaccionás como humano.
+
+Estás scrolleando distraído.
+Tenés poco tiempo.
+No querés pensar demasiado.
+
+Mientras ves el video describí:
+
+* qué sentís
+* cuándo perdés interés
+* cuándo aumenta la curiosidad
+* cuándo algo parece falso
+* cuándo algo emociona
+* cuándo harías scroll
+
+IMPORTANTE:
+
+* hablá natural
+* no uses lenguaje técnico
+* no estructures demasiado
+* no pongas scores
+* no pongas JSON
+
+Describí el video momento a momento como pensamientos reales.
+
+Ejemplos:
+
+* "Al principio no entiendo qué vende"
+* "Acá el resultado llama la atención"
+* "Esto parece una publicidad genérica"
+* "La explicación tarda demasiado"
+* "Acá recupera mi atención"
+
+Tu tarea principal:
+encontrar el momento exacto donde perderías interés.
+`;
+};
+
+const buildStrategyBrainPrompt = (
+viewerAnalysis,
+platform,
+objetivo
 ) => {
 
-  const platformNames = {
-    tiktok: 'TikTok',
-    reels: 'Instagram Reels',
-    shorts: 'YouTube Shorts',
-    all: 'TikTok, Reels y Shorts'
-  };
+const platformNames = {
+tiktok: 'TikTok',
+reels: 'Instagram Reels',
+shorts: 'YouTube Shorts',
+all: 'TikTok, Reels y Shorts'
+};
 
-  return `
-Sos VIRAX AI.
+return `
+Sos un estratega experto en:
 
-No sos un profesor de marketing.
-No sos un robot que sigue checklists.
-
-Sos una mezcla entre:
-- usuario real distraído
-- experto en contenido viral
-- experto en ventas
-- consumidor impulsivo
-
-Tu trabajo NO es llenar reglas.
-Tu trabajo es detectar:
-- si el video hace frenar el scroll
-- si genera emoción
-- si mantiene interés
-- si genera deseo de comprar
-- si se entiende rápido
-
-━━━━━━━━━━━━━━━━━━
-CONTEXTO
-━━━━━━━━━━━━━━━━━━
+* viralidad
+* retención
+* ventas
+* comportamiento humano
 
 Plataforma: ${platformNames[platform]}
-Seguidores: ${followerRange}
-Objetivo: ${objetivo.toUpperCase()}
+Objetivo: ${objetivo}
+
+Primero leé esta percepción humana REAL:
+
+${viewerAnalysis}
 
 ━━━━━━━━━━━━━━━━━━
-FORMA DE ANALIZAR
-━━━━━━━━━━━━━━━━━━
-
-Primero analizá el video como una PERSONA REAL.
-
-Imaginá que estás scrolleando distraído.
-Tenés poco tiempo.
-No querés pensar.
-Querés algo:
-- interesante
-- entretenido
-- útil
-- emocionante
-- diferente
-
-Mientras analizás el video, pensá:
-
-1. ¿El inicio me hace frenar el scroll?
-2. ¿Entiendo rápido qué estoy viendo?
-3. ¿Siento curiosidad o emoción?
-4. ¿Me aburriría en algún momento?
-5. ¿Qué partes se sienten lentas?
-6. ¿Qué partes generan más interés?
-7. ¿Me dan ganas de comprar o seguir viendo?
-8. ¿Parece un anuncio genérico o contenido natural?
-9. ¿Qué sentiría una persona normal viendo esto?
-10. ¿Qué haría que alguien comparta este video?
-
-━━━━━━━━━━━━━━━━━━
-MENTE DEL USUARIO
-━━━━━━━━━━━━━━━━━━
-
-Debes describir micro reacciones humanas reales.
-
-Ejemplos buenos:
-- "En el segundo 2 todavía no entiendo el beneficio"
-- "Cuando aparece el resultado final aumenta el interés"
-- "La intro parece una publicidad más"
-- "La curiosidad baja porque el video tarda demasiado"
-
-Ejemplos malos:
-- "Buen hook"
-- "Buen engagement"
-
-No hables como marketer.
-Hablá como alguien real.
-
-━━━━━━━━━━━━━━━━━━
-ANÁLISIS DE VIRALIDAD
-━━━━━━━━━━━━━━━━━━
-
-La viralidad depende principalmente de:
-
-- capacidad de frenar el scroll
-- claridad inmediata
-- emoción
-- curiosidad
-- ritmo
-- recompensa visual
-- sorpresa
-- identificación
-- tensión narrativa
-
-NO depende solamente de:
-- cortes rápidos
-- subtítulos
-- música fuerte
-
-Un video puede ser viral incluso siendo simple.
-No penalices automáticamente estilos tranquilos si mantienen interés.
-
-━━━━━━━━━━━━━━━━━━
-ANÁLISIS DE VENTA
+TAREA
 ━━━━━━━━━━━━━━━━━━
 
 Analizá:
-- si el producto parece deseable
-- si el beneficio es claro
-- si genera confianza
-- si parece creíble
-- si el espectador entiende por qué debería comprar
-- si el CTA parece natural
-- si el video se siente demasiado vendedor
 
-Un buen video de ventas NO parece una publicidad desesperada.
+* por qué el video genera o pierde atención
+* qué partes generan emoción
+* qué partes generan aburrimiento
+* si el hook funciona
+* si el producto genera deseo
+* si parece publicidad genérica
+* si el CTA se siente natural
+* si el ritmo ayuda o perjudica
 
-━━━━━━━━━━━━━━━━━━
-SCORES
-━━━━━━━━━━━━━━━━━━
+IMPORTANTE:
+NO inventes.
+NO fuerces positivismo.
+NO uses frases vacías.
 
-Los scores NO son matemáticos exactos.
-Son estimaciones humanas basadas en percepción real.
-
-Reglas IMPORTANTES:
-
-- La mayoría de videos están entre 40-65.
-- Scores arriba de 80 son raros.
-- No regales scores altos.
-- El razonamiento debe justificar el score.
-- No uses números arbitrarios.
-
-Guía aproximada:
-
-20-40:
-El video se siente genérico, lento o poco interesante.
-
-41-60:
-Tiene potencial pero le falta impacto o claridad.
-
-61-75:
-Buen video. Mantiene interés y comunica bien.
-
-76-90:
-Muy fuerte. Genera emoción real y retención sólida.
-
-91-100:
-Excepcional. Muy raro.
+Todo debe estar basado en la percepción humana anterior.
 
 ━━━━━━━━━━━━━━━━━━
-INVESTIGACIÓN Y CONTEXTO
+OUTPUT
 ━━━━━━━━━━━━━━━━━━
 
-Si tenés acceso a investigación:
-- detectá patrones actuales del nicho
-- compará el video con contenido moderno
-- buscá qué hooks funcionan actualmente
-- detectá diferencias importantes
+Devolvé SOLO texto libre.
 
-Pero:
-- NO inventes tendencias
-- NO fuerces información
-- NO copies frases genéricas
+Incluí:
 
-━━━━━━━━━━━━━━━━━━
-REGLAS IMPORTANTES
-━━━━━━━━━━━━━━━━━━
+* fortalezas reales
+* debilidades reales
+* momentos de caída de atención
+* posibles mejoras
+* percepción de compra
+* percepción emocional
+  `;
+  };
 
-- No inventes cosas que no aparecen.
-- No asumas resultados.
-- No hables como gurú.
-- No exageres.
-- No seas positivo por compromiso.
-- Sé brutalmente honesto.
-- Priorizá percepción humana antes que teoría.
+  const buildScoringBrainPrompt = (
+strategyAnalysis,
+objetivo
+) => {
 
-━━━━━━━━━━━━━━━━━━
+return `
+Basado ÚNICAMENTE en este análisis:
+
+${strategyAnalysis}
+
+Generá el JSON final.
+
+IMPORTANTE:
+
+* los scores deben surgir del análisis
+* no inventes fortalezas
+* no regales scores altos
+* si el análisis es negativo, el score también
+* la mayoría de videos deberían quedar entre 40-65
+
 OUTPUT — SOLO JSON
-━━━━━━━━━━━━━━━━━━
 
 {
-  "00_razonamiento_interno": "<máx 250 chars. Qué sentiste viendo el video.>",
+"viralScore": {
+"score": 0,
+"reason": ""
+},
 
-  "objetivo": "${objetivo}",
+"salesScore": {
+"score": 0,
+"reason": ""
+},
 
-  "vision": {
-    "niche": "<nicho detectado>",
-    "type": "<tipo de video>",
-    "audience": "<quién probablemente lo vería>",
-    "promise": "<qué promete el video>"
-  },
+"hookAnalysis": {
+"strength": 0,
+"whyItWorks": "",
+"betterHook": ""
+},
 
-  "viewerSimulation": {
-    "scrollStop": {
-      "stopsScroll": true,
-      "reason": "<por qué alguien frenaría o no>"
-    },
+"dropOffPoints": [],
 
-    "firstImpression": "<qué siente alguien en primeros segundos>",
+"honestVerdict": "",
 
-    "emotionCurve": [
-      "<segundo o momento → emoción/reacción>"
-    ],
-
-    "boringMoments": [
-      {
-        "second": <n>,
-        "reason": "<por qué baja el interés>"
-      }
-    ]
-  },
-
-  "viralScore": {
-    "score": <0-100>,
-    "verdict": "<máx 10 palabras>",
-    "reason": "<explicación humana y directa>",
-    "biggestProblem": "<principal problema de retención>",
-    "biggestStrength": "<qué más retiene>"
-  },
-
-  "salesScore": {
-    "score": <0-100>,
-    "verdict": "<máx 10 palabras>",
-    "reason": "<por qué vendería o no>",
-    "trustLevel": "<bajo | medio | alto>",
-    "desireLevel": "<bajo | medio | alto>"
-  },
-
-  "hookAnalysis": {
-    "hookType": "<curiosidad | resultado | problema | sorpresa | storytelling | ninguno>",
-    "strength": <0-100>,
-    "whyItWorks": "<por qué funciona o no>",
-    "betterHook": "<versión mejorada del inicio>"
-  },
-
-  "productPerception": {
-    "productClarity": "<se entiende o no>",
-    "perceivedValue": "<bajo | medio | alto>",
-    "buyingEmotion": "<qué emoción genera>",
-    "mainObjection": "<principal duda del cliente>"
-  },
-
-  "dropOffPoints": [
-    {
-      "second": <n>,
-      "reason": "<por qué alguien haría scroll>",
-      "fix": "<qué cambiar>"
-    }
-  ],
-
-  "honestVerdict": "<200-400 chars. Brutalmente honesto. Explicá si el video se siente interesante, aburrido, vendedor, natural o ignorado.>",
-
-  "roadmap": [
-    "<acción concreta + por qué ayuda>",
-    "<acción concreta + por qué ayuda>",
-    "<acción concreta + por qué ayuda>"
-  ]
+"roadmap": []
 }
 `;
 };
 
-const buildResearchPrompt = (fase1Result, platform, objetivo) => {
+const buildResearchPrompt = (strategyAnalysis, platform, objetivo) => {
+  return `Investigador de tendencias.
+  
+Basado en este análisis de un video:
 
-  const platformNames = {
-    tiktok: 'TikTok', reels: 'Instagram Reels',
-    shorts: 'YouTube Shorts', all: 'TikTok, Reels y Shorts'
-  };
+${strategyAnalysis}
 
-  return `Investigador de tendencias para redes sociales. Tenés datos de un video analizado y buscás qué funciona HOY para ese nicho.
-
-DATOS:
-- Nicho: ${fase1Result.vision?.niche}
-- Tipo: ${fase1Result.productAnalysis?.type}
-- Hook actual: ${fase1Result.hookDNA?.pattern} (fuerza: ${fase1Result.hookDNA?.strength}/100)
-- Le falta al hook: ${fase1Result.hookDNA?.missingElement}
-- Plataforma: ${platformNames[platform]}
-- Objetivo: ${objetivo}
-- Elementos que faltan: ${fase1Result.productAnalysis?.missingElements?.join(', ')}
-
-BUSCÁ con datos reales:
-1. ¿Qué hooks funcionan HOY en ${platformNames[platform]} para "${fase1Result.vision?.niche}"?
-2. ¿Qué estructura de video convierte más para este nicho ahora?
-3. ¿Cuál es la brecha más grande entre este video y lo que funciona?
-
-Si no encontrás datos concretos, decilo. No inventes.
-
-SOLO JSON:
-{
-  "trendResearch": {
-    "hooksWorking": "<máx 100 chars>",
-    "topStructure": "<máx 100 chars>",
-    "sourceQuality": "<alta | media | baja>",
-    "researchDate": "<fecha>"
-  },
-  "gapAnalysis": {
-    "biggestGap": "<máx 80 chars>",
-    "quickWin": "<máx 80 chars>",
-    "competitiveAdvantage": "<máx 80 chars>"
-  },
-  "updatedHook": "<máx 120 chars>",
-  "updatedRoadmap": [
-    "<acción 1, máx 80 chars>",
-    "<acción 2, máx 80 chars>",
-    "<acción 3, máx 80 chars>"
-  ]
-}`;
-};
+Buscá qué funciona HOY en ${platformNames[platform]} para ese nicho.
+...`
+}
 
 const ShinyCard = ({ children, className = '', tilt }) => {
   const sheenX = (((tilt?.x ?? 0) + 1) / 2) * 100;
@@ -782,7 +643,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
   setStep('analyzing');
   setAnalysisMode('video');
-  setStatusText("Subiendo video para análisis...");
+  setStatusText("Subiendo video...");
   setAnalysisProgress(10);
 
   const storagePath = `temp-analysis/${Date.now()}-${videoFile.name}`;
@@ -794,77 +655,86 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
-    // ── FASE 1 — Análisis del video ──
-    setAnalysisProgress(30);
-    setStatusText("Analizando tu video con IA...");
+    // ── CALL 1 — Viewer Brain (percepción humana, texto libre) ──
+    setAnalysisProgress(25);
+    setStatusText("Simulando espectador real...");
 
-    const { data: fase1Data, error: fase1Error } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildVideoAnalysisPrompt(platform, followerRange, selectedObjetivo),
-    storagePath,
-    videoMimeType: videoFile.type || 'video/mp4',   //<header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
-    duration: Math.round(duration),
-    maxOutputTokens: 8192  // ← cambiado
-  }
-});
+    const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildViewerBrainPrompt(platform),
+        storagePath,
+        videoMimeType: videoFile.type || 'video/mp4',
+        duration: Math.round(duration),
+        maxOutputTokens: 1024
+      }
+    });
 
-    if (fase1Error) throw fase1Error;
+    if (call1Error) throw call1Error;
+    const viewerAnalysis = extractGeminiText(call1Data);
 
-    const rawFase1 = extractGeminiText(fase1Data);
-    const parsed = safeParseJSON(rawFase1, 'fase1-video');
+    // ── CALL 2 — Strategy Brain (análisis sobre la percepción) ──
+    setAnalysisProgress(50);
+    setStatusText("Analizando por qué funciona o no...");
 
-    // ── FASE 2 — Investigación con Search ──
-    setAnalysisProgress(65);
-    setStatusText("Investigando tendencias reales para tu nicho...");
+    const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo),
+        maxOutputTokens: 2048
+      }
+    });
 
-   // Una sola llamada que hace todo
-const { data: analisisData, error: analisisError } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildVideoAnalysisPrompt(platform, followerRange, selectedObjetivo),
-    storagePath,
-    videoMimeType: videoFile.type || 'video/mp4',
-    duration: Math.round(duration),
-    useSearch: true,        // ← búsqueda incluida en la misma llamada
-    maxOutputTokens: 4096   // ← reducido de 8192
-  }
-});
+    if (call2Error) throw call2Error;
+    const strategyAnalysis = extractGeminiText(call2Data);
 
-    // ── FASE 2 — Solo si el video tiene potencial ──
-    let fase2Result = null;
+    // ── CALL 3 — Scoring Brain (JSON final con scores) ──
+    setAnalysisProgress(70);
+    setStatusText("Calculando scores finales...");
+
+    const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildScoringBrainPrompt(strategyAnalysis, selectedObjetivo),
+        maxOutputTokens: 2048
+      }
+    });
+
+    if (call3Error) throw call3Error;
+    const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
+
+    // ── CALL 4 — Research (solo si tiene potencial mínimo) ──
+    let researchResult = null;
 
     if ((parsed.salesScore?.score ?? 0) > 40 || (parsed.viralScore?.score ?? 0) > 40) {
-      setAnalysisProgress(65);
+      setAnalysisProgress(85);
       setStatusText("Investigando tendencias para tu nicho...");
 
-      const { data: fase2Data, error: fase2Error } = await supabase.functions.invoke('gemini-proxy', {
+      const { data: call4Data, error: call4Error } = await supabase.functions.invoke('gemini-proxy', {
         body: {
-          text: buildResearchPrompt(parsed, platform, selectedObjetivo),
+          text: buildResearchPrompt(strategyAnalysis, platform, selectedObjetivo),
           useSearch: true,
           maxOutputTokens: 2048
         }
       });
 
-      if (!fase2Error && fase2Data) {
+      if (!call4Error && call4Data) {
         try {
-          const rawFase2 = extractGeminiText(fase2Data);
-          fase2Result = safeParseJSON(rawFase2, 'fase2-research');
+          researchResult = safeParseJSON(extractGeminiText(call4Data), 'research');
         } catch (e) {
-          console.warn('Fase 2 falló silenciosamente:', e.message);
+          console.warn('Research falló silenciosamente:', e.message);
         }
       }
     }
 
-    // ── MERGE — Combinamos los resultados ──
-    setAnalysisProgress(90);
+    // ── MERGE — Combinamos todo ──
+    setAnalysisProgress(95);
     setStatusText("Preparando tu análisis completo...");
 
     const finalResult = {
       ...parsed,
       objetivo: selectedObjetivo,
-      trendResearch: fase2Result?.trendResearch ?? null,
-      gapAnalysis:   fase2Result?.gapAnalysis   ?? null,
-      updatedHook:   fase2Result?.updatedHook   ?? null,
-      updatedRoadmap: fase2Result?.updatedRoadmap ?? null,
+      trendResearch:  researchResult?.trendResearch  ?? null,
+      gapAnalysis:    researchResult?.gapAnalysis    ?? null,
+      updatedHook:    researchResult?.updatedHook    ?? null,
+      updatedRoadmap: researchResult?.updatedRoadmap ?? null,
     };
 
     setAiResult(finalResult);
