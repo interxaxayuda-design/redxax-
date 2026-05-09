@@ -88,139 +88,7 @@ function safeParseJSON(rawText, context = '') {
 }
 
 
-const buildViewerBrainPrompt = (platform) => {
-
-const platformNames = {
-tiktok: 'TikTok',
-reels: 'Instagram Reels',
-shorts: 'YouTube Shorts',
-all: 'TikTok, Reels y Shorts'
-};
-
-return `
-Sos una persona normal usando ${platformNames[platform]}.
-
-NO sos experto en marketing.
-NO analizás técnicamente.
-NO pensás en algoritmos.
-
-Solo reaccionás como humano.
-
-Estás scrolleando distraído.
-Tenés poco tiempo.
-No querés pensar demasiado.
-
-Mientras ves el video describí:
-
-* qué sentís
-* cuándo perdés interés
-* cuándo aumenta la curiosidad
-* cuándo algo parece falso
-* cuándo algo emociona
-* cuándo harías scroll
-
-IMPORTANTE:
-
-* hablá natural
-* no uses lenguaje técnico
-* no estructures demasiado
-* no pongas scores
-* no pongas JSON
-
-Describí el video momento a momento como pensamientos reales.
-
-Ejemplos:
-
-* "Al principio no entiendo qué vende"
-* "Acá el resultado llama la atención"
-* "Esto parece una publicidad genérica"
-* "La explicación tarda demasiado"
-* "Acá recupera mi atención"
-
-Tu tarea principal:
-encontrar el momento exacto donde perderías interés.
-`;
-};
-
-const buildStrategyBrainPrompt = (
-viewerAnalysis,
-platform,
-objetivo
-) => {
-
-const platformNames = {
-tiktok: 'TikTok',
-reels: 'Instagram Reels',
-shorts: 'YouTube Shorts',
-all: 'TikTok, Reels y Shorts'
-};
-
-return `
-Sos un estratega experto en:
-
-* viralidad
-* retención
-* ventas
-* comportamiento humano
-
-Plataforma: ${platformNames[platform]}
-Objetivo: ${objetivo}
-
-Primero leé esta percepción humana REAL:
-
-${viewerAnalysis}
-
-━━━━━━━━━━━━━━━━━━
-TAREA
-━━━━━━━━━━━━━━━━━━
-
-Analizá:
-
-* por qué el video genera o pierde atención
-* qué partes generan emoción
-* qué partes generan aburrimiento
-* si el hook funciona
-* si el producto genera deseo
-* si parece publicidad genérica
-* si el CTA se siente natural
-* si el ritmo ayuda o perjudica
-
-IMPORTANTE:
-NO inventes.
-NO fuerces positivismo.
-NO uses frases vacías.
-
-Todo debe estar basado en la percepción humana anterior.
-
-━━━━━━━━━━━━━━━━━━
-OUTPUT
-━━━━━━━━━━━━━━━━━━
-
-Devolvé SOLO texto libre.
-
-Incluí:
-
-* fortalezas reales
-* debilidades reales
-* momentos de caída de atención
-* posibles mejoras
-* percepción de compra
-* percepción emocional
-  `;
-  };
-
-  const buildScoringBrainPrompt = (strategyAnalysis, objetivo) => {
-  return `Basado ÚNICAMENTE en este análisis:
-
-${strategyAnalysis}
-
-Generá un JSON con scores que surjan del análisis. No inventes. No regales scores altos. Mayoría entre 40-65. Solo JSON, sin backticks.
-
-{"vision":{"niche":"","type":"","audience":"","promise":""},"viralScore":{"score":0,"titulo":"Potencial Viral","verdict":"","reason":"","razon_principal":"","accion_clave":""},"salesScore":{"score":0,"titulo":"Potencial de Venta","verdict":"","reason":"","razon_principal":"","accion_clave":""},"potentialScore":0,"performanceScenario":"","hookDNA":{"strength":0,"pattern":"","missingElement":"","optimizedHook":""},"dropOffPoints":[{"second":0,"reason":"","fix":""}],"honestVerdict":"","roadmap":["","",""]}`;
-};
-
-// ✅ Fix — definilo adentro igual que en las otras funciones
-const buildResearchPrompt = (strategyAnalysis, platform, objetivo) => {
+const buildViewerBrainPrompt = (platform, nicho) => {
 
   const platformNames = {
     tiktok: 'TikTok',
@@ -229,39 +97,255 @@ const buildResearchPrompt = (strategyAnalysis, platform, objetivo) => {
     all: 'TikTok, Reels y Shorts'
   };
 
-  return `Investigador de tendencias para ${platformNames[platform]}.
+  return `
+Eres un experto analista de contenido digital especializado en marketing de producto, psicología del consumidor y viralidad en redes sociales (${platformNames[platform]}).
 
-Basado en este análisis estratégico de un video:
+Nicho del video: ${nicho}
 
-${strategyAnalysis}
+Tu tarea es analizar este video de promoción de producto y describir en detalle todo lo que observas, enfocándote en los factores que determinan si un video vende y si tiene potencial viral.
+
+━━━━━━━━━━━━━━━━━━
+0. COMPRENSIÓN DEL PRODUCTO (prioridad máxima)
+━━━━━━━━━━━━━━━━━━
+Antes de analizar nada más, explicá con tus propias palabras:
+- ¿Qué hace exactamente este producto?
+- ¿Cómo funciona? (el mecanismo, aunque sea simple)
+- ¿Cuál es su diferencial concreto frente a alternativas?
+- ¿Qué problema resuelve y para quién?
+- ¿Quedó claro esto en el video, o hay que suponerlo?
+
+Si el video NO explica bien el producto, eso debe reflejarse fuertemente en la puntuación de claridad_producto.
+Un producto incomprendido no se compra, sin importar qué tan bueno sea el resto del video.
+
+━━━━━━━━━━━━━━━━━━
+1. HOOK (primeros 3-5 segundos)
+━━━━━━━━━━━━━━━━━━
+¿Qué aparece al inicio? ¿Es impactante visualmente?
+¿Hay texto, pregunta o frase que genere curiosidad inmediata?
+¿Detendría el scroll de alguien en ${platformNames[platform]}?
+
+━━━━━━━━━━━━━━━━━━
+2. PRODUCTO Y CLARIDAD
+━━━━━━━━━━━━━━━━━━
+¿Qué producto o servicio se promociona?
+¿Se entiende claramente qué es y qué problema resuelve?
+¿Se muestra en uso real o solo se describe?
+
+━━━━━━━━━━━━━━━━━━
+3. CONFIANZA Y CREDIBILIDAD
+━━━━━━━━━━━━━━━━━━
+¿Aparece una persona real? ¿Es natural o forzada?
+¿Se muestran resultados, testimonios o prueba concreta del producto?
+¿La presentación parece auténtica o parece publicidad genérica?
+
+━━━━━━━━━━━━━━━━━━
+4. EMOCIÓN Y DESEO
+━━━━━━━━━━━━━━━━━━
+¿Qué emociones genera? (curiosidad, deseo, urgencia, humor, sorpresa, aspiración)
+¿Se apela al deseo del espectador? ¿Hay FOMO?
+
+━━━━━━━━━━━━━━━━━━
+5. PROPUESTA DE VALOR
+━━━━━━━━━━━━━━━━━━
+¿Se comunica por qué este producto es especial o mejor?
+¿Se menciona precio, oferta o beneficio concreto?
+¿El diferencial queda claro antes del final?
+
+━━━━━━━━━━━━━━━━━━
+6. RETENCIÓN Y RITMO
+━━━━━━━━━━━━━━━━━━
+¿El ritmo es dinámico o lento?
+¿Hay cortes, textos en pantalla o efectos que mantienen la atención?
+¿En qué momento exacto estimás que el espectador promedio haría scroll?
+
+━━━━━━━━━━━━━━━━━━
+7. CALL TO ACTION
+━━━━━━━━━━━━━━━━━━
+¿Se le pide al espectador que haga algo? (comprar, comentar, guardar, visitar un link)
+¿El CTA es claro y urgente, o vago y débil?
+
+━━━━━━━━━━━━━━━━━━
+8. PRODUCCIÓN Y ESTÉTICA
+━━━━━━━━━━━━━━━━━━
+Calidad de imagen y audio. ¿Es contenido profesional, UGC o intermedio?
+Iluminación, encuadre, edición, uso de subtítulos o texto en pantalla.
+
+━━━━━━━━━━━━━━━━━━
+9. TENDENCIAS Y FORMATO
+━━━━━━━━━━━━━━━━━━
+¿Usa formatos populares hoy? (POV, tutorial, unboxing, comparación, testimonio, etc.)
+¿El formato encaja con lo que funciona en ${platformNames[platform]} para el nicho ${nicho}?
+¿Parece actual o desactualizado?
+
+━━━━━━━━━━━━━━━━━━
+10. PERSONALIDAD DEL CREADOR
+━━━━━━━━━━━━━━━━━━
+- Tono general: (ej: informal y cercano / aspiracional / educativo / humorístico / directo)
+- Estilo de comunicación: (ej: habla directo a cámara, usa humor, es muy técnico, usa ejemplos cotidianos)
+- Elementos únicos a preservar: (ej: su acento natural, su energía, su forma de explicar)
+- Riesgo de personalidad: <ninguno | leve | alto> — con una línea explicando por qué
+
+━━━━━━━━━━━━━━━━━━
+IMPORTANTE
+━━━━━━━━━━━━━━━━━━
+Describí solo lo que VES y ESCUCHAS. Sin suposiciones.
+No pongas puntajes. No pongas JSON. Solo texto descriptivo preciso.
+Esta descripción será usada para generar el análisis estratégico y la puntuación final.
+`;
+};
+
+
+const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, nicho) => {
+
+  const platformNames = {
+    tiktok: 'TikTok',
+    reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts',
+    all: 'TikTok, Reels y Shorts'
+  };
+
+  return `
+Sos un estratega experto en ventas, viralidad, retención y psicología del consumidor.
+
+Plataforma: ${platformNames[platform]}
+Objetivo del video: ${objetivo}
+Nicho: ${nicho}
+
+Leé este análisis perceptual completo del video:
+
+${viewerAnalysis}
+
+━━━━━━━━━━━━━━━━━━
+PERSONALIDAD DEL CREADOR
+━━━━━━━━━━━━━━━━━━
+El análisis anterior detectó la personalidad del creador.
+REGLA ABSOLUTA: todas tus sugerencias deben respetar esa personalidad.
+Mejorá el video desde adentro de su estilo, no contra él.
+Solo señalá la personalidad como problema si el riesgo detectado es "alto" y está perjudicando las ventas.
 
 ━━━━━━━━━━━━━━━━━━
 TAREA
 ━━━━━━━━━━━━━━━━━━
 
-Identificá, basándote en el análisis de arriba:
-- El nicho del video
-- Qué hooks funcionan HOY en ${platformNames[platform]} para ese nicho
-- Qué estructura de video convierte más ahora
-- La brecha más grande entre este video y lo que funciona
+Basándote SOLO en el análisis anterior, evaluá en profundidad:
 
-Si no encontrás datos concretos, decilo. No inventes.
+PRODUCTO Y VENTAS:
+- ¿El mecanismo del producto quedó claro para alguien que no lo conoce?
+- ¿El video genera deseo real de compra o solo curiosidad pasajera?
+- ¿La propuesta de valor es suficientemente fuerte para el nicho ${nicho}?
+- ¿El precio o beneficio concreto aparece en el momento correcto?
+- ¿La confianza está bien construida para cerrar una venta?
 
-SOLO JSON:
+VIRALIDAD:
+- ¿El hook tiene potencial de detener el scroll en ${platformNames[platform]}?
+- ¿Hay un momento "compartible" o que genere comentarios?
+- ¿El video provoca una emoción fuerte o es demasiado neutral?
+
+RETENCIÓN:
+- ¿En qué segundo exacto estimás que el espectador promedio haría scroll?
+- ¿Qué parte del video pierde más energía?
+- ¿El ritmo ayuda o perjudica el objetivo?
+
+AUTENTICIDAD:
+- ¿Parece publicidad o contenido orgánico?
+- ¿La persona (si hay) genera confianza real?
+- ¿Hay algo que active desconfianza o escepticismo?
+
+━━━━━━━━━━━━━━━━━━
+IMPORTANTE
+━━━━━━━━━━━━━━━━━━
+NO inventes. NO fuerces positivismo. NO uses frases vacías.
+Devolvé SOLO texto libre. Sin JSON. Sin puntajes.
+
+Incluí:
+- Fortalezas reales del video
+- Debilidades reales sin filtro
+- El momento exacto de mayor riesgo de perder atención
+- Si el producto se entiende o no, y qué consecuencia tiene eso en la venta
+- Percepción emocional del espectador
+- Percepción de compra: ¿compraría o seguiría scrolleando?
+- 3 mejoras concretas que respeten la personalidad del creador
+`;
+};
+
+
+const buildResearchPrompt = (strategyAnalysis, platform, objetivo, nicho) => {
+
+  const platformNames = {
+    tiktok: 'TikTok',
+    reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts',
+    all: 'TikTok, Reels y Shorts'
+  };
+
+  return `
+Sos un jurado experto en marketing digital, ventas y viralidad en ${platformNames[platform]}.
+
+Objetivo del video: ${objetivo}
+Nicho: ${nicho}
+
+Leé este análisis estratégico completo:
+
+${strategyAnalysis}
+
+━━━━━━━━━━━━━━━━━━
+REGLA DE ORO DE VENTAS
+━━━━━━━━━━━━━━━━━━
+Si el mecanismo o beneficio principal del producto no quedó 100% claro en el video,
+la puntuación de claridad_producto no puede superar 40/100, sin importar qué tan buena
+sea la producción o el hook. Un espectador que no entiende qué compra, no compra.
+
+━━━━━━━━━━━━━━━━━━
+PONDERACIÓN PARA EL PUNTAJE TOTAL
+━━━━━━━━━━━━━━━━━━
+hook                   → 15%
+claridad_producto      → 15%
+confianza_credibilidad → 15%
+emocion_deseo          → 10%
+propuesta_valor        → 10%
+retencion_ritmo        → 10%
+call_to_action         → 10%
+produccion_estetica    → 10%
+tendencias_formato     → 5%
+
+Evaluá cada categoría con un puntaje de 0 a 100 considerando el estándar del nicho ${nicho},
+no el de entretenimiento general. Incluí una explicación de máximo 2 oraciones directas por categoría.
+
+━━━━━━━━━━━━━━━━━━
+IMPORTANTE
+━━━━━━━━━━━━━━━━━━
+Devolvé SOLO el JSON válido. Sin texto adicional. Sin bloques de código. Sin comentarios.
+
 {
+  "puntaje_total": <entero 0-100>,
+  "nivel_viralidad": "<Muy Alto | Alto | Medio | Bajo | Muy Bajo>",
+  "resumen_ejecutivo": "<2-3 oraciones con puntos fuertes y débiles clave>",
+  "categorias": {
+    "hook":                   { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
+    "claridad_producto":      { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
+    "confianza_credibilidad": { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
+    "emocion_deseo":          { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
+    "propuesta_valor":        { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
+    "retencion_ritmo":        { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
+    "call_to_action":         { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
+    "produccion_estetica":    { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
+    "tendencias_formato":     { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" }
+  },
   "trendResearch": {
-    "hooksWorking": "",
-    "topStructure": "",
-    "sourceQuality": "alta | media | baja",
-    "researchDate": ""
+    "hooksWorking":  "<qué hooks funcionan hoy en ${platformNames[platform]} para el nicho ${nicho}>",
+    "topStructure":  "<estructura de video que más convierte ahora en este nicho>",
+    "sourceQuality": "<alta | media | baja>",
+    "researchDate":  ""
   },
   "gapAnalysis": {
-    "biggestGap": "",
-    "quickWin": "",
-    "competitiveAdvantage": ""
+    "biggestGap":           "<la brecha más grande entre este video y lo que funciona>",
+    "quickWin":             "<el cambio más rápido que mejoraría el resultado>",
+    "competitiveAdvantage": "<qué tiene este video que pocos hacen bien>"
   },
-  "updatedHook": "",
-  "updatedRoadmap": ["", "", ""]
+  "fortalezas":         ["<fortaleza 1>", "<fortaleza 2>", "<fortaleza 3>"],
+  "sugerencias_mejora": ["<sugerencia que respete la personalidad del creador>", "<sugerencia 2>", "<sugerencia 3>"],
+  "updatedHook":    "<reescribí el hook respetando la personalidad detectada del creador>",
+  "updatedRoadmap": ["<paso 1 para mejorar el video>", "<paso 2>", "<paso 3>"]
 }`;
 };
 
