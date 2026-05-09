@@ -257,16 +257,51 @@ OUTPUT — SOLO JSON
 `;
 };
 
+// ✅ Fix — definilo adentro igual que en las otras funciones
 const buildResearchPrompt = (strategyAnalysis, platform, objetivo) => {
-  return `Investigador de tendencias.
-  
-Basado en este análisis de un video:
+
+  const platformNames = {
+    tiktok: 'TikTok',
+    reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts',
+    all: 'TikTok, Reels y Shorts'
+  };
+
+  return `Investigador de tendencias para ${platformNames[platform]}.
+
+Basado en este análisis estratégico de un video:
 
 ${strategyAnalysis}
 
-Buscá qué funciona HOY en ${platformNames[platform]} para ese nicho.
-...`
-}
+━━━━━━━━━━━━━━━━━━
+TAREA
+━━━━━━━━━━━━━━━━━━
+
+Identificá, basándote en el análisis de arriba:
+- El nicho del video
+- Qué hooks funcionan HOY en ${platformNames[platform]} para ese nicho
+- Qué estructura de video convierte más ahora
+- La brecha más grande entre este video y lo que funciona
+
+Si no encontrás datos concretos, decilo. No inventes.
+
+SOLO JSON:
+{
+  "trendResearch": {
+    "hooksWorking": "",
+    "topStructure": "",
+    "sourceQuality": "alta | media | baja",
+    "researchDate": ""
+  },
+  "gapAnalysis": {
+    "biggestGap": "",
+    "quickWin": "",
+    "competitiveAdvantage": ""
+  },
+  "updatedHook": "",
+  "updatedRoadmap": ["", "", ""]
+}`;
+};
 
 const ShinyCard = ({ children, className = '', tilt }) => {
   const sheenX = (((tilt?.x ?? 0) + 1) / 2) * 100;
