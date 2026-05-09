@@ -210,74 +210,13 @@ Incluí:
   };
 
   const buildScoringBrainPrompt = (strategyAnalysis, objetivo) => {
-  return `
-Basado ÚNICAMENTE en este análisis:
+  return `Basado ÚNICAMENTE en este análisis:
 
 ${strategyAnalysis}
 
-Generá el JSON final. Los scores deben surgir del análisis, no al revés.
+Generá un JSON con scores que surjan del análisis. No inventes. No regales scores altos. Mayoría entre 40-65. Solo JSON, sin backticks.
 
-IMPORTANTE:
-* no inventes fortalezas que no aparecen en el análisis
-* no regales scores altos — la mayoría debería quedar entre 40-65
-* si el análisis es negativo, el score también
-* todos los campos de texto deben estar en español
-
-OUTPUT — SOLO JSON, sin markdown, sin backticks:
-
-{
-  "vision": {
-    "niche": "",
-    "type": "",
-    "audience": "",
-    "promise": ""
-  },
-
-  "viralScore": {
-    "score": 0,
-    "titulo": "Potencial Viral",
-    "verdict": "",
-    "reason": "",
-    "razon_principal": "",
-    "accion_clave": ""
-  },
-
-  "salesScore": {
-    "score": 0,
-    "titulo": "Potencial de Venta",
-    "verdict": "",
-    "reason": "",
-    "razon_principal": "",
-    "accion_clave": ""
-  },
-
-  "potentialScore": 0,
-  "performanceScenario": "",
-
-  "hookDNA": {
-    "strength": 0,
-    "pattern": "",
-    "missingElement": "",
-    "optimizedHook": ""
-  },
-
-  "dropOffPoints": [
-    {
-      "second": 0,
-      "reason": "",
-      "fix": ""
-    }
-  ],
-
-  "honestVerdict": "",
-
-  "roadmap": [
-    "",
-    "",
-    ""
-  ]
-}
-`;
+{"vision":{"niche":"","type":"","audience":"","promise":""},"viralScore":{"score":0,"titulo":"Potencial Viral","verdict":"","reason":"","razon_principal":"","accion_clave":""},"salesScore":{"score":0,"titulo":"Potencial de Venta","verdict":"","reason":"","razon_principal":"","accion_clave":""},"potentialScore":0,"performanceScenario":"","hookDNA":{"strength":0,"pattern":"","missingElement":"","optimizedHook":""},"dropOffPoints":[{"second":0,"reason":"","fix":""}],"honestVerdict":"","roadmap":["","",""]}`;
 };
 
 // ✅ Fix — definilo adentro igual que en las otras funciones
@@ -745,15 +684,16 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const strategyAnalysis = extractGeminiText(call2Data);
 
     // ── CALL 3 — Scoring Brain (JSON final con scores) ──
-    setAnalysisProgress(70);
-    setStatusText("Calculando scores finales...");
+setAnalysisProgress(70);
+setStatusText("Calculando scores finales...");
 
-    const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildScoringBrainPrompt(strategyAnalysis, selectedObjetivo),
-        maxOutputTokens: 2048
-      }
-    });
+const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    text: buildScoringBrainPrompt(strategyAnalysis, selectedObjetivo),
+    expectsJson: true,   // ← le dice a la Edge Function que MAX_TOKENS es fatal
+    maxOutputTokens: 4096  // ← era 2048, lo subimos
+  }
+});
 
     if (call3Error) throw call3Error;
     const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
