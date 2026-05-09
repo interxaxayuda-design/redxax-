@@ -269,7 +269,7 @@ Incluí:
 };
 
 
-const buildResearchPrompt = (strategyAnalysis, platform, objetivo, nicho) => {
+const buildScoringBrainPrompt = (strategyAnalysis, platform, objetivo, nicho) => {
 
   const platformNames = {
     tiktok: 'TikTok',
