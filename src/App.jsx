@@ -72,7 +72,8 @@ function safeParseJSON(rawText, context = '') {
     console.warn(`JSON inválido en [${context}], intentando reparar...`);
     try {
       const match = rawText.match(/\{[\s\S]*\}/);
-      if (match) return JSON.parse(match[0]);       //REDxax VISION
+      if (match) return JSON.parse(match[0]);       //REDxax VISION //disabled={!selectedPlatform || !selectedFollowerRange}
+
     } catch {}
     try {
       const cleaned = rawText
@@ -317,35 +318,120 @@ IMPORTANTE
 Devolvé SOLO el JSON válido. Sin texto adicional. Sin bloques de código. Sin comentarios.
 
 {
-  "puntaje_total": <entero 0-100>,
-  "nivel_viralidad": "<Muy Alto | Alto | Medio | Bajo | Muy Bajo>",
-  "resumen_ejecutivo": "<2-3 oraciones con puntos fuertes y débiles clave>",
-  "categorias": {
-    "hook":                   { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
-    "claridad_producto":      { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
-    "confianza_credibilidad": { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
-    "emocion_deseo":          { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
-    "propuesta_valor":        { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
-    "retencion_ritmo":        { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
-    "call_to_action":         { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
-    "produccion_estetica":    { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" },
-    "tendencias_formato":     { "puntaje": <0-100>, "explicacion": "<máximo 2 oraciones>" }
+  "vision": {
+    "niche": "<nicho detectado del video>",
+    "type": "<UGC | profesional | mixto>",
+    "audience": "<público objetivo detectado>",
+    "promise": "<promesa principal del video en una frase>"
   },
+  "salesScore": {
+    "score": 0,
+    "titulo": "Potencial de Venta",
+    "verdict": "<veredicto corto, máximo 8 palabras>",
+    "razon_principal": "<razón principal en 1 oración>",
+    "accion_clave": "<acción concreta para mejorar la venta>"
+  },
+  "viralScore": {
+    "score": 0,
+    "titulo": "Potencial Viral",
+    "verdict": "<veredicto corto, máximo 8 palabras>",
+    "razon_principal": "<razón principal en 1 oración>",
+    "accion_clave": "<acción concreta para mejorar la viralidad>"
+  },
+  "potentialScore": 0,
+  "performanceScenario": "<escenario esperado en máximo 5 palabras>",
+  "honestVerdict": "<veredicto honesto sin filtro en 2 oraciones>",
+  "hookDNA": {
+    "strength": 0,
+    "pattern": "<pregunta | shock | promesa | humor | dolor | curiosidad>",
+    "missingElement": "<qué le falta al hook>",
+    "optimizedHook": "<reescribí el hook respetando la personalidad del creador>"
+  },
+  "platformScores": {
+    "tiktok": { "score": 0, "verdict": "<veredicto corto>", "topTip": "<tip específico para TikTok>" },
+    "reels":  { "score": 0, "verdict": "<veredicto corto>", "topTip": "<tip específico para Reels>" },
+    "shorts": { "score": 0, "verdict": "<veredicto corto>", "topTip": "<tip específico para Shorts>" }
+  },
+  "retentionData": {
+    "at3s":  "<% estimado a los 3 segundos>",
+    "at10s": "<% estimado a los 10 segundos>",
+    "final": "<% estimado al final>"
+  },
+  "retentionCurve": [100, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+  "phaseScores": {
+    "hook":       { "label": "Hook",       "score": 0, "verdict": "<veredicto>", "consequence": "<consecuencia si es crítico>" },
+    "desarrollo": { "label": "Desarrollo", "score": 0, "verdict": "<veredicto>", "consequence": "<consecuencia si es crítico>" },
+    "escalada":   { "label": "Escalada",   "score": 0, "verdict": "<veredicto>", "consequence": "<consecuencia si es crítico>" },
+    "cierre":     { "label": "Cierre",     "score": 0, "verdict": "<veredicto>", "consequence": "<consecuencia si es crítico>" }
+  },
+  "steppsScore": {
+    "socialCurrency": 0,
+    "triggers": 0,
+    "emotion": 0,
+    "public": 0,
+    "practicalValue": 0,
+    "stories": 0,
+    "viralCoefficient": 0.0,
+    "dominantFactor": "<factor STEPPS más fuerte>",
+    "weakestFactor":  "<factor STEPPS más débil>",
+    "shareMotivation": "<motivación principal para compartir>"
+  },
+  "scrollStopScore": {
+    "score": 0,
+    "faceDetected": false,
+    "textOnScreen": false,
+    "contrastLevel": "<alto | medio | bajo>",
+    "emotionVisible": "<emoción detectada o ninguna>",
+    "emotionIntensity": 0,
+    "verdict": "<veredicto del primer frame>"
+  },
+  "commentTrigger": {
+    "probability": 0,
+    "triggerType": "<debate | pregunta | identificación | humor | sorpresa>",
+    "suggestedCTA": "<CTA sugerido para generar comentarios>"
+  },
+  "viewsPrediction": {
+    "scenario_low":      "<views sin viralidad>",
+    "scenario_mid":      "<views con viralidad moderada>",
+    "scenario_high":     "<views con viral real>",
+    "probability_viral": "<% de probabilidad de viral real>"
+  },
+  "firstHourStrategy": {
+    "optimalPostTime":      "<horario óptimo para publicar>",
+    "firstActionAfterPost": "<acción inmediata después de publicar>",
+    "commentSeed":          "<primer comentario propio sugerido>",
+    "engagementBoost":      "<estrategia boost de engagement primera hora>"
+  },
+  "styleProfile": {
+    "detectedRhythm": "<lento | medio | dinámico | frenético>",
+    "detectedTone":   "<serio | cercano | aspiracional | humorístico | urgente>"
+  },
+  "trendContext": "<tendencias actuales relevantes para ${nicho} en ${platformNames[platform]}>",
+  "roadmap": ["<paso 1 prioritario>", "<paso 2>", "<paso 3>", "<paso 4>"],
   "trendResearch": {
-    "hooksWorking":  "<qué hooks funcionan hoy en ${platformNames[platform]} para el nicho ${nicho}>",
-    "topStructure":  "<estructura de video que más convierte ahora en este nicho>",
+    "hooksWorking":  "<hooks que funcionan hoy en ${platformNames[platform]} para ${nicho}>",
+    "topStructure":  "<estructura de video que más convierte ahora>",
     "sourceQuality": "<alta | media | baja>",
     "researchDate":  ""
   },
   "gapAnalysis": {
-    "biggestGap":           "<la brecha más grande entre este video y lo que funciona>",
-    "quickWin":             "<el cambio más rápido que mejoraría el resultado>",
+    "biggestGap":           "<brecha más grande entre este video y lo que funciona>",
+    "quickWin":             "<cambio más rápido que mejoraría el resultado>",
     "competitiveAdvantage": "<qué tiene este video que pocos hacen bien>"
   },
-  "fortalezas":         ["<fortaleza 1>", "<fortaleza 2>", "<fortaleza 3>"],
-  "sugerencias_mejora": ["<sugerencia que respete la personalidad del creador>", "<sugerencia 2>", "<sugerencia 3>"],
-  "updatedHook":    "<reescribí el hook respetando la personalidad detectada del creador>",
-  "updatedRoadmap": ["<paso 1 para mejorar el video>", "<paso 2>", "<paso 3>"]
+  "categorias": {
+    "hook":                   { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
+    "claridad_producto":      { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
+    "confianza_credibilidad": { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
+    "emocion_deseo":          { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
+    "propuesta_valor":        { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
+    "retencion_ritmo":        { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
+    "call_to_action":         { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
+    "produccion_estetica":    { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
+    "tendencias_formato":     { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" }
+  },
+  "updatedHook":    "<hook reescrito respetando la personalidad del creador>",
+  "updatedRoadmap": ["<paso 1>", "<paso 2>", "<paso 3>"]
 }`;
 };
 
@@ -378,6 +464,7 @@ const App = () => {
   const [selectedPlatform, setSelectedPlatform] = useState(null);
   const [selectedFollowerRange, setSelectedFollowerRange] = useState(null);
   const [selectedObjetivo, setSelectedObjetivo] = useState('ventas'); // ← agregá esto
+  const [selectedNicho, setSelectedNicho] = useState('producto_fisico');
   const [pendingVideoFile, setPendingVideoFile] = useState(null);
   const [pendingVideoUrl, setPendingVideoUrl] = useState(null);
   const [scriptText, setScriptText] = useState('');
@@ -409,7 +496,7 @@ useEffect(() => {
     const y = Math.min(Math.max(e.beta / 90, -1), 1);   //captureFrames
     setTilt({ x, y });
   };
-  window.addEventListener('deviceorientation', handleOrientation);
+  window.addEventListener('deviceorientation', handleOrientation);                 //const [selectedObjetivo, setSelectedObjetivo] = useState('ventas');
   return () => window.removeEventListener('deviceorientation', handleOrientation);
 }, []);
 
@@ -742,7 +829,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
     const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildViewerBrainPrompt(platform),
+        text: buildViewerBrainPrompt(platform, selectedNicho),
         storagePath,
         videoMimeType: videoFile.type || 'video/mp4',
         duration: Math.round(duration),
@@ -759,7 +846,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo),
+        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho),
         maxOutputTokens: 2048
       }
     });
@@ -768,16 +855,16 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const strategyAnalysis = extractGeminiText(call2Data);
 
     // ── CALL 3 — Scoring Brain (JSON final con scores) ──
-setAnalysisProgress(70);
-setStatusText("Calculando scores finales...");
+    setAnalysisProgress(70);
+    setStatusText("Calculando scores finales...");
 
-const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildScoringBrainPrompt(strategyAnalysis, selectedObjetivo),
-    expectsJson: true,   // ← le dice a la Edge Function que MAX_TOKENS es fatal
-    maxOutputTokens: 4096  // ← era 2048, lo subimos
-  }
-});
+    const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho),
+        expectsJson: true,
+        maxOutputTokens: 4096
+      }
+    });
 
     if (call3Error) throw call3Error;
     const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
@@ -791,7 +878,7 @@ const { data: call3Data, error: call3Error } = await supabase.functions.invoke('
 
       const { data: call4Data, error: call4Error } = await supabase.functions.invoke('gemini-proxy', {
         body: {
-          text: buildResearchPrompt(strategyAnalysis, platform, selectedObjetivo),
+          text: buildResearchPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho),
           useSearch: true,
           maxOutputTokens: 2048
         }
@@ -813,10 +900,10 @@ const { data: call3Data, error: call3Error } = await supabase.functions.invoke('
     const finalResult = {
       ...parsed,
       objetivo: selectedObjetivo,
-      trendResearch:  researchResult?.trendResearch  ?? null,
-      gapAnalysis:    researchResult?.gapAnalysis    ?? null,
-      updatedHook:    researchResult?.updatedHook    ?? null,
-      updatedRoadmap: researchResult?.updatedRoadmap ?? null,
+      trendResearch:  researchResult?.trendResearch  ?? parsed.trendResearch  ?? null,
+      gapAnalysis:    researchResult?.gapAnalysis    ?? parsed.gapAnalysis    ?? null,
+      updatedHook:    researchResult?.updatedHook    ?? parsed.updatedHook    ?? null,
+      updatedRoadmap: researchResult?.updatedRoadmap ?? parsed.updatedRoadmap ?? null,
     };
 
     setAiResult(finalResult);
@@ -1383,6 +1470,39 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
       </button>
     ))}
   </div>
+</div> 
+
+{/* ── NICHO ── */}
+<div className="mb-8">
+  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-600 mb-4">
+    Tipo de contenido
+  </p>
+  <div className="grid grid-cols-2 gap-2">
+    {[
+      { id: 'producto_fisico', label: 'Producto físico' },
+      { id: 'curso',          label: 'Curso / Info'    },
+      { id: 'servicio',       label: 'Servicio'        },
+      { id: 'inmobiliaria',   label: 'Inmobiliaria'    },
+      { id: 'app_software',   label: 'App / Software'  },
+      { id: 'otro',           label: 'Otro'            },
+    ].map((n) => (
+      <button
+        key={n.id}
+        onClick={() => setSelectedNicho(n.id)}
+        className={`relative flex items-center justify-between px-5 py-4 rounded-[1.25rem] border transition-all duration-200 text-left
+          ${selectedNicho === n.id
+            ? 'border-purple-500/50 bg-purple-500/[0.08]'
+            : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:-translate-y-px'}`}
+      >
+        <p className={`text-[13px] font-black italic tracking-tight transition-colors duration-200
+          ${selectedNicho === n.id ? 'text-white' : 'text-slate-500'}`}>
+          {n.label}
+        </p>
+        <div className={`w-1.5 h-1.5 rounded-full border transition-all duration-200 shrink-0
+          ${selectedNicho === n.id ? 'bg-purple-500 border-purple-500' : 'border-purple-500/40'}`} />
+      </button>
+    ))}
+  </div>
 </div>
 
       <div className="flex justify-between items-center">
@@ -1391,7 +1511,7 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
           ← Volver
         </button>
         <button
-          disabled={!selectedPlatform || !selectedFollowerRange}
+          disabled={!selectedPlatform || !selectedFollowerRange || !selectedNicho}
           onClick={() => {
             if (analysisMode === 'video' && pendingVideoUrl) {
              runNeuralAnalysis(pendingVideoUrl, selectedPlatform, selectedFollowerRange, pendingVideoFile); // ← cambiás esta línea
