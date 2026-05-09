@@ -209,50 +209,73 @@ Incluí:
   `;
   };
 
-  const buildScoringBrainPrompt = (
-strategyAnalysis,
-objetivo
-) => {
-
-return `
+  const buildScoringBrainPrompt = (strategyAnalysis, objetivo) => {
+  return `
 Basado ÚNICAMENTE en este análisis:
 
 ${strategyAnalysis}
 
-Generá el JSON final.
+Generá el JSON final. Los scores deben surgir del análisis, no al revés.
 
 IMPORTANTE:
-
-* los scores deben surgir del análisis
-* no inventes fortalezas
-* no regales scores altos
+* no inventes fortalezas que no aparecen en el análisis
+* no regales scores altos — la mayoría debería quedar entre 40-65
 * si el análisis es negativo, el score también
-* la mayoría de videos deberían quedar entre 40-65
+* todos los campos de texto deben estar en español
 
-OUTPUT — SOLO JSON
+OUTPUT — SOLO JSON, sin markdown, sin backticks:
 
 {
-"viralScore": {
-"score": 0,
-"reason": ""
-},
+  "vision": {
+    "niche": "",
+    "type": "",
+    "audience": "",
+    "promise": ""
+  },
 
-"salesScore": {
-"score": 0,
-"reason": ""
-},
+  "viralScore": {
+    "score": 0,
+    "titulo": "Potencial Viral",
+    "verdict": "",
+    "reason": "",
+    "razon_principal": "",
+    "accion_clave": ""
+  },
 
-"hookAnalysis": {
-"strength": 0,
-"whyItWorks": "",
-"betterHook": ""
-},
+  "salesScore": {
+    "score": 0,
+    "titulo": "Potencial de Venta",
+    "verdict": "",
+    "reason": "",
+    "razon_principal": "",
+    "accion_clave": ""
+  },
 
-"dropOffPoints": [],
+  "potentialScore": 0,
+  "performanceScenario": "",
 
-"honestVerdict": "",
+  "hookDNA": {
+    "strength": 0,
+    "pattern": "",
+    "missingElement": "",
+    "optimizedHook": ""
+  },
 
-"roadmap": []
+  "dropOffPoints": [
+    {
+      "second": 0,
+      "reason": "",
+      "fix": ""
+    }
+  ],
+
+  "honestVerdict": "",
+
+  "roadmap": [
+    "",
+    "",
+    ""
+  ]
 }
 `;
 };
