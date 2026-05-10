@@ -60,9 +60,9 @@ function extractGeminiText(data) {
 }
 
 const GEM_PACKAGES = [
-  { id: 'starter', gems: 500,  price: 3,  label: 'Starter', analyses: '5 análisis',  popular: false },
-  { id: 'pro',     gems: 1000, price: 6,  label: 'Pro',     analyses: '10 análisis', popular: true  },
-  { id: 'elite',   gems: 6000, price: 15, label: 'Elite',   analyses: '60 análisis', popular: false },
+  { id: 'starter', gems: 500,  price: 1,  label: 'Starter', analyses: '5 análisis',  popular: false },
+  { id: 'pro',     gems: 1000, price: 1,  label: 'Pro',     analyses: '10 análisis', popular: true  },
+  { id: 'elite',   gems: 6000, price: 1, label: 'Elite',   analyses: '60 análisis', popular: false },
 ];
 
 function safeParseJSON(rawText, context = '') {
