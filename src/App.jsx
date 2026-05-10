@@ -245,6 +245,37 @@ No busques fallas que no existan. Si algo funciona, decilo claramente.
 Evaluá lo que VES y ESCUCHÁS, no lo que debería ser ideal en teoría.
 
 ━━━━━━━━━━━━━━━━━━
+0.5. AMBIENTE, PERSONALIDAD VISUAL Y SEÑALES DE RECHAZO
+━━━━━━━━━━━━━━━━━━
+Antes de analizar el producto, mirá el entorno completo del video como lo haría
+alguien que lo ve por primera vez sin saber nada del producto ni del creador.
+
+AMBIENTE FÍSICO:
+- ¿El lugar donde fue filmado suma o resta? (Ej: una cocina sucia, un cuarto desordenado,
+  una pared descascarada, mala luz que hace todo ver opaco)
+- ¿El fondo es neutral, ayuda a mostrar el producto, o distrae y genera desconfianza?
+- ¿Hay algo en el entorno que generaría repulsión, incomodidad o desconfianza
+  en un espectador promedio? (manchas, suciedad, desorden extremo, deterioro visible)
+
+ESTADO DEL PRODUCTO O SUJETO:
+- ¿El producto se ve limpio, en buen estado, deseable?
+- ¿Hay manchas, golpes, deterioro, o algo que lo haga ver usado o de baja calidad?
+- Si hay una persona: ¿su apariencia general suma confianza o genera distancia?
+  (No se trata de ser atractivo — se trata de si genera rechazo involuntario)
+- Si es una propiedad o espacio: ¿el estado visible generaría deseo de estar ahí
+  o haría que el espectador piense "ni loco"?
+
+EMOCIÓN INICIAL (primeros 3 segundos):
+- ¿Qué emoción dispara el primer frame? Elegí una: deseo / curiosidad / confianza /
+  indiferencia / duda / rechazo / asco / aspiración
+- ¿Esa emoción inicial ayuda o perjudica lo que el video intenta vender?
+
+SEÑAL DE ALERTA:
+Si detectás cualquier elemento visual que generaría rechazo inmediato o involuntario
+en el espectador promedio, marcalo claramente con: ⚠️ SEÑAL DE RECHAZO VISUAL:
+y describí exactamente qué es y en qué segundo aparece.
+
+━━━━━━━━━━━━━━━━━━
 0. COMPRENSIÓN Y VALOR (EL MOMENTO "LO QUIERO")
 ━━━━━━━━━━━━━━━━━━
 Analizá el video buscando el beneficio práctico:
@@ -359,6 +390,16 @@ AUTENTICIDAD:
 - ¿Parece publicidad o contenido orgánico?
 - ¿La persona (si hay) genera confianza real?
 - ¿Hay algo que active desconfianza o escepticismo?
+AMBIENTE Y RECHAZO VISUAL:
+- ¿El entorno donde fue filmado genera confianza o activa desconfianza silenciosa?
+- ¿Hay alguna señal de rechazo visual detectada en el análisis perceptual?
+  Si la hay, ¿en qué medida cancela el deseo que el resto del video construye?
+- REGLA: Una señal de rechazo visual fuerte (suciedad, deterioro, desorden extremo,
+  producto en mal estado) puede destruir la intención de compra aunque el copy
+  y el producto sean excelentes. Tratala como una falla crítica, no menor.
+- ¿La emoción inicial que dispara el primer frame es compatible con lo que se vende?
+  (Ej: si vende lujo pero el primer frame da sensación de pobreza, hay un conflicto
+  que el espectador siente aunque no sepa explicarlo)
 
 ━━━━━━━━━━━━━━━━━━
 CRITERIO DE REALISMO VS. TEORÍA
