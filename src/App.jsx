@@ -245,15 +245,15 @@ No busques fallas que no existan. Si algo funciona, decilo claramente.
 Evaluá lo que VES y ESCUCHÁS, no lo que debería ser ideal en teoría.
 
 ━━━━━━━━━━━━━━━━━━
-0. COMPRENSIÓN DEL PRODUCTO
+0. COMPRENSIÓN Y VALOR (EL MOMENTO "LO QUIERO")
 ━━━━━━━━━━━━━━━━━━
-Antes de analizar nada más, explicá con tus propias palabras:
-- ¿Qué hace exactamente este producto o servicio?
-- ¿Cómo funciona? (el mecanismo, aunque sea simple)
-- ¿Qué problema resuelve y para quién?
-- ¿Quedó claro esto en el video, o hay que suponerlo?
+Analizá el video buscando el beneficio práctico:
+- ¿Cuál es la "promesa visual"? (Ej: "Voy a estar fresco aunque haga 40 grados").
+- ¿Es satisfactorio verlo? (Efecto ASMR, la niebla, el hielo).
+- ¿Se entiende el funcionamiento en menos de 5 segundos? 
+- Si el producto parece "barato" o el video es simple, ¿eso lo hace sentir más real/UGC o le quita confianza?
 
-Describí con precisión qué se entiende y qué no, sin sesgo en ninguna dirección.
+REGLA DE ORO: Si el producto resuelve un problema real de forma obvia, eso compensa cualquier falta de calidad técnica. No penalices un video simple si el producto es "mágico".
 
 ━━━━━━━━━━━━━━━━━━
 1. CRITERIOS DE VENTA PARA ESTE NICHO
@@ -349,6 +349,13 @@ AUTENTICIDAD:
 - ¿Hay algo que active desconfianza o escepticismo?
 
 ━━━━━━━━━━━━━━━━━━
+CRITERIO DE REALISMO VS. TEORÍA
+━━━━━━━━━━━━━━━━━━
+- No analices como un crítico de cine, analizá como un comprador con la tarjeta en la mano.
+- ¿El video tiene "Vibe de Ganador"? A veces, lo que parece "publicidad genérica" para una IA, para un humano es "un gadget que necesito ya".
+- Evaluá la "Demostración de Poder": ¿El video muestra el producto haciendo su magia? (Ej: un ventilador que tira frío). Si la respuesta es SÍ, el potencial de venta es altísimo, ignorá si el locutor no es perfecto.
+
+━━━━━━━━━━━━━━━━━━
 IMPORTANTE
 ━━━━━━━━━━━━━━━━━━
 NO inventes. NO fuerces positivismo. NO uses frases vacías.
@@ -393,6 +400,13 @@ Si el mecanismo del producto quedó confuso o muy poco claro para un
 espectador promedio, claridad_producto no puede superar 50/100.
 Si quedó parcialmente claro, el rango es 50-70.
 Solo si quedó muy claro, puede llegar a 70-100.
+
+━━━━━━━━━━━━━━━━━━
+REGLA DE ORO DE PRODUCTO GANADOR
+━━━━━━━━━━━━━━━━━━
+- Si el producto resuelve un problema (dolor) y se muestra funcionando claramente, la nota mínima en "claridad_producto" y "emocion_deseo" debe ser 80.
+- Un video puede ser visualmente pobre pero comercialmente brillante. Si el "uso práctico" es el protagonista, sé generoso con el puntaje.
+- Solo sé negativo si el video es ABURRIDO o si NO SE ENTIENDE qué vende.
 
 ━━━━━━━━━━━━━━━━━━
 PONDERACIÓN PARA EL PUNTAJE TOTAL
