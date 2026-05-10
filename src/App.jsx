@@ -66,61 +66,107 @@ const GEM_PACKAGES = [
 ];
 
 function safeParseJSON(rawText, context = '') {
+  const aggressiveClean = (str) => {
+    // 1. Quitar bloques de código
+    let s = str.replace(/```json|```/g, '').trim();
 
-  // Limpiador nuclear: recorre carácter por carácter
-  // y reemplaza saltos de línea SOLO dentro de strings
-  const deepClean = (str) => {
-    const base = str.replace(/```json|```/g, '').trim();
+    // 2. Extraer solo el objeto JSON principal
+    const start = s.indexOf('{');
+    const end = s.lastIndexOf('}');
+    if (start === -1 || end === -1) throw new Error('No se encontró objeto JSON');
+    s = s.slice(start, end + 1);
+
+    // 3. Limpiar carácter por carácter — reemplazar saltos y tabs dentro de strings
     let result = '';
     let inString = false;
     let escape = false;
 
-    for (let i = 0; i < base.length; i++) {
-      const ch = base[i];
+    for (let i = 0; i < s.length; i++) {
+      const ch = s[i];
 
       if (escape) {
-        result += ch;
+        // Validar escapes: solo permitir los válidos en JSON
+        if (['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u'].includes(ch)) {
+          result += ch;
+        } else {
+          // Escape inválido — descartar la barra y poner el char
+          result += ch;
+        }
         escape = false;
         continue;
       }
+
       if (ch === '\\' && inString) {
         result += ch;
         escape = true;
         continue;
       }
+
       if (ch === '"') {
         inString = !inString;
         result += ch;
         continue;
       }
-      if (inString && (ch === '\n' || ch === '\r' || ch === '\t')) {
-        result += ' ';
-        continue;
+
+      if (inString) {
+        if (ch === '\n' || ch === '\r') {
+          result += ' ';
+          continue;
+        }
+        if (ch === '\t') {
+          result += ' ';
+          continue;
+        }
+        // Reemplazar comillas dobles sin escapar dentro de strings
+        // (ya manejado por el toggle de inString, pero por si acaso)
       }
+
       result += ch;
     }
+
     return result;
   };
 
+  // Intento 1: limpieza agresiva
   try {
-    return JSON.parse(deepClean(rawText));
-  } catch (firstErr) {
-    console.warn(`JSON inválido en [${context}], intentando reparar...`);
-    try {
-      const match = deepClean(rawText).match(/\{[\s\S]*\}/);
-      if (match) return JSON.parse(match[0]);
-    } catch {}
-    try {
-      const nuclear = rawText
-        .replace(/```json|```/g, '')
-        .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
-        .trim();
-      const match2 = nuclear.match(/\{[\s\S]*\}/);
-      if (match2) return JSON.parse(match2[0]);
-    } catch {}
-    console.error(`JSON inválido en [${context}]:`, firstErr.message);
-    throw new Error(`JSON malformado. Preview: "${rawText.slice(0, 80)}..."`);
+    return JSON.parse(aggressiveClean(rawText));
+  } catch (err1) {
+    console.warn(`[${context}] Intento 1 falló:`, err1.message);
   }
+
+  // Intento 2: reemplazar comillas problemáticas dentro de valores
+  try {
+    const cleaned = aggressiveClean(rawText);
+    // Reemplazar comillas dobles dentro de valores string con comillas simples
+    const fixed = cleaned.replace(
+      /("(?:[^"\\]|\\.)*")/g,
+      (match) => {
+        // Dentro del valor (sin las comillas externas), reemplazar " con '
+        const inner = match.slice(1, -1).replace(/(?<!\\)"/g, "'");
+        return `"${inner}"`;
+      }
+    );
+    return JSON.parse(fixed);
+  } catch (err2) {
+    console.warn(`[${context}] Intento 2 falló:`, err2.message);
+  }
+
+  // Intento 3: nuclear — quitar todo control character
+  try {
+    const nuclear = rawText
+      .replace(/```json|```/g, '')
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
+      .trim();
+    const start = nuclear.indexOf('{');
+    const end = nuclear.lastIndexOf('}');
+    if (start !== -1 && end !== -1) {
+      return JSON.parse(nuclear.slice(start, end + 1));
+    }
+  } catch (err3) {
+    console.warn(`[${context}] Intento 3 falló:`, err3.message);
+  }
+
+  throw new Error(`JSON malformado. Preview: "${rawText.slice(0, 80)}..."`);
 }
 
 const NICHE_CRITERIA = {
@@ -376,6 +422,9 @@ No escribas NADA después del }.
 Ningún texto, ningún comentario, ningún bloque de código.
 Si un campo no tiene valor, usá una cadena vacía "" en vez de null.
 Nunca uses saltos de línea dentro de los valores de string.
+Nunca uses comillas dobles dentro de los valores — usá comillas simples si necesitás citar algo.
+Nunca uses tildes o caracteres especiales en los valores de las claves "explicacion" — escribilas en español simple sin accentos si es necesario.
+Los valores de tipo string deben ser siempre una sola línea, sin puntuación compleja.
 
 {
   "vision": {
