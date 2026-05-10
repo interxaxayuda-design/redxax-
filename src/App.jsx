@@ -319,9 +319,16 @@ Evaluá cada categoría con un puntaje de 0 a 100 considerando el estándar del 
 no el de entretenimiento general. Incluí una explicación de máximo 2 oraciones directas por categoría.
 
 ━━━━━━━━━━━━━━━━━━
-IMPORTANTE
+IMPORTANTE — CRÍTICO
 ━━━━━━━━━━━━━━━━━━
-Devolvé SOLO el JSON válido. Sin texto adicional. Sin bloques de código. Sin comentarios.
+Tu respuesta debe ser ÚNICAMENTE el objeto JSON.
+La primera línea de tu respuesta debe ser exactamente: {
+La última línea de tu respuesta debe ser exactamente: }
+No escribas NADA antes del {.
+No escribas NADA después del }.
+Ningún texto, ningún comentario, ningún bloque de código.
+Si un campo no tiene valor, usá una cadena vacía "" en vez de null.
+Nunca uses saltos de línea dentro de los valores de string.
 
 {
   "vision": {
@@ -868,7 +875,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       body: {
         text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho),
         expectsJson: true,
-        maxOutputTokens: 4096
+        maxOutputTokens: 8192
       }
     });
 
