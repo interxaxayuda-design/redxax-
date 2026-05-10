@@ -324,6 +324,14 @@ IMPORTANTE
 Describí solo lo que VES y ESCUCHAS. Sin suposiciones.
 No pongas puntajes. No pongas JSON. Solo texto descriptivo preciso.
 Esta descripción será usada para generar el análisis estratégico y la puntuación final.
+
+REGLA DE ORO: Si el producto se muestra haciendo su función de forma visible y
+satisfactoria (ej: un rodillo llenándose de pelusa, una esponja absorbiendo agua,
+una crema desapareciendo en la piel), el beneficio ESTÁ comunicado.
+No importa si nadie lo dijo en voz alta ni si hay texto explicándolo.
+Ver ES entender. No busques una frase cuando el video ya lo mostró.
+Nunca escribas "el beneficio no se comunica" si la demostración visual es clara.
+
 `;
 };
 
@@ -375,9 +383,29 @@ espectador naturalmente lo buscaría en Google o preguntaría "¿dónde lo compr
 eso es un CTA exitoso aunque no haya ninguna frase de cierre, link ni countdown.
 No lo trates como un defecto — es una fortaleza UGC.
 
+REGLA DE EVIDENCIA REAL:
+Antes de analizar, respondé internamente esta pregunta:
+¿El video muestra el producto funcionando de forma visible y clara?
+Si la respuesta es SÍ, entonces:
+- El beneficio principal ESTÁ comunicado. No digas que no lo está.
+- La claridad del producto es alta. No la penalices por falta de explicación verbal.
+- El potencial de venta es real. No lo bajes por ausencia de copy formal.
+
+Un video con demostración visual clara y satisfactoria comunica más que cualquier
+texto o voz en off. Si el espectador ve el resultado con sus propios ojos, ya vendió.
+
+REGLA ANTI-INVENTAR PROBLEMAS:
+Si el video ya resuelve algo bien, no busques un problema teórico para mencionarlo.
+Solo señalá debilidades que realmente existan y que realmente perjudiquen la venta.
+Un análisis que inventa problemas en un video exitoso no es más riguroso — es menos útil.
+
 
 VIRALIDAD:
-- ¿El hook tiene potencial de detener el scroll en ${platformNames[platform]}?
+- ¿El hook tiene potencial de detener el scroll? IMPORTANTE: un hook puede ser
+  una imagen, una acción, un sonido satisfactorio, o una demostración que empieza
+  en el primer segundo. No hace falta una frase de impacto ni texto en pantalla.
+  Si el primer frame ya muestra algo que genera curiosidad o deseo, el hook funciona.
+  No sugiereas "un hook más impactante" si el hook actual ya cumple su función.
 - ¿Hay un momento "compartible" o que genere comentarios?
 - ¿El video provoca una emoción fuerte o es demasiado neutral?
 
@@ -466,6 +494,22 @@ REGLA DE ORO DE PRODUCTO GANADOR
 - Si el producto resuelve un problema (dolor) y se muestra funcionando claramente, la nota mínima en "claridad_producto" y "emocion_deseo" debe ser 80.
 - Un video puede ser visualmente pobre pero comercialmente brillante. Si el "uso práctico" es el protagonista, sé generoso con el puntaje.
 - Solo sé negativo si el video es ABURRIDO o si NO SE ENTIENDE qué vende.
+
+REGLA DE DEMOSTRACIÓN VISUAL COMO VENTA:
+Si el video muestra el producto en acción de forma clara y el resultado es visible
+(ej: el producto haciendo exactamente lo que promete), entonces:
+- claridad_producto tiene puntaje mínimo de 75.
+- salesScore tiene puntaje mínimo de 70.
+- No podés escribir en ningún campo que "el beneficio no se comunica" o que
+  "no queda claro qué vende".
+Estas reglas son absolutas. Si el producto se ve funcionando, el beneficio se comunicó.
+
+REGLA DE HOOK VISUAL:
+Si los primeros segundos muestran algo visualmente satisfactorio, sorprendente,
+o que genera curiosidad inmediata (aunque no haya texto ni voz), el hook es válido.
+No sugieras "mejorar el hook" si el hook ya está cumpliendo su función de retener.
+Solo criticá el hook si realmente no engancha — no porque no siga una estructura
+de manual.
 
 ━━━━━━━━━━━━━━━━━━
 PONDERACIÓN PARA EL PUNTAJE TOTAL
