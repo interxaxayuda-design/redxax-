@@ -89,6 +89,58 @@ function safeParseJSON(rawText, context = '') {
 }
 
 
+const NICHE_CRITERIA = {
+  producto_fisico: [
+    "¿El texto o audio ataca un dolor concreto del espectador?",
+    "¿El producto se ve como la solución obvia a ese dolor?",
+    "¿El producto es simple de entender aunque no sepas nada de él?",
+    "¿Se ve el producto en acción o solo de costado?",
+    "¿El momento de venta (precio, link, CTA) aparece antes de que se pierda el interés?",
+    "¿El video genera la sensación de 'necesito esto'?",
+  ],
+  inmobiliaria: [
+    "¿La propiedad se muestra con luz natural y espacios amplios?",
+    "¿Se menciona el barrio o zona como beneficio concreto?",
+    "¿Genera aspiración o deseo de vivir ahí?",
+    "¿El precio o forma de contacto aparece claramente?",
+    "¿Hay una persona real que genere confianza o es solo imágenes?",
+    "¿El video transmite seguridad y seriedad profesional?",
+  ],
+  curso: [
+    "¿Se muestra el resultado o transformación que logra el alumno?",
+    "¿El problema que resuelve queda claro en los primeros 5 segundos?",
+    "¿El creador transmite autoridad y credibilidad en el tema?",
+    "¿Se menciona algo concreto del contenido, no solo promesas vagas?",
+    "¿Hay urgencia o razón para comprar ahora?",
+    "¿El precio o acceso aparece en el momento correcto?",
+  ],
+  servicio: [
+    "¿Se entiende exactamente qué problema resuelve el servicio?",
+    "¿Se muestra un antes/después o resultado concreto?",
+    "¿Genera confianza la persona que lo presenta?",
+    "¿El contacto o siguiente paso es fácil y obvio?",
+    "¿Parece accesible o genera miedo al precio?",
+    "¿Se diferencia de la competencia en algo concreto?",
+  ],
+  app_software: [
+    "¿Se ve la app funcionando en pantalla real?",
+    "¿El problema que resuelve queda claro sin texto técnico?",
+    "¿La interfaz parece fácil de usar?",
+    "¿Hay una demo o caso de uso real?",
+    "¿El CTA (descargar, probar gratis) es claro?",
+    "¿Genera curiosidad de probarlo?",
+  ],
+  otro: [
+    "¿El texto o audio ataca un dolor o deseo concreto?",
+    "¿El producto o servicio se ve como la solución?",
+    "¿Se entiende qué es sin tener que pensar?",
+    "¿El ritmo mantiene la atención hasta el final?",
+    "¿El CTA o venta aparece en el momento correcto?",
+    "¿Genera alguna emoción fuerte: deseo, curiosidad, urgencia?",
+  ],
+};
+
+
 const buildViewerBrainPrompt = (platform, nicho) => {
 
   const platformNames = {
@@ -98,96 +150,57 @@ const buildViewerBrainPrompt = (platform, nicho) => {
     all: 'TikTok, Reels y Shorts'
   };
 
+  const criterios = (NICHE_CRITERIA[nicho] || NICHE_CRITERIA['otro'])
+    .map((c, i) => `${i + 1}. ${c}`)
+    .join('\n');
+
   return `
 Eres un experto analista de contenido digital especializado en marketing de producto, psicología del consumidor y viralidad en redes sociales (${platformNames[platform]}).
 
 Nicho del video: ${nicho}
+Plataforma: ${platformNames[platform]}
 
-Tu tarea es analizar este video de promoción de producto y describir en detalle todo lo que observas, enfocándote en los factores que determinan si un video vende y si tiene potencial viral.
+Tu tarea es analizar este video con criterios prácticos y realistas.
+No busques fallas que no existan. Si algo funciona, decilo claramente.
+Evaluá lo que VES y ESCUCHÁS, no lo que debería ser ideal en teoría.
 
 ━━━━━━━━━━━━━━━━━━
-0. COMPRENSIÓN DEL PRODUCTO (prioridad máxima)
+0. COMPRENSIÓN DEL PRODUCTO
 ━━━━━━━━━━━━━━━━━━
 Antes de analizar nada más, explicá con tus propias palabras:
-- ¿Qué hace exactamente este producto?
+- ¿Qué hace exactamente este producto o servicio?
 - ¿Cómo funciona? (el mecanismo, aunque sea simple)
-- ¿Cuál es su diferencial concreto frente a alternativas?
 - ¿Qué problema resuelve y para quién?
 - ¿Quedó claro esto en el video, o hay que suponerlo?
 
-
-
-Describí con precisión qué se entiende y qué no del producto, 
-sin sesgo en ninguna dirección.
-Un producto incomprendido no se compra, sin importar qué tan bueno sea el resto del video.
+Describí con precisión qué se entiende y qué no, sin sesgo en ninguna dirección.
 
 ━━━━━━━━━━━━━━━━━━
-1. HOOK (primeros 3-5 segundos)
+1. CRITERIOS DE VENTA PARA ESTE NICHO
 ━━━━━━━━━━━━━━━━━━
-¿Qué aparece al inicio? ¿Es impactante visualmente?
-¿Hay texto, pregunta o frase que genere curiosidad inmediata?
-¿Detendría el scroll de alguien en ${platformNames[platform]}?
+Respondé SÍ, PARCIALMENTE o NO a cada criterio.
+Para cada respuesta, describí brevemente qué viste que lo justifica.
+
+${criterios}
 
 ━━━━━━━━━━━━━━━━━━
-2. PRODUCTO Y CLARIDAD
+2. CRITERIOS UNIVERSALES
 ━━━━━━━━━━━━━━━━━━
-¿Qué producto o servicio se promociona?
-¿Se entiende claramente qué es y qué problema resuelve?
-¿Se muestra en uso real o solo se describe?
+Más allá del nicho, respondé también:
+- ¿El hook (primeros 3-5 segundos) detendría el scroll en ${platformNames[platform]}?
+- ¿El ritmo es dinámico o hay momentos muertos?
+- ¿La producción ayuda o perjudica la credibilidad?
+- ¿Qué emoción predomina en el video?
+- ¿En qué segundo estimás que el espectador promedio haría scroll?
+- ¿El CTA es claro o el espectador no sabe qué hacer después?
 
 ━━━━━━━━━━━━━━━━━━
-3. CONFIANZA Y CREDIBILIDAD
-━━━━━━━━━━━━━━━━━━
-¿Aparece una persona real? ¿Es natural o forzada?
-¿Se muestran resultados, testimonios o prueba concreta del producto?
-¿La presentación parece auténtica o parece publicidad genérica?
-
-━━━━━━━━━━━━━━━━━━
-4. EMOCIÓN Y DESEO
-━━━━━━━━━━━━━━━━━━
-¿Qué emociones genera? (curiosidad, deseo, urgencia, humor, sorpresa, aspiración)
-¿Se apela al deseo del espectador? ¿Hay FOMO?
-
-━━━━━━━━━━━━━━━━━━
-5. PROPUESTA DE VALOR
-━━━━━━━━━━━━━━━━━━
-¿Se comunica por qué este producto es especial o mejor?
-¿Se menciona precio, oferta o beneficio concreto?
-¿El diferencial queda claro antes del final?
-
-━━━━━━━━━━━━━━━━━━
-6. RETENCIÓN Y RITMO
-━━━━━━━━━━━━━━━━━━
-¿El ritmo es dinámico o lento?
-¿Hay cortes, textos en pantalla o efectos que mantienen la atención?
-¿En qué momento exacto estimás que el espectador promedio haría scroll?
-
-━━━━━━━━━━━━━━━━━━
-7. CALL TO ACTION
-━━━━━━━━━━━━━━━━━━
-¿Se le pide al espectador que haga algo? (comprar, comentar, guardar, visitar un link)
-¿El CTA es claro y urgente, o vago y débil?
-
-━━━━━━━━━━━━━━━━━━
-8. PRODUCCIÓN Y ESTÉTICA
-━━━━━━━━━━━━━━━━━━
-Calidad de imagen y audio. ¿Es contenido profesional, UGC o intermedio?
-Iluminación, encuadre, edición, uso de subtítulos o texto en pantalla.
-
-━━━━━━━━━━━━━━━━━━
-9. TENDENCIAS Y FORMATO
-━━━━━━━━━━━━━━━━━━
-¿Usa formatos populares hoy? (POV, tutorial, unboxing, comparación, testimonio, etc.)
-¿El formato encaja con lo que funciona en ${platformNames[platform]} para el nicho ${nicho}?
-¿Parece actual o desactualizado?
-
-━━━━━━━━━━━━━━━━━━
-10. PERSONALIDAD DEL CREADOR
+3. PERSONALIDAD DEL CREADOR
 ━━━━━━━━━━━━━━━━━━
 - Tono general: (ej: informal y cercano / aspiracional / educativo / humorístico / directo)
 - Estilo de comunicación: (ej: habla directo a cámara, usa humor, es muy técnico, usa ejemplos cotidianos)
 - Elementos únicos a preservar: (ej: su acento natural, su energía, su forma de explicar)
-- Riesgo de personalidad: <ninguno | leve | alto> — con una línea explicando por qué
+- Riesgo de personalidad: ninguno | leve | alto — con una línea explicando por qué
 
 ━━━━━━━━━━━━━━━━━━
 IMPORTANTE
@@ -234,7 +247,7 @@ TAREA
 Basándote SOLO en el análisis anterior, evaluá en profundidad:
 
 PRODUCTO Y VENTAS:
-- ¿El mecanismo del producto quedó claro para alguien que no lo conoce?
+- ¿El producto o servicio se entiende fácilmente para alguien que no lo conoce?
 - ¿El video genera deseo real de compra o solo curiosidad pasajera?
 - ¿La propuesta de valor es suficientemente fuerte para el nicho ${nicho}?
 - ¿El precio o beneficio concreto aparece en el momento correcto?
@@ -259,6 +272,7 @@ AUTENTICIDAD:
 IMPORTANTE
 ━━━━━━━━━━━━━━━━━━
 NO inventes. NO fuerces positivismo. NO uses frases vacías.
+Pero tampoco exageres los puntos débiles — evaluá con criterio práctico, no académico.
 Devolvé SOLO texto libre. Sin JSON. Sin puntajes.
 
 Incluí:
@@ -295,12 +309,10 @@ ${strategyAnalysis}
 ━━━━━━━━━━━━━━━━━━
 REGLA DE ORO DE VENTAS
 ━━━━━━━━━━━━━━━━━━
-
-Si el mecanismo del producto quedó confuso o muy poco claro para un 
-espectador promedio, claridad_producto no puede superar 50/100. 
-Si quedó parcialmente claro, el rango es 50–70. 
-Solo si quedó muy claro, puede llegar a 70–100.
-
+Si el mecanismo del producto quedó confuso o muy poco claro para un
+espectador promedio, claridad_producto no puede superar 50/100.
+Si quedó parcialmente claro, el rango es 50-70.
+Solo si quedó muy claro, puede llegar a 70-100.
 
 ━━━━━━━━━━━━━━━━━━
 PONDERACIÓN PARA EL PUNTAJE TOTAL
@@ -317,6 +329,7 @@ tendencias_formato     → 5%
 
 Evaluá cada categoría con un puntaje de 0 a 100 considerando el estándar del nicho ${nicho},
 no el de entretenimiento general. Incluí una explicación de máximo 2 oraciones directas por categoría.
+Evaluá con criterio práctico y realista. No penalices lo que funciona aunque no sea perfecto.
 
 ━━━━━━━━━━━━━━━━━━
 IMPORTANTE — CRÍTICO
