@@ -829,9 +829,9 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
-    // ── CALL 1 — Viewer Brain (percepción humana, texto libre) ──
+    // ── CALL 1 — Viewer Brain (análisis perceptual, texto libre) ──
     setAnalysisProgress(25);
-    setStatusText("Simulando espectador real...");
+    setStatusText("Analizando el video...");
 
     const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
@@ -846,9 +846,9 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     if (call1Error) throw call1Error;
     const viewerAnalysis = extractGeminiText(call1Data);
 
-    // ── CALL 2 — Strategy Brain (análisis sobre la percepción) ──
-    setAnalysisProgress(50);
-    setStatusText("Analizando por qué funciona o no...");
+    // ── CALL 2 — Strategy Brain (análisis estratégico, texto libre) ──
+    setAnalysisProgress(55);
+    setStatusText("Evaluando ventas y viralidad...");
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
@@ -860,8 +860,8 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     if (call2Error) throw call2Error;
     const strategyAnalysis = extractGeminiText(call2Data);
 
-    // ── CALL 3 — Scoring Brain (JSON final con scores) ──
-    setAnalysisProgress(70);
+    // ── CALL 3 — Scoring Brain (JSON final con todos los scores) ──
+    setAnalysisProgress(80);
     setStatusText("Calculando scores finales...");
 
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
@@ -875,41 +875,13 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     if (call3Error) throw call3Error;
     const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
 
-    // ── CALL 4 — Research (solo si tiene potencial mínimo) ──
-    let researchResult = null;
-
-    if ((parsed.salesScore?.score ?? 0) > 40 || (parsed.viralScore?.score ?? 0) > 40) {
-      setAnalysisProgress(85);
-      setStatusText("Investigando tendencias para tu nicho...");
-
-      const { data: call4Data, error: call4Error } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: buildResearchPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho),
-          useSearch: true,
-          maxOutputTokens: 2048
-        }
-      });
-
-      if (!call4Error && call4Data) {
-        try {
-          researchResult = safeParseJSON(extractGeminiText(call4Data), 'research');
-        } catch (e) {
-          console.warn('Research falló silenciosamente:', e.message);
-        }
-      }
-    }
-
-    // ── MERGE — Combinamos todo ──
+    // ── MERGE ──
     setAnalysisProgress(95);
     setStatusText("Preparando tu análisis completo...");
 
     const finalResult = {
       ...parsed,
       objetivo: selectedObjetivo,
-      trendResearch:  researchResult?.trendResearch  ?? parsed.trendResearch  ?? null,
-      gapAnalysis:    researchResult?.gapAnalysis    ?? parsed.gapAnalysis    ?? null,
-      updatedHook:    researchResult?.updatedHook    ?? parsed.updatedHook    ?? null,
-      updatedRoadmap: researchResult?.updatedRoadmap ?? parsed.updatedRoadmap ?? null,
     };
 
     setAiResult(finalResult);
