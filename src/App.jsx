@@ -1537,7 +1537,7 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
             background-position: -200% center;
           }
         }
-        .shimmer-ventas lorenzo Villa {
+        .shimmer-ventas {
           display: inline-block;
           background: linear-gradient(90deg, #16a34a 0%, #4ade80 35%, #bbf7d0 50%, #4ade80 65%, #16a34a 100%);
           background-size: 250% auto;
@@ -1554,7 +1554,7 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
         }
       `}</style>
       <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-        <Microscope className="w-3 h-3" /> Precisión 500% — Analista Neutro
+        <Microscope className="w-3 h-3" /> Lorenzo Villa Pingponero 🏓
       </div>
       <h2 className="text-7xl md:text-9xl font-black italic tracking-tighter leading-none uppercase">
         <span className="block title-line1">
