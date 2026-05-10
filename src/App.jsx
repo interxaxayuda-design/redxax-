@@ -171,13 +171,13 @@ function safeParseJSON(rawText, context = '') {
 
 const NICHE_CRITERIA = {
   producto_fisico: [
-    "¿El texto o audio ataca un dolor concreto del espectador?",
-    "¿El producto se ve como la solución obvia a ese dolor?",
-    "¿El producto es simple de entender aunque no sepas nada de él?",
-    "¿Se ve el producto en acción o solo de costado?",
-    "¿El momento de venta (precio, link, CTA) aparece antes de que se pierda el interés?",
-    "¿El video genera la sensación de 'necesito esto'?",
-  ],
+  "¿El video ataca un problema real que el espectador siente en su vida cotidiana?",
+  "¿El producto aparece como la solución obvia a ese problema, sin necesidad de explicación?",
+  "¿Cualquier persona que vea el video entiende qué es y para qué sirve en menos de 5 segundos?",
+  "¿Se ve el producto funcionando de verdad, o solo se muestra de costado sin demostrar nada?",
+  "¿El video genera la sensación de 'necesito esto'? (No importa si hay o no un link o precio visible — el deseo de compra es lo que cuenta)",
+  "¿Si no hay CTA explícito, ¿el producto se vende solo por cómo se muestra? Eso también es válido.",
+],
   inmobiliaria: [
     "¿La propiedad se muestra con luz natural y espacios amplios?",
     "¿Se menciona el barrio o zona como beneficio concreto?",
@@ -282,6 +282,11 @@ Más allá del nicho, respondé también:
 - Elementos únicos a preservar: (ej: su acento natural, su energía, su forma de explicar)
 - Riesgo de personalidad: ninguno | leve | alto — con una línea explicando por qué
 
+REGLA DE CTA IMPLÍCITO: En videos de producto físico, si el producto se muestra
+funcionando de forma tan clara que el espectador naturalmente quiere buscarlo,
+eso cuenta como un CTA exitoso. No penalices la ausencia de link, precio o
+frase de cierre si el deseo de compra está generado.
+
 ━━━━━━━━━━━━━━━━━━
 IMPORTANTE
 ━━━━━━━━━━━━━━━━━━
@@ -327,11 +332,18 @@ TAREA
 Basándote SOLO en el análisis anterior, evaluá en profundidad:
 
 PRODUCTO Y VENTAS:
-- ¿El producto o servicio se entiende fácilmente para alguien que no lo conoce?
-- ¿El video genera deseo real de compra o solo curiosidad pasajera?
-- ¿La propuesta de valor es suficientemente fuerte para el nicho ${nicho}?
-- ¿El precio o beneficio concreto aparece en el momento correcto?
-- ¿La confianza está bien construida para cerrar una venta?
+- ¿Alguien que nunca vio este producto antes lo entendería al instante?
+- ¿El video genera ganas reales de comprarlo, o solo genera curiosidad y nada más?
+- ¿La razón para quererlo es lo suficientemente fuerte para este tipo de producto?
+- ¿El precio o el beneficio concreto aparece en el momento justo, o no hace falta porque el producto habla solo?
+- ¿El espectador confía lo suficiente como para ir a buscarlo después de verlo?
+
+REGLA DE CTA IMPLÍCITO:
+Si el producto se muestra funcionando de manera tan clara y satisfactoria que el
+espectador naturalmente lo buscaría en Google o preguntaría "¿dónde lo compro?",
+eso es un CTA exitoso aunque no haya ninguna frase de cierre, link ni countdown.
+No lo trates como un defecto — es una fortaleza UGC.
+
 
 VIRALIDAD:
 - ¿El hook tiene potencial de detener el scroll en ${platformNames[platform]}?
@@ -354,6 +366,12 @@ CRITERIO DE REALISMO VS. TEORÍA
 - No analices como un crítico de cine, analizá como un comprador con la tarjeta en la mano.
 - ¿El video tiene "Vibe de Ganador"? A veces, lo que parece "publicidad genérica" para una IA, para un humano es "un gadget que necesito ya".
 - Evaluá la "Demostración de Poder": ¿El video muestra el producto haciendo su magia? (Ej: un ventilador que tira frío). Si la respuesta es SÍ, el potencial de venta es altísimo, ignorá si el locutor no es perfecto.
+
+IMPORTANTE SOBRE EL LENGUAJE DE LAS MEJORAS:
+Escribí las mejoras como si le hablaras a alguien en una charla normal.
+Nada de términos como "CTA", "retención", "propuesta de valor", "hook", "UGC".
+En vez de "el hook no detiene el scroll", decí "los primeros segundos no enganchan lo suficiente".
+En vez de "el CTA es débil", decí "no queda claro qué tiene que hacer el espectador después de verlo".
 
 ━━━━━━━━━━━━━━━━━━
 IMPORTANTE
@@ -425,6 +443,14 @@ Evaluá cada categoría con un puntaje de 0 a 100 considerando el estándar del 
 no el de entretenimiento general. Incluí una explicación de máximo 2 oraciones directas por categoría.
 Evaluá con criterio práctico y realista. No penalices lo que funciona aunque no sea perfecto.
 
+REGLA DE CTA EN PRODUCTO FÍSICO:
+Si el nicho es "producto_fisico" y el análisis indica que el producto se vende solo
+visualmente (sin link, precio ni frase de cierre), la categoría "call_to_action"
+debe evaluarse sobre si el video genera deseo de buscar el producto, no sobre si
+hay una instrucción explícita. Un video donde el espectador naturalmente piensa
+"¿dónde compro esto?" tiene un CTA exitoso aunque nadie lo haya dicho en voz alta.
+En ese caso, el puntaje mínimo de call_to_action es 65.
+
 ━━━━━━━━━━━━━━━━━━
 IMPORTANTE — CRÍTICO
 ━━━━━━━━━━━━━━━━━━
@@ -461,6 +487,13 @@ Los valores de tipo string deben ser siempre una sola línea, sin puntuación co
     "razon_principal": "<razón principal en 1 oración>",
     "accion_clave": "<acción concreta para mejorar la viralidad>"
   },
+
+  "call_to_action": { 
+  "puntaje": 0, 
+  "tipo": "<explícito | implícito | ausente>",
+  "explicacion": "<máximo 2 oraciones en lenguaje simple, sin tecnicismos>" 
+}
+  
   "potentialScore": 0,
   "performanceScenario": "<escenario esperado en máximo 5 palabras>",
   "honestVerdict": "<veredicto honesto sin filtro en 2 oraciones>",
