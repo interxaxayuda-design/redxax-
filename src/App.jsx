@@ -66,20 +66,26 @@ const GEM_PACKAGES = [
 ];
 
 function safeParseJSON(rawText, context = '') {
+  const clean = (str) => str
+    .replace(/```json|```/g, '')
+    .trim()
+    // Elimina saltos de línea dentro de valores string JSON
+    .replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) =>
+      match.replace(/\n/g, ' ').replace(/\r/g, ' ')
+    );
+
   try {
-    return JSON.parse(rawText);
+    return JSON.parse(clean(rawText));
   } catch (firstErr) {
     console.warn(`JSON inválido en [${context}], intentando reparar...`);
     try {
-      const match = rawText.match(/\{[\s\S]*\}/);
-      if (match) return JSON.parse(match[0]);       //REDxax VISION //disabled={!selectedPlatform || !selectedFollowerRange}
-
+      const match = clean(rawText).match(/\{[\s\S]*\}/);
+      if (match) return JSON.parse(match[0]);
     } catch {}
     try {
-      const cleaned = rawText
+      const cleaned = clean(rawText)
         .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
-        .replace(/\\n/g, ' ').replace(/\\t/g, ' ')
-        .replace(/\n/g, ' ').replace(/\r/g, ' ');
+        .replace(/\n/g, ' ').replace(/\r/g, ' ').replace(/\t/g, ' ');
       const match2 = cleaned.match(/\{[\s\S]*\}/);
       if (match2) return JSON.parse(match2[0]);
     } catch {}
@@ -319,7 +325,7 @@ PONDERACIÓN PARA EL PUNTAJE TOTAL
 ━━━━━━━━━━━━━━━━━━
 hook                   → 15%
 claridad_producto      → 15%
-confianza_credibilidad → 15%
+confianza_credibilidad → 15%  
 emocion_deseo          → 10%
 propuesta_valor        → 10%
 retencion_ritmo        → 10%
@@ -880,7 +886,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     if (call2Error) throw call2Error;
     const strategyAnalysis = extractGeminiText(call2Data);
 
-    // ── CALL 3 — Scoring Brain (JSON final con todos los scores) ──
+    // ── CALL 3 — Scoring Brain (JSON final con todos los scores) ──  safeParseJSON  function safeParseJSON
     setAnalysisProgress(80);
     setStatusText("Calculando scores finales...");
 
@@ -888,7 +894,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       body: {
         text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho),
         expectsJson: true,
-        maxOutputTokens: 8192
+       maxOutputTokens: 8192
       }
     });
 
