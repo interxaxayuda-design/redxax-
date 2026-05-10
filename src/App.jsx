@@ -171,13 +171,13 @@ function safeParseJSON(rawText, context = '') {
 
 const NICHE_CRITERIA = {
   producto_fisico: [
-  "¿El video ataca un problema real que el espectador siente en su vida cotidiana?",
-  "¿El producto aparece como la solución obvia a ese problema, sin necesidad de explicación?",
-  "¿Cualquier persona que vea el video entiende qué es y para qué sirve en menos de 5 segundos?",
-  "¿Se ve el producto funcionando de verdad, o solo se muestra de costado sin demostrar nada?",
-  "¿El video genera la sensación de 'necesito esto'? (No importa si hay o no un link o precio visible — el deseo de compra es lo que cuenta)",
-  "¿Si no hay CTA explícito, ¿el producto se vende solo por cómo se muestra? Eso también es válido.",
-],
+    "¿El video ataca un problema real que el espectador siente en su vida cotidiana?",
+    "¿El producto aparece como la solución obvia a ese problema, sin necesidad de explicación?",
+    "¿Cualquier persona entiende qué es y para qué sirve en menos de 5 segundos?",
+    "¿Se ve el producto funcionando de verdad, o solo se muestra de costado sin demostrar nada?",
+    "¿El video genera la sensación de 'necesito esto'?",
+    "¿Si no hay CTA explícito, el producto se vende solo por cómo se muestra? Eso también es válido.",
+  ],
   inmobiliaria: [
     "¿La propiedad se muestra con luz natural y espacios amplios?",
     "¿Se menciona el barrio o zona como beneficio concreto?",
@@ -207,7 +207,7 @@ const NICHE_CRITERIA = {
     "¿El problema que resuelve queda claro sin texto técnico?",
     "¿La interfaz parece fácil de usar?",
     "¿Hay una demo o caso de uso real?",
-    "¿El CTA (descargar, probar gratis) es claro?",
+    "¿El botón para descargar o probar gratis es claro?",
     "¿Genera curiosidad de probarlo?",
   ],
   otro: [
@@ -215,7 +215,7 @@ const NICHE_CRITERIA = {
     "¿El producto o servicio se ve como la solución?",
     "¿Se entiende qué es sin tener que pensar?",
     "¿El ritmo mantiene la atención hasta el final?",
-    "¿El CTA o venta aparece en el momento correcto?",
+    "¿Queda claro qué tiene que hacer el espectador después de verlo?",
     "¿Genera alguna emoción fuerte: deseo, curiosidad, urgencia?",
   ],
 };
@@ -235,103 +235,79 @@ const buildViewerBrainPrompt = (platform, nicho) => {
     .join('\n');
 
   return `
-Eres un experto analista de contenido digital especializado en marketing de producto, psicología del consumidor y viralidad en redes sociales (${platformNames[platform]}).
+Sos un analista de contenido digital especializado en ventas y viralidad en ${platformNames[platform]}.
 
-Nicho del video: ${nicho}
-Plataforma: ${platformNames[platform]}
+Nicho: ${nicho} | Plataforma: ${platformNames[platform]}
 
-Tu tarea es analizar este video con criterios prácticos y realistas.
-No busques fallas que no existan. Si algo funciona, decilo claramente.
-Evaluá lo que VES y ESCUCHÁS, no lo que debería ser ideal en teoría.
+Analizá este video con criterio práctico. Evaluá solo lo que VES y ESCUCHÁS.
+No busques fallas que no existen. Si algo funciona, decilo claramente.
 
 ━━━━━━━━━━━━━━━━━━
-0.5. AMBIENTE, PERSONALIDAD VISUAL Y SEÑALES DE RECHAZO
+1. AMBIENTE Y PRIMERA IMPRESIÓN
 ━━━━━━━━━━━━━━━━━━
-Antes de analizar el producto, mirá el entorno completo del video como lo haría
-alguien que lo ve por primera vez sin saber nada del producto ni del creador.
+Mirá el entorno como alguien que ve el video por primera vez:
 
-AMBIENTE FÍSICO:
-- ¿El lugar donde fue filmado suma o resta? (Ej: una cocina sucia, un cuarto desordenado,
-  una pared descascarada, mala luz que hace todo ver opaco)
-- ¿El fondo es neutral, ayuda a mostrar el producto, o distrae y genera desconfianza?
-- ¿Hay algo en el entorno que generaría repulsión, incomodidad o desconfianza
-  en un espectador promedio? (manchas, suciedad, desorden extremo, deterioro visible)
+- ¿El lugar donde fue filmado suma o resta confianza?
+- ¿El fondo ayuda a mostrar el producto o distrae?
+- ¿Hay algo que generaría repulsión en un espectador promedio? (suciedad, deterioro, desorden extremo)
+- ¿El producto se ve limpio, en buen estado y deseable? ¿O hay manchas, golpes o signos de mal estado?
+- Si hay una persona: ¿genera confianza o distancia involuntaria?
+- Si es una propiedad: ¿da ganas de estar ahí o genera rechazo?
 
-ESTADO DEL PRODUCTO O SUJETO:
-- ¿El producto se ve limpio, en buen estado, deseable?
-- ¿Hay manchas, golpes, deterioro, o algo que lo haga ver usado o de baja calidad?
-- Si hay una persona: ¿su apariencia general suma confianza o genera distancia?
-  (No se trata de ser atractivo — se trata de si genera rechazo involuntario)
-- Si es una propiedad o espacio: ¿el estado visible generaría deseo de estar ahí
-  o haría que el espectador piense "ni loco"?
+¿Qué emoción dispara el primer frame? (deseo / curiosidad / confianza / indiferencia / duda / rechazo / asco / aspiración/ satifactorio)
+¿Esa emoción ayuda o perjudica lo que se vende?
 
-EMOCIÓN INICIAL (primeros 3 segundos):
-- ¿Qué emoción dispara el primer frame? Elegí una: deseo / curiosidad / confianza /
-  indiferencia / duda / rechazo / asco / aspiración
-- ¿Esa emoción inicial ayuda o perjudica lo que el video intenta vender?
-
-SEÑAL DE ALERTA:
-Si detectás cualquier elemento visual que generaría rechazo inmediato o involuntario
-en el espectador promedio, marcalo claramente con: ⚠️ SEÑAL DE RECHAZO VISUAL:
-y describí exactamente qué es y en qué segundo aparece.
+⚠️ Si hay algo que generaría rechazo inmediato, marcalo como: SEÑAL DE RECHAZO VISUAL: [qué es] [en qué segundo]
 
 ━━━━━━━━━━━━━━━━━━
-0. COMPRENSIÓN Y VALOR (EL MOMENTO "LO QUIERO")
+2. VIABILIDAD DEL PRODUCTO
 ━━━━━━━━━━━━━━━━━━
-Analizá el video buscando el beneficio práctico:
-- ¿Cuál es la "promesa visual"? (Ej: "Voy a estar fresco aunque haga 40 grados").
-- ¿Es satisfactorio verlo? (Efecto ASMR, la niebla, el hielo).
-- ¿Se entiende el funcionamiento en menos de 5 segundos? 
-- Si el producto parece "barato" o el video es simple, ¿eso lo hace sentir más real/UGC o le quita confianza?
+Evaluá el producto en sí, no el video. Respondé FUERTE / ACEPTABLE / DÉBIL con una línea de justificación:
 
-REGLA DE ORO: Si el producto resuelve un problema real de forma obvia, eso compensa cualquier falta de calidad técnica. No penalices un video simple si el producto es "mágico".
+1. FRECUENCIA DE USO — ¿Es algo que usarías todos los días/semanas, o una o dos veces al año?
+2. CLARIDAD INSTANTÁNEA — ¿En menos de 5 segundos cualquiera entiende qué es y para qué sirve?
+3. PROBLEMA COTIDIANO — ¿Resuelve algo que el espectador siente como un problema real en su vida diaria?
+4. AMPLITUD DE AUDIENCIA — ¿Lo puede necesitar casi cualquier persona, o es para un grupo muy específico?
+5. FRICCIÓN DE COMPRA — ¿Parece fácil de conseguir y a un precio de compra impulsiva, o requiere investigar y pensar mucho?
+6. FACTOR WOW — ¿Hay algo visualmente satisfactorio o sorprendente en el producto que da ganas de mostrárselo a alguien?
+7. CREDIBILIDAD DEL RESULTADO — ¿Lo que promete parece real y posible, o suena exagerado al punto de generar desconfianza?
+
+⚠️ Si 3 o más factores son DÉBIL, marcalo como: PRODUCTO DE VENTA DIFÍCIL EN REDES: [razón en una oración]
 
 ━━━━━━━━━━━━━━━━━━
-1. CRITERIOS DE VENTA PARA ESTE NICHO
+3. CRITERIOS DE VENTA DEL NICHO
 ━━━━━━━━━━━━━━━━━━
-Respondé SÍ, PARCIALMENTE o NO a cada criterio.
-Para cada respuesta, describí brevemente qué viste que lo justifica.
+Respondé SÍ, PARCIALMENTE o NO. Describí brevemente qué viste que lo justifica.
 
 ${criterios}
 
 ━━━━━━━━━━━━━━━━━━
-2. CRITERIOS UNIVERSALES
+4. CRITERIOS UNIVERSALES
 ━━━━━━━━━━━━━━━━━━
-Más allá del nicho, respondé también:
-- ¿El hook (primeros 3-5 segundos) detendría el scroll en ${platformNames[platform]}?
+- ¿Los primeros 3-5 segundos detendrían el scroll en ${platformNames[platform]}?
+  IMPORTANTE: el primer frame puede ser una imagen, una acción o algo satisfactorio — no hace falta texto ni voz.
 - ¿El ritmo es dinámico o hay momentos muertos?
 - ¿La producción ayuda o perjudica la credibilidad?
 - ¿Qué emoción predomina en el video?
 - ¿En qué segundo estimás que el espectador promedio haría scroll?
-- ¿El CTA es claro o el espectador no sabe qué hacer después?
+- ¿Queda claro qué tiene que hacer el espectador después de verlo?
+  Si el producto se vende solo visualmente (sin link ni precio), eso también cuenta como válido.
 
 ━━━━━━━━━━━━━━━━━━
-3. PERSONALIDAD DEL CREADOR
+5. PERSONALIDAD DEL CREADOR
 ━━━━━━━━━━━━━━━━━━
 - Tono general: (ej: informal y cercano / aspiracional / educativo / humorístico / directo)
-- Estilo de comunicación: (ej: habla directo a cámara, usa humor, es muy técnico, usa ejemplos cotidianos)
-- Elementos únicos a preservar: (ej: su acento natural, su energía, su forma de explicar)
-- Riesgo de personalidad: ninguno | leve | alto — con una línea explicando por qué
-
-REGLA DE CTA IMPLÍCITO: En videos de producto físico, si el producto se muestra
-funcionando de forma tan clara que el espectador naturalmente quiere buscarlo,
-eso cuenta como un CTA exitoso. No penalices la ausencia de link, precio o
-frase de cierre si el deseo de compra está generado.
+- Estilo de comunicación: (ej: habla directo a cámara, usa humor, explica con ejemplos cotidianos)
+- Elementos únicos a preservar
+- Riesgo de personalidad: ninguno | leve | alto — una línea explicando por qué
 
 ━━━━━━━━━━━━━━━━━━
-IMPORTANTE
+REGLAS IMPORTANTES
 ━━━━━━━━━━━━━━━━━━
-Describí solo lo que VES y ESCUCHAS. Sin suposiciones.
-No pongas puntajes. No pongas JSON. Solo texto descriptivo preciso.
-Esta descripción será usada para generar el análisis estratégico y la puntuación final.
-
-REGLA DE ORO: Si el producto se muestra haciendo su función de forma visible y
-satisfactoria (ej: un rodillo llenándose de pelusa, una esponja absorbiendo agua,
-una crema desapareciendo en la piel), el beneficio ESTÁ comunicado.
-No importa si nadie lo dijo en voz alta ni si hay texto explicándolo.
-Ver ES entender. No busques una frase cuando el video ya lo mostró.
-Nunca escribas "el beneficio no se comunica" si la demostración visual es clara.
-
+- Si el producto se muestra haciendo su función de forma visible (ej: un rodillo llenándose de pelusa),
+  el beneficio ESTÁ comunicado. Ver es entender. Nunca escribas "el beneficio no se comunica" si la demostración visual es clara.
+- Si el producto resuelve un problema real de forma obvia, eso compensa cualquier falta de calidad técnica.
+- No pongas puntajes ni JSON. Solo texto descriptivo preciso.
 `;
 };
 
@@ -346,117 +322,67 @@ const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, nicho) => 
   };
 
   return `
-Sos un estratega experto en ventas, viralidad, retención y psicología del consumidor.
+Sos un estratega experto en ventas, viralidad y psicología del consumidor.
 
-Plataforma: ${platformNames[platform]}
-Objetivo del video: ${objetivo}
-Nicho: ${nicho}
+Plataforma: ${platformNames[platform]} | Objetivo: ${objetivo} | Nicho: ${nicho}
 
-Leé este análisis perceptual completo del video:
-
+Leé este análisis del video:
 ${viewerAnalysis}
 
 ━━━━━━━━━━━━━━━━━━
-PERSONALIDAD DEL CREADOR
+REGLAS BASE (leelas antes de analizar)
 ━━━━━━━━━━━━━━━━━━
-El análisis anterior detectó la personalidad del creador.
-REGLA ABSOLUTA: todas tus sugerencias deben respetar esa personalidad.
-Mejorá el video desde adentro de su estilo, no contra él.
-Solo señalá la personalidad como problema si el riesgo detectado es "alto" y está perjudicando las ventas.
+1. PERSONALIDAD: Todas tus sugerencias deben respetar el estilo del creador. Mejorá desde adentro de su estilo, no contra él. Solo mencioná la personalidad como problema si el riesgo detectado es "alto".
+
+2. EVIDENCIA VISUAL: Si el video muestra el producto funcionando de forma clara, el beneficio ESTÁ comunicado. No digas que no lo está. No bajes el potencial de venta por falta de texto o voz en off.
+
+3. HONESTIDAD: No inventes problemas. No fuerces positivismo. Si algo funciona bien, decilo. Si algo falla de verdad, decilo sin filtro. Un análisis que inventa problemas en un video exitoso es inútil.
+
+4. CTA IMPLÍCITO: Si el producto se vende solo visualmente y el espectador naturalmente pensaría "¿dónde lo compro?", eso es un cierre exitoso aunque nadie lo haya dicho en voz alta.
+
+5. VIABILIDAD DEL PRODUCTO: Si el análisis detectó PRODUCTO DE VENTA DIFÍCIL EN REDES, mencionalo como limitación estructural — no culpes al video por algo que es problema del producto en sí.
 
 ━━━━━━━━━━━━━━━━━━
-TAREA
+ANÁLISIS
 ━━━━━━━━━━━━━━━━━━
-
-Basándote SOLO en el análisis anterior, evaluá en profundidad:
-
-PRODUCTO Y VENTAS:
-- ¿Alguien que nunca vio este producto antes lo entendería al instante?
-- ¿El video genera ganas reales de comprarlo, o solo genera curiosidad y nada más?
-- ¿La razón para quererlo es lo suficientemente fuerte para este tipo de producto?
-- ¿El precio o el beneficio concreto aparece en el momento justo, o no hace falta porque el producto habla solo?
-- ¿El espectador confía lo suficiente como para ir a buscarlo después de verlo?
-
-REGLA DE CTA IMPLÍCITO:
-Si el producto se muestra funcionando de manera tan clara y satisfactoria que el
-espectador naturalmente lo buscaría en Google o preguntaría "¿dónde lo compro?",
-eso es un CTA exitoso aunque no haya ninguna frase de cierre, link ni countdown.
-No lo trates como un defecto — es una fortaleza UGC.
-
-REGLA DE EVIDENCIA REAL:
-Antes de analizar, respondé internamente esta pregunta:
-¿El video muestra el producto funcionando de forma visible y clara?
-Si la respuesta es SÍ, entonces:
-- El beneficio principal ESTÁ comunicado. No digas que no lo está.
-- La claridad del producto es alta. No la penalices por falta de explicación verbal.
-- El potencial de venta es real. No lo bajes por ausencia de copy formal.
-
-Un video con demostración visual clara y satisfactoria comunica más que cualquier
-texto o voz en off. Si el espectador ve el resultado con sus propios ojos, ya vendió.
-
-REGLA ANTI-INVENTAR PROBLEMAS:
-Si el video ya resuelve algo bien, no busques un problema teórico para mencionarlo.
-Solo señalá debilidades que realmente existan y que realmente perjudiquen la venta.
-Un análisis que inventa problemas en un video exitoso no es más riguroso — es menos útil.
-
+VENTAS:
+- ¿Alguien que nunca vio este producto lo entendería al instante?
+- ¿El video genera ganas reales de comprarlo, o solo curiosidad pasajera?
+- ¿La razón para quererlo es suficientemente fuerte?
+- ¿El espectador confía lo suficiente como para ir a buscarlo?
+- ¿El entorno o estado del producto activa desconfianza silenciosa?
+- Si hay una señal de rechazo visual: ¿en qué medida cancela el deseo que el resto del video construye?
 
 VIRALIDAD:
-- ¿El hook tiene potencial de detener el scroll? IMPORTANTE: un hook puede ser
-  una imagen, una acción, un sonido satisfactorio, o una demostración que empieza
-  en el primer segundo. No hace falta una frase de impacto ni texto en pantalla.
-  Si el primer frame ya muestra algo que genera curiosidad o deseo, el hook funciona.
-  No sugiereas "un hook más impactante" si el hook actual ya cumple su función.
-- ¿Hay un momento "compartible" o que genere comentarios?
+- ¿Los primeros segundos detendrían el scroll? (puede ser una imagen, acción o sonido — no hace falta texto)
+- ¿Hay un momento que la gente querría compartir o comentar?
 - ¿El video provoca una emoción fuerte o es demasiado neutral?
 
 RETENCIÓN:
 - ¿En qué segundo exacto estimás que el espectador promedio haría scroll?
 - ¿Qué parte del video pierde más energía?
-- ¿El ritmo ayuda o perjudica el objetivo?
 
 AUTENTICIDAD:
 - ¿Parece publicidad o contenido orgánico?
-- ¿La persona (si hay) genera confianza real?
 - ¿Hay algo que active desconfianza o escepticismo?
-AMBIENTE Y RECHAZO VISUAL:
-- ¿El entorno donde fue filmado genera confianza o activa desconfianza silenciosa?
-- ¿Hay alguna señal de rechazo visual detectada en el análisis perceptual?
-  Si la hay, ¿en qué medida cancela el deseo que el resto del video construye?
-- REGLA: Una señal de rechazo visual fuerte (suciedad, deterioro, desorden extremo,
-  producto en mal estado) puede destruir la intención de compra aunque el copy
-  y el producto sean excelentes. Tratala como una falla crítica, no menor.
-- ¿La emoción inicial que dispara el primer frame es compatible con lo que se vende?
-  (Ej: si vende lujo pero el primer frame da sensación de pobreza, hay un conflicto
-  que el espectador siente aunque no sepa explicarlo)
 
 ━━━━━━━━━━━━━━━━━━
-CRITERIO DE REALISMO VS. TEORÍA
+CRITERIO DE REALISMO
 ━━━━━━━━━━━━━━━━━━
-- No analices como un crítico de cine, analizá como un comprador con la tarjeta en la mano.
-- ¿El video tiene "Vibe de Ganador"? A veces, lo que parece "publicidad genérica" para una IA, para un humano es "un gadget que necesito ya".
-- Evaluá la "Demostración de Poder": ¿El video muestra el producto haciendo su magia? (Ej: un ventilador que tira frío). Si la respuesta es SÍ, el potencial de venta es altísimo, ignorá si el locutor no es perfecto.
-
-IMPORTANTE SOBRE EL LENGUAJE DE LAS MEJORAS:
-Escribí las mejoras como si le hablaras a alguien en una charla normal.
-Nada de términos como "CTA", "retención", "propuesta de valor", "hook", "UGC".
-En vez de "el hook no detiene el scroll", decí "los primeros segundos no enganchan lo suficiente".
-En vez de "el CTA es débil", decí "no queda claro qué tiene que hacer el espectador después de verlo".
+Analizá como un comprador con la tarjeta en la mano, no como un crítico de cine.
+Si el producto muestra su magia en pantalla (ej: un ventilador tirando frío, un rodillo llenándose de pelusa),
+el potencial de venta es altísimo aunque el locutor no sea perfecto.
 
 ━━━━━━━━━━━━━━━━━━
-IMPORTANTE
+RESULTADO
 ━━━━━━━━━━━━━━━━━━
-NO inventes. NO fuerces positivismo. NO uses frases vacías.
-Pero tampoco exageres los puntos débiles — evaluá con criterio práctico, no académico.
-Devolvé SOLO texto libre. Sin JSON. Sin puntajes.
-
-Incluí:
-- Fortalezas reales del video
-- Debilidades reales sin filtro
-- El momento exacto de mayor riesgo de perder atención
-- Si el producto se entiende o no, y qué consecuencia tiene eso en la venta
+Devolvé solo texto libre. Sin JSON. Sin puntajes. Incluí:
+- Fortalezas reales
+- Debilidades reales
+- El segundo exacto de mayor riesgo de perder atención
 - Percepción emocional del espectador
-- Percepción de compra: ¿compraría o seguiría scrolleando?
-- 3 mejoras concretas que respeten la personalidad del creador
+- ¿Compraría o seguiría scrolleando?
+- 3 mejoras concretas en lenguaje simple (sin términos como "CTA", "hook", "retención" — hablá como si fuera una charla normal)
 `;
 };
 
@@ -473,50 +399,44 @@ const buildScoringBrainPrompt = (strategyAnalysis, platform, objetivo, nicho) =>
   return `
 Sos un jurado experto en marketing digital, ventas y viralidad en ${platformNames[platform]}.
 
-Objetivo del video: ${objetivo}
-Nicho: ${nicho}
+Objetivo: ${objetivo} | Nicho: ${nicho}
 
-Leé este análisis estratégico completo:
-
+Leé este análisis estratégico:
 ${strategyAnalysis}
 
 ━━━━━━━━━━━━━━━━━━
-REGLA DE ORO DE VENTAS
+REGLAS DE PUNTAJE
 ━━━━━━━━━━━━━━━━━━
-Si el mecanismo del producto quedó confuso o muy poco claro para un
-espectador promedio, claridad_producto no puede superar 50/100.
-Si quedó parcialmente claro, el rango es 50-70.
-Solo si quedó muy claro, puede llegar a 70-100.
+CLARIDAD DEL PRODUCTO:
+- Confuso para el espectador promedio → máximo 50/100
+- Parcialmente claro → entre 50 y 70
+- Claro con demostración visual funcionando → mínimo 75 (ver es entender)
+
+PRODUCTO GANADOR:
+- Si el producto resuelve un problema visible y se muestra funcionando → claridad_producto y emocion_deseo mínimo 80
+- Si el factor wow es fuerte → emocion_deseo mínimo 75 y viralScore mínimo 65
+- Solo sé negativo si el video es aburrido o no se entiende qué vende
+
+CTA EN PRODUCTO FÍSICO:
+- Si el producto se vende solo visualmente → call_to_action se evalúa por si genera deseo de búsqueda, no por si hay instrucción explícita → mínimo 65
+
+RECHAZO VISUAL (si fue detectado en el análisis):
+- Señal leve → restar hasta 10 en produccion_estetica
+- Señal moderada → restar hasta 20 en produccion_estetica y hasta 15 en confianza_credibilidad
+- Señal fuerte → restar hasta 30 en produccion_estetica, hasta 25 en confianza_credibilidad, y potentialScore máximo 55
+- Si el primer frame dispara rechazo o indiferencia → hook máximo 40
+
+PRODUCTO DE VENTA DIFÍCIL EN REDES (si fue detectado):
+- potentialScore máximo 60
+- salesScore máximo 55
+- honestVerdict debe mencionarlo
 
 ━━━━━━━━━━━━━━━━━━
-REGLA DE ORO DE PRODUCTO GANADOR
-━━━━━━━━━━━━━━━━━━
-- Si el producto resuelve un problema (dolor) y se muestra funcionando claramente, la nota mínima en "claridad_producto" y "emocion_deseo" debe ser 80.
-- Un video puede ser visualmente pobre pero comercialmente brillante. Si el "uso práctico" es el protagonista, sé generoso con el puntaje.
-- Solo sé negativo si el video es ABURRIDO o si NO SE ENTIENDE qué vende.
-
-REGLA DE DEMOSTRACIÓN VISUAL COMO VENTA:
-Si el video muestra el producto en acción de forma clara y el resultado es visible
-(ej: el producto haciendo exactamente lo que promete), entonces:
-- claridad_producto tiene puntaje mínimo de 75.
-- salesScore tiene puntaje mínimo de 70.
-- No podés escribir en ningún campo que "el beneficio no se comunica" o que
-  "no queda claro qué vende".
-Estas reglas son absolutas. Si el producto se ve funcionando, el beneficio se comunicó.
-
-REGLA DE HOOK VISUAL:
-Si los primeros segundos muestran algo visualmente satisfactorio, sorprendente,
-o que genera curiosidad inmediata (aunque no haya texto ni voz), el hook es válido.
-No sugieras "mejorar el hook" si el hook ya está cumpliendo su función de retener.
-Solo criticá el hook si realmente no engancha — no porque no siga una estructura
-de manual.
-
-━━━━━━━━━━━━━━━━━━
-PONDERACIÓN PARA EL PUNTAJE TOTAL
+PONDERACIÓN
 ━━━━━━━━━━━━━━━━━━
 hook                   → 15%
 claridad_producto      → 15%
-confianza_credibilidad → 15%  
+confianza_credibilidad → 15%
 emocion_deseo          → 10%
 propuesta_valor        → 10%
 retencion_ritmo        → 10%
@@ -524,74 +444,55 @@ call_to_action         → 10%
 produccion_estetica    → 10%
 tendencias_formato     → 5%
 
-Evaluá cada categoría con un puntaje de 0 a 100 considerando el estándar del nicho ${nicho},
-no el de entretenimiento general. Incluí una explicación de máximo 2 oraciones directas por categoría.
-Evaluá con criterio práctico y realista. No penalices lo que funciona aunque no sea perfecto.
-
-REGLA DE CTA EN PRODUCTO FÍSICO:
-Si el nicho es "producto_fisico" y el análisis indica que el producto se vende solo
-visualmente (sin link, precio ni frase de cierre), la categoría "call_to_action"
-debe evaluarse sobre si el video genera deseo de buscar el producto, no sobre si
-hay una instrucción explícita. Un video donde el espectador naturalmente piensa
-"¿dónde compro esto?" tiene un CTA exitoso aunque nadie lo haya dicho en voz alta.
-En ese caso, el puntaje mínimo de call_to_action es 65.
+Evaluá cada categoría de 0 a 100 según el estándar del nicho ${nicho}.
+Máximo 2 oraciones por categoría, en lenguaje simple sin tecnicismos.
 
 ━━━━━━━━━━━━━━━━━━
 IMPORTANTE — CRÍTICO
 ━━━━━━━━━━━━━━━━━━
 Tu respuesta debe ser ÚNICAMENTE el objeto JSON.
-La primera línea de tu respuesta debe ser exactamente: {
-La última línea de tu respuesta debe ser exactamente: }
-No escribas NADA antes del {.
-No escribas NADA después del }.
-Ningún texto, ningún comentario, ningún bloque de código.
-Si un campo no tiene valor, usá una cadena vacía "" en vez de null.
-Nunca uses saltos de línea dentro de los valores de string.
-Nunca uses comillas dobles dentro de los valores — usá comillas simples si necesitás citar algo.
-Nunca uses tildes o caracteres especiales en los valores de las claves "explicacion" — escribilas en español simple sin accentos si es necesario.
-Los valores de tipo string deben ser siempre una sola línea, sin puntuación compleja.
+La primera línea debe ser exactamente: {
+La última línea debe ser exactamente: }
+Nada antes del {. Nada después del }.
+Si un campo no tiene valor, usá "". Nunca uses null.
+Nunca uses saltos de línea dentro de strings.
+Nunca uses comillas dobles dentro de valores — usá comillas simples.
+Evitá tildes y caracteres especiales en los campos "explicacion".
 
 {
   "vision": {
-    "niche": "<nicho detectado del video>",
+    "niche": "<nicho detectado>",
     "type": "<UGC | profesional | mixto>",
-    "audience": "<público objetivo detectado>",
-    "promise": "<promesa principal del video en una frase>"
+    "audience": "<público objetivo>",
+    "promise": "<promesa principal en una frase>"
   },
   "salesScore": {
     "score": 0,
     "titulo": "Potencial de Venta",
     "verdict": "<veredicto corto, máximo 8 palabras>",
-    "razon_principal": "<razón principal en 1 oración>",
+    "razon_principal": "<razón en 1 oración>",
     "accion_clave": "<acción concreta para mejorar la venta>"
   },
   "viralScore": {
     "score": 0,
     "titulo": "Potencial Viral",
     "verdict": "<veredicto corto, máximo 8 palabras>",
-    "razon_principal": "<razón principal en 1 oración>",
+    "razon_principal": "<razón en 1 oración>",
     "accion_clave": "<acción concreta para mejorar la viralidad>"
   },
-
-  "call_to_action": { 
-  "puntaje": 0, 
-  "tipo": "<explícito | implícito | ausente>",
-  "explicacion": "<máximo 2 oraciones en lenguaje simple, sin tecnicismos>" 
-}
-  
   "potentialScore": 0,
   "performanceScenario": "<escenario esperado en máximo 5 palabras>",
-  "honestVerdict": "<veredicto honesto sin filtro en 2 oraciones>",
+  "honestVerdict": "<veredicto honesto en 2 oraciones>",
   "hookDNA": {
     "strength": 0,
     "pattern": "<pregunta | shock | promesa | humor | dolor | curiosidad>",
-    "missingElement": "<qué le falta al hook>",
-    "optimizedHook": "<reescribí el hook respetando la personalidad del creador>"
+    "missingElement": "<qué le falta, o vacío si no le falta nada>",
+    "optimizedHook": "<hook reescrito respetando la personalidad del creador>"
   },
   "platformScores": {
-    "tiktok": { "score": 0, "verdict": "<veredicto corto>", "topTip": "<tip específico para TikTok>" },
-    "reels":  { "score": 0, "verdict": "<veredicto corto>", "topTip": "<tip específico para Reels>" },
-    "shorts": { "score": 0, "verdict": "<veredicto corto>", "topTip": "<tip específico para Shorts>" }
+    "tiktok": { "score": 0, "verdict": "<veredicto corto>", "topTip": "<tip específico>" },
+    "reels":  { "score": 0, "verdict": "<veredicto corto>", "topTip": "<tip específico>" },
+    "shorts": { "score": 0, "verdict": "<veredicto corto>", "topTip": "<tip específico>" }
   },
   "retentionData": {
     "at3s":  "<% estimado a los 3 segundos>",
@@ -613,8 +514,8 @@ Los valores de tipo string deben ser siempre una sola línea, sin puntuación co
     "practicalValue": 0,
     "stories": 0,
     "viralCoefficient": 0.0,
-    "dominantFactor": "<factor STEPPS más fuerte>",
-    "weakestFactor":  "<factor STEPPS más débil>",
+    "dominantFactor": "<factor más fuerte>",
+    "weakestFactor":  "<factor más débil>",
     "shareMotivation": "<motivación principal para compartir>"
   },
   "scrollStopScore": {
@@ -629,7 +530,7 @@ Los valores de tipo string deben ser siempre una sola línea, sin puntuación co
   "commentTrigger": {
     "probability": 0,
     "triggerType": "<debate | pregunta | identificación | humor | sorpresa>",
-    "suggestedCTA": "<CTA sugerido para generar comentarios>"
+    "suggestedCTA": "<comentario sugerido para generar interacción>"
   },
   "viewsPrediction": {
     "scenario_low":      "<views sin viralidad>",
@@ -641,16 +542,37 @@ Los valores de tipo string deben ser siempre una sola línea, sin puntuación co
     "optimalPostTime":      "<horario óptimo para publicar>",
     "firstActionAfterPost": "<acción inmediata después de publicar>",
     "commentSeed":          "<primer comentario propio sugerido>",
-    "engagementBoost":      "<estrategia boost de engagement primera hora>"
+    "engagementBoost":      "<estrategia de empuje primera hora>"
   },
   "styleProfile": {
     "detectedRhythm": "<lento | medio | dinámico | frenético>",
     "detectedTone":   "<serio | cercano | aspiracional | humorístico | urgente>"
   },
+  "productViability": {
+    "usageFrequency":    "<diaria | semanal | mensual | ocasional | única vez>",
+    "instantClarity":    "<fuerte | aceptable | débil>",
+    "everydayProblem":   "<fuerte | aceptable | débil>",
+    "audienceWidth":     "<masivo | nicho amplio | nicho específico>",
+    "purchaseFriction":  "<baja | media | alta>",
+    "wowFactor":         "<fuerte | aceptable | débil>",
+    "resultCredibility": "<fuerte | aceptable | débil>",
+    "weakFactors": 0,
+    "alert": "<vacío o advertencia si hay 3+ factores débiles>",
+    "verdict": "<una oración honesta sobre la ventaja o desventaja estructural del producto>"
+  },
+  "visualRepulsion": {
+    "detected": false,
+    "severity": "<ninguna | leve | moderada | fuerte>",
+    "element": "<qué genera el rechazo, o vacío>",
+    "second": "<en qué segundo aparece, o vacío>",
+    "initialEmotion": "<emoción del primer frame>",
+    "emotionCompatibility": "<compatible | conflicto leve | conflicto fuerte>",
+    "verdict": "<impacto en la venta en una oración>"
+  },
   "trendContext": "<tendencias actuales relevantes para ${nicho} en ${platformNames[platform]}>",
   "roadmap": ["<paso 1 prioritario>", "<paso 2>", "<paso 3>", "<paso 4>"],
   "trendResearch": {
-    "hooksWorking":  "<hooks que funcionan hoy en ${platformNames[platform]} para ${nicho}>",
+    "hooksWorking":  "<qué tipo de comienzos funcionan hoy en ${platformNames[platform]} para ${nicho}>",
     "topStructure":  "<estructura de video que más convierte ahora>",
     "sourceQuality": "<alta | media | baja>",
     "researchDate":  ""
@@ -667,7 +589,7 @@ Los valores de tipo string deben ser siempre una sola línea, sin puntuación co
     "emocion_deseo":          { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
     "propuesta_valor":        { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
     "retencion_ritmo":        { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
-    "call_to_action":         { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
+    "call_to_action":         { "puntaje": 0, "tipo": "<explícito | implícito | ausente>", "explicacion": "<máximo 2 oraciones>" },
     "produccion_estetica":    { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
     "tendencias_formato":     { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" }
   },
