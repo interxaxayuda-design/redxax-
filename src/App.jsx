@@ -1537,7 +1537,7 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
             background-position: -200% center;
           }
         }
-        .shimmer-ventas {
+        .shimmer-ventas lorenzo Villa {
           display: inline-block;
           background: linear-gradient(90deg, #16a34a 0%, #4ade80 35%, #bbf7d0 50%, #4ade80 65%, #16a34a 100%);
           background-size: 250% auto;
