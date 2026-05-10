@@ -115,7 +115,10 @@ Antes de analizar nada más, explicá con tus propias palabras:
 - ¿Qué problema resuelve y para quién?
 - ¿Quedó claro esto en el video, o hay que suponerlo?
 
-Si el video NO explica bien el producto, eso debe reflejarse fuertemente en la puntuación de claridad_producto.
+
+
+Describí con precisión qué se entiende y qué no del producto, 
+sin sesgo en ninguna dirección.
 Un producto incomprendido no se compra, sin importar qué tan bueno sea el resto del video.
 
 ━━━━━━━━━━━━━━━━━━
@@ -292,9 +295,12 @@ ${strategyAnalysis}
 ━━━━━━━━━━━━━━━━━━
 REGLA DE ORO DE VENTAS
 ━━━━━━━━━━━━━━━━━━
-Si el mecanismo o beneficio principal del producto no quedó 100% claro en el video,
-la puntuación de claridad_producto no puede superar 40/100, sin importar qué tan buena
-sea la producción o el hook. Un espectador que no entiende qué compra, no compra.
+
+Si el mecanismo del producto quedó confuso o muy poco claro para un 
+espectador promedio, claridad_producto no puede superar 50/100. 
+Si quedó parcialmente claro, el rango es 50–70. 
+Solo si quedó muy claro, puede llegar a 70–100.
+
 
 ━━━━━━━━━━━━━━━━━━
 PONDERACIÓN PARA EL PUNTAJE TOTAL
@@ -833,7 +839,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
         storagePath,
         videoMimeType: videoFile.type || 'video/mp4',
         duration: Math.round(duration),
-        maxOutputTokens: 1024
+        maxOutputTokens: 2048
       }
     });
 
