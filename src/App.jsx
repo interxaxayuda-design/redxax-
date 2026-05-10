@@ -66,34 +66,62 @@ const GEM_PACKAGES = [
 ];
 
 function safeParseJSON(rawText, context = '') {
-  const clean = (str) => str
-    .replace(/```json|```/g, '')
-    .trim()
-    // Elimina saltos de línea dentro de valores string JSON
-    .replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (match) =>
-      match.replace(/\n/g, ' ').replace(/\r/g, ' ')
-    );
+
+  // Limpiador nuclear: recorre carácter por carácter
+  // y reemplaza saltos de línea SOLO dentro de strings
+  const deepClean = (str) => {
+    const base = str.replace(/```json|```/g, '').trim();
+    let result = '';
+    let inString = false;
+    let escape = false;
+
+    for (let i = 0; i < base.length; i++) {
+      const ch = base[i];
+
+      if (escape) {
+        result += ch;
+        escape = false;
+        continue;
+      }
+      if (ch === '\\' && inString) {
+        result += ch;
+        escape = true;
+        continue;
+      }
+      if (ch === '"') {
+        inString = !inString;
+        result += ch;
+        continue;
+      }
+      if (inString && (ch === '\n' || ch === '\r' || ch === '\t')) {
+        result += ' ';
+        continue;
+      }
+      result += ch;
+    }
+    return result;
+  };
 
   try {
-    return JSON.parse(clean(rawText));
+    return JSON.parse(deepClean(rawText));
   } catch (firstErr) {
     console.warn(`JSON inválido en [${context}], intentando reparar...`);
     try {
-      const match = clean(rawText).match(/\{[\s\S]*\}/);
+      const match = deepClean(rawText).match(/\{[\s\S]*\}/);
       if (match) return JSON.parse(match[0]);
     } catch {}
     try {
-      const cleaned = clean(rawText)
+      const nuclear = rawText
+        .replace(/```json|```/g, '')
         .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
-        .replace(/\n/g, ' ').replace(/\r/g, ' ').replace(/\t/g, ' ');
-      const match2 = cleaned.match(/\{[\s\S]*\}/);
+        .trim();
+      const match2 = nuclear.match(/\{[\s\S]*\}/);
       if (match2) return JSON.parse(match2[0]);
     } catch {}
     console.error(`JSON inválido en [${context}]:`, firstErr.message);
     throw new Error(`JSON malformado. Preview: "${rawText.slice(0, 80)}..."`);
   }
 }
-
 
 const NICHE_CRITERIA = {
   producto_fisico: [
