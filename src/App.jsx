@@ -65,18 +65,14 @@ const GEM_PACKAGES = [
   { id: 'elite',   gems: 6000, price: 15, label: 'Elite',   analyses: '60 análisis', popular: false },
 ];
 
-function safeParseJSON(rawText, context = '') {
+const safeParseJSON = (rawText, context = '') => {
   const aggressiveClean = (str) => {
-    // 1. Quitar bloques de código
     let s = str.replace(/```json|```/g, '').trim();
-
-    // 2. Extraer solo el objeto JSON principal
     const start = s.indexOf('{');
     const end = s.lastIndexOf('}');
     if (start === -1 || end === -1) throw new Error('No se encontró objeto JSON');
     s = s.slice(start, end + 1);
 
-    // 3. Limpiar carácter por carácter — reemplazar saltos y tabs dentro de strings
     let result = '';
     let inString = false;
     let escape = false;
@@ -85,12 +81,10 @@ function safeParseJSON(rawText, context = '') {
       const ch = s[i];
 
       if (escape) {
-        // Validar escapes: solo permitir los válidos en JSON
         if (['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u'].includes(ch)) {
           result += ch;
         } else {
-          // Escape inválido — descartar la barra y poner el char
-          result += ch;
+          result += ch; // escape inválido: descartamos la barra y mantenemos el char
         }
         escape = false;
         continue;
@@ -103,22 +97,30 @@ function safeParseJSON(rawText, context = '') {
       }
 
       if (ch === '"') {
-        inString = !inString;
-        result += ch;
+        if (!inString) {
+          inString = true;
+          result += ch;
+        } else {
+          // ── LOOKAHEAD: ¿es el cierre real del string? ──
+          // Saltar whitespace y ver qué carácter estructural sigue
+          let j = i + 1;
+          while (j < s.length && (s[j] === ' ' || s[j] === '\t' || s[j] === '\n' || s[j] === '\r')) j++;
+          const next = s[j];
+          if ([',', '}', ']', ':'].includes(next) || j >= s.length) {
+            // Comilla de cierre legítima
+            inString = false;
+            result += ch;
+          } else {
+            // Comilla embebida sin escapar → reemplazar con comilla simple
+            result += "'";
+          }
+        }
         continue;
       }
 
       if (inString) {
-        if (ch === '\n' || ch === '\r') {
-          result += ' ';
-          continue;
-        }
-        if (ch === '\t') {
-          result += ' ';
-          continue;
-        }
-        // Reemplazar comillas dobles sin escapar dentro de strings
-        // (ya manejado por el toggle de inString, pero por si acaso)
+        if (ch === '\n' || ch === '\r') { result += ' '; continue; }
+        if (ch === '\t')               { result += ' '; continue; }
       }
 
       result += ch;
@@ -127,31 +129,14 @@ function safeParseJSON(rawText, context = '') {
     return result;
   };
 
-  // Intento 1: limpieza agresiva
+  // Intento 1: limpieza con lookahead
   try {
     return JSON.parse(aggressiveClean(rawText));
   } catch (err1) {
     console.warn(`[${context}] Intento 1 falló:`, err1.message);
   }
 
-  // Intento 2: reemplazar comillas problemáticas dentro de valores
-  try {
-    const cleaned = aggressiveClean(rawText);
-    // Reemplazar comillas dobles dentro de valores string con comillas simples
-    const fixed = cleaned.replace(
-      /("(?:[^"\\]|\\.)*")/g,
-      (match) => {
-        // Dentro del valor (sin las comillas externas), reemplazar " con '
-        const inner = match.slice(1, -1).replace(/(?<!\\)"/g, "'");
-        return `"${inner}"`;
-      }
-    );
-    return JSON.parse(fixed);
-  } catch (err2) {
-    console.warn(`[${context}] Intento 2 falló:`, err2.message);
-  }
-
-  // Intento 3: nuclear — quitar todo control character
+  // Intento 2: nuclear — quitar todos los control characters
   try {
     const nuclear = rawText
       .replace(/```json|```/g, '')
@@ -162,12 +147,12 @@ function safeParseJSON(rawText, context = '') {
     if (start !== -1 && end !== -1) {
       return JSON.parse(nuclear.slice(start, end + 1));
     }
-  } catch (err3) {
-    console.warn(`[${context}] Intento 3 falló:`, err3.message);
+  } catch (err2) {
+    console.warn(`[${context}] Intento 2 falló:`, err2.message);
   }
 
   throw new Error(`JSON malformado. Preview: "${rawText.slice(0, 80)}..."`);
-}
+};
 
 const NICHE_CRITERIA = {
   producto_fisico: [
