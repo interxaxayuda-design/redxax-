@@ -254,7 +254,7 @@ Mirá el entorno como alguien que ve el video por primera vez:
 - Si hay una persona: ¿genera confianza o distancia involuntaria?
 - Si es una propiedad: ¿da ganas de estar ahí o genera rechazo?
 
-¿Qué emoción dispara el primer frame? (deseo / curiosidad / confianza / indiferencia / duda / rechazo / asco / aspiración/ satifactorio)
+¿Qué emoción dispara el primer frame? (deseo / curiosidad / confianza / indiferencia / duda / rechazo / asco / aspiración)
 ¿Esa emoción ayuda o perjudica lo que se vende?
 
 ⚠️ Si hay algo que generaría rechazo inmediato, marcalo como: SEÑAL DE RECHAZO VISUAL: [qué es] [en qué segundo]
@@ -282,11 +282,67 @@ Respondé SÍ, PARCIALMENTE o NO. Describí brevemente qué viste que lo justifi
 ${criterios}
 
 ━━━━━━━━━━━━━━━━━━
-4. CRITERIOS UNIVERSALES
+4. EDICIÓN, MÚSICA Y RITMO
+━━━━━━━━━━━━━━━━━━
+REGLA CRÍTICA ANTES DE EVALUAR:
+Producción simple NO es producción mala. Un video grabado con el celular puede funcionar
+perfectamente si retiene atención y genera deseo. Solo penalizá edición, música o ritmo
+si están causando uno de estos problemas concretos:
+→ hacen perder atención en un segundo específico
+→ dificultan entender el producto
+→ generan una sensación de desconfianza activa
+→ contradicen emocionalmente lo que se vende
+Si ninguna de estas cosas está pasando, la producción simple es neutral o hasta una ventaja UGC.
+
+EDICIÓN:
+- ¿Los cortes ayudan a mantener la atención o hay momentos muertos? ¿En qué segundo?
+- ¿El ritmo visual acompaña la energía del producto o la contradice?
+- ¿Los textos en pantalla (si hay) clarifican o estorban?
+
+MÚSICA Y AUDIO:
+- ¿La música suma energía real o es tan genérica que no aporta ni resta nada?
+- ¿El volumen compite con la voz o está bien balanceado?
+- ¿La música encaja emocionalmente con lo que se vende?
+- Si no hay música: ¿el silencio o sonido ambiente funciona para este tipo de video?
+
+ABURRIMIENTO:
+- ¿Hay algún momento donde el video pierde completamente el propósito?
+- Siendo honesto: ¿un espectador promedio llegaría al final?
+
+━━━━━━━━━━━━━━━━━━
+5. MOTORES DE RETENCIÓN
+━━━━━━━━━━━━━━━━━━
+Estos son los mecanismos reales que hacen que un video funcione en ${platformNames[platform]}
+aunque la producción sea simple. Detectá cuáles están presentes:
+
+SATISFACCIÓN VISUAL — ¿Hay algo que da recompensa visual inmediata?
+(limpiar, transformar, cortar, antes/después, ver algo funcionando, texturas, resultado)
+¿El espectador obtiene placer de solo mirar, aunque no sepa nada del producto?
+
+CURIOSIDAD ABIERTA — ¿El video abre una pregunta mental que obliga a seguir mirando?
+(algo raro, resultado parcial, acción que empieza sin contexto, objeto desconocido)
+¿Hay una razón natural para no hacer scroll antes de ver el final?
+
+MICRO-RECOMPENSAS — ¿El video entrega pequeñas recompensas constantes?
+(cambio de plano, zoom, resultado, texto nuevo, sonido satisfactorio, revelación)
+¿O se siente plano durante demasiado tiempo sin que pase nada?
+
+CONSUMIBILIDAD — ¿Se puede entender y disfrutar sin esfuerzo mental?
+¿O exige demasiada atención, explicación larga, texto denso, contexto previo?
+Un video que se puede consumir pasivamente tiene enorme ventaja en ${platformNames[platform]}.
+
+NATURALIDAD DE PLATAFORMA — ¿Parece contenido orgánico de ${platformNames[platform]}?
+¿O parece una publicidad tradicional reciclada para redes?
+Los videos que parecen "publicidad" pierden atención mucho más rápido.
+
+Para cada motor: indicá si está PRESENTE, PARCIAL o AUSENTE, con una línea explicando por qué.
+
+━━━━━━━━━━━━━━━━━━
+5. CRITERIOS UNIVERSALES
 ━━━━━━━━━━━━━━━━━━
 - ¿Los primeros 3-5 segundos detendrían el scroll en ${platformNames[platform]}?
   IMPORTANTE: el primer frame puede ser una imagen, una acción o algo satisfactorio — no hace falta texto ni voz.
-- ¿El ritmo es dinámico o hay momentos muertos?
+- ¿El ritmo general es dinámico o hay momentos muertos?
 - ¿La producción ayuda o perjudica la credibilidad?
 - ¿Qué emoción predomina en el video?
 - ¿En qué segundo estimás que el espectador promedio haría scroll?
@@ -294,7 +350,7 @@ ${criterios}
   Si el producto se vende solo visualmente (sin link ni precio), eso también cuenta como válido.
 
 ━━━━━━━━━━━━━━━━━━
-5. PERSONALIDAD DEL CREADOR
+6. PERSONALIDAD DEL CREADOR
 ━━━━━━━━━━━━━━━━━━
 - Tono general: (ej: informal y cercano / aspiracional / educativo / humorístico / directo)
 - Estilo de comunicación: (ej: habla directo a cámara, usa humor, explica con ejemplos cotidianos)
@@ -302,12 +358,24 @@ ${criterios}
 - Riesgo de personalidad: ninguno | leve | alto — una línea explicando por qué
 
 ━━━━━━━━━━━━━━━━━━
-REGLAS IMPORTANTES
+REGLAS DE HONESTIDAD
 ━━━━━━━━━━━━━━━━━━
-- Si el producto se muestra haciendo su función de forma visible (ej: un rodillo llenándose de pelusa),
-  el beneficio ESTÁ comunicado. Ver es entender. Nunca escribas "el beneficio no se comunica" si la demostración visual es clara.
-- Si el producto resuelve un problema real de forma obvia, eso compensa cualquier falta de calidad técnica.
-- No pongas puntajes ni JSON. Solo texto descriptivo preciso.
+Tu trabajo es decir la verdad, no hacer sentir bien al creador. Pero tampoco destruir lo que funciona.
+Usá este criterio según lo que encontrás:
+
+SI EL VIDEO TIENE PROBLEMAS GRAVES (producto sucio/usado, edición muy mala, audio horrible, video aburrido de principio a fin):
+→ Decilo claro y directo. Explicá exactamente qué está mal y qué consecuencia tiene en la venta.
+→ Ejemplo: "El producto se ve usado y con manchas visibles. Eso genera desconfianza inmediata y ningún texto puede compensarlo."
+
+SI EL VIDEO TIENE PROBLEMAS MODERADOS (música genérica, un momento muerto, ritmo algo lento):
+→ Mencionalo con honestidad pero sin exagerar. Explicá cómo se podría mejorar fácilmente.
+→ Ejemplo: "La música de fondo no aporta nada. Cambiarla por algo con más energía haría el video sentir más dinámico."
+
+SI EL VIDEO FUNCIONA BIEN:
+→ Decilo sin inventar problemas para parecer más riguroso. Un análisis que critica lo que funciona es inútil.
+
+REGLA FINAL: Si el producto se muestra haciendo su función de forma visible, el beneficio ESTÁ comunicado.
+Ver es entender. No pongas puntajes ni JSON. Solo texto descriptivo preciso.
 `;
 };
 
@@ -336,11 +404,31 @@ REGLAS BASE (leelas antes de analizar)
 
 2. EVIDENCIA VISUAL: Si el video muestra el producto funcionando de forma clara, el beneficio ESTÁ comunicado. No digas que no lo está. No bajes el potencial de venta por falta de texto o voz en off.
 
-3. HONESTIDAD: No inventes problemas. No fuerces positivismo. Si algo funciona bien, decilo. Si algo falla de verdad, decilo sin filtro. Un análisis que inventa problemas en un video exitoso es inútil.
+3. HONESTIDAD CALIBRADA: Evaluá los problemas según su gravedad real.
+   - Problema grave (producto en mal estado, edición muy mala, audio que molesta, video completamente aburrido) → decilo directo, es una falla crítica que afecta la venta.
+   - Problema moderado (música genérica, un momento lento, ritmo mejorable) → mencionalo con contexto y solución concreta.
+   - Cosa que funciona bien → reconocelo sin inventar problemas encima.
+   No todo merece el mismo nivel de alarma. Graduá la crítica según el impacto real.
 
 4. CTA IMPLÍCITO: Si el producto se vende solo visualmente y el espectador naturalmente pensaría "¿dónde lo compro?", eso es un cierre exitoso aunque nadie lo haya dicho en voz alta.
 
 5. VIABILIDAD DEL PRODUCTO: Si el análisis detectó PRODUCTO DE VENTA DIFÍCIL EN REDES, mencionalo como limitación estructural — no culpes al video por algo que es problema del producto en sí.
+
+6. PRODUCCIÓN SIMPLE ≠ PROBLEMA: Solo penalizá edición, música o ritmo si están causando
+   un problema concreto: pierden atención, dificultan entender, generan desconfianza activa,
+   o contradicen emocionalmente lo que se vende. Si la producción es simple pero los motores
+   de retención funcionan, no penalices. Un video sin edición profesional puede funcionar
+   perfectamente si tiene satisfacción visual, curiosidad o consumibilidad alta.
+
+━━━━━━━━━━━━━━━━━━
+MOTORES DE RETENCIÓN DETECTADOS
+━━━━━━━━━━━━━━━━━━
+El análisis anterior evaluó los motores de retención reales del video. Usá esa info así:
+- SATISFACCIÓN VISUAL fuerte → puede funcionar aunque la producción sea básica. No penalices calidad técnica.
+- CURIOSIDAD ABIERTA presente → hay retención real aunque el comienzo no sea "de manual".
+- CONSUMIBILIDAD alta → ventaja enorme en plataforma, aunque el video parezca simple.
+- NATURALIDAD DE PLATAFORMA fuerte → es una fortaleza, no "falta de producción profesional".
+- MICRO-RECOMPENSAS escasas y video plano → eso sí es debilidad real que afecta retención.
 
 ━━━━━━━━━━━━━━━━━━
 ANÁLISIS
@@ -358,9 +446,23 @@ VIRALIDAD:
 - ¿Hay un momento que la gente querría compartir o comentar?
 - ¿El video provoca una emoción fuerte o es demasiado neutral?
 
+EDICIÓN, MÚSICA Y PRODUCCIÓN:
+- ¿La edición se siente intencional o parece que se grabó y se subió sin tocar?
+- ¿Hay momentos muertos donde el espectador no tiene ninguna razón para seguir mirando?
+- ¿La música acompaña la energía del producto o es tan genérica que pasa desapercibida?
+- ¿El ritmo visual es compatible con lo que se vende? (producto energético con edición lenta = problema real)
+- Si el video es aburrido en alguna parte: ¿en qué segundo exacto y qué consecuencia tiene?
+- ¿El audio en general suma credibilidad o resta?
+
+ESTADO DEL PRODUCTO:
+- ¿El producto se ve nuevo, limpio y deseable, o hay señales de que está usado, deteriorado o en mal estado?
+- Si hay manchas, golpes o signos de desgaste: ¿eso destruye la intención de compra o es irrelevante para este producto?
+
+
 RETENCIÓN:
 - ¿En qué segundo exacto estimás que el espectador promedio haría scroll?
 - ¿Qué parte del video pierde más energía?
+- ¿Los motores de retención (satisfacción visual, curiosidad, micro-recompensas) compensan una producción simple?
 
 AUTENTICIDAD:
 - ¿Parece publicidad o contenido orgánico?
@@ -420,7 +522,22 @@ PRODUCTO GANADOR:
 CTA EN PRODUCTO FÍSICO:
 - Si el producto se vende solo visualmente → call_to_action se evalúa por si genera deseo de búsqueda, no por si hay instrucción explícita → mínimo 65
 
-RECHAZO VISUAL (si fue detectado en el análisis):
+PRODUCCIÓN SIMPLE ≠ PROBLEMA:
+Solo penalizá produccion_estetica o retencion_ritmo si la producción está causando
+un daño concreto y verificable: pérdida de atención, confusión, desconfianza activa,
+o contradicción emocional con lo que se vende.
+Si el video es simple pero tiene satisfacción visual fuerte, curiosidad abierta o
+consumibilidad alta → produccion_estetica no puede bajar de 55 solo por "parecer amateur".
+La producción simple que funciona en plataforma es una fortaleza UGC, no una debilidad.
+
+
+- Si la edición tiene momentos muertos claros o el ritmo contradice la energía del producto → retencion_ritmo máximo 50
+- Si la música es completamente genérica e invisible → restar hasta 10 en produccion_estetica
+- Si el audio molesta o compite con la voz → restar hasta 15 en produccion_estetica y hasta 10 en confianza_credibilidad
+- Si el video es aburrido de principio a fin (sin momentos de interés real) → emocion_deseo máximo 40 y viralScore máximo 45
+- Si el producto se ve usado, con manchas o deteriorado → confianza_credibilidad máximo 45 sin importar el resto del video
+
+
 - Señal leve → restar hasta 10 en produccion_estetica
 - Señal moderada → restar hasta 20 en produccion_estetica y hasta 15 en confianza_credibilidad
 - Señal fuerte → restar hasta 30 en produccion_estetica, hasta 25 en confianza_credibilidad, y potentialScore máximo 55
@@ -560,15 +677,25 @@ Evitá tildes y caracteres especiales en los campos "explicacion".
     "alert": "<vacío o advertencia si hay 3+ factores débiles>",
     "verdict": "<una oración honesta sobre la ventaja o desventaja estructural del producto>"
   },
-  "visualRepulsion": {
-    "detected": false,
-    "severity": "<ninguna | leve | moderada | fuerte>",
-    "element": "<qué genera el rechazo, o vacío>",
-    "second": "<en qué segundo aparece, o vacío>",
-    "initialEmotion": "<emoción del primer frame>",
-    "emotionCompatibility": "<compatible | conflicto leve | conflicto fuerte>",
-    "verdict": "<impacto en la venta en una oración>"
+  "retentionEngines": {
+    "visualSatisfaction": "<presente | parcial | ausente>",
+    "openLoop":           "<presente | parcial | ausente>",
+    "microRewards":       "<presentes | escasas | ausentes>",
+    "consumability":      "<alta | media | baja>",
+    "platformNaturalness":"<orgánico | mixto | parece publicidad>",
+    "dominantEngine":     "<motor de retención más fuerte del video>",
+    "verdict":            "<una oración sobre si los motores compensan la producción simple o no>"
   },
+  "editingAudio": {
+    "editingQuality":  "<intencional | amateur | sin editar>",
+    "deadMoments":     "<ninguno | leve | varios — con segundo aproximado>",
+    "musicFit":        "<perfecta | genérica | ausente | contraproducente>",
+    "audioBalance":    "<bien balanceado | música muy alta | muy silencioso>",
+    "rhythmVsProduct": "<compatible | contradice la energía del producto>",
+    "boringRisk":      "<bajo | medio | alto>",
+    "verdict":         "<una oración honesta sobre el impacto real de edición y audio en la venta>"
+  },
+  "visualRepulsion": {
   "trendContext": "<tendencias actuales relevantes para ${nicho} en ${platformNames[platform]}>",
   "roadmap": ["<paso 1 prioritario>", "<paso 2>", "<paso 3>", "<paso 4>"],
   "trendResearch": {
