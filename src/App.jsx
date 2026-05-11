@@ -79,77 +79,79 @@ const safeParseJSON = (rawText, context = '') => {
 
     for (let i = 0; i < s.length; i++) {
       const ch = s[i];
-
       if (escape) {
         if (['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u'].includes(ch)) {
           result += ch;
         } else {
-          result += ch; // escape inválido: descartamos la barra y mantenemos el char
+          result += ch;
         }
         escape = false;
         continue;
       }
-
-      if (ch === '\\' && inString) {
-        result += ch;
-        escape = true;
-        continue;
-      }
-
+      if (ch === '\\' && inString) { result += ch; escape = true; continue; }
       if (ch === '"') {
-        if (!inString) {
-          inString = true;
-          result += ch;
-        } else {
-          // ── LOOKAHEAD: ¿es el cierre real del string? ──
-          // Saltar whitespace y ver qué carácter estructural sigue
+        if (!inString) { inString = true; result += ch; }
+        else {
           let j = i + 1;
           while (j < s.length && (s[j] === ' ' || s[j] === '\t' || s[j] === '\n' || s[j] === '\r')) j++;
           const next = s[j];
           if ([',', '}', ']', ':'].includes(next) || j >= s.length) {
-            // Comilla de cierre legítima
-            inString = false;
-            result += ch;
+            inString = false; result += ch;
           } else {
-            // Comilla embebida sin escapar → reemplazar con comilla simple
             result += "'";
           }
         }
         continue;
       }
-
       if (inString) {
         if (ch === '\n' || ch === '\r') { result += ' '; continue; }
-        if (ch === '\t')               { result += ' '; continue; }
+        if (ch === '\t') { result += ' '; continue; }
       }
-
       result += ch;
     }
-
     return result;
   };
 
   // Intento 1: limpieza con lookahead
-  try {
-    return JSON.parse(aggressiveClean(rawText));
-  } catch (err1) {
-    console.warn(`[${context}] Intento 1 falló:`, err1.message);
-  }
+  try { return JSON.parse(aggressiveClean(rawText)); }
+  catch (err1) { console.warn(`[${context}] Intento 1 falló:`, err1.message); }
 
-  // Intento 2: nuclear — quitar todos los control characters
+  // Intento 2: nuclear — quitar control characters
   try {
-    const nuclear = rawText
-      .replace(/```json|```/g, '')
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ')
-      .trim();
+    const nuclear = rawText.replace(/```json|```/g, '').replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ').trim();
     const start = nuclear.indexOf('{');
     const end = nuclear.lastIndexOf('}');
-    if (start !== -1 && end !== -1) {
-      return JSON.parse(nuclear.slice(start, end + 1));
+    if (start !== -1 && end !== -1) return JSON.parse(nuclear.slice(start, end + 1));
+  } catch (err2) { console.warn(`[${context}] Intento 2 falló:`, err2.message); }
+
+  // Intento 3: reparar JSON truncado — cerrar strings/arrays/objects abiertos
+  try {
+    let s = rawText.replace(/```json|```/g, '').replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ').trim();
+    const start = s.indexOf('{');
+    if (start !== -1) s = s.slice(start);
+
+    // Remover coma trailing antes de cerrar
+    s = s.replace(/,\s*([\]}])/g, '$1');
+
+    // Contar llaves/corchetes para cerrar lo que falta
+    let opens = 0, opensArr = 0, inStr = false, esc = false;
+    for (const ch of s) {
+      if (esc) { esc = false; continue; }
+      if (ch === '\\' && inStr) { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === '{') opens++;
+      if (ch === '}') opens--;
+      if (ch === '[') opensArr++;
+      if (ch === ']') opensArr--;
     }
-  } catch (err2) {
-    console.warn(`[${context}] Intento 2 falló:`, err2.message);
-  }
+    // Cerrar lo que quedó abierto
+    let closing = '';
+    for (let i = 0; i < opensArr; i++) closing += ']';
+    for (let i = 0; i < opens; i++) closing += '}';
+    const repaired = s.trimEnd().replace(/,\s*$/, '') + closing;
+    return JSON.parse(repaired);
+  } catch (err3) { console.warn(`[${context}] Intento 3 (reparación) falló:`, err3.message); }
 
   throw new Error(`JSON malformado. Preview: "${rawText.slice(0, 80)}..."`);
 };
@@ -681,31 +683,37 @@ Evitá tildes y caracteres especiales en los campos "explicacion".
     "verdict":         "<una oración honesta sobre el impacto real de edición y audio en la venta>"
   },
   "visualRepulsion": {
+    "hasRepulsion": false,
+    "signal": "<vacío si no hay señal | descripción breve de qué genera rechazo>",
+    "second": "<segundo aproximado donde ocurre, o vacío>",
+    "severity": "<ninguna | leve | moderada | fuerte>",
+    "impact": "<cómo afecta la intención de compra, o vacío>"
+  },
   "trendContext": "<tendencias actuales relevantes para ${nicho} en ${platformNames[platform]}>",
   "roadmap": ["<paso 1 prioritario>", "<paso 2>", "<paso 3>", "<paso 4>"],
   "trendResearch": {
-    "hooksWorking":  "<qué tipo de comienzos funcionan hoy en ${platformNames[platform]} para ${nicho}>",
-    "topStructure":  "<estructura de video que más convierte ahora>",
+    "hooksWorking": "<qué tipo de comienzos funcionan hoy en ${platformNames[platform]} para ${nicho}>",
+    "topStructure": "<estructura de video que más convierte ahora>",
     "sourceQuality": "<alta | media | baja>",
-    "researchDate":  ""
+    "researchDate": ""
   },
   "gapAnalysis": {
-    "biggestGap":           "<brecha más grande entre este video y lo que funciona>",
-    "quickWin":             "<cambio más rápido que mejoraría el resultado>",
+    "biggestGap": "<brecha más grande entre este video y lo que funciona>",
+    "quickWin": "<cambio más rápido que mejoraría el resultado>",
     "competitiveAdvantage": "<qué tiene este video que pocos hacen bien>"
   },
   "categorias": {
-    "hook":                   { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
-    "claridad_producto":      { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
-    "confianza_credibilidad": { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
-    "emocion_deseo":          { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
-    "propuesta_valor":        { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
-    "retencion_ritmo":        { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
-    "call_to_action":         { "puntaje": 0, "tipo": "<explícito | implícito | ausente>", "explicacion": "<máximo 2 oraciones>" },
-    "produccion_estetica":    { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" },
-    "tendencias_formato":     { "puntaje": 0, "explicacion": "<máximo 2 oraciones>" }
+    "hook":                   { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
+    "claridad_producto":      { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
+    "confianza_credibilidad": { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
+    "emocion_deseo":          { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
+    "propuesta_valor":        { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
+    "retencion_ritmo":        { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
+    "call_to_action":         { "puntaje": 0, "tipo": "<explicito | implicito | ausente>", "explicacion": "<maximo 2 oraciones sin tildes>" },
+    "produccion_estetica":    { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
+    "tendencias_formato":     { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" }
   },
-  "updatedHook":    "<hook reescrito respetando la personalidad del creador>",
+  "updatedHook": "<hook reescrito respetando la personalidad del creador>",
   "updatedRoadmap": ["<paso 1>", "<paso 2>", "<paso 3>"]
 }`;
 };
