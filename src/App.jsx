@@ -22,7 +22,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import logo from './assets/logo.png';
 
-import { createClient } from '@supabase/supabase-js'; //phaseScores  //toggleStep
+import { createClient } from '@supabase/supabase-js'; //phaseScores  //toggleStep  //const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
 
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso';
@@ -779,6 +779,8 @@ const App = () => {
   const [gems, setGems] = useState(null);
   const [showGemStore, setShowGemStore] = useState(false);
   const [gemError, setGemError] = useState(null);
+  const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
+  const CHAT_WORD_LIMIT = 1000;
   const toggleStep = (index) => {
   setCompletedSteps(prev =>
     prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
@@ -1087,6 +1089,8 @@ const reportActualOutcome = async (historyId, actualViews) => {
   } //onChange={(e) => {
 };
 
+
+
 const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
   if (videoFile.size > 45 * 1024 * 1024) {
@@ -1142,7 +1146,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho),
-        maxOutputTokens: 3584  // más margen para el bloque FLAGS
+        maxOutputTokens: 3584  // más margen para el bloque FLAGS //const CHAT_WORD_LIMIT = 1000;
       }
     });
 
