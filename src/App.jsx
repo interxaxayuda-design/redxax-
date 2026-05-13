@@ -259,6 +259,12 @@ Describí exactamente lo que se ve en el primer frame:
 - ¿Hay suciedad, desorden, manchas, golpes o deterioro visible en el producto o el entorno? Si sí: describí dónde exactamente y en qué segundo aparece.
 - ¿Hay una persona? ¿Qué expresión facial tiene? ¿Está mirando a cámara o no?
 
+DINAMISMO VISUAL:
+- ¿Cada 2-3 segundos ocurre un cambio visual relevante?
+- ¿El video depende demasiado de imágenes estáticas?
+- ¿Hay movimiento real o sensación de progresión constante?
+- ¿Existen ventanas visuales "muertas" donde nada cambia?
+
  Si hay suciedad, manchas o deterioro: marcalo como SEÑAL DE RECHAZO VISUAL: [descripción exacta] [segundo]
 
 
@@ -364,6 +370,10 @@ REGLAS BASE
 
 4. LOS MOTORES DE RETENCIÓN COMPENSAN PRODUCCIÓN SIMPLE. Si el reporte forense detectó satisfacción visual fuerte, curiosidad abierta, o consumibilidad alta: no penalices la calidad técnica. Eso ya es un video que funciona.
 
+DINAMISMO Y RETENCIÓN:
+- ¿La falta de cambios visuales reduce retención?
+- ¿El video mantiene sensación de progresión?
+- ¿Hay estancamiento visual?
 
 ANÁLISIS ESTRATÉGICO
 
@@ -407,8 +417,17 @@ No lo omitas. No lo modifiques. Solo completá los valores con true/false o el s
   "visual_repulsion": <true si hay algo que generaría rechazo físico o desconfianza inmediata | false>,
   "visual_repulsion_severity": "<ninguna | leve | moderada | fuerte>",
   "first_frame_repulsion": <true si el PRIMER FRAME específicamente dispara rechazo o indiferencia total | false>,
+
   "dead_moment": <true si hay al menos un período de más de 4 segundos sin nada nuevo | false>,
   "dead_moment_second": <número del segundo donde ocurre el momento muerto, o 0 si no hay>,
+
+  "static_visuals": <true si el video depende demasiado de imágenes quietas o planos estáticos | false>,
+  "low_visual_dynamism": <true si faltan cambios visuales relevantes cada 2-3 segundos | false>,
+  "slow_pacing": <true si el ritmo general se siente lento para Shorts/Reels/TikTok | false>,
+  "overlong_shots": <true si hay planos largos sin progresión visual clara | false>,
+  "weak_editing_flow": <true si la edición no sostiene sensación de avance o energía | false>,
+  "insufficient_pattern_interrupts": <true si faltan cambios frecuentes visuales, narrativos o sonoros | false>,
+
   "audio_issue": <true si el audio molesta o compite con la voz de forma que daña la atención | false>,
   "boring_full_video": <true si el video es aburrido de principio a fin sin ningún momento de interés real | false>,
   "no_retention_engines": <true si los tres motores principales (satisfacción visual, curiosidad abierta, consumibilidad) están ausentes | false>,
@@ -523,14 +542,14 @@ Objetivo: ${objetivo} | Nicho: ${nicho}
 Leé este análisis estratégico:
 ${strategyAnalysis}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 PENALIZACIONES COMPUTADAS — APLICÁ EXACTAMENTE ESTO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 ${penaltiesBlock}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 REGLAS DE PUNTAJE BASE (cuando no hay flags que limiten)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 CLARIDAD:
 - Producto confuso → claridad_producto máximo 50
 - Parcialmente claro → entre 50 y 70
@@ -541,14 +560,14 @@ PRODUCCIÓN SIMPLE:
 - Solo penalizá produccion_estetica si la producción causa daño concreto verificable
 
 CTA EN PRODUCTO FÍSICO:
-- Si el producto se vende solo visualmente → call_to_action mínimo 65 (no requiere instrucción verbal)
+ Si el producto se vende solo visualmente → call_to_action mínimo 65 (no requiere instrucción verbal)
 
 MÚSICA GENÉRICA:
-- Si la música es invisible e irrelevante → restar hasta 10 en produccion_estetica
+Si la música es invisible e irrelevante → restar hasta 10 en produccion_estetica
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 PONDERACIÓN (para calcular potentialScore si no hay techo de flags)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 hook                   → 15%
 claridad_producto      → 15%
 confianza_credibilidad → 15%
@@ -559,9 +578,9 @@ call_to_action         → 10%
 produccion_estetica    → 10%
 tendencias_formato     → 5%
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 IMPORTANTE — CRÍTICO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 Tu respuesta debe ser ÚNICAMENTE el objeto JSON.
 La primera línea: {
 La última línea: }
