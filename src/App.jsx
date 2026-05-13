@@ -157,577 +157,122 @@ const safeParseJSON = (rawText, context = '') => {
 };
 
 const NICHE_CRITERIA = {
-  producto_fisico: [
-    "¿El video ataca un problema real que el espectador siente en su vida cotidiana?",
-    "¿El producto aparece como la solución obvia a ese problema, sin necesidad de explicación?",
-    "¿Cualquier persona entiende qué es y para qué sirve en menos de 5 segundos?",
-    "¿Se ve el producto funcionando de verdad, o solo se muestra de costado sin demostrar nada?",
-    "¿El video genera la sensación de 'necesito esto'?",
-    "¿Si no hay CTA explícito, el producto se vende solo por cómo se muestra?",
-  ],
-  inmobiliaria: [
-    "¿La propiedad se muestra con luz natural y espacios amplios?",
-    "¿Se menciona el barrio o zona como beneficio concreto?",
-    "¿Genera aspiración o deseo de vivir ahí?",
-    "¿El precio o forma de contacto aparece claramente?",
-    "¿Hay una persona real que genere confianza o es solo imágenes?",
-    "¿El video transmite seguridad y seriedad profesional?",
-  ],
-  curso: [
-    "¿Se muestra el resultado o transformación que logra el alumno?",
-    "¿El problema que resuelve queda claro en los primeros 5 segundos?",
-    "¿El creador transmite autoridad y credibilidad en el tema?",
-    "¿Se menciona algo concreto del contenido, no solo promesas vagas?",
-    "¿Hay urgencia o razón para comprar ahora?",
-    "¿El precio o acceso aparece en el momento correcto?",
-  ],
-  servicio: [
-    "¿Se entiende exactamente qué problema resuelve el servicio?",
-    "¿Se muestra un antes/después o resultado concreto?",
-    "¿Genera confianza la persona que lo presenta?",
-    "¿El contacto o siguiente paso es fácil y obvio?",
-    "¿Parece accesible o genera miedo al precio?",
-    "¿Se diferencia de la competencia en algo concreto?",
-  ],
-  app_software: [
-    "¿Se ve la app funcionando en pantalla real?",
-    "¿El problema que resuelve queda claro sin texto técnico?",
-    "¿La interfaz parece fácil de usar?",
-    "¿Hay una demo o caso de uso real?",
-    "¿El botón para descargar o probar gratis es claro?",
-    "¿Genera curiosidad de probarlo?",
-  ],
-  otro: [
-    "¿El texto o audio ataca un dolor o deseo concreto?",
-    "¿El producto o servicio se ve como la solución?",
-    "¿Se entiende qué es sin tener que pensar?",
-    "¿El ritmo mantiene la atención hasta el final?",
-    "¿Queda claro qué tiene que hacer el espectador después de verlo?",
-    "¿Genera alguna emoción fuerte: deseo, curiosidad, urgencia?",
-  ],
+  producto_fisico: ["¿Ataca problema real?","¿Solución obvia?","¿Claridad <5s?","¿Muestra funcionamiento real?","¿Genera deseo?","¿Vende sin CTA?"],
+  inmobiliaria: ["¿Luz y amplitud?","¿Barrio como beneficio?","¿Aspiracional?","¿Precio/contacto claro?","¿Persona da confianza?","¿Seriedad profesional?"],
+  curso: ["¿Muestra resultado/transformación?","¿Problema claro <5s?","¿Autoridad del creador?","¿Contenido concreto (no vago)?","¿Urgencia?","¿Precio en momento correcto?"],
+  servicio: ["¿Problema exacto que resuelve?","¿Antes/después o resultado?","¿Confianza en el talento?","¿Next step fácil?","¿Accesible?","¿Diferenciación clara?"],
+  app_software: ["¿App en pantalla real?","¿Problema claro (sin tecnicismos)?","¿UI fácil?","¿Demo/caso real?","¿Download/CTA claro?","¿Genera curiosidad?"],
+  otro: ["¿Dolor/deseo concreto?","¿Solución clara?","¿Comprensión inmediata?","¿Ritmo constante?","¿Próximo paso claro?","¿Emoción fuerte?"]
 };
+
 const buildViewerBrainPrompt = (platform, nicho) => {
-  const platformNames = {
-    tiktok: 'TikTok',
-    reels: 'Instagram Reels',
-    shorts: 'YouTube Shorts',
-    all: 'TikTok, Reels y Shorts',
-  };
+  const plat = { tiktok: 'TikTok', reels: 'Reels', shorts: 'Shorts', all: 'TikTok/Reels/Shorts' }[platform] || platform;
+  const criterios = (NICHE_CRITERIA[nicho] || NICHE_CRITERIA['otro']).map((c, i) => `${i + 1}.${c}`).join('\n');
 
-  const criterios = (NICHE_CRITERIA[nicho] || NICHE_CRITERIA['otro'])
-    .map((c, i) => `${i + 1}. ${c}`)
-    .join('\n');
+  return `Actúa como usuario scrolleando ${plat} a las 11pm (atención mínima). Analiza video:
 
-  return `
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FASE 1 — REACCIÓN CRUDA (primeros 3 segundos)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Sos alguien en el baño, a las 11pm, con sueño, scrolleando ${platformNames[platform]}.
-Tu atención vale cero. Tu pulgar se mueve solo.
+F1-REACCIÓN (3s):
+Responde en 1ra persona (máx 4 frases): ¿Frenaste o seguiste? ¿Qué sentiste (curiosidad, asco, deseo, etc)? ¿Qué te capturó visualmente?
 
-Mirá los primeros 3 segundos del video y respondé en primera persona, sin analizar:
-- ¿Tu pulgar se frenó o siguió de largo? ¿Por qué exactamente?
-- ¿Qué sentiste en el cuerpo en ese primer instante? (curiosidad, asco, indiferencia, deseo, confusión, sorpresa)
-- ¿Hubo algo visual o auditivo que te capturó antes de entender de qué se trataba?
-- ¿O pasaste de largo porque no había ninguna razón para quedarte?
-
-Escribí esto como una reacción instintiva. Máximo 4 oraciones. Sin análisis, sin justificación. Solo lo que sentiste.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FASE 2 — OBSERVACIÓN FORENSE
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Ahora cambiá de rol. Sos un inspector forense de contenido.
-Tu trabajo es describir exactamente lo que ves y escuchás.
-SIN adjetivos evaluativos. SIN conclusiones. SIN palabras como "bueno", "malo", "interesante", "efectivo".
-Solo hechos sensoriales concretos.
-
-Ejemplos de lo que NO queremos:
-  ✗ "la música es genérica"
-  ✗ "el producto se ve en mal estado"
-  ✗ "la edición es simple pero efectiva"
-
-Ejemplos de lo que SÍ queremos:
-  ✓ "música de fondo constante sin cambios de energía ni punto de quiebre"
-  ✓ "manchas marrones visibles en la superficie izquierda del objeto, segundo 3"
-  ✓ "20 cortes en 30 segundos, promedio 1.5 segundos por plano"
-
-─────────────────────────────────
-A. AMBIENTE Y PRIMER FRAME
-─────────────────────────────────
-Describí exactamente lo que se ve en el primer frame:
-- ¿Qué objeto o persona aparece y dónde en el encuadre?
-- ¿Qué hay en el fondo? ¿Qué objetos, colores, texturas son visibles?
-- ¿Hay suciedad, desorden, manchas, golpes o deterioro visible en el producto o el entorno? Si sí: describí dónde exactamente y en qué segundo aparece.
-- ¿Hay una persona? ¿Qué expresión facial tiene? ¿Está mirando a cámara o no?
-
-⚠️ Si hay suciedad, manchas o deterioro: marcalo como SEÑAL DE RECHAZO VISUAL: [descripción exacta] [segundo]
-
-─────────────────────────────────
-B. VIABILIDAD DEL PRODUCTO
-─────────────────────────────────
-Respondé FUERTE / ACEPTABLE / DÉBIL + una línea de justificación sin adjetivos evaluativos:
-
-1. FRECUENCIA DE USO — ¿Con qué frecuencia alguien usaría esto? (diaria / semanal / mensual / ocasional)
-2. CLARIDAD INSTANTÁNEA — ¿Un extraño entendería qué es y para qué sirve en 5 segundos sin que nadie lo explique?
-3. PROBLEMA COTIDIANO — ¿Resuelve algo que el espectador promedio experimenta regularmente?
-4. AMPLITUD DE AUDIENCIA — ¿Cuántas personas de 100 al azar lo necesitarían?
-5. FRICCIÓN DE COMPRA — ¿Requiere investigación antes de comprarlo, o es una decisión de impulso?
-6. FACTOR WOW — ¿Hay algo visualmente que el cerebro procesa como recompensa antes de entender qué es?
-7. CREDIBILIDAD DEL RESULTADO — ¿Lo que muestra el video parece físicamente posible y verificable?
-
-⚠️ Si 3 o más son DÉBIL: PRODUCTO DE VENTA DIFÍCIL EN REDES: [razón en una oración]
-
-─────────────────────────────────
-C. CRITERIOS DE NICHO
-─────────────────────────────────
-Respondé SÍ / PARCIALMENTE / NO. Una línea describiendo exactamente qué viste que lo justifica.
-
+F2-FORENSE (Hechos sensoriales, sin adjetivos):
+A. AMBIENTE: Objeto/persona, fondo, texturas. Reporta suciedad/deterioro como [RECHAZO VISUAL].
+B. VIABILIDAD: Responde FUERTE/ACEPTABLE/DÉBIL + justificación corta: 1.Frecuencia uso 2.Claridad 3.Problema 4.Audiencia 5.Fricción 6.Factor WOW 7.Credibilidad. (Si 3+ son DÉBIL: [VENTA DIFÍCIL]).
+C. NICHO: SÍ/PARCIAL/NO + evidencia:
 ${criterios}
 
-─────────────────────────────────
-D. OBSERVACIÓN DE EDICIÓN Y AUDIO
-─────────────────────────────────
-REGLA: Solo reportá hechos. No evalúes si son "buenos" o "malos". El Strategy Brain hace eso.
+D. EDICIÓN/AUDIO:
+-Cortes (cant/duración), texto (segundo/texto), producto estático vs dinámico.
+-Música (energía/volumen vs voz), claridad voz, sonidos ambiente.
 
-EDICIÓN:
-- Cantidad aproximada de cortes y duración promedio de cada plano
-- ¿Hay algún plano que dure más de 4 segundos sin que pase nada nuevo? ¿En qué segundo?
-- ¿Hay texto en pantalla? ¿En qué segundo aparece y qué dice exactamente?
-- ¿El video muestra el producto funcionando, o solo lo muestra estático?
+E. MOTORES (PRESENTE/AUSENTE):
+-Satisfacción visual (limpiar, transformar, simetría).
+-Curiosidad abierta (incógnita inicial).
+-Micro-recompensas (cambios cada 3s).
+-Consumibilidad (¿se entiende sin audio?).
+-Naturalidad (¿UGC u anuncio tradicional?).
 
-AUDIO:
-- ¿Hay música? ¿Cambia de energía en algún momento o es constante?
-- ¿El volumen de la música compite con la voz, está por debajo, o no hay voz?
-- ¿Hay voz en off o persona hablando? ¿El audio es claro o hay ruido de fondo?
-- Si hay sonido ambiente: describí qué sonidos concretos se escuchan
-
-─────────────────────────────────
-E. MOTORES DE RETENCIÓN (detección binaria)
-─────────────────────────────────
-Para cada motor: PRESENTE / PARCIAL / AUSENTE + una oración describiendo qué viste concreto.
-
-SATISFACCIÓN VISUAL — ¿El video muestra alguno de estos?: limpiar, transformar, cortar, antes/después, fluido, textura visible, resultado final de un proceso, simetría emergente, fitting perfecto.
-→ Si sí: describí exactamente qué acción o momento.
-
-CURIOSIDAD ABIERTA — ¿El video empieza sin mostrar el resultado? ¿Hay algo que el espectador no puede identificar inmediatamente? ¿Hay una pregunta implícita sin respuesta al inicio?
-→ Si sí: describí en qué segundo se abre la pregunta y cuándo se cierra.
-
-MICRO-RECOMPENSAS — ¿Cada 2-3 segundos hay algo nuevo: cambio de plano, zoom, resultado parcial, texto nuevo, sonido, revelación?
-→ O: ¿hay algún período de más de 4 segundos donde nada nuevo ocurre visualmente?
-
-CONSUMIBILIDAD — ¿Puede alguien entender qué pasa en este video con el audio apagado, en los primeros 5 segundos? Respondé sí o no, con una línea de justificación.
-
-NATURALIDAD DE PLATAFORMA — ¿El video se parece visualmente a contenido orgánico de ${platformNames[platform]}, o tiene elementos de publicidad tradicional (logos, locución profesional, corte a negro, pantallas de precio)?
-
-─────────────────────────────────
-F. PERSONALIDAD DEL CREADOR
-─────────────────────────────────
-- Tono general: (ej: informal / aspiracional / educativo / humorístico / directo)
-- Estilo de comunicación: (ej: habla directo a cámara, muestra el producto sin hablar, usa texto en pantalla)
-- Elementos únicos que definen su estilo y que no deben perderse
-- Riesgo de personalidad: ninguno / leve / alto — una oración justificando
-`;
+F. CREADOR: Tono, estilo, riesgos.`;
 };
-
-
-
 
 const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, nicho) => {
-  const platformNames = {
-    tiktok: 'TikTok',
-    reels: 'Instagram Reels',
-    shorts: 'YouTube Shorts',
-    all: 'TikTok, Reels y Shorts',
-  };
+  return `Eres Estratega de Ventas y Viralidad. Plataforma: ${platform} | Obj: ${objetivo} | Nicho: ${nicho}.
+Análisis forense: ${viewerAnalysis}
 
-  return `
-Sos un estratega experto en ventas, viralidad y psicología del consumidor.
-Plataforma: ${platformNames[platform]} | Objetivo: ${objetivo} | Nicho: ${nicho}
+REGLAS:
+-Producción simple es OK si no daña confianza/atención.
+-Si se ve el producto funcionando, está comunicado.
+-Falla crítica = daño físico visible o aburrimiento total.
 
-Leé este reporte forense del video:
-${viewerAnalysis}
+ESTRATEGIA:
+1. VENTAS: Comprensión, deseo, señales de rechazo.
+2. VIRALIDAD: Hook, compartibilidad, emoción.
+3. RETENCIÓN: Segundo exacto de scroll, baches de ritmo.
+4. VEREDICTO: Fortalezas/Debilidades reales + 3 mejoras simples.
 
-━━━━━━━━━━━━━━━━━━
-REGLAS BASE
-━━━━━━━━━━━━━━━━━━
-1. PRODUCCIÓN SIMPLE ≠ PROBLEMA. Solo es problema si causa uno de estos daños concretos:
-   → pierde atención en un segundo verificable
-   → dificulta entender el producto
-   → genera desconfianza activa
-   → contradice emocionalmente lo que se vende
-   Si ninguno ocurre, la producción simple es neutral o ventaja UGC.
-
-2. VER ES ENTENDER. Si el video muestra el producto funcionando de forma visible, el beneficio está comunicado. No digas que falta explicación.
-
-3. GRAVEDAD CALIBRADA. No todo problema tiene el mismo peso:
-   → Problema estructural (producto dañado visible, video aburrido de principio a fin, audio que molesta) = falla crítica
-   → Problema mejorable (música plana, un momento muerto, ritmo levemente lento) = mención con solución
-   → Cosa que funciona = reconocelo, no inventes problemas encima
-
-4. LOS MOTORES DE RETENCIÓN COMPENSAN PRODUCCIÓN SIMPLE. Si el reporte forense detectó satisfacción visual fuerte, curiosidad abierta, o consumibilidad alta: no penalices la calidad técnica. Eso ya es un video que funciona.
-
-━━━━━━━━━━━━━━━━━━
-ANÁLISIS ESTRATÉGICO
-━━━━━━━━━━━━━━━━━━
-
-VENTAS:
-- ¿Alguien que nunca vio este producto lo entendería al instante?
-- ¿El video genera deseo de compra real o solo curiosidad pasajera?
-- ¿El entorno o estado del producto activa desconfianza silenciosa?
-- Si hay señal de rechazo visual: ¿cuánto del deseo que el video construye cancela?
-
-VIRALIDAD:
-- ¿Los primeros segundos detendrían el scroll en ${platformNames[platform]}? ¿Por qué exactamente?
-- ¿Hay un momento que alguien querría mostrarle a otra persona?
-- ¿El video provoca una emoción fuerte o es demasiado neutral?
-
-RETENCIÓN Y EDICIÓN:
-- ¿En qué segundo exacto estimás que el espectador promedio haría scroll?
-- ¿Hay momentos muertos verificables? ¿En qué segundo?
-- ¿La música acompaña la energía del producto o es invisible?
-- ¿Los motores de retención compensan la producción?
-
-AUTENTICIDAD:
-- ¿Parece contenido orgánico o publicidad reciclada?
-- ¿Hay algo que active escepticismo en el espectador?
-
-VEREDICTO:
-- Fortalezas reales (solo lo que realmente funciona)
-- Debilidades reales (solo lo que realmente daña)
-- ¿Compraría o seguiría scrolleando?
-- 3 mejoras concretas en lenguaje simple (sin tecnicismos de marketing)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FLAGS — BLOQUE OBLIGATORIO AL FINAL DE TU RESPUESTA
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Después de tu análisis, incluí exactamente este bloque.
-No lo omitas. No lo modifiques. Solo completá los valores con true/false o el string indicado.
-
----FLAGS---
+FLAGS (Obligatorio completar):
+FLAGS
 {
-  "product_damage": <true si hay manchas, golpes o deterioro visible en el producto | false>,
-  "visual_repulsion": <true si hay algo que generaría rechazo físico o desconfianza inmediata | false>,
-  "visual_repulsion_severity": "<ninguna | leve | moderada | fuerte>",
-  "first_frame_repulsion": <true si el PRIMER FRAME específicamente dispara rechazo o indiferencia total | false>,
-  "dead_moment": <true si hay al menos un período de más de 4 segundos sin nada nuevo | false>,
-  "dead_moment_second": <número del segundo donde ocurre el momento muerto, o 0 si no hay>,
-  "audio_issue": <true si el audio molesta o compite con la voz de forma que daña la atención | false>,
-  "boring_full_video": <true si el video es aburrido de principio a fin sin ningún momento de interés real | false>,
-  "no_retention_engines": <true si los tres motores principales (satisfacción visual, curiosidad abierta, consumibilidad) están ausentes | false>,
-  "product_unclear": <true si un extraño no entendería qué es el producto en 5 segundos | false>,
-  "product_difficult_to_sell": <true si el análisis de viabilidad detectó 3 o más factores DÉBIL | false>
+"product_damage": false,
+"visual_repulsion": false,
+"visual_repulsion_severity": "ninguna",
+"first_frame_repulsion": false,
+"dead_moment": false,
+"dead_moment_second": 0,
+"audio_issue": false,
+"boring_full_video": false,
+"no_retention_engines": false,
+"product_unclear": false,
+"product_difficult_to_sell": false
 }
----END---
-`;
-};
-
-
-
-export const extractFlags = (strategyText) => {
-  try {
-    const match = strategyText.match(/---FLAGS---\s*([\s\S]*?)\s*---END---/);
-    if (!match) {
-      console.warn('[extractFlags] No se encontró el bloque FLAGS en el texto de Strategy Brain');
-      return {};
-    }
-    return JSON.parse(match[1]);
-  } catch (err) {
-    console.warn('[extractFlags] Error parseando FLAGS:', err.message);
-    return {};
-  }
-};
-
-// Retorna el texto de Strategy sin el bloque FLAGS (para pasarlo al Scoring Brain limpio)
-export const stripFlags = (strategyText) => {
-  return strategyText.replace(/---FLAGS---[\s\S]*?---END---/, '').trim();
-};
-
-export const buildPenalties = (flags) => {
-  if (!flags || Object.keys(flags).length === 0) {
-    return 'No se detectaron flags críticos. Evaluá con libertad según el análisis.';
-  }
-
-  const rules = [];
-
-  if (flags.product_damage) {
-    rules.push('⛔ PRODUCTO CON DAÑO VISIBLE: confianza_credibilidad máximo 45. potentialScore máximo 60. salesScore máximo 55. Esto es no negociable.');
-  }
-
-  if (flags.visual_repulsion) {
-    const sev = flags.visual_repulsion_severity || 'moderada';
-    if (sev === 'fuerte') {
-      rules.push('⛔ RECHAZO VISUAL FUERTE: produccion_estetica máximo 45. confianza_credibilidad máximo 40. potentialScore máximo 50. honestVerdict debe mencionarlo explícitamente.');
-    } else if (sev === 'moderada') {
-      rules.push('⚠️ RECHAZO VISUAL MODERADO: restar 20 en produccion_estetica. restar 15 en confianza_credibilidad. potentialScore máximo 65.');
-    } else if (sev === 'leve') {
-      rules.push('⚠️ RECHAZO VISUAL LEVE: restar hasta 10 en produccion_estetica.');
-    }
-  }
-
-  if (flags.first_frame_repulsion) {
-    rules.push('⛔ PRIMER FRAME CON RECHAZO O INDIFERENCIA TOTAL: hook máximo 35. scrollStopScore máximo 30.');
-  }
-
-  if (flags.boring_full_video) {
-    rules.push('⛔ VIDEO ABURRIDO DE PRINCIPIO A FIN: emocion_deseo máximo 35. viralScore máximo 40. retencion_ritmo máximo 40. retentionCurve debe mostrar caída pronunciada antes del segundo 10.');
-  }
-
-  if (flags.dead_moment && !flags.boring_full_video) {
-    rules.push(`⚠️ MOMENTO MUERTO DETECTADO (segundo ~${flags.dead_moment_second || '?'}): retencion_ritmo máximo 55. La retentionCurve debe mostrar caída en ese punto.`);
-  }
-
-  if (flags.audio_issue) {
-    rules.push('⚠️ AUDIO CON PROBLEMA: restar 15 en produccion_estetica. restar 10 en confianza_credibilidad.');
-  }
-
-  if (flags.no_retention_engines) {
-    rules.push('⛔ SIN MOTORES DE RETENCIÓN: viralScore máximo 45. retencion_ritmo máximo 40. El video necesita reestructurarse, no optimizarse.');
-  }
-
-  if (flags.product_unclear) {
-    rules.push('⛔ PRODUCTO POCO CLARO: claridad_producto máximo 45. salesScore máximo 50. propuesta_valor máximo 45.');
-  }
-
-  if (flags.product_difficult_to_sell) {
-    rules.push('⚠️ PRODUCTO DE VENTA DIFÍCIL EN REDES: potentialScore máximo 60. salesScore máximo 55. honestVerdict debe mencionarlo como limitación estructural del producto, no del video.');
-  }
-
-  if (rules.length === 0) {
-    return 'No se detectaron flags críticos. Evaluá con libertad según el análisis estratégico.';
-  }
-
-  return `
-LAS SIGUIENTES REGLAS SON ABSOLUTAS. NO LAS IGNORÉS. NO LAS SUAVIZÉS.
-Fueron computadas por el sistema antes de que vos generes los scores.
-Tu trabajo es aplicarlas exactamente y generar el resto del JSON de forma consistente con ellas.
-
-${rules.map((r, i) => `${i + 1}. ${r}`).join('\n')}
-
-Si una regla dice "máximo X", ese número es el techo absoluto. No importa qué tan bueno sea el resto del video.
-Si una regla dice "restar Y", partís del score base que te daría el análisis y restás ese valor.
-`.trim();
+ENDFLAGS`;
 };
 
 const buildScoringBrainPrompt = (strategyAnalysis, platform, objetivo, nicho, flags) => {
-  const platformNames = {
-    tiktok: 'TikTok',
-    reels: 'Instagram Reels',
-    shorts: 'YouTube Shorts',
-    all: 'TikTok, Reels y Shorts',
-  };
+  const penalties = buildPenalties(flags);
+  return `Sistema Scoring VIRAX AI (${platform}). Obj: ${objetivo} | Nicho: ${nicho}.
+Análisis: ${strategyAnalysis}
 
-  const penaltiesBlock = buildPenalties(flags);
+PENALIZACIONES:
+${penalties}
 
-  return `
-Sos el sistema de scoring de VIRAX AI para ${platformNames[platform]}.
-Objetivo: ${objetivo} | Nicho: ${nicho}
+Ponderación potentialScore: Hook/Claridad/Confianza(15% c/u), Emoción/Valor/Ritmo/CTA/Estética(10% c/u), Tendencia(5%).
 
-Leé este análisis estratégico:
-${strategyAnalysis}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PENALIZACIONES COMPUTADAS — APLICÁ EXACTAMENTE ESTO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-${penaltiesBlock}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-REGLAS DE PUNTAJE BASE (cuando no hay flags que limiten)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CLARIDAD:
-- Producto confuso → claridad_producto máximo 50
-- Parcialmente claro → entre 50 y 70
-- Claro con demostración visual funcionando → mínimo 75
-
-PRODUCCIÓN SIMPLE:
-- Si la producción es simple pero los motores de retención funcionan → produccion_estetica mínimo 55
-- Solo penalizá produccion_estetica si la producción causa daño concreto verificable
-
-CTA EN PRODUCTO FÍSICO:
-- Si el producto se vende solo visualmente → call_to_action mínimo 65 (no requiere instrucción verbal)
-
-MÚSICA GENÉRICA:
-- Si la música es invisible e irrelevante → restar hasta 10 en produccion_estetica
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PONDERACIÓN (para calcular potentialScore si no hay techo de flags)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-hook                   → 15%
-claridad_producto      → 15%
-confianza_credibilidad → 15%
-emocion_deseo          → 10%
-propuesta_valor        → 10%
-retencion_ritmo        → 10%
-call_to_action         → 10%
-produccion_estetica    → 10%
-tendencias_formato     → 5%
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-IMPORTANTE — CRÍTICO
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Tu respuesta debe ser ÚNICAMENTE el objeto JSON.
-La primera línea: {
-La última línea: }
-Nada antes del {. Nada después del }.
-Si un campo no tiene valor, usá "". Nunca null.
-Nunca saltos de línea dentro de strings.
-Nunca comillas dobles dentro de valores — usá comillas simples.
-Evitá tildes y caracteres especiales en campos "explicacion".
-
+RESPONDE SOLO JSON:
 {
-  "vision": {
-    "niche": "<nicho detectado>",
-    "type": "<UGC | profesional | mixto>",
-    "audience": "<público objetivo>",
-    "promise": "<promesa principal en una frase>"
-  },
-  "salesScore": {
-    "score": 0,
-    "titulo": "Potencial de Venta",
-    "verdict": "<veredicto corto, máximo 8 palabras>",
-    "razon_principal": "<razón en 1 oración>",
-    "accion_clave": "<acción concreta para mejorar la venta>"
-  },
-  "viralScore": {
-    "score": 0,
-    "titulo": "Potencial Viral",
-    "verdict": "<veredicto corto, máximo 8 palabras>",
-    "razon_principal": "<razón en 1 oración>",
-    "accion_clave": "<acción concreta para mejorar la viralidad>"
-  },
-  "potentialScore": 0,
-  "performanceScenario": "<escenario esperado en máximo 5 palabras>",
-  "honestVerdict": "<veredicto honesto en 2 oraciones>",
-  "hookDNA": {
-    "strength": 0,
-    "pattern": "<pregunta | shock | promesa | humor | dolor | curiosidad>",
-    "missingElement": "<qué le falta, o vacío si no le falta nada>",
-    "optimizedHook": "<hook reescrito respetando la personalidad del creador>"
-  },
-  "platformScores": {
-    "tiktok": { "score": 0, "verdict": "<veredicto corto>", "topTip": "<tip específico>" },
-    "reels":  { "score": 0, "verdict": "<veredicto corto>", "topTip": "<tip específico>" },
-    "shorts": { "score": 0, "verdict": "<veredicto corto>", "topTip": "<tip específico>" }
-  },
-  "retentionData": {
-    "at3s":  "<% estimado a los 3 segundos>",
-    "at10s": "<% estimado a los 10 segundos>",
-    "final": "<% estimado al final>"
-  },
-  "retentionCurve": [100, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-  "phaseScores": {
-    "hook":       { "label": "Hook",       "score": 0, "verdict": "<veredicto>", "consequence": "<consecuencia si es crítico>" },
-    "desarrollo": { "label": "Desarrollo", "score": 0, "verdict": "<veredicto>", "consequence": "<consecuencia si es crítico>" },
-    "escalada":   { "label": "Escalada",   "score": 0, "verdict": "<veredicto>", "consequence": "<consecuencia si es crítico>" },
-    "cierre":     { "label": "Cierre",     "score": 0, "verdict": "<veredicto>", "consequence": "<consecuencia si es crítico>" }
-  },
-  "steppsScore": {
-    "socialCurrency": 0,
-    "triggers": 0,
-    "emotion": 0,
-    "public": 0,
-    "practicalValue": 0,
-    "stories": 0,
-    "viralCoefficient": 0.0,
-    "dominantFactor": "<factor más fuerte>",
-    "weakestFactor":  "<factor más débil>",
-    "shareMotivation": "<motivación principal para compartir>"
-  },
-  "scrollStopScore": {
-    "score": 0,
-    "faceDetected": false,
-    "textOnScreen": false,
-    "contrastLevel": "<alto | medio | bajo>",
-    "emotionVisible": "<emoción detectada o ninguna>",
-    "emotionIntensity": 0,
-    "verdict": "<veredicto del primer frame>"
-  },
-  "commentTrigger": {
-    "probability": 0,
-    "triggerType": "<debate | pregunta | identificación | humor | sorpresa>",
-    "suggestedCTA": "<comentario sugerido para generar interacción>"
-  },
-  "viewsPrediction": {
-    "scenario_low":      "<views sin viralidad>",
-    "scenario_mid":      "<views con viralidad moderada>",
-    "scenario_high":     "<views con viral real>",
-    "probability_viral": "<% de probabilidad de viral real>"
-  },
-  "firstHourStrategy": {
-    "optimalPostTime":      "<horario óptimo para publicar>",
-    "firstActionAfterPost": "<acción inmediata después de publicar>",
-    "commentSeed":          "<primer comentario propio sugerido>",
-    "engagementBoost":      "<estrategia de empuje primera hora>"
-  },
-  "styleProfile": {
-    "detectedRhythm": "<lento | medio | dinámico | frenético>",
-    "detectedTone":   "<serio | cercano | aspiracional | humorístico | urgente>"
-  },
-  "productViability": {
-    "usageFrequency":    "<diaria | semanal | mensual | ocasional | única vez>",
-    "instantClarity":    "<fuerte | aceptable | débil>",
-    "everydayProblem":   "<fuerte | aceptable | débil>",
-    "audienceWidth":     "<masivo | nicho amplio | nicho específico>",
-    "purchaseFriction":  "<baja | media | alta>",
-    "wowFactor":         "<fuerte | aceptable | débil>",
-    "resultCredibility": "<fuerte | aceptable | débil>",
-    "weakFactors": 0,
-    "alert": "<vacío o advertencia si hay 3+ factores débiles>",
-    "verdict": "<una oración honesta sobre la ventaja o desventaja estructural del producto>"
-  },
-  "retentionEngines": {
-    "visualSatisfaction": "<presente | parcial | ausente>",
-    "openLoop":           "<presente | parcial | ausente>",
-    "microRewards":       "<presentes | escasas | ausentes>",
-    "consumability":      "<alta | media | baja>",
-    "platformNaturalness":"<orgánico | mixto | parece publicidad>",
-    "dominantEngine":     "<motor de retención más fuerte del video>",
-    "verdict":            "<una oración sobre si los motores compensan la producción simple o no>"
-  },
-  "editingAudio": {
-    "editingQuality":  "<intencional | amateur | sin editar>",
-    "deadMoments":     "<ninguno | leve | varios — con segundo aproximado>",
-    "musicFit":        "<perfecta | genérica | ausente | contraproducente>",
-    "audioBalance":    "<bien balanceado | música muy alta | muy silencioso>",
-    "rhythmVsProduct": "<compatible | contradice la energía del producto>",
-    "boringRisk":      "<bajo | medio | alto>",
-    "verdict":         "<una oración honesta sobre el impacto real de edición y audio en la venta>"
-  },
-  "visualRepulsion": {
-    "hasRepulsion": false,
-    "signal": "<vacío si no hay señal | descripción breve de qué genera rechazo>",
-    "second": "<segundo aproximado donde ocurre, o vacío>",
-    "severity": "<ninguna | leve | moderada | fuerte>",
-    "impact": "<cómo afecta la intención de compra, o vacío>"
-  },
-  "trendContext": "<tendencias actuales relevantes para el nicho en la plataforma>",
-  "roadmap": ["<paso 1 prioritario>", "<paso 2>", "<paso 3>", "<paso 4>"],
-  "trendResearch": {
-    "hooksWorking": "<qué tipo de comienzos funcionan hoy en la plataforma para este nicho>",
-    "topStructure": "<estructura de video que más convierte ahora>",
-    "sourceQuality": "<alta | media | baja>",
-    "researchDate": ""
-  },
-  "gapAnalysis": {
-    "biggestGap": "<brecha más grande entre este video y lo que funciona>",
-    "quickWin": "<cambio más rápido que mejoraría el resultado>",
-    "competitiveAdvantage": "<qué tiene este video que pocos hacen bien>"
-  },
-  "categorias": {
-    "hook":                   { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
-    "claridad_producto":      { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
-    "confianza_credibilidad": { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
-    "emocion_deseo":          { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
-    "propuesta_valor":        { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
-    "retencion_ritmo":        { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
-    "call_to_action":         { "puntaje": 0, "tipo": "<explicito | implicito | ausente>", "explicacion": "<maximo 2 oraciones sin tildes>" },
-    "produccion_estetica":    { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" },
-    "tendencias_formato":     { "puntaje": 0, "explicacion": "<maximo 2 oraciones sin tildes>" }
-  },
-  "updatedHook": "<hook reescrito respetando la personalidad del creador>",
-  "updatedRoadmap": ["<paso 1>", "<paso 2>", "<paso 3>"]
+"vision": {"niche":"","type":"","audience":"","promise":""},
+"salesScore": {"score":0,"titulo":"Venta","verdict":"","razon_principal":"","accion_clave":""},
+"viralScore": {"score":0,"titulo":"Viral","verdict":"","razon_principal":"","accion_clave":""},
+"potentialScore": 0,
+"performanceScenario": "",
+"honestVerdict": "",
+"hookDNA": {"strength":0,"pattern":"","missingElement":"","optimizedHook":""},
+"platformScores": {"tiktok":{"score":0,"verdict":"","topTip":""},"reels":{"score":0,"verdict":"","topTip":""},"shorts":{"score":0,"verdict":"","topTip":""}},
+"retentionData": {"at3s":"","at10s":"","final":""},
+"retentionCurve": [100,0,0,0,0,0,0,0,0,0],
+"phaseScores": {"hook":{"score":0,"verdict":""},"desarrollo":{"score":0,"verdict":""},"escalada":{"score":0,"verdict":""},"cierre":{"score":0,"verdict":""}},
+"steppsScore": {"socialCurrency":0,"triggers":0,"emotion":0,"public":0,"practicalValue":0,"stories":0,"viralCoefficient":0.0,"dominantFactor":"","weakestFactor":""},
+"scrollStopScore": {"score":0,"faceDetected":false,"textOnScreen":false,"contrastLevel":"","emotionVisible":"","emotionIntensity":0,"verdict":""},
+"commentTrigger": {"probability":0,"triggerType":"","suggestedCTA":""},
+"viewsPrediction": {"scenario_low":"","scenario_mid":"","scenario_high":"","probability_viral":""},
+"productViability": {"usageFrequency":"","instantClarity":"","everydayProblem":"","audienceWidth":"","purchaseFriction":"","wowFactor":"","resultCredibility":"","weakFactors":0,"alert":"","verdict":""},
+"retentionEngines": {"visualSatisfaction":"","openLoop":"","microRewards":"","consumability":"","platformNaturalness":"","dominantEngine":"","verdict":""},
+"editingAudio": {"editingQuality":"","deadMoments":"","musicFit":"","audioBalance":"","rhythmVsProduct":"","boringRisk":"","verdict":""},
+"visualRepulsion": {"hasRepulsion":false,"signal":"","second":"","severity":"","impact":""},
+"categorias": {
+"hook":{"puntaje":0,"explicacion":""},"claridad_producto":{"puntaje":0,"explicacion":""},"confianza_credibilidad":{"puntaje":0,"explicacion":""},"emocion_deseo":{"puntaje":0,"explicacion":""},"propuesta_valor":{"puntaje":0,"explicacion":""},"retencion_ritmo":{"puntaje":0,"explicacion":""},"call_to_action":{"puntaje":0,"tipo":"","explicacion":""},"produccion_estetica":{"puntaje":0,"explicacion":""},"tendencias_formato":{"puntaje":0,"explicacion":""}
+},
+"updatedHook": "",
+"updatedRoadmap": ["","",""]
 }`;
 };
 
+// Modifica la regex para que coincida con los nuevos tags cortos
+export const extractFlags = (strategyText) => {
+  try {
+    const match = strategyText.match(/FLAGS\s*([\s\S]*?)\s*ENDFLAGS/);
+    return match ? JSON.parse(match[1]) : {};
+  } catch (err) { return {}; }
+};
 
 
 const ShinyCard = ({ children, className = '', tilt }) => {
