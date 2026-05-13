@@ -274,6 +274,11 @@ export const extractFlags = (strategyText) => {
   } catch (err) { return {}; }
 };
 
+// ← AGREGÁ ESTO
+export const stripFlags = (strategyText) => {
+  return strategyText.replace(/FLAGS\s*[\s\S]*?\s*ENDFLAGS/g, '').trim();
+};
+
 
 const ShinyCard = ({ children, className = '', tilt }) => {
   const sheenX = (((tilt?.x ?? 0) + 1) / 2) * 100;
