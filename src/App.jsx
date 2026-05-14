@@ -352,8 +352,16 @@ VEREDICTO:
   "visual_repulsion": <true si algo genera rechazo físico o desconfianza inmediata | false>,
   "visual_repulsion_severity": "<ninguna|leve|moderada|fuerte>",
   "first_frame_repulsion": <true si PRIMER FRAME dispara rechazo o indiferencia total | false>,
+  "hook_missing": <true si no hay hook efectivo en 0-3s | false>,
+  "hook_second": <segundo exacto donde aparece el hook o 0>,
+  "swipe_threat_detected": <true si caída >10% en 1s | false>,
+  "swipe_second": <segundo de la caída o 0>,
   "dead_moment": <true si hay período >4s sin nada nuevo | false>,
   "dead_moment_second": <segundo del momento muerto, o 0>,
+  "micro_rewards_absent": <true si no hay novedades cada 2-3s | false>,
+  "music_early_missing": <true si no hay música/energía en 0-10s | false>,
+  "consumable_no_audio": <true si no se entiende en <5s sin audio | false>,
+  "share_trigger_absent": <true si no hay momento para compartir/CTA social | false>,
   "static_visuals": <true si depende demasiado de imágenes quietas | false>,
   "low_visual_dynamism": <true si faltan cambios relevantes cada 2-3s | false>,
   "slow_pacing": <true si el ritmo se siente lento para Shorts/Reels/TikTok | false>,
@@ -367,6 +375,7 @@ VEREDICTO:
   "product_difficult_to_sell": <true si análisis de viabilidad detectó 3+ factores DÉBIL | false>
 }
 ---END---
+
 `;
 };
 
@@ -389,20 +398,25 @@ export const buildPenalties = (flags) => {
     return 'Sin flags críticos. Evaluá con libertad según el análisis.';
 
   const rules = [];
+
+  // EXISTENTES
   if (flags.product_damage)
     rules.push('⛔ DAÑO VISIBLE: confianza_credibilidad ≤45 | potentialScore ≤60 | salesScore ≤55');
   if (flags.visual_repulsion) {
     const s = flags.visual_repulsion_severity || 'moderada';
-    if (s==='fuerte')  rules.push('⛔ RECHAZO VISUAL FUERTE: produccion_estetica ≤45 | confianza_credibilidad ≤40 | potentialScore ≤50 | mencionar en honestVerdict');
-    else if (s==='moderada') rules.push('⚠️ RECHAZO VISUAL MODERADO: produccion_estetica -20 | confianza_credibilidad -15 | potentialScore ≤65');
-    else if (s==='leve')  rules.push('⚠️ RECHAZO VISUAL LEVE: produccion_estetica -10');
+    if (s === 'fuerte')
+      rules.push('⛔ RECHAZO VISUAL FUERTE: produccion_estetica ≤45 | confianza_credibilidad ≤40 | potentialScore ≤50 | mencionar en honestVerdict');
+    else if (s === 'moderada')
+      rules.push('⚠️ RECHAZO VISUAL MODERADO: produccion_estetica -20 | confianza_credibilidad -15 | potentialScore ≤65');
+    else if (s === 'leve')
+      rules.push('⚠️ RECHAZO VISUAL LEVE: produccion_estetica -10');
   }
   if (flags.first_frame_repulsion)
     rules.push('⛔ PRIMER FRAME REPULSIVO: hook ≤35 | scrollStopScore ≤30');
   if (flags.boring_full_video)
     rules.push('⛔ VIDEO ABURRIDO COMPLETO: emocion_deseo ≤35 | viralScore ≤40 | retencion_ritmo ≤40 | retentionCurve con caída antes del segundo 10');
   if (flags.dead_moment && !flags.boring_full_video)
-    rules.push(`⚠️ MOMENTO MUERTO (~s${flags.dead_moment_second||'?'}): retencion_ritmo ≤55 | caída en retentionCurve en ese punto`);
+    rules.push(`⚠️ MOMENTO MUERTO (~s${flags.dead_moment_second || '?'}): retencion_ritmo ≤55 | caída en retentionCurve en ese punto`);
   if (flags.audio_issue)
     rules.push('⚠️ AUDIO PROBLEMÁTICO: produccion_estetica -15 | confianza_credibilidad -10');
   if (flags.no_retention_engines)
@@ -412,12 +426,35 @@ export const buildPenalties = (flags) => {
   if (flags.product_difficult_to_sell)
     rules.push('⚠️ PRODUCTO DIFÍCIL EN REDES: potentialScore ≤60 | salesScore ≤55 | honestVerdict: limitación estructural del producto, no del video');
 
+  // NUEVAS REGLAS DE VIRALIDAD Y RETENCIÓN
+  if (flags.hook_missing)
+    rules.push('⛔ HOOK AUSENTE: hook ≤35 | scrollStopScore ≤30 | viralScore ≤40');
+  if (flags.hook_second && flags.hook_second > 3)
+    rules.push(`⚠️ HOOK TARDIO (~s${flags.hook_second}): reducir probabilidad de retención inicial; sugerir mover hook a 0-1s`);
+  if (flags.swipe_threat_detected)
+    rules.push(`⚠️ SWIPE-THREAT (~s${flags.swipe_second || '?'}): retencion_ritmo ≤45 | retentionCurve con caída pronunciada; recomendar reescritura 0-3s`);
+  if (flags.music_early_missing)
+    rules.push('⚠️ SIN MÚSICA TEMPRANA: produccion_estetica -15 | retencion_ritmo -10; sugerir pista con subida en 0.5-1s');
+  if (flags.micro_rewards_absent)
+    rules.push('⚠️ SIN MICRO-RECOMPENSAS: retencion_ritmo -20 | no_retention_engines = true; insertar novedades cada 2-3s');
+  if (flags.consumable_no_audio)
+    rules.push('⚠️ NO CONSUMIBLE SIN AUDIO: platformScores (tiktok/reels/shorts) -15; exigir subtitulos/texto en pantalla en <5s');
+  if (flags.share_trigger_absent)
+    rules.push('⚠️ SIN TRIGGER DE COMPARTIR: viralScore -15; sugerir CTA social (pregunta polarizante o momento sorpresa en 5-12s)');
+
+  // REGLAS ADICIONALES DERIVADAS
+  if (flags.swipe_threat_detected && flags.hook_missing)
+    rules.push('⛔ SWIPE + SIN HOOK: viralScore ≤35 | retencion_ritmo ≤40');
+  if (flags.music_early_missing && flags.micro_rewards_absent)
+    rules.push('⚠️ RITMO Y MÚSICA AUSENTES: produccion_estetica -25 | retencion_ritmo ≤40');
+
   if (!rules.length) return 'Sin flags críticos. Evaluá con libertad.';
 
   return `PENALIZACIONES ABSOLUTAS — NO IGNORAR, NO SUAVIZAR:
-${rules.map((r,i)=>`${i+1}. ${r}`).join('\n')}
+${rules.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 Techo ("≤X") = valor máximo absoluto. Resta ("-Y") = restar del score base. Son no negociables.`;
 };
+
 
 // ============================================================
 // SCORING BRAIN
