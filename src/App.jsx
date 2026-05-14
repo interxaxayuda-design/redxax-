@@ -319,10 +319,15 @@ VENTAS:
 - ¿El entorno/estado del producto activa desconfianza silenciosa?
 - Si hay señal de rechazo visual: ¿cuánto deseo cancela?
 
-VIRALIDAD:
-- ¿Los primeros segundos detienen el scroll en ${pName}? ¿Por qué exactamente?
-- ¿Hay un momento que alguien querría mostrarle a otra persona?
-- ¿Provoca emoción fuerte o es demasiado neutral?
+RETENCIÓN Y EDICIÓN:
+- Estimación segundo de scroll promedio: (s)
+- Momentos muertos >4s: (true/false; segundo inicio)
+- Micro-recompensas cada 2-3s: (presente/parcial/ausente)
+- Música 0-10s sostiene energía: (si/no)
+- Balance música vs voz: (compite/debajo/no hay voz)
+- Consumible sin audio en <5s: (si/no)
+- Dinamismo visual cada 2-3s: (si/parcial/no)
+
 
 RETENCIÓN Y EDICIÓN:
 - ¿En qué segundo estimás que el espectador promedio hace scroll?
