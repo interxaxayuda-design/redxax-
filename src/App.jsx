@@ -178,12 +178,15 @@ const NICHE_CRITERIA = {
     "¿Transmite seriedad profesional?",
   ],
   curso: [
-    "¿Se muestra resultado/transformación del alumno?",
+    "¿Se muestra resultado/transformación del alumno en el primer frame?",
     "¿Problema que resuelve claro en <5 segundos?",
-    "¿Creador transmite autoridad y credibilidad?",
+    "¿Creador transmite autoridad y credibilidad con pruebas visuales?",
     "¿Contenido concreto, no solo promesas vagas?",
-    "¿Hay urgencia o razón para comprar ahora?",
+    "¿Hay urgencia o razón para comprar ahora en los primeros 15s?",
     "¿Precio/acceso aparece en momento correcto?",
+    "¿Hay música o ritmo que sostenga energía en los primeros 10s?",
+    "¿Se plantea pregunta o reto al espectador en los primeros 5s?",
+    "¿Se diferencia de otros cursos similares en algo concreto?",
   ],
   servicio: [
     "¿Se entiende exactamente qué problema resuelve?",
@@ -198,18 +201,27 @@ const NICHE_CRITERIA = {
     "¿Problema que resuelve claro sin texto técnico?",
     "¿Interfaz parece fácil de usar?",
     "¿Demo o caso de uso real?",
+    "¿Ataca el dolor en algo en específico?",
     "¿Botón de descarga/prueba gratis claro?",
     "¿Genera curiosidad de probarlo?",
   ],
-  otro: [
-    "¿Audio/texto ataca dolor o deseo concreto?",
-    "¿Producto/servicio aparece como solución?",
-    "¿Se entiende qué es sin pensar?",
-    "¿Ritmo mantiene atención hasta el final?",
-    "¿Queda claro qué debe hacer el espectador?",
-    "¿Genera emoción fuerte: deseo, curiosidad o urgencia?",
-  ],
+ otro: [
+  "¿Audio/texto ataca dolor o deseo concreto?",
+  "¿Producto/servicio aparece como solución?",
+  "¿Se entiende qué es sin pensar?",
+  "¿Ritmo mantiene atención hasta el final?",
+  "¿Queda claro qué debe hacer el espectador?",
+  "¿Genera emoción fuerte: deseo, curiosidad o urgencia?",
+  "¿Se entiende en <5 segundos incluso sin audio?",
+  "¿El primer frame genera curiosidad o deseo?",
+  "¿Se muestran pruebas o resultados verificables?",
+  "¿El video invita a comentar o compartir?",
+  "¿Se comunica urgencia o escasez?",
+  "¿Hay micro-recompensas cada 2–3 segundos?",
+  "¿Se diferencia claramente de la competencia?",
+],
 };
+
 
 // ============================================================
 // VIEWER BRAIN
