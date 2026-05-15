@@ -344,28 +344,49 @@ REGLAS BASE (aplicalas antes de analizar)
 
 ANÁLISIS ESTRATÉGICO
 
-VENTAS:
-- ¿Un desconocido entiende el producto al instante?
-- ¿Genera deseo de compra real o solo curiosidad pasajera?
-- ¿El entorno/estado del producto activa desconfianza silenciosa?
-- Si hay señal de rechazo visual: ¿cuánto deseo cancela?
+RETENCIÓN Y EDICIÓN — ANÁLISIS DE SUPERVIVENCIA:
 
-RETENCIÓN Y EDICIÓN:
-- Estimación segundo de scroll promedio: (s)
-- Momentos muertos >4s: (true/false; segundo inicio)
-- Micro-recompensas cada 2-3s: (presente/parcial/ausente)
-- Música 0-10s sostiene energía: (si/no)
-- Balance música vs voz: (compite/debajo/no hay voz)
-- Consumible sin audio en <5s: (si/no)
-- Dinamismo visual cada 2-3s: (si/parcial/no)
+PREGUNTA CENTRAL: ¿En qué segundo exacto la persona promedio aprieta el dedo y se va?
+No es una pregunta retórica. Estimá el segundo con este criterio:
+- Si el primer frame no tiene movimiento/sonido fuerte → scroll antes de s3
+- Si hay momento muerto >4s → scroll en ese momento
+- Si no hay cortes en 10s → scroll antes de s10
+- Si hay música + cortes cada 2-3s + algo nuevo cada vez → puede sobrevivir más
 
+DIAGNÓSTICO SEGUNDO A SEGUNDO (completar para cada intervalo):
+→ s0-s3: ¿qué pasa? ¿hay corte, movimiento, sonido? → ¿sobrevive? SÍ/NO
+→ s3-s7: ¿qué pasa? ¿algo nuevo o mismo plano? → ¿sobrevive? SÍ/NO
+→ s7-s15: ¿qué pasa? ¿ritmo sostenido o baja energía? → ¿sobrevive? SÍ/NO
+→ s15-fin: ¿qué pasa? ¿llega alguien hasta acá? → ¿sobrevive? SÍ/NO
 
-RETENCIÓN Y EDICIÓN:
-- ¿En qué segundo estimás que el espectador promedio hace scroll?
-- Momentos muertos verificables: ¿en qué segundo?
-- ¿La música acompaña la energía del producto?
-- ¿Los motores de retención compensan la producción?
-- ¿Falta dinamismo visual? ¿El video mantiene progresión?
+VEREDICTO DE SUPERVIVENCIA:
+- Segundo estimado de scroll masivo: (número)
+- % estimado que llega al final: (número entre 0 y 100)
+- Causa principal de abandono: (1 frase simple, sin jerga)
+- ¿El resultado/oferta aparece ANTES de que la gente se vaya? SÍ/NO → segundo en que aparece vs segundo de scroll
+
+MÉTRICAS DURAS:
+- Cortes en primeros 3s: (número)
+- Plano más largo sin nada nuevo: (duración en segundos + en qué segundo ocurre)
+- Música desde s0: SÍ/NO
+- Algo visualmente nuevo cada 2-3s: SÍ/PARCIAL/NO
+- Consumible sin audio en <5s: SÍ/NO
+
+REGLA DE ORO: Si el resultado estrella del video aparece después del segundo estimado de scroll → ese resultado no existe para el 80% de los espectadores. Reportarlo explícitamente.
+
+RETENCIÓN — REALIDAD DEL SCROLL:
+El análisis forense estimó que el scroll masivo ocurre en el segundo: [X]
+Trabajá desde esa base, no desde el contenido total del video.
+
+- ¿El gancho principal (resultado, oferta, transformación) aparece antes de ese segundo? 
+  → Si NO: ese contenido no existe para la mayoría. No lo cuentes como fortaleza.
+- ¿El viralScore puede ser alto si la gente no llega a ver lo mejor del video? 
+  → NO. Un video que la gente abandona en s4 tiene viralScore máximo 45, sin importar qué tan bueno sea el contenido después.
+- ¿Hay algo que justifique que alguien aguante más de 5s? Nombrarlo o admitir que no hay nada.
+
+REGLA DURA: El score de viralidad refleja el video que la gente VE, no el video que existe.
+Si el 80% se va antes de s7 → viralScore ≤45. No negociable.
+
 
 AUTENTICIDAD:
 - ¿Parece contenido orgánico o publicidad reciclada?
