@@ -244,6 +244,18 @@ FASE 2 — OBSERVACIÓN FORENSE
 Rol: inspector forense. Reportá solo hechos sensoriales. CERO adjetivos evaluativos ("bueno/malo/efectivo/interesante").
 ✓ "música constante sin cambios de energía" | ✗ "edición simple pero efectiva"
 
+INVENTARIO PREVIO OBLIGATORIO (completar viendo el video, antes de cualquier análisis):
+Respondé SÍ/NO + descripción literal de lo que SE VE:
+- ¿Hay secuencia antes/después? → segundo inicio: / segundo resultado:
+- ¿Se muestra resultado exitoso del paciente/cliente? → describir exactamente qué se ve
+- ¿Se menciona duración del tratamiento o timeline? → transcribir literal
+- ¿Hay persona real mostrando resultado? →
+- ¿Testimonial verbal o escrito? → transcribir literal si existe
+- ¿Se muestra el proceso paso a paso? →
+- ¿Hay texto en pantalla con datos o promesas? → transcribir cada uno
+
+REGLA: Si un elemento está en este inventario como SÍ, NO puede aparecer como "mejora sugerida" en ninguna fase posterior.
+
 A. AMBIENTE Y PRIMER FRAME
 - ¿Qué objeto/persona aparece y dónde en el encuadre?
 - Fondo: objetos, colores, texturas visibles.
@@ -266,20 +278,20 @@ C. CRITERIOS DE NICHO
 SÍ / PARCIALMENTE / NO + 1 línea con qué viste que lo justifica:
 ${criterios}
 
-D. EDICIÓN Y AUDIO
-EDICIÓN:
-- Cantidad de cortes + duración promedio por plano
-- ¿Algún plano >4s sin nada nuevo? → segundo
-- ¿El video es mayormente imágenes estáticas (fotos fijas sin movimiento, zoom ni transición)? → SÍ/NO. Si SÍ: cuántas imágenes, duración promedio por imagen.
-- Texto en pantalla: segundo exacto + contenido literal
-- ¿Producto funcionando o solo estático?
-ALERTA CRÍTICA: Si el video es >60% imágenes estáticas sin música → reportar: SLIDE_VIDEO_DETECTED
+TRANSCRIPCIÓN LITERAL OBLIGATORIA:
+Cada vez que aparezca texto en pantalla, transcribilo EXACTAMENTE así:
+→ [s0] "texto exacto tal como aparece"
+→ [s3] "siguiente texto"
+Si hay subtítulos, voz en off transcrita, o texto superpuesto: todo va acá.
+NO parafrasear. NO resumir. Copiar letra por letra.
+Si no hay texto en ningún momento: escribir "SIN TEXTO EN PANTALLA".
 
 AUDIO:
 - ¿Hay música? ¿Cambia de energía?
 - Volumen música vs voz: compite/debajo/no hay voz
 - ¿Voz en off? ¿Audio claro o con ruido?
 - Sonidos ambiente concretos si los hay
+
 
 E. MOTORES DE RETENCIÓN (PRESENTE/PARCIAL/AUSENTE + 1 oración concreta)
 SATISFACCIÓN VISUAL — limpiar/transformar/antes-después/fluido/textura/proceso/simetría/fitting → si sí: acción/momento exacto
