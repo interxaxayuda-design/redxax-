@@ -232,13 +232,28 @@ const buildViewerBrainPrompt = (platform, nicho) => {
   const criterios = (NICHE_CRITERIA[nicho] || NICHE_CRITERIA['otro']).map((c,i) => `${i+1}. ${c}`).join('\n');
 
   return `
-FASE 1 — REACCIÓN CRUDA (primeros 3s)
-Sos usuario en ${pName}, sueño, atención cero. Mirá los primeros 3 segundos.
-Respondé en 1a persona, sin análisis:
+
+  FASE 1 — REACCIÓN CRUDA + DIAGNÓSTICO DE HOOK (primeros 3s)
+
+PARTE A — REACCIÓN INSTINTIVA:
+Sos usuario en ${pName}, sueño, atención cero.
 - ¿El pulgar se frenó o siguió? ¿Por qué?
 - ¿Qué sentiste (curiosidad/asco/indiferencia/deseo/confusión/sorpresa)?
-- ¿Algo visual/auditivo capturó antes de entender?
-Máx 4 oraciones. Solo reacción instintiva.
+Máx 3 oraciones. Solo reacción instintiva.
+
+PARTE B — DIAGNÓSTICO DE RITMO (primeros 3s):
+Respondé con datos concretos, sin adjetivos:
+- ¿Cuántos cortes hubo en los primeros 3 segundos? → número exacto
+- ¿Hay movimiento real (persona, producto, cámara) o es estático? → describir qué se mueve
+- ¿El primer frame tiene algo que cambia en <1s? → SÍ/NO + qué es
+- ¿Hay sonido/música que arranca fuerte desde el segundo 0? → SÍ/NO
+
+CRITERIO DE HOOK EXPLOSIVO (comparar contra el video):
+ Hook fuerte: 2+ cortes en 3s + movimiento real + audio desde s0
+ Hook débil: 0-1 cortes en 3s O imagen estática O silencio en s0
+ Hook muerto: sin cortes + sin movimiento + sin audio impactante o nulo
+
+→ Clasificar el hook del video: EXPLOSIVO / DÉBIL / MUERTO + justificación en 1 línea
 
 FASE 2 — OBSERVACIÓN FORENSE
 Rol: inspector forense. Reportá solo hechos sensoriales. CERO adjetivos evaluativos ("bueno/malo/efectivo/interesante").
@@ -372,6 +387,8 @@ VEREDICTO:
   "is_static_slideshow": <true si el video es mayormente imágenes fijas sin movimiento real, zoom ni transición activa | false>,
   "no_music_and_static": <true si es slideshow estático Y no hay música o el audio es solo ambiente plano | false>,
   "dead_moment_second": <segundo del momento muerto, o 0>,
+  "dead_hook": <true si el hook fue clasificado como MUERTO o DÉBIL en los primeros 3s | false>,
+  "hook_type": "<explosivo|débil|muerto>",
   "static_visuals": <true si depende demasiado de imágenes quietas | false>,
   "low_visual_dynamism": <true si faltan cambios relevantes cada 2-3s | false>,
   "slow_pacing": <true si el ritmo se siente lento para Shorts/Reels/TikTok | false>,
@@ -428,6 +445,10 @@ if (flags.no_music_and_static)
   rules.push('⛔ SLIDESHOW SIN MÚSICA: produccion_estetica ≤35 | viralScore ≤38 | potentialScore ≤50 | scrollStopScore ≤30 | honestVerdict debe mencionar que este formato no funciona en Reels/TikTok/Shorts');
   if (flags.audio_issue)
     rules.push('⚠️ AUDIO PROBLEMÁTICO: produccion_estetica -15 | confianza_credibilidad -10');
+  if (flags.hook_type === 'muerto')
+  rules.push('⛔ HOOK MUERTO: hook ≤25 | scrollStopScore ≤25 | viralScore ≤40 | en honestVerdict decir en lenguaje simple que los primeros segundos no detienen el scroll');
+if (flags.hook_type === 'débil')
+  rules.push('⚠️ HOOK DÉBIL: hook ≤50 | scrollStopScore ≤45');
   if (flags.no_retention_engines)
     rules.push('⛔ SIN MOTORES DE RETENCIÓN: viralScore ≤45 | retencion_ritmo ≤40');
   if (flags.product_unclear)
@@ -465,6 +486,21 @@ REGLAS BASE (cuando no hay flag que limite):
 - Música genérica invisible → produccion_estetica -10
 - Video de imágenes estáticas sin música → viralScore ≤38 | retencion_ritmo ≤38. No importa la calidad del contenido: el formato es incompatible con retención en formato corto.
 - Slideshow + sin música → produccion_estetica ≤35, scrollStopScore ≤30. Son techos absolutos, no negociables.
+
+REGLA DE LENGUAJE — OBLIGATORIA:
+Escribí como si le explicás a alguien que nunca estudió marketing.
+PROHIBIDO usar sin explicación: UGC, CTR, hook, retención, conversión, 
+viralización, STEPPS, engagement, funnel, orgánico.
+Si necesitás usarlo, escribí: "hook (lo que ve la gente en el primer segundo)".
+Cada "verdict", "explicacion", "honestVerdict" y "performanceScenario" 
+debe entenderse sin conocimientos previos.
+
+EJEMPLOS:
+✗ "El hook carece de pattern interrupt efectivo"
+✓ "Los primeros segundos no paran el dedo — no pasa nada que llame la atención"
+
+✗ "Baja consumibilidad sin audio"  
+✓ "Sin sonido, nadie entiende lo que dices"
 
 PONDERACIÓN (sin techo de flags):
 hook 15% | claridad_producto 15% | confianza_credibilidad 15% | emocion_deseo 10% | propuesta_valor 10% | retencion_ritmo 10% | call_to_action 10% | produccion_estetica 10% | tendencias_formato 5%
