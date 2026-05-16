@@ -1653,7 +1653,19 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   setStatusText("Subiendo video...");
   setAnalysisProgress(10);
 
-  const storagePath = `temp-analysis/${Date.now()}-${videoFile.name}`;
+  // ── FIX: nombre de archivo seguro sin espacios ni caracteres raros ──
+  const safeName = videoFile.name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')     // saca tildes
+    .replace(/\s+/g, '_')                // espacios → guión bajo
+    .replace(/[^a-zA-Z0-9._-]/g, '');   // saca todo lo demás raro
+
+  const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
+
+  // ── FIX: MIME type seguro — iOS Safari devuelve video/quicktime para .mp4 ──
+  const mimeType = (videoFile.type && videoFile.type.startsWith('video/') && videoFile.type !== 'video/quicktime')
+    ? videoFile.type
+    : 'video/mp4';
 
   try {
     const { error: uploadError } = await supabase.storage
@@ -1661,6 +1673,9 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       .upload(storagePath, videoFile, { upsert: true });
 
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
+
+    // ── Pequeña pausa para que Supabase propague el archivo antes de que el edge function lo lea ──
+    await new Promise(r => setTimeout(r, 1500));
 
     // ── CALL 1 — Viewer Brain ──
     setAnalysisProgress(25);
@@ -1670,23 +1685,23 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       body: {
         text: buildViewerBrainPrompt(platform, selectedNicho),
         storagePath,
-        videoMimeType: videoFile.type || 'video/mp4',
+        videoMimeType: mimeType,
         duration: Math.round(duration),
-        maxOutputTokens: 4096  // era 2048 — el análisis forense completo necesita más espacio
+        maxOutputTokens: 4096
       }
     });
 
     if (call1Error) throw call1Error;
     const viewerAnalysis = extractGeminiText(call1Data);
 
-    // ── CALL 2 — Strategy Brain (ahora genera FLAGS al final) ──
+    // ── CALL 2 — Strategy Brain (genera FLAGS al final) ──
     setAnalysisProgress(50);
     setStatusText("Evaluando ventas y viralidad...");
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho),
-        maxOutputTokens: 6144  // era 3584 — se cortaba antes de generar el bloque FLAGS
+        maxOutputTokens: 6144
       }
     });
 
@@ -1697,10 +1712,8 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const flags = extractFlags(strategyRaw);
     const strategyAnalysis = stripFlags(strategyRaw);
 
-    // log para debugging — útil mientras calibrás
     console.log('[VIRAX] Flags detectados:', flags);
 
-    // alerta si el bloque FLAGS no se generó
     if (Object.keys(flags).length === 0) {
       console.warn('[VIRAX] Strategy Brain no generó FLAGS. Scoring Brain corre sin penalizaciones.');
     }
@@ -1727,7 +1740,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const finalResult = {
       ...parsed,
       objetivo: selectedObjetivo,
-      _flags: flags,  // guardamos los flags para debugging y calibración futura
+      _flags: flags,
     };
 
     setAiResult(finalResult);
