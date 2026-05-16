@@ -156,10 +156,6 @@ const safeParseJSON = (rawText, context = '') => {
   throw new Error(`JSON malformado. Preview: "${rawText.slice(0, 80)}..."`);
 };
 
-// ============================================================
-// VIRAX AI — PROMPTS OPTIMIZADOS (v2 — token-efficient)
-// ============================================================
-
 const NICHE_CRITERIA = {
   producto_fisico: [
     "¿Ataca un problema cotidiano real?",
@@ -224,84 +220,109 @@ const NICHE_CRITERIA = {
 };
 
 
-
+// ============================================================
+// VIEWER BRAIN
+// ============================================================
 const buildViewerBrainPrompt = (platform, nicho) => {
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
   const criterios = (NICHE_CRITERIA[nicho] || NICHE_CRITERIA['otro']).map((c, i) => `${i + 1}. ${c}`).join('\n');
 
   return `
+════════════════════════════════════════
+MODELO MENTAL — LEER ANTES DE ANALIZAR CUALQUIER COSA
+════════════════════════════════════════
+Sos un cerebro biológico en modo scroll. Llevás 20 minutos en ${pName}.
+Ya viste 60 videos. Estás medio dormido. Tu cerebro no evalúa, reacciona.
+Tiene 0.3 segundos para decidir si para o sigue.
 
-MODELO MENTAL OBLIGATORIO — LEER ANTES DE ANALIZAR CUALQUIER COSA
+LOS DOS ÚNICOS GATEKEEPERS QUE IMPORTAN, EN ORDEN:
 
-Sos un cerebro biológico en modo scroll. No sos un comprador. No sos un juez de calidad.
-Llevás 20 minutos en ${pName}. Ya viste 60 videos. Estás medio dormido.
-Tu cerebro no evalúa. Reacciona. Tiene 0.3 segundos para decidir si para o sigue.
-No buscás información. No valorás esfuerzo. Solo buscás estímulos.
+GATEKEEPER 1 — FORMATO:
+¿Es un video real con movimiento y cortes, o son imágenes quietas?
+→ Video real con cortes cada 1-3s + movimiento real = formato competitivo. No hay problema aquí.
+→ Imágenes estáticas una tras otra, aunque tengan transición = slideshow. Formato incompatible.
+→ Video real PERO el producto/servicio es interrumpido, mostrado de costado o aparece tarde = problema de presentación.
 
-JERARQUÍA IRROMPIBLE DE EVALUACIÓN:
-1° ¿El formato para el dedo en <3s?
-   → Si NO: el resto del video no existe para el 80% de los espectadores.
-2° ¿El ritmo sostiene hasta que aparece lo valioso?
-   → Si NO: ese valor es teórico. No lo cuentes como fortaleza.
-3° ¿Lo valioso aparece ANTES del momento estimado de scroll masivo?
-   → Si NO: el resultado, la transformación, la prueba — son invisibles para la mayoría.
-4° Recién entonces: ¿el contenido del producto es bueno?
+GATEKEEPER 2 — HOOK:
+¿El primer segundo dispara algo en el cerebro que obligue a quedarse?
+→ El hook no es "mostrar el producto rápido". Es crear una pregunta en el cerebro del espectador
+   que solo se puede responder quedándose a mirar.
+→ 8 imágenes de un resultado odontológico, aunque sean buenas imágenes, no son un hook.
+   Son información. El cerebro en scroll no busca información, busca estímulos.
+→ Un video que abre con algo que genera "¿qué es eso?", "¿cómo lo hizo?", "¿eso es real?"
+   tiene hook. Uno que abre con el producto ya explicado, no.
 
-REGLA CENTRAL: Un resultado médico impresionante en un slideshow sin música
-tiene el mismo impacto práctico que no existir. El análisis debe reflejar
-el video que el público real ve, no el video ideal que el creador imaginó.
+JERARQUÍA IRROMPIBLE:
+1° ¿El formato es un video real con cortes y movimiento? → si NO: slideshow, penalizar.
+2° ¿El hook crea curiosidad o deseo en los primeros 3 segundos? → si NO: la gente se va, todo lo demás es irrelevante.
+3° ¿El producto/servicio se presenta de forma rápida, directa, sin interrupciones? → si NO: problema de presentación.
+4° Recién entonces: ¿el contenido (resultado, credibilidad, transformación) es bueno?
+
+REGLA: Un resultado médico real, impresionante y verificable presentado en 8 imágenes quietas
+sin hook = un buen resultado que casi nadie ve. El score debe reflejar eso.
 ════════════════════════════════════════
 
 FASE 1 — REACCIÓN CRUDA + DIAGNÓSTICO DE HOOK (primeros 3s)
 
 PARTE A — REACCIÓN INSTINTIVA:
 Sos usuario en ${pName}, sueño, atención cero.
-- ¿El pulgar se frenó o siguió? ¿Por qué?
-- ¿Qué sentiste (curiosidad/asco/indiferencia/deseo/confusión/sorpresa)?
-Máx 3 oraciones. Solo reacción instintiva.
+- ¿El pulgar se frenó o siguió? ¿Por qué exactamente?
+- ¿Qué sentiste en el primer segundo: curiosidad / indiferencia / deseo / confusión / sorpresa / nada?
+- ¿El primer frame genera una pregunta en tu cabeza que solo se responde mirando? SÍ/NO + cuál pregunta
+Máx 3 oraciones. Solo reacción instintiva, sin analizar.
 
-PARTE B — DIAGNÓSTICO DE RITMO (primeros 3s):
+PARTE B — DIAGNÓSTICO DE HOOK (primeros 3s):
 Respondé con datos concretos, sin adjetivos:
 - ¿Cuántos cortes hubo en los primeros 3 segundos? → número exacto
-- ¿Hay movimiento real (persona, producto, cámara) o es estático? → describir qué se mueve
-- ¿El primer frame tiene algo que cambia en <1s? → SÍ/NO + qué es
-- ¿Hay sonido/música que arranca fuerte desde el segundo 0? → SÍ/NO
+- ¿Hay movimiento real de persona, producto o cámara? → describir qué se mueve exactamente
+- ¿El primer frame tiene algo que cambia o impacta en <1s? → SÍ/NO + qué es
+- ¿Hay sonido/música con energía desde el segundo 0? → SÍ/NO
+- ¿El hook crea una pregunta implícita en el cerebro, o solo muestra información? → PREGUNTA / INFORMACIÓN
 
-CRITERIO DE HOOK EXPLOSIVO (comparar contra el video):
- Hook explosivo: 2+ cortes en 3s + movimiento real + audio desde s0
- Hook débil: 0-1 cortes en 3s O imagen estática O silencio en s0
- Hook muerto: sin cortes + sin movimiento + sin audio impactante o nulo
+DISTINCIÓN CRÍTICA — HOOK vs APERTURA INFORMATIVA:
+Hook real: el primer segundo genera una pregunta que obliga a quedarse para responderla.
+  Ejemplos: cara de sorpresa sin contexto / resultado impactante antes de mostrar qué lo causó /
+  texto "nadie te cuenta esto" / sonido extraño / acción a medio completar / dato que desafía creencia.
+Apertura informativa: el primer segundo muestra el producto o servicio directamente.
+  Ejemplos: logo del negocio / foto del resultado ya terminado / "somos la clínica X" / producto en caja.
+  Esto no es un hook. Es un aviso. El cerebro en scroll no para para ver avisos.
 
-→ Clasificar el hook del video: EXPLOSIVO / DÉBIL / MUERTO + justificación en 1 línea
+CLASIFICACIÓN DEL HOOK:
+→ EXPLOSIVO: genera pregunta implícita clara + movimiento real + audio desde s0 + 2+ cortes en 3s
+→ DÉBIL: muestra algo interesante pero no crea pregunta / tiene movimiento pero sin tensión narrativa
+→ MUERTO: abre con información directa sin tensión / imagen quieta / logo / resultado ya terminado sin contexto
 
+→ Clasificar: EXPLOSIVO / DÉBIL / MUERTO + justificación en 1 línea concreta
 
-GATE DE SUPERVIVENCIA DE FORMATO
-(Completar ANTES del inventario y de cualquier análisis de contenido)
+════════════════════════════════════════
+GATE DE FORMATO
+(Completar ANTES del inventario)
+════════════════════════════════════════
+Responder SÍ/NO con criterio estricto:
+1. ¿Es un video real? (persona, producto o pantalla en movimiento continuo, NO imágenes estáticas aunque tengan transición) →
+2. ¿Hay audio con energía (música o voz clara) desde s0? →
+3. ¿Hay al menos 1 corte real en los primeros 3s? →
+4. ¿Hay algo visualmente nuevo cada ≤3s de forma sostenida? →
+5. ¿El momento más impactante del video (el resultado, la transformación, el wow) aparece antes de s8? →
 
-Respondé SÍ/NO a cada criterio:
-1. ¿Hay movimiento real (persona, objeto, cámara en movimiento) en los primeros 2s? →
-2. ¿Hay audio con energía (música o voz clara) desde el segundo 0? →
-3. ¿Hay al menos 1 corte en los primeros 3s? →
-4. ¿Hay algo visualmente nuevo cada ≤3s a lo largo del video? →
-5. ¿El estímulo más fuerte del video (resultado, transformación, momento wow) aparece antes de s7? →
+NOTA CRÍTICA sobre pregunta 1:
+- SÍ real: persona hablando, producto funcionando, manos en acción, cámara en movimiento, pantalla grabada.
+- NO cuenta: galería de fotos con transición automática, imágenes fijas aunque cambien cada 2s,
+  capturas de pantalla sin movimiento, zoom lento en foto quieta.
 
-CLASIFICACIÓN OBLIGATORIA:
-→ 5 SÍ: FORMATO COMPETITIVO — el contenido puede evaluarse normalmente
-→ 3-4 SÍ: FORMATO DÉBIL — aplicar caps duros en viral y retención. Marcar como format_weak.
-→ 0-2 SÍ: FORMATO INCOMPATIBLE — el formato no puede sobrevivir scroll moderno.
-  Todo el inventario que sigue se anota con la etiqueta [VALOR NO ALCANZADO]
-  si aparece después del segundo estimado de scroll masivo.
-  Marcar como format_incompatible. Un antes/después que nadie ve no es fortaleza.
-
+CLASIFICACIÓN:
+→ 5 SÍ: FORMATO COMPETITIVO — el video puede competir en el feed. No aplicar penalizaciones de formato.
+→ 3-4 SÍ: FORMATO DÉBIL — tiene problemas pero no es slideshow. Penalización moderada.
+→ 0-2 SÍ: FORMATO INCOMPATIBLE — slideshow o video sin estímulo. Penalización fuerte independientemente del contenido.
+════════════════════════════════════════
 
 FASE 2 — OBSERVACIÓN FORENSE
-Rol: inspector forense. Reportá solo hechos sensoriales. CERO adjetivos evaluativos ("bueno/malo/efectivo/interesante").
+Rol: inspector forense. Solo hechos sensoriales. CERO adjetivos evaluativos.
 ✓ "música constante sin cambios de energía" | ✗ "edición simple pero efectiva"
 
-INVENTARIO PREVIO OBLIGATORIO (completar viendo el video, después del Gate):
+INVENTARIO PREVIO OBLIGATORIO:
 Respondé SÍ/NO + descripción literal de lo que SE VE.
-Si el elemento existe pero aparece después del segundo de scroll masivo estimado,
-agregá la etiqueta [VALOR NO ALCANZADO - aparece en s_X].
+Si el elemento existe pero aparece DESPUÉS del segundo estimado de abandono masivo, agregar: [TARDE - s_X].
 - ¿Hay secuencia antes/después? → segundo inicio: / segundo resultado:
 - ¿Se muestra resultado exitoso del paciente/cliente? → describir exactamente qué se ve
 - ¿Se menciona duración del tratamiento o timeline? → transcribir literal
@@ -310,71 +331,66 @@ agregá la etiqueta [VALOR NO ALCANZADO - aparece en s_X].
 - ¿Se muestra el proceso paso a paso? →
 - ¿Hay texto en pantalla con datos o promesas? → transcribir cada uno
 
-REGLA: Si un elemento está en este inventario como SÍ sin etiqueta [VALOR NO ALCANZADO],
-NO puede aparecer como "mejora sugerida" en ninguna fase posterior.
-Si tiene etiqueta [VALOR NO ALCANZADO], SÍ debe aparecer como debilidad de posicionamiento temporal.
+REGLA: Elemento presente SIN etiqueta [TARDE] → no sugerir como mejora en fases posteriores.
+Elemento presente CON etiqueta [TARDE] → sí reportar como problema de posicionamiento temporal.
 
 A. AMBIENTE Y PRIMER FRAME
 - ¿Qué objeto/persona aparece y dónde en el encuadre?
 - Fondo: objetos, colores, texturas visibles.
-- ¿Suciedad, manchas, deterioro, golpes? → si sí: ubicación exacta + segundo. SEÑAL DE RECHAZO VISUAL: [descripción][segundo]
+- ¿Suciedad, manchas, deterioro, golpes? → SEÑAL DE RECHAZO VISUAL: [descripción][segundo exacto]
 - ¿Persona presente? ¿Expresión? ¿Mira a cámara?
-DINAMISMO: ¿Cambio visual relevante cada 2-3s? ¿Hay planos estáticos o ventanas muertas?
+DINAMISMO: ¿Cambio visual relevante cada 2-3s? ¿Hay planos quietos sin progresión?
 
-B. VIABILIDAD DEL PRODUCTO
-Respondé FUERTE/ACEPTABLE/DÉBIL + 1 línea sin adjetivos evaluativos:
+B. PRESENTACIÓN DEL PRODUCTO/SERVICIO
+(Separado de viabilidad — esto evalúa CÓMO se muestra, no qué es el producto)
+- ¿El producto/servicio aparece en los primeros 3s? SÍ/NO + en qué segundo exacto
+- ¿Se presenta de forma directa y continua, o es interrumpido por otra cosa? DIRECTA / INTERRUMPIDA
+- ¿Se muestra funcionando/en acción, o solo de costado/estático? EN ACCIÓN / ESTÁTICO
+- ¿El video sigue mostrando el producto de principio a fin, o hay saltos a otra cosa? CONTINUO / CON SALTOS
+Señal positiva: producto en acción + cortes rápidos + sin interrupciones = presentación efectiva.
+Señal negativa: producto aparece tarde, mostrado de costado, o interrumpido por logos/textos largos.
+
+C. VIABILIDAD DEL PRODUCTO
+(Qué es el producto, independientemente del video)
+FUERTE/ACEPTABLE/DÉBIL + 1 línea:
 1. FRECUENCIA DE USO — diaria/semanal/mensual/ocasional
 2. CLARIDAD INSTANTÁNEA — ¿extraño entiende qué es en 5s?
 3. PROBLEMA COTIDIANO — ¿el espectador promedio lo experimenta?
 4. AMPLITUD — ¿cuántos de 100 al azar lo necesitarían?
 5. FRICCIÓN DE COMPRA — ¿impulso o requiere investigación?
-6. FACTOR WOW — ¿algo visual procesado como recompensa antes de entender?
+6. FACTOR WOW — ¿algo visual que el cerebro procesa como recompensa?
 7. CREDIBILIDAD DEL RESULTADO — ¿lo mostrado parece posible y verificable?
-→ Si 3+ son DÉBIL: PRODUCTO DE VENTA DIFÍCIL EN REDES: [razón 1 oración]
+→ Si 3+ son DÉBIL: PRODUCTO DE VENTA DIFÍCIL EN REDES: [razón]
 
-NOTA: La viabilidad del producto es independiente del formato del video.
-Un producto excelente en un video con formato incompatible sigue siendo
-un producto excelente — en un video que nadie ve.
-Separar siempre estas dos variables en el análisis.
-
-C. CRITERIOS DE NICHO
-SÍ / PARCIALMENTE / NO + 1 línea con qué viste que lo justifica:
+D. CRITERIOS DE NICHO
+SÍ / PARCIALMENTE / NO + 1 línea con qué se ve que lo justifica:
 ${criterios}
 
-D. TRANSCRIPCIÓN LITERAL OBLIGATORIA:
-Cada vez que aparezca texto en pantalla, transcribilo EXACTAMENTE así:
+E. TRANSCRIPCIÓN LITERAL OBLIGATORIA:
 → [s0] "texto exacto tal como aparece"
-→ [s3] "siguiente texto"
-Si hay subtítulos, voz en off transcrita, o texto superpuesto: todo va acá.
 NO parafrasear. NO resumir. Copiar letra por letra.
-Si no hay texto en ningún momento: escribir "SIN TEXTO EN PANTALLA".
+Si no hay texto: "SIN TEXTO EN PANTALLA".
 
 AUDIO:
-- ¿Hay música? ¿Cambia de energía en algún momento o es plana de inicio a fin?
-- Volumen música vs voz: compite/debajo/no hay voz
-- ¿Voz en off? ¿Audio claro o con ruido?
-- Sonidos ambiente concretos si los hay
+- ¿Hay música? ¿Cambia de energía o es plana de inicio a fin?
+- Volumen música vs voz: compite / debajo / no hay voz
+- ¿Voz en off? ¿Claro o con ruido?
 
-E. MOTORES DE RETENCIÓN (PRESENTE/PARCIAL/AUSENTE + 1 oración concreta)
-SATISFACCIÓN VISUAL — limpiar/transformar/antes-después/fluido/textura/proceso/simetría/fitting → si sí: acción/momento exacto
-CURIOSIDAD ABIERTA — ¿empieza sin mostrar resultado? ¿pregunta implícita sin respuesta al inicio? → si sí: segundo apertura + cierre
-MICRO-RECOMPENSAS — ¿algo nuevo cada 2-3s, o hay período >4s sin nada visual?
-CONSUMIBILIDAD — ¿se entiende con audio apagado en <5s? sí/no + justificación
-NATURALIDAD ${pName} — ¿parece contenido orgánico o publicidad tradicional (logos/locución/corte a negro/pantalla de precio)?
+F. MOTORES DE RETENCIÓN (PRESENTE/PARCIAL/AUSENTE + 1 oración)
+SATISFACCIÓN VISUAL — limpiar/transformar/antes-después/fluido/textura/proceso → acción/momento exacto
+CURIOSIDAD ABIERTA — ¿pregunta implícita sin respuesta al inicio? → segundo apertura + cierre
+MICRO-RECOMPENSAS — ¿algo nuevo cada 2-3s, o hay período >4s sin nada?
+CONSUMIBILIDAD — ¿se entiende con audio apagado en <5s? SÍ/NO + justificación
+NATURALIDAD ${pName} — ¿parece orgánico o publicidad tradicional?
 
-ENERGÍA Y PROGRESIÓN:
-- ¿El video tiene picos de energía o es plano de inicio a fin?
-- ¿Hay escalada emocional (algo que crece, sube, sorprende)?
-- ¿En qué segundo aparece el momento de mayor impacto del video?
-- ¿Ese momento llega antes o después del punto de scroll masivo estimado?
-
-F. PERSONALIDAD DEL CREADOR
+G. PERSONALIDAD DEL CREADOR
 - Tono: (informal/aspiracional/educativo/humorístico/directo)
 - Estilo: (habla a cámara/muestra sin hablar/usa texto)
 - Elementos únicos que no deben perderse
 - Riesgo de personalidad: ninguno/leve/alto — 1 oración
 `;
 };
+
 
 
 const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, nicho) => {
@@ -387,136 +403,145 @@ Plataforma: ${pName} | Objetivo: ${objetivo} | Nicho: ${nicho}
 REPORTE FORENSE:
 ${viewerAnalysis}
 
-FILOSOFÍA BASE — LEER Y APLICAR ANTES DE CUALQUIER ANÁLISIS
 
-Antes de analizar ventas, credibilidad o calidad del producto,
-existe una pregunta que condiciona todo lo demás:
-¿El formato de este video puede sobrevivir en un feed moderno?
+FILOSOFÍA BASE — LEER PRIMERO
 
-Esta no es una pregunta de preferencia estética. Es una pregunta biológica.
-El cerebro humano en scroll tiene reflejos, no decisiones racionales.
-Si el video no activa esos reflejos en los primeros 3 segundos,
-el contenido posterior no existe para la mayoría.
+HAY DOS PROBLEMAS DISTINTOS QUE NUNCA SE MEZCLAN:
+A) El formato del video (slideshow vs video real, ritmo, cortes)
+B) El hook (¿el primer segundo crea una pregunta que obliga a quedarse?)
 
-JERARQUÍA IRROMPIBLE:
-1. Formato: ¿puede este video retener a alguien en scroll?
-2. Timing: ¿lo más valioso aparece antes del abandono masivo?
-3. Contenido: ¿el producto/servicio es bueno?
+Un video puede tener formato perfecto (cortes rápidos, movimiento real, música)
+y aun así no ser viral porque el hook no crea curiosidad.
+Un video puede tener resultado impresionante y buena producción
+y aun así fracasar porque abre mostrando el resultado directamente, sin tensión.
 
-Un buen producto en un video sin retención = un buen producto que nadie descubre.
-No son variables que se compensan. Son capas: si la primera falla, las demás son invisibles.
+EL HOOK ES EL FACTOR #1. No es "una de las categorías".
+Es el gatekeeper de todo lo demás. Sin hook real → sin viralidad, punto.
+"Mostrar el producto rápido con cortes" no es un hook.
+Un hook es algo que genera en el cerebro del espectador una pregunta
+que solo puede responder si se queda mirando.
 
-REGLA CENTRAL DE PRODUCCIÓN:
-"Producción simple ≠ problema" → VERDADERO solo si el formato retiene.
-"Producción simple + sin música + imágenes quietas + sin cortes" → SIEMPRE problema estructural.
-La distinción no es costosa vs barata. Es: ¿hay estímulo suficiente o no?
+FORMATO COMPETITIVO (esto NO es un problema, reconocerlo):
+→ Video real con cortes cada 1-3s + movimiento real + producto mostrado directamente = BIEN
+→ No penalizar producción simple si el formato tiene estímulo real
+→ Penalizar solo si: imágenes quietas / producto mostrado de costado o tarde / interrupciones largas
+
+REGLAS OPERATIVAS:
+1. Formato competitivo + hook explosivo = puede viralizar aunque la producción sea simple.
+2. Formato competitivo + hook muerto = no viraliza aunque el producto sea excelente.
+3. Slideshow (imágenes quietas) = formato incompatible, siempre, sin excepción.
+4. Producción cara + hook muerto = no viraliza. La producción no reemplaza al hook.
+5. Resultado real impresionante + sin hook = información, no entretenimiento. El cerebro scrollea.
 
 
-⛔ GATE DE SUPERVIVENCIA DE FORMATO (ejecutar PRIMERO, antes de cualquier otra sección)
+ STEP 1 — GATE DE FORMATO (ejecutar primero)
 
-Basándote en el reporte forense, respondé con los datos ya observados:
-1. ¿Movimiento real (persona, objeto, cámara) en s0-s2? SÍ/NO
+Basado en el reporte forense:
+1. ¿Es video real con movimiento continuo (NO slideshow de imágenes)? SÍ/NO
 2. ¿Audio con energía desde s0? SÍ/NO
-3. ¿Al menos 1 corte en primeros 3s? SÍ/NO
-4. ¿Algo visualmente nuevo cada ≤3s a lo largo del video? SÍ/NO
-5. ¿Estímulo más fuerte del video aparece antes de s7? SÍ/NO
+3. ¿Corte real en primeros 3s? SÍ/NO
+4. ¿Algo nuevo cada ≤3s sostenido? SÍ/NO
+5. ¿El momento más fuerte aparece antes de s8? SÍ/NO
 
-CLASIFICACIÓN:
-→ 5 SÍ: FORMATO COMPETITIVO — continuar análisis normal
-→ 3-4 SÍ: FORMATO DÉBIL — caps duros en viral y retención. Flag: format_weak
-→ 0-2 SÍ: FORMATO INCOMPATIBLE — el formato no puede retener en scroll moderno.
-  Flag: format_incompatible.
-  REGLA: todos los scores de contenido (claridad, credibilidad, propuesta de valor)
-  se marcan como [TEÓRICOS] porque el 80% de los espectadores no llega a verlos.
-  No se pueden usar como fortalezas en el veredicto final.
+→ 5 SÍ: FORMATO COMPETITIVO. No aplicar penalizaciones de formato. Continuar con el hook.
+→ 3-4 SÍ: FORMATO DÉBIL. Penalización moderada. El hook aún puede salvar el video.
+→ 0-2 SÍ o pregunta 1 = NO: FORMATO INCOMPATIBLE. Penalización fuerte independientemente del contenido.
+
+ STEP 2 — GATE DEL HOOK (el más importante)
+
+El hook determina el techo real del viralScore. No hay excepción.
+
+¿El primer segundo crea una pregunta en el cerebro del espectador
+que solo puede responderse quedándose a mirar?
+
+Evaluación:
+- ¿Qué pregunta concreta genera el primer frame en el cerebro? → escribirla o escribir "ninguna"
+- ¿Es información directa (producto mostrado, resultado ya visible) o tensión narrativa? INFORMACIÓN / TENSIÓN
+- ¿El espectador sabe desde s0 de qué trata el video, o tiene que quedarse para entender? SABE / DEBE QUEDARSE
+
+TECHO DE VIRALSCORE SEGÚN HOOK (no negociable, nada lo supera):
+→ Hook EXPLOSIVO (tensión real + pregunta implícita fuerte): viralScore puede llegar hasta 90
+→ Hook DÉBIL (algo interesante pero sin tensión narrativa clara): viralScore techo = 62
+→ Hook MUERTO (información directa, sin pregunta, sin tensión): viralScore techo = 38
+
+Este techo aplica aunque el formato sea perfecto, el producto sea excelente
+y la producción sea profesional. El hook es el techo, no el piso.
+
+⛔ STEP 3 — PRESENTACIÓN DEL PRODUCTO
+
+¿El producto/servicio se muestra de forma directa, rápida y sin interrupciones?
+→ Directo + rápido + sin interrupciones: SIN problema aquí
+→ Mostrado de costado, a lo lejos, parcialmente: problema de presentación
+→ Producto aparece tarde (después de s10 en video corto): problema
+→ Video interrumpe el producto con logos, textos largos, intro del negocio: problema
 
 
-REGLAS OPERATIVAS (aplicar después del Gate):
-1. Producción simple + formato competitivo → neutral o ventaja UGC. No penalizar.
-2. Producción simple + formato incompatible → problema estructural. Penalizar siempre.
-3. Si el video muestra el producto funcionando visualmente → beneficio comunicado. No decir que falta explicación.
-4. Gravedad calibrada: falla crítica (daño visible, formato incompatible, aburrido de principio a fin) | mejorable (música genérica, ritmo algo lento) | funciona (reconocerlo).
-5. Si hay satisfacción visual fuerte + curiosidad abierta + consumibilidad alta → no penalizar calidad técnica.
+ANÁLISIS DE SUPERVIVENCIA
 
+¿En qué segundo exacto la persona promedio se va?
 
-ANÁLISIS ESTRATÉGICO
-
-
-RETENCIÓN Y EDICIÓN — ANÁLISIS DE SUPERVIVENCIA:
-
-PREGUNTA CENTRAL: ¿En qué segundo exacto la persona promedio aprieta el dedo y se va?
-No es una pregunta retórica. Estimá el segundo con este criterio:
-- Sin movimiento + sin sonido fuerte en s0 → scroll antes de s3
-- Hay movimiento pero sin cortes ni audio → scroll antes de s5
+Estimá con este criterio:
+- Hook muerto + sin audio → scroll antes de s2
+- Hook muerto + con audio → scroll antes de s4
+- Hook débil + formato competitivo → scroll entre s4 y s8
+- Hook explosivo + formato competitivo → puede llegar al final
 - Momento muerto >4s en cualquier punto → scroll en ese momento
-- Sin cortes en 10s → scroll antes de s10
-- Energía plana de inicio a fin (sin picos, sin cambio de ritmo) → scroll progresivo desde s5
-- Música + cortes cada 2-3s + algo nuevo en cada corte → puede sobrevivir hasta el final
 
-DIAGNÓSTICO SEGUNDO A SEGUNDO (completar para cada intervalo):
-→ s0-s3: ¿qué pasa? ¿hay corte, movimiento, sonido? → ¿sobrevive? SÍ/NO + por qué
-→ s3-s7: ¿qué pasa? ¿algo nuevo o mismo plano? → ¿sobrevive? SÍ/NO + por qué
-→ s7-s15: ¿qué pasa? ¿ritmo sostenido o baja energía? → ¿sobrevive? SÍ/NO + por qué
-→ s15-fin: ¿qué pasa? ¿llega alguien hasta acá? → ¿sobrevive? SÍ/NO + por qué
+DIAGNÓSTICO SEGUNDO A SEGUNDO:
+→ s0-s3: ¿qué pasa? ¿hay hook? → ¿sobrevive? SÍ/NO + por qué
+→ s3-s7: ¿qué pasa? ¿algo nuevo? → ¿sobrevive? SÍ/NO + por qué
+→ s7-s15: ¿ritmo sostenido? → ¿sobrevive? SÍ/NO + por qué
+→ s15-fin: ¿llega alguien? → ¿sobrevive? SÍ/NO + por qué
 
 VEREDICTO DE SUPERVIVENCIA:
-- Segundo estimado de scroll masivo: (número)
-- % estimado que llega al final: (número entre 0 y 100)
-- Causa principal de abandono: (1 frase simple, sin jerga técnica)
-- ¿El resultado/oferta aparece ANTES de que la gente se vaya? SÍ/NO
-  → Si SÍ: segundo en que aparece vs segundo de scroll masivo
-  → Si NO: indicar en qué segundo aparece y que ese contenido no existe para la mayoría
+- Segundo de scroll masivo: (número)
+- % que llega al final: (0-100)
+- Causa principal de abandono: (1 frase simple)
+- ¿El mejor momento del video aparece antes de ese segundo? SÍ/NO
 
 MÉTRICAS DURAS:
-- Cortes en primeros 3s: (número exacto)
-- Plano más largo sin nada nuevo: (duración en segundos + en qué segundo ocurre)
+- Cortes en primeros 3s: (número)
+- Plano más largo sin nada nuevo: (duración + segundo)
 - Música desde s0: SÍ/NO
-- Algo visualmente nuevo cada 2-3s: SÍ/PARCIAL/NO
+- Algo nuevo cada 2-3s: SÍ/PARCIAL/NO
 - Consumible sin audio en <5s: SÍ/NO
-- ¿Hay algún pico de energía o momento de escalada? SÍ/NO + en qué segundo
-- ¿El video tiene energía constante o plana de inicio a fin? VARIABLE/PLANA
 
+════════════════════════════════════════
+CALIBRACIÓN DE SCORE (referencia para no sobre/sub-puntuar)
+════════════════════════════════════════
+viralScore 80-90: hook explosivo + formato competitivo + producto claro + ritmo sostenido
+viralScore 65-79: hook explosivo o muy bueno + algún problema menor de ritmo o presentación
+viralScore 50-64: hook débil pero formato competitivo + producto bueno + algo que retiene
+viralScore 35-49: hook muerto O formato débil (no ambos) + algo rescatable
+viralScore 20-34: hook muerto + formato incompatible O slideshow sin música
+viralScore <20: slideshow sin música + hook muerto + sin motores de retención
 
-DETECCIÓN DE TRAMPA DE VALOR
-
-Responder obligatoriamente:
-¿El video tiene un producto/resultado genuinamente bueno PERO un formato que
-no retiene a nadie lo suficiente para verlo?
-
-→ Si SÍ: flag value_trap = true
-  En el veredicto: separar explícitamente estas dos oraciones:
-  "[El producto/servicio] tiene potencial real."
-  "El video, en este formato, no funciona en ${pName}."
-  NO mezclarlas como si fueran el mismo problema ni la misma solución.
-
-¿El elemento más valioso del video (resultado, transformación, oferta) aparece
-DESPUÉS del segundo estimado de scroll masivo?
-→ Si SÍ: flag value_behind_scroll_wall = true + flag recompensa_tardia = true
-  Ese elemento NO puede aparecer en "Fortalezas reales".
-  SÍ debe aparecer en debilidades como:
-  "Hay [resultado X] pero aparece en s[Y], cuando el 80% ya abandonó el video."
-
-
-REGLA DE ORO: Si el resultado estrella del video aparece después del segundo estimado de scroll
-→ ese resultado no existe para el 80% de los espectadores. Reportarlo explícitamente.
-
-REGLA DURA: El score de viralidad refleja el video que la gente VE, no el video que existe.
-Si el 80% se va antes de s7 → viralScore ≤45. No negociable.
-Si el formato es incompatible → viralScore ≤33. No negociable.
+salesScore sigue lógica similar pero pondera más credibilidad, resultado y CTA.
+Un video puede tener viralScore 30 y salesScore 55 (llega a poca gente pero convierte bien a quien llega).
+Un video puede tener viralScore 75 y salesScore 40 (viral pero no vende — falta CTA o propuesta).
 
 AUTENTICIDAD:
-- ¿Parece contenido orgánico o publicidad reciclada?
-- ¿Hay algo que active escepticismo?
+- ¿Parece orgánico o publicidad reciclada?
+- ¿Algo activa escepticismo?
 
-VEREDICTO:
-- Fortalezas reales (solo elementos que aparecen ANTES del scroll masivo)
+DETECCIÓN DE TRAMPA DE VALOR:
+¿El video tiene contenido valioso (resultado real, transformación, credibilidad)
+PERO el hook no crea curiosidad y/o el formato es incompatible?
+→ Si SÍ: flag value_trap = true.
+  En veredicto: separar "el [producto/resultado] es real y valioso"
+  de "el video no genera curiosidad suficiente para que la gente llegue a verlo".
+
+¿El mejor momento del video aparece después del segundo de scroll masivo?
+→ Si SÍ: flag value_behind_scroll_wall = true + recompensa_tardia = true.
+  No contarlo como fortaleza. Reportarlo como debilidad de estructura.
+
+VEREDICTO FINAL:
+- Fortalezas reales (solo las que aparecen antes del scroll masivo)
 - Debilidades reales
 - ¿Compraría o seguiría scrolleando?
-- 3 mejoras concretas en lenguaje simple
-  NOTA: Si hay value_trap, la primera mejora debe ser de formato, no de contenido.
-  No tiene sentido mejorar el guion de un video que nadie ve hasta el final.
+- 3 mejoras concretas (si hay value_trap: la primera mejora siempre es el hook, no el contenido)
 
----FLAGS--- (OBLIGATORIO. Completá exactamente. No omitas ni modifiques ningún campo.)
+---FLAGS--- (OBLIGATORIO. Completar exactamente. No omitir ningún campo.)
 {
   "product_damage": <true si manchas/golpes/deterioro visible | false>,
   "visual_repulsion": <true si algo genera rechazo físico o desconfianza inmediata | false>,
@@ -524,10 +549,15 @@ VEREDICTO:
   "first_frame_repulsion": <true si PRIMER FRAME dispara rechazo o indiferencia total | false>,
   "dead_moment": <true si hay período >4s sin nada nuevo | false>,
   "dead_moment_second": <segundo del momento muerto, o 0>,
-  "is_static_slideshow": <true si el video es mayormente imágenes fijas sin movimiento real, zoom ni transición activa | false>,
+  "is_static_slideshow": <true si el video es mayormente imágenes fijas — aunque tengan transición automática — sin movimiento real de persona, producto o cámara | false>,
   "no_music_and_static": <true si es slideshow estático Y no hay música o el audio es solo ambiente plano | false>,
-  "dead_hook": <true si el hook fue clasificado como MUERTO o DÉBIL en los primeros 3s | false>,
   "hook_type": "<explosivo|débil|muerto>",
+  "hook_creates_question": <true si el primer segundo genera una pregunta implícita que obliga a quedarse | false>,
+  "hook_is_direct_info": <true si el video abre mostrando directamente el producto/resultado sin tensión narrativa | false>,
+  "dead_hook": <true si hook_type es muerto o débil | false>,
+  "product_shown_late": <true si el producto/servicio principal aparece después de s8 | false>,
+  "product_shown_sideways": <true si el producto se muestra de costado, parcial o sin acción real | false>,
+  "product_presentation_interrupted": <true si logos, intros o textos largos interrumpen la presentación del producto | false>,
   "static_visuals": <true si depende demasiado de imágenes quietas | false>,
   "low_visual_dynamism": <true si faltan cambios relevantes cada 2-3s | false>,
   "slow_pacing": <true si el ritmo se siente lento para Shorts/Reels/TikTok | false>,
@@ -536,17 +566,16 @@ VEREDICTO:
   "insufficient_pattern_interrupts": <true si faltan cambios frecuentes visuales/narrativos/sonoros | false>,
   "audio_issue": <true si el audio molesta o compite con la voz dañando atención | false>,
   "boring_full_video": <true si el video es aburrido de principio a fin | false>,
+  "flat_energy": <true si la energía del video es constante sin picos ni escalada emocional | false>,
   "no_retention_engines": <true si satisfacción visual + curiosidad abierta + consumibilidad ausentes | false>,
   "product_unclear": <true si un extraño no entendería qué es en 5s | false>,
   "product_difficult_to_sell": <true si análisis de viabilidad detectó 3+ factores DÉBIL | false>,
-  "format_incompatible": <true si 0-2 SÍ en gate de supervivencia: el formato no puede retener en scroll moderno | false>,
-  "format_weak": <true si 3-4 SÍ en gate de supervivencia: formato pasa con dificultad | false>,
-  "value_behind_scroll_wall": <true si el elemento más valioso del video aparece después del segundo de scroll masivo | false>,
-  "value_trap": <true si el producto/resultado es genuinamente bueno pero el formato no retiene a nadie para verlo | false>,
-  "recompensa_tardia": <true si transformación, resultado o prueba fuerte aparece en segunda mitad Y scroll masivo ocurre antes | false>,
-  "no_early_stimulus": <true si en primeros 5s no hay al menos 2 de estos 3: movimiento fuerte + sonido claro + texto que genere curiosidad | false>,
-  "flat_energy": <true si la energía del video es constante sin picos ni escalada emocional de inicio a fin | false>,
-  "buried_result": <true si el resultado más fuerte está después de s15 en un video donde scroll masivo ocurre antes de s10 | false>
+  "format_incompatible": <true si 0-2 SÍ en gate de formato O pregunta 1 del gate es NO (slideshow) | false>,
+  "format_weak": <true si 3-4 SÍ en gate de formato | false>,
+  "value_behind_scroll_wall": <true si el mejor momento del video aparece después del segundo de scroll masivo | false>,
+  "value_trap": <true si hay contenido valioso pero el hook no crea curiosidad y/o el formato no retiene — la gente no llega a verlo | false>,
+  "recompensa_tardia": <true si la transformación o resultado fuerte aparece en segunda mitad Y scroll masivo ocurre antes | false>,
+  "buried_result": <true si el resultado más fuerte está después de s15 y scroll masivo ocurre antes de s10 | false>
 }
 ---END---
 `;
@@ -569,98 +598,119 @@ export const stripFlags = (strategyText) =>
 
 export const buildPenalties = (flags) => {
   if (!flags || !Object.keys(flags).length)
-    return 'Sin flags críticos. Evaluá con libertad según el análisis.';
+    return 'Sin flags críticos. Evaluar con libertad según el análisis.';
 
   const rules = [];
 
-  // ── FORMATO (evaluar primero: condicionan todo lo demás) ─────────────────
-  if (flags.format_incompatible)
-    rules.push('⛔ FORMATO INCOMPATIBLE (0-2 SÍ en gate): viralScore ≤33 | retencion_ritmo ≤28 | scrollStopScore ≤22 | emocion_deseo ≤38 | claridad_producto -35 | confianza_credibilidad -35 | propuesta_valor -35 (el 80% no llega a verlos, su calidad es irrelevante para el resultado real) | honestVerdict: primera oración separar "el producto tiene potencial" de "el video no funciona en esta plataforma" — nunca mezclarlos');
-
-  if (flags.format_weak && !flags.format_incompatible)
-    rules.push('⚠️ FORMATO DÉBIL (3-4 SÍ en gate): viralScore ≤52 | retencion_ritmo ≤48 | scrollStopScore ≤42 | claridad_producto -15 | confianza_credibilidad -15 | propuesta_valor -15');
-
-  // ── VALOR DETRÁS DEL MURO DE SCROLL ──────────────────────────────────────
-  if (flags.value_trap)
-    rules.push('⛔ TRAMPA DE VALOR: no subir salesScore ni potentialScore por calidad del producto si el formato no retiene. Un buen producto que nadie ve = 0 ventas. salesScore ≤48 | potentialScore ≤52 | honestVerdict: mencionar explícitamente que el producto tiene potencial pero el formato lo entierra');
-
-  if (flags.value_behind_scroll_wall)
-    rules.push('⚠️ VALOR DETRÁS DEL MURO DE SCROLL: el elemento más valioso aparece cuando el 80% ya abandonó. No contarlo como fortaleza en ningún campo. Los scores que dependan de ese elemento bajan 25 puntos. En honestVerdict: decir en qué segundo aparece y que casi nadie lo ve');
-
-  if (flags.recompensa_tardia)
-    rules.push('⚠️ RECOMPENSA TARDÍA: la transformación/resultado llega cuando la mayoría ya se fue. emocion_deseo -20 | salesScore -15 | primer ítem del roadmap debe ser: mover ese elemento a los primeros 5 segundos');
-
-  if (flags.buried_result)
-    rules.push('⛔ RESULTADO ENTERRADO (aparece después de s15, scroll masivo antes de s10): salesScore ≤45 | potentialScore ≤50 | ese resultado no puede aparecer en retentionData.final como fortaleza activa');
-
-  // ── HOOK Y APERTURA ───────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════
+  // BLOQUE 1 — HOOK (gatekeeper primario del viralScore)
+  // El hook determina el techo real. Va primero, siempre.
+  // ══════════════════════════════════════════════════════
   if (flags.hook_type === 'muerto')
-    rules.push('⛔ HOOK MUERTO: hook ≤25 | scrollStopScore ≤25 | viralScore ≤40 | honestVerdict: decir en lenguaje simple que los primeros segundos no detienen el dedo — no pasa nada que haga que el cerebro quiera quedarse');
+    rules.push('⛔ HOOK MUERTO: viralScore TECHO ABSOLUTO = 38 (nada lo supera, ni formato perfecto ni producto excelente) | hook ≤25 | scrollStopScore ≤28 | honestVerdict: decir en lenguaje simple "los primeros segundos no paran el dedo — no pasa nada que haga que el cerebro quiera quedarse"');
 
   if (flags.hook_type === 'débil')
-    rules.push('⚠️ HOOK DÉBIL: hook ≤50 | scrollStopScore ≤45');
+    rules.push('⚠️ HOOK DÉBIL: viralScore TECHO = 62 | hook ≤52 | scrollStopScore ≤48');
 
-  if (flags.no_early_stimulus)
-    rules.push('⛔ SIN ESTÍMULO TEMPRANO (faltan 2+ de: movimiento/sonido/texto en primeros 5s): hook ≤28 | scrollStopScore ≤28 | retencion_ritmo ≤42');
+  if (flags.hook_is_direct_info && flags.hook_type !== 'explosivo')
+    rules.push('⚠️ APERTURA INFORMATIVA (muestra resultado/producto directamente sin tensión): hook -10 adicional | no puede considerarse hook explosivo aunque haya cortes rápidos');
 
-  if (flags.first_frame_repulsion)
-    rules.push('⛔ PRIMER FRAME REPULSIVO: hook ≤35 | scrollStopScore ≤30');
+  // ══════════════════════════════════════════════════════
+  // BLOQUE 2 — FORMATO (slideshow vs video real)
+  // ══════════════════════════════════════════════════════
+  if (flags.format_incompatible)
+    rules.push('⛔ FORMATO INCOMPATIBLE (slideshow o sin movimiento real): retencion_ritmo ≤28 | produccion_estetica ≤40 | scrollStopScore -15 adicional | claridad_producto -20 | confianza_credibilidad -20 | propuesta_valor -20 (el 80% no llega a verlos) | honestVerdict: separar "el contenido/resultado es real" de "el formato no funciona en esta plataforma"');
 
-  // ── ENERGÍA Y RITMO ───────────────────────────────────────────────────────
-  if (flags.flat_energy)
-    rules.push('⚠️ ENERGÍA PLANA (sin picos ni escalada emocional): emocion_deseo -15 | retencion_ritmo -15 | steppsScore.emotion reducido. La ausencia de variación emocional es tan letal como la ausencia de cortes');
+  if (flags.format_weak && !flags.format_incompatible)
+    rules.push('⚠️ FORMATO DÉBIL (pasa el gate con dificultad): retencion_ritmo ≤50 | claridad_producto -10 | confianza_credibilidad -10 | propuesta_valor -10');
 
-  if (flags.boring_full_video)
-    rules.push('⛔ VIDEO ABURRIDO COMPLETO: emocion_deseo ≤35 | viralScore ≤40 | retencion_ritmo ≤40 | retentionCurve con caída pronunciada antes de s10');
-
-  if (flags.dead_moment && !flags.boring_full_video)
-    rules.push(`⚠️ MOMENTO MUERTO (~s${flags.dead_moment_second || '?'}): retencion_ritmo ≤55 | caída en retentionCurve en ese segundo exacto`);
-
-  // ── FORMATO ESTÁTICO ──────────────────────────────────────────────────────
   if (flags.is_static_slideshow)
-    rules.push('⛔ VIDEO SLIDESHOW ESTÁTICO: retencion_ritmo ≤38 | emocion_deseo ≤40 | viralScore ≤42 | low_visual_dynamism=true forzado | retentionCurve con caída pronunciada antes de s5. No importa la calidad del contenido: el formato es incompatible con retención en formato corto');
+    rules.push('⛔ SLIDESHOW ESTÁTICO: retencion_ritmo ≤30 | emocion_deseo ≤38 | viralScore máximo 38 (se combina con techo de hook si aplica, siempre el más restrictivo)');
 
   if (flags.no_music_and_static)
-    rules.push('⛔ SLIDESHOW SIN MÚSICA: produccion_estetica ≤35 | viralScore ≤38 | potentialScore ≤50 | scrollStopScore ≤30 | honestVerdict: mencionar que este formato (imágenes quietas sin música) no funciona en Reels/TikTok/Shorts — no es problema del producto, es problema del formato');
+    rules.push('⛔ SLIDESHOW SIN MÚSICA: produccion_estetica ≤32 | scrollStopScore ≤25 | honestVerdict: mencionar que este formato no funciona en Reels/TikTok/Shorts — no es problema del producto sino del formato');
 
-  // ── AUDIO ─────────────────────────────────────────────────────────────────
-  if (flags.audio_issue)
-    rules.push('⚠️ AUDIO PROBLEMÁTICO: produccion_estetica -15 | confianza_credibilidad -10');
+  // ══════════════════════════════════════════════════════
+  // BLOQUE 3 — PRESENTACIÓN DEL PRODUCTO
+  // ══════════════════════════════════════════════════════
+  if (flags.product_shown_late)
+    rules.push('⚠️ PRODUCTO MOSTRADO TARDE (después de s8): claridad_producto -15 | salesScore -10 | el tiempo antes de que aparezca es tiempo perdido');
 
-  // ── RETENCIÓN ─────────────────────────────────────────────────────────────
+  if (flags.product_shown_sideways)
+    rules.push('⚠️ PRODUCTO MOSTRADO DE COSTADO O PARCIAL: claridad_producto -12 | emocion_deseo -10 | wowFactor reducido');
+
+  if (flags.product_presentation_interrupted)
+    rules.push('⚠️ PRESENTACIÓN INTERRUMPIDA (logos/intros/textos largos cortan el producto): retencion_ritmo -10 | produccion_estetica -8 | el espectador pierde el hilo antes de ver lo importante');
+
+  // ══════════════════════════════════════════════════════
+  // BLOQUE 4 — VALOR DETRÁS DEL MURO DE SCROLL
+  // ══════════════════════════════════════════════════════
+  if (flags.value_trap)
+    rules.push('⛔ TRAMPA DE VALOR (contenido bueno que nadie ve): salesScore ≤52 | potentialScore ≤55 | honestVerdict: primera oración separar "el resultado/producto es real y tiene potencial" de "el video no genera curiosidad suficiente para que la gente llegue a verlo" — nunca mezclarlos');
+
+  if (flags.value_behind_scroll_wall)
+    rules.push('⚠️ VALOR DETRÁS DEL MURO DE SCROLL: el mejor momento aparece después del abandono masivo. No contarlo como fortaleza. Los scores que dependan de ese elemento bajan 20 puntos. En honestVerdict: decir en qué segundo aparece y que casi nadie llega');
+
+  if (flags.recompensa_tardia)
+    rules.push('⚠️ RECOMPENSA TARDÍA: emocion_deseo -18 | salesScore -12 | primer ítem del roadmap: mover ese elemento a los primeros 5 segundos');
+
+  if (flags.buried_result)
+    rules.push('⛔ RESULTADO ENTERRADO (después de s15 con scroll masivo antes de s10): salesScore ≤45 | ese resultado no puede aparecer en retentionData.final como fortaleza activa');
+
+  // ══════════════════════════════════════════════════════
+  // BLOQUE 5 — RITMO Y ENERGÍA
+  // ══════════════════════════════════════════════════════
+  if (flags.boring_full_video)
+    rules.push('⛔ VIDEO ABURRIDO COMPLETO: emocion_deseo ≤35 | retencion_ritmo ≤38 | retentionCurve con caída pronunciada antes de s10 | honestVerdict: decir en lenguaje simple que no pasa nada que haga querer seguir mirando');
+
+  if (flags.flat_energy && !flags.boring_full_video)
+    rules.push('⚠️ ENERGÍA PLANA (sin picos ni escalada): emocion_deseo -15 | retencion_ritmo -12');
+
+  if (flags.dead_moment && !flags.boring_full_video)
+    rules.push(`⚠️ MOMENTO MUERTO (~s${flags.dead_moment_second || '?'}): retencion_ritmo ≤55 | caída en retentionCurve en ese segundo`);
+
   if (flags.no_retention_engines)
-    rules.push('⛔ SIN MOTORES DE RETENCIÓN (satisfacción visual + curiosidad abierta + consumibilidad ausentes): viralScore ≤45 | retencion_ritmo ≤40');
+    rules.push('⛔ SIN MOTORES DE RETENCIÓN: viralScore -10 adicional (se suma al techo de hook) | retencion_ritmo ≤40');
 
-  // ── RECHAZO VISUAL ────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════
+  // BLOQUE 6 — RECHAZO VISUAL Y DAÑO
+  // ══════════════════════════════════════════════════════
+  if (flags.first_frame_repulsion)
+    rules.push('⛔ PRIMER FRAME REPULSIVO: hook ≤32 | scrollStopScore ≤28');
+
   if (flags.visual_repulsion) {
     const s = flags.visual_repulsion_severity || 'moderada';
-    if (s === 'fuerte')  rules.push('⛔ RECHAZO VISUAL FUERTE: produccion_estetica ≤45 | confianza_credibilidad ≤40 | potentialScore ≤50 | mencionar en honestVerdict');
+    if (s === 'fuerte')  rules.push('⛔ RECHAZO VISUAL FUERTE: produccion_estetica ≤42 | confianza_credibilidad ≤38 | potentialScore ≤50 | mencionar en honestVerdict');
     else if (s === 'moderada') rules.push('⚠️ RECHAZO VISUAL MODERADO: produccion_estetica -20 | confianza_credibilidad -15 | potentialScore ≤65');
     else if (s === 'leve') rules.push('⚠️ RECHAZO VISUAL LEVE: produccion_estetica -10');
   }
 
   if (flags.product_damage)
-    rules.push('⛔ DAÑO VISIBLE: confianza_credibilidad ≤45 | potentialScore ≤60 | salesScore ≤55');
+    rules.push('⛔ DAÑO VISIBLE EN PRODUCTO: confianza_credibilidad ≤45 | potentialScore ≤60 | salesScore ≤55');
 
-  // ── PRODUCTO ──────────────────────────────────────────────────────────────
+  if (flags.audio_issue)
+    rules.push('⚠️ AUDIO PROBLEMÁTICO: produccion_estetica -15 | confianza_credibilidad -10');
+
+  // ══════════════════════════════════════════════════════
+  // BLOQUE 7 — PRODUCTO
+  // ══════════════════════════════════════════════════════
   if (flags.product_unclear)
     rules.push('⛔ PRODUCTO POCO CLARO: claridad_producto ≤45 | salesScore ≤50 | propuesta_valor ≤45');
 
   if (flags.product_difficult_to_sell)
-    rules.push('⚠️ PRODUCTO DIFÍCIL EN REDES: potentialScore ≤60 | salesScore ≤55 | honestVerdict: indicar que la limitación es estructural del producto, no del video');
+    rules.push('⚠️ PRODUCTO DIFÍCIL EN REDES: potentialScore ≤60 | salesScore ≤55 | honestVerdict: indicar que la limitación es del producto, no del video');
 
-  if (!rules.length) return 'Sin flags críticos. Evaluá con libertad.';
+  if (!rules.length) return 'Sin flags criticos. Evaluar con libertad. Si el formato es competitivo y el hook es explosivo, los scores altos son correctos.';
 
-  return `PENALIZACIONES ABSOLUTAS — NO IGNORAR, NO SUAVIZAR, NO REORDENAR:
+  return `PENALIZACIONES — APLICAR EN ORDEN, SIN IGNORAR, SIN SUAVIZAR:
 ${rules.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
 REGLAS DE APLICACIÓN:
-- Techo ("≤X") = valor máximo absoluto. Ningún argumento de contenido lo supera.
-- Resta ("-Y") = restar del score base antes de aplicar otros ajustes.
-- Si format_incompatible está activo: las restas de contenido (-35) se aplican
-  aunque el contenido sea excelente. La calidad de lo que nadie ve es irrelevante.
-- Si hay value_trap + format_incompatible simultáneos: honestVerdict DEBE
-  diferenciar el problema del producto (ninguno) del problema del video (grave).`;
+- "TECHO" (≤X o = X): valor máximo absoluto. Ningún argumento de contenido, producción o producto lo supera.
+- "Resta" (-Y): restar del score base. Aplicar antes de comparar contra techos.
+- Si hay múltiples techos sobre el mismo score: aplicar siempre el más restrictivo.
+- Si NO hay flags de hook, formato o valor: los scores altos (70-90) son correctos si el análisis los justifica.
+  Un video competitivo bien ejecutado DEBE recibir scores altos. El objetivo es precisión, no conservadurismo.`;
 };
 
 
@@ -681,81 +731,88 @@ ${strategyAnalysis}
 MODELO MENTAL — LEER ANTES DE ASIGNAR CUALQUIER NÚMERO
 ════════════════════════════════════════
 Sos el cerebro de alguien que lleva 20 minutos en ${pName}.
-Está cansado. Ya vio 80 videos. No busca información. No evalúa calidad.
-Solo su cerebro busca estímulos para decidir en 0.3 segundos si vale la pena parar.
+Cansado. Ya vio 80 videos. No busca información. Solo busca estímulos.
 
-JERARQUÍA DE SCORING (irrompible, en este orden):
-1. ¿El formato para el dedo? → si no: los scores de contenido son teóricos, no reales
-2. ¿El ritmo sostiene hasta lo valioso? → si no: ese valor no existe para la mayoría
-3. ¿Lo valioso aparece antes del scroll masivo? → si no: no contarlo como fortaleza
-4. ¿El contenido es bueno? → solo importa completamente si 1, 2 y 3 pasaron
+HAY DOS PREGUNTAS, EN ORDEN:
+1. ¿El hook genera una pregunta en mi cerebro que solo se responde quedándome?
+   → Si NO: me voy. No importa qué tan bueno sea el producto.
+   → Si SÍ: tengo 3 segundos más para decidir si el formato justifica quedarme.
 
-UN BUEN PRODUCTO EN UN VIDEO SIN RETENCIÓN = UN BUEN PRODUCTO QUE NADIE VE.
-El score debe reflejar el video real que el público real está viendo,
-no el video ideal que el creador imaginó.
+2. ¿El video tiene cortes, movimiento real y ritmo que sostenga esa curiosidad?
+   → Si SÍ: puedo llegar hasta el final y ver el resultado/oferta.
+   → Si NO: me voy aunque el hook haya sido bueno.
 
-MULTIPLICADOR DE FORMATO (aplicar sobre claridad_producto, confianza_credibilidad, propuesta_valor):
-→ FORMATO COMPETITIVO (5 SÍ en gate): multiplicador 1.0 — sin cambio
-→ FORMATO DÉBIL (3-4 SÍ en gate): multiplicador 0.75 — reducir esos scores en 25%
-→ FORMATO INCOMPATIBLE (0-2 SÍ en gate): multiplicador 0.45 — reducir esos scores en 55%
-Razón: si nadie llega a ver el contenido, su calidad tiene impacto mínimo en el resultado real.
+REGLA DE CALIBRACIÓN:
+No dar 40% a todo. No dar 80% a todo.
+Los scores deben reflejar con precisión lo que el análisis estratégico encontró.
+
+LO QUE MERECE SCORE ALTO (70-90):
+→ Hook real que crea pregunta implícita fuerte
+→ Video real con cortes cada 1-3s y movimiento sostenido
+→ Producto/servicio mostrado de forma directa, rápida, sin interrupciones
+→ El mejor momento del video aparece antes de que la gente se vaya
+→ Hay algo nuevo cada 2-3s que sostiene la atención
+
+LO QUE MERECE SCORE BAJO (20-45):
+→ Apertura con información directa sin tensión (foto del resultado, logo, "somos la empresa X")
+→ Imágenes quietas aunque tengan transición automática (slideshow)
+→ El producto se muestra tarde, de costado, o interrumpido por otra cosa
+→ El mejor momento del video aparece cuando el 80% ya se fue
+→ Energía plana de inicio a fin sin picos
+
+LO QUE ESTÁ EN EL MEDIO (45-65):
+→ Hook débil pero algo retiene (buen producto visible, música con energía)
+→ Formato competitivo pero hook no genera suficiente curiosidad
+→ Buen contenido pero ritmo algo lento o con momento muerto aislado
 ════════════════════════════════════════
 
-PENALIZACIONES — APLICAR EXACTAMENTE, EN ORDEN, ANTES DE PUNTUAR:
+PENALIZACIONES — APLICAR EXACTAMENTE, EN ORDEN:
 ${penaltiesBlock}
 
-REGLAS BASE (cuando no hay flag que las contradiga):
-- Producto confuso → claridad_producto ≤50 | parcialmente claro → 50-70 | claro con demo funcionando → ≥75
-- Producción simple + formato competitivo + motores de retención activos → produccion_estetica ≥55. Solo penalizar si causa daño concreto.
-- Producto físico que se vende visualmente → call_to_action ≥65 (no requiere instrucción verbal)
-- Música genérica invisible → produccion_estetica -10
-- Video de imágenes estáticas sin música → viralScore ≤38 | retencion_ritmo ≤38. No importa la calidad del contenido: el formato es incompatible con retención en formato corto.
-- Slideshow + sin música → produccion_estetica ≤35 | scrollStopScore ≤30. Techos absolutos, no negociables.
-- Energía plana de inicio a fin → emocion_deseo -15 | retencion_ritmo -15, aunque el contenido sea relevante.
+SEÑALES POSITIVAS (aplicar activamente cuando el análisis las confirma):
+→ Hook explosivo confirmado: viralScore base ≥70 antes de ajustes de contenido
+→ Formato competitivo (5 SÍ en gate): no aplicar penalizaciones de formato. Scores de contenido al 100%.
+→ Producto mostrado directo + rápido + en acción: claridad_producto ≥75 | call_to_action ≥65
+→ Cortes cada 1-2s + movimiento real + música desde s0: retencion_ritmo ≥70
+→ Satisfacción visual fuerte (antes/después, transformación visible, proceso fluido): emocion_deseo ≥65
+→ Persona real hablando a cámara con energía + resultado visible: confianza_credibilidad ≥70
+Estas señales son tan importantes como las penalizaciones. Un buen video debe reflejar scores buenos.
+
+REGLAS BASE ADICIONALES:
+- Producción simple + formato competitivo + hook real: produccion_estetica ≥55. No penalizar.
+- Producto físico que se vende visualmente sin CTA verbal: call_to_action ≥65.
+- Música genérica que no molesta: produccion_estetica -8 (leve, no grave).
+- viralScore y salesScore pueden diferir mucho: un video puede llegar a poca gente pero vender bien, o viralizarse sin vender.
 
 ════════════════════════════════════════
-REGLAS DE honestVerdict — OBLIGATORIAS:
-════════════════════════════════════════
-1. Si format_incompatible o value_trap activos:
-   Primera oración: "[El producto/servicio] tiene potencial real."
-   Segunda oración: "El video, en este formato, no funciona en ${pName}."
-   Nunca mezclar ambas como si tuvieran la misma solución.
-
-2. Si value_behind_scroll_wall activo:
-   NO mencionar ese elemento como fortaleza.
-   SÍ mencionar: "Hay [X] en el video, pero aparece en el segundo [Y], cuando el 80% ya se fue."
-
-3. Si boring_full_video o flat_energy activos:
-   Primera línea en lenguaje completamente simple, sin eufemismos:
-   "Este video no para el dedo. No porque el producto sea malo,
-   sino porque no pasa nada en la pantalla que haga que el cerebro quiera quedarse."
-
-4. Nunca compensar formato muerto con producto bueno en el veredicto final.
-   Son variables independientes. Un producto bueno en formato muerto
-   necesita un video nuevo, no ajustes al video actual.
+ESCALA DE REFERENCIA — USAR PARA CALIBRAR:
+viralScore 80-90: hook explosivo + formato competitivo + ritmo sostenido + producto claro
+viralScore 65-79: hook bueno + algún problema menor. Puede viralizarse con boost inicial.
+viralScore 50-64: hook débil pero algo que retiene. Alcance limitado, no viral orgánico.
+viralScore 35-49: hook muerto o formato débil (no ambos). Alcance muy bajo.
+viralScore 20-34: hook muerto + formato incompatible o slideshow. Sin posibilidad viral real.
+salesScore puede ser 15-20 puntos más alto que viralScore en videos que llegan a poca gente pero convierten bien.
 ════════════════════════════════════════
 
 REGLA DE LENGUAJE — OBLIGATORIA EN TODOS LOS CAMPOS DE TEXTO:
 Escribí como si le explicás a alguien que nunca estudió marketing.
-PROHIBIDO usar sin explicación: UGC, CTR, hook, retención, conversión,
-viralización, STEPPS, engagement, funnel, orgánico.
-Si necesitás usarlo: "hook (lo que ve la gente en el primer segundo)".
-Cada "verdict", "explicacion", "honestVerdict" y "performanceScenario"
-debe entenderse sin conocimientos previos de marketing.
+PROHIBIDO usar sin explicación: UGC, CTR, hook, retención, conversión, viralización, STEPPS, engagement, funnel, orgánico.
+Si lo necesitás: "hook (lo que ve la gente en el primer segundo)".
 
 EJEMPLOS:
 ✗ "El hook carece de pattern interrupt efectivo"
-✓ "Los primeros segundos no paran el dedo — no pasa nada que llame la atención"
-✗ "Baja consumibilidad sin audio"
-✓ "Sin sonido, nadie entiende de qué se trata"
-✗ "Ausencia de motores de retención compromete el viralScore"
-✓ "No hay nada que haga querer seguir mirando — el cerebro busca el próximo video"
+✓ "Los primeros segundos no paran el dedo — no pasa nada que haga querer quedarse"
+✗ "Alta consumibilidad visual con bajo CTA explícito"
+✓ "Se entiende de qué trata sin audio, pero no queda claro qué hacer después"
+✗ "Ausencia de open loop compromete la retención post-hook"
+✓ "El video no deja ninguna pregunta sin responder que haga querer llegar al final"
 
-PONDERACIÓN (sin techo de flags, antes de aplicar multiplicador de formato):
-hook 15% | claridad_producto 15% | confianza_credibilidad 15% | emocion_deseo 10% | propuesta_valor 10% | retencion_ritmo 10% | call_to_action 10% | produccion_estetica 10% | tendencias_formato 5%
+PONDERACIÓN BASE (antes de penalizaciones):
+hook 20% | claridad_producto 13% | confianza_credibilidad 12% | emocion_deseo 12% | propuesta_valor 10% | retencion_ritmo 12% | call_to_action 9% | produccion_estetica 7% | tendencias_formato 5%
+(El hook subió a 20% porque es el gatekeeper real del viralScore)
 
 RESPUESTA: ÚNICAMENTE el objeto JSON. Primera línea: { — Última línea: }
-Sin nada antes ni después. Strings sin tildes, sin comillas dobles internas (usá simples), sin saltos de línea.
+Sin nada antes ni después. Strings sin tildes, sin comillas dobles internas (usar simples), sin saltos de línea.
 
 {
   "vision": {
@@ -772,13 +829,15 @@ Sin nada antes ni después. Strings sin tildes, sin comillas dobles internas (us
   "formatSurvival": {
     "gateResult": "<competitivo|débil|incompatible>",
     "gateScore": 0,
-    "contentMultiplier": 1.0,
-    "valueBehindWall": "<descripción de qué valor llega tarde, o 'ninguno'>",
-    "formatVerdict": "<en lenguaje simple: qué significa esto para el rendimiento del video>"
+    "hookGateResult": "<explosivo|débil|muerto>",
+    "viralScoreCeiling": 0,
+    "valueBehindWall": "<qué valor llega tarde, o 'ninguno'>",
+    "formatVerdict": ""
   },
   "hookDNA": {
     "strength": 0,
-    "pattern": "<pregunta|shock|promesa|humor|dolor|curiosidad>",
+    "pattern": "<pregunta|shock|promesa|humor|dolor|curiosidad|ninguno>",
+    "implicitQuestion": "<pregunta que genera el hook en el cerebro, o 'ninguna'>",
     "missingElement": "",
     "optimizedHook": ""
   },
@@ -792,8 +851,8 @@ Sin nada antes ni después. Strings sin tildes, sin comillas dobles internas (us
     "at10s": "",
     "final": "",
     "scrollMassiveSecond": 0,
-    "contentVisibleBeforeScroll": "<qué ve realmente la mayoría antes de irse>",
-    "contentMissedByMost": "<qué valor tiene el video que casi nadie alcanza a ver, o 'ninguno'>"
+    "contentVisibleBeforeScroll": "<qué ve la mayoría antes de irse>",
+    "contentMissedByMost": "<qué valor tiene el video que casi nadie alcanza, o 'ninguno'>"
   },
   "retentionCurve": [100, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   "phaseScores": {
@@ -849,6 +908,7 @@ Sin nada antes ni después. Strings sin tildes, sin comillas dobles internas (us
   },
   "editingAudio": {
     "editingQuality":  "<intencional|amateur|sin editar>",
+    "cutsPerThreeSeconds": 0,
     "deadMoments":     "<ninguno|leve|varios — con segundo aproximado>",
     "musicFit":        "<perfecta|genérica|ausente|contraproducente>",
     "audioBalance":    "<bien balanceado|música muy alta|muy silencioso>",
