@@ -228,6 +228,26 @@ const buildViewerBrainPrompt = (platform, nicho) => {
   const criterios = (NICHE_CRITERIA[nicho] || NICHE_CRITERIA['otro']).map((c, i) => `${i + 1}. ${c}`).join('\n');
 
   return `
+
+  PASO 0 — IDENTIFICACIÓN OBLIGATORIA ANTES DE CUALQUIER ANÁLISIS
+════════════════════════════════════════════════════════════
+Antes de analizar nada, respondé estas 3 preguntas mirando el video:
+
+1. ¿Qué objeto, persona o servicio aparece físicamente en el video?
+   → Describí literalmente lo que ves: forma, color, tamaño, material, acción.
+   → PROHIBIDO inferir. Solo describir lo observable.
+
+2. ¿Qué acción se realiza con ese objeto/servicio en el video?
+   → Describir el movimiento exacto que se ve.
+
+3. ¿Qué problema cotidiano resuelve ESA acción específica, según lo que se ve?
+   → No según lo que suponés que es. Según lo que literalmente hace en el video.
+
+Si en alguna de las 3 preguntas no podés responder con certeza: escribir "NO VISIBLE CON CERTEZA" y basar TODO el análisis posterior solo en lo que sí se ve con claridad.
+
+REGLA CRÍTICA: Si tu respuesta al punto 1 no coincide con lo que hace el producto en el punto 2, hay un error de identificación. Corregilo antes de continuar.
+════════════════════════════════════════════════════════════
+
 ════════════════════════════════════════════════════════════
 FUNDAMENTOS DE COMPRA Y VIRALIDAD — INTERNALIZARLOS ANTES DE ANALIZAR
 ════════════════════════════════════════════════════════════
@@ -564,6 +584,14 @@ LO QUE EL CEREBRO EN MODO SCROLL HACE Y NO HACE:
 ✓ Sí compra HOY si hay una razón para no esperar.
 
 ════════════════════════════════════════════════════════════
+
+VERIFICACIÓN DE CONSISTENCIA — EJECUTAR PRIMERO
+→ Tomá el producto identificado en el Viewer Brain (punto 1 del PASO 0).
+→ ¿Todo el análisis posterior habla de ESE producto y no de otro?
+→ Si hay inconsistencia entre la descripción del producto y lo que se analiza: 
+   DETENER el análisis y reescribir desde el producto correcto.
+→ Un video de un rodillo quitapelusas debe analizarse como rodillo quitapelusas.
+   No como organizador de cables aunque tengan forma similar.
 
 STEP 1 — GATE DE FORMATO: ¿EL VIDEO LLEGÓ A SER VISTO?
 (Responder primero. Todo lo demás depende de esto.)
@@ -1613,7 +1641,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
         storagePath,
         videoMimeType: videoFile.type || 'video/mp4',
         duration: Math.round(duration),
-        maxOutputTokens: 2048
+        maxOutputTokens: 4096  // era 2048 — el análisis forense completo necesita más espacio
       }
     });
 
@@ -1627,7 +1655,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho),
-        maxOutputTokens: 3584  // más margen para el bloque FLAGS //const CHAT_WORD_LIMIT = 1000;
+        maxOutputTokens: 6144  // era 3584 — se cortaba antes de generar el bloque FLAGS
       }
     });
 
