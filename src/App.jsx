@@ -1072,7 +1072,7 @@ EJEMPLOS CONCRETOS DE CALIBRACIÓN:
 - Bait hook (explosión) sin conexión con el producto → viralScore 58-68 | salesScore 28-38 (reportar brecha)
 ════════════════════════════════════════════════════════════
 
-════════════════════════════════════════════════════════════
+
 REGLA DE LENGUAJE — SE APLICA A CADA CAMPO DEL JSON SIN EXCEPCIÓN
 ════════════════════════════════════════════════════════════
 
