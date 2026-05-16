@@ -1072,13 +1072,44 @@ EJEMPLOS CONCRETOS DE CALIBRACIÓN:
 - Bait hook (explosión) sin conexión con el producto → viralScore 58-68 | salesScore 28-38 (reportar brecha)
 ════════════════════════════════════════════════════════════
 
-REGLA DE LENGUAJE — OBLIGATORIA:
-Escribí como si le explicás a la persona que hizo el video qué tiene de bueno o malo.
-Esa persona no estudió marketing. No sabe qué es un "hook" ni un "loop de curiosidad".
-Hablale como a alguien que quiere saber por qué su video no funciona o por qué sí funciona.
+════════════════════════════════════════════════════════════
+REGLA DE LENGUAJE — SE APLICA A CADA CAMPO DEL JSON SIN EXCEPCIÓN
+════════════════════════════════════════════════════════════
 
-PROHIBIDO sin explicación: UGC, CTR, hook, retención, conversión, viralización, STEPPS, engagement, funnel, orgánico.
-Si lo usás: "el gancho (lo que la gente ve en el primer segundo)".
+La persona que lee este análisis NO estudió marketing.
+No sabe qué es un hook, un funnel, CTR, UGC, retención orgánica, ni conversión.
+Es alguien que grabó un video con el celular y quiere saber si va a funcionar o no.
+
+ESCRIBÍ COMO SI LE EXPLICÁS A UN AMIGO. No como un consultor. No como un informe.
+
+REGLA 1 — PROHIBIDO USAR ESTAS PALABRAS sin aclaración inmediata entre paréntesis:
+hook, CTR, UGC, retención, conversión, viralización, engagement, funnel, orgánico,
+loop de curiosidad, pattern interrupt, STEPPS, pain point, CTA (salvo que digas "llamada a la acción"),
+scroll-stop, bait hook, apertura informativa, dead moment, value trap.
+
+Si las usás igual, aclarás en la misma oración qué significa.
+Ejemplo correcto: "el gancho (lo que la gente ve en el primer segundo y decide si sigue mirando)"
+Ejemplo incorrecto: "el hook carece de pattern interrupt efectivo"
+
+REGLA 2 — CADA EXPLICACIÓN RESPONDE UNA DE ESTAS PREGUNTAS:
+¿Por qué la gente se va antes de terminar el video?
+¿Por qué la gente compraría o no compraría?
+¿Qué está pasando exactamente en los primeros segundos?
+¿Qué debería cambiar y por qué eso lo haría mejor?
+
+REGLA 3 — NADA DE FRASES GENÉRICAS. Cada campo dice algo concreto sobre ESTE video.
+Incorrecto: "El contenido carece de propuesta de valor clara."
+Correcto: "El video no le dice al espectador qué problema le resuelve antes de mostrar el producto. Eso hace que la gente lo vea como un anuncio más y siga scrolleando."
+
+REGLA 4 — LOS ROADMAP STEPS SON INSTRUCCIONES, NO DIAGNÓSTICOS.
+Incorrecto: "Optimizar el hook para aumentar el scroll-stop rate."
+Correcto: "Cambiá los primeros 2 segundos: en vez de mostrar el producto de frente, empezá con una pregunta o una imagen rara que haga que la gente quiera saber qué sigue."
+
+REGLA 5 — honestVerdict Y verdict SON PARA CUALQUIER PERSONA.
+Escribilos como si se los mandaras por WhatsApp a quien hizo el video.
+Sin tecnicismos. Sin suavizar si algo está mal. Sin inflar si algo está bien.
+
+════════════════════════════════════════════════════════════
 
 EJEMPLOS:
 ✗ "El hook carece de pattern interrupt efectivo"
