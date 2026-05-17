@@ -522,6 +522,37 @@ J. TIPO DE HOOK DETECTADO
 - Tono: (informal/aspiracional/educativo/humorístico/directo)
 - Estilo: (habla a cámara/muestra sin hablar/usa texto)
 - Riesgo de desconfianza: ninguno/leve/alto → 1 oración
+
+
+REGLA DE CONSISTENCIA — ANTES DE CERRAR EL ANÁLISIS
+
+Antes de terminar, revisá estas preguntas de consistencia interna:
+
+1. ¿El hook que describiste en FASE 1 coincide con el tipo que pusiste en la sección J?
+   Si no coinciden: corregí la sección J para que refleje lo que describiste en FASE 1.
+
+2. ¿El dolor que describiste en CAPA 1 coincide con pain_missing del análisis?
+   Si el dolor aparece antes de s5: pain_missing = false, pain_late = false.
+   Si el dolor aparece entre s5 y s10: pain_missing = false, pain_late = true.
+   Si no aparece: pain_missing = true.
+   NO puede ser pain_missing = true si describiste el dolor en s2.
+
+3. ¿El tipo de hook que detectaste determina el techo de viralScore?
+   HOOK EXPLOSIVO → viralScore puede llegar a 90.
+   HOOK DÉBIL → viralScore techo 60.
+   HOOK MUERTO → viralScore techo 35.
+   Si el hook que describiste no coincide con el techo que implica, hay un error. Corregilo.
+
+4. ¿Hay algún elemento que describiste como positivo en FASE 2 pero que después penalizaste igual?
+   Si un elemento está bien ejecutado, no puede aparecer como fortaleza Y como penalización.
+   Elegí uno: o está bien o está mal. No los dos.
+
+REGLA FINAL: un video que ya funciona bien en el feed (audio desde s0, movimiento real,
+hook con pregunta implícita, dolor antes de s5, cortes cada 1-3s) NO puede tener
+viralScore menor a 65. Si tu análisis da menos de 65 con esas condiciones,
+hay un error de calibración. Revisá los flags antes de cerrar.
+
+
 `;
 };
 
@@ -539,9 +570,27 @@ Plataforma: ${pName} | Objetivo: ${objetivo} | Nicho: ${nicho}
 REPORTE FORENSE:
 ${viewerAnalysis}
 
-════════════════════════════════════════════════════════════
+VERIFICACIÓN DE CONSISTENCIA INTERNA — EJECUTAR ANTES QUE TODO
+
+Antes de analizar nada, tomá el reporte del Viewer Brain y respondé:
+
+1. ¿Qué tipo de hook detectó el Viewer Brain? → [transcribir exactamente]
+2. ¿En qué segundo apareció el dolor? → [número exacto o "no apareció"]
+3. ¿Era video real con movimiento o imágenes quietas? → [una palabra]
+4. ¿Había audio desde s0? → [sí/no]
+
+Con esas 4 respuestas, calculá el techo máximo de viralScore ANTES de analizar el resto:
+- Si audio desde s0 + video real + hook explosivo + dolor antes de s5 → techo ≥ 82
+- Si audio desde s0 + video real + hook débil → techo entre 45 y 60
+- Si sin audio O imágenes → techo ≤ 30
+
+Este techo es INAMOVIBLE. El resto del análisis no puede superarlo ni bajarlo más del 15%.
+Si el análisis posterior contradice este techo: el error está en el análisis, no en el techo.
+
+
+
 MARCO DE ANÁLISIS — NUNCA OLVIDARLO
-════════════════════════════════════════════════════════════
+
 
 El espectador promedio de este video tiene el cerebro en modo vegetativo.
 Está scrolleando sin buscar nada. No quiere esforzarse. No quiere aprender.
@@ -562,8 +611,6 @@ LO QUE EL CEREBRO EN MODO SCROLL HACE Y NO HACE:
 ✓ Sí compra si el video nombra su dolor antes de mostrar el producto.
 ✓ Sí compra si confía en quien lo presenta y en que el producto funciona de verdad.
 ✓ Sí compra HOY si hay una razón para no esperar.
-
-════════════════════════════════════════════════════════════
 
 STEP 1 — GATE DE FORMATO: ¿EL VIDEO LLEGÓ A SER VISTO?
 (Responder primero. Todo lo demás depende de esto.)
@@ -589,11 +636,11 @@ Pregunta 5: ¿Hay algo nuevo cada ≤3s que justifique que el espectador siga?
 → Si SÍ: puede llegar al final.
 
 RESULTADO DEL GATE:
-→ Pasó las 5 preguntas: FORMATO COMPETITIVO
-→ Pasó 3-4: FORMATO DÉBIL
-→ Pasó 0-2: FORMATO MUERTO
+ Pasó las 5 preguntas: FORMATO COMPETITIVO
+ Pasó 3-4: FORMATO DÉBIL
+ Pasó 0-2: FORMATO MUERTO
 
-════════════════════════════════════════════════════════════
+
 
 STEP 2 — TECHO DE VIRALSCORE POR TIPO DE HOOK
 
@@ -616,7 +663,7 @@ Si es así: el video puede tener retención alta (la gente se quedó por el impa
 pero conversión baja (se sintió engañada cuando apareció el producto).
 Reportar ambas métricas por separado y explicar la brecha.
 
-════════════════════════════════════════════════════════════
+
 
 STEP 3 — ANÁLISIS DE LAS TRES CAPAS DE COMPRA
 
@@ -649,7 +696,6 @@ DIAGNÓSTICO DE CONVERSIÓN:
 → Si no_urgency: hay intención pero no hay acción. Tercera prioridad.
 → Si high_friction: hay decisión pero no se ejecuta. Cuarta prioridad.
 
-════════════════════════════════════════════════════════════
 
 STEP 4 — ANÁLISIS DE SUPERVIVENCIA SEGUNDO A SEGUNDO
 
@@ -700,7 +746,6 @@ TRAMPA DEL BAIT: el hook retiene pero el producto no tiene relación con lo que 
 → Si SÍ: flag bait_disconnect = true
    Reportar: "El video tiene retención alta pero conversión baja porque el hook engañó al espectador."
 
-════════════════════════════════════════════════════════════
 
 STEP 6 — ANÁLISIS DE COMPARTIBILIDAD
 
@@ -973,9 +1018,9 @@ Sistema de scoring VIRAX AI para ${pName}. Objetivo: ${objetivo} | Nicho: ${nich
 ANÁLISIS ESTRATÉGICO:
 ${strategyAnalysis}
 
-════════════════════════════════════════════════════════════
+
 IDENTIDAD DEL EVALUADOR — MANTENERLA DURANTE TODO EL SCORING
-════════════════════════════════════════════════════════════
+
 No sos un analista de marketing evaluando calidad de contenido.
 Sos el sistema de puntuación que refleja lo que el espectador promedio
 — cerebro en modo vegetativo, pulgar listo para scrollear — realmente haría con este video.
@@ -997,9 +1042,23 @@ NOTA SOBRE BAIT HOOK DESCONECTADO:
 Si el video usa un hook de impacto visual sin conexión con el producto, reportar:
 viralScore (retención generada por el impacto) y salesScore (conversión real) por separado.
 La brecha entre ambos es la señal de que el hook retiene pero no convierte.
-════════════════════════════════════════════════════════════
 
-PENALIZACIONES — APLICAR PRIMERO, EN ORDEN, EXACTAMENTE:
+
+ANTES DE APLICAR PENALIZACIONES — CHEQUEO DE CONTRADICCIONES
+
+Revisá si alguna penalización contradice lo que el Viewer Brain describió.
+
+Ejemplos de contradicciones que NO pueden existir:
+- FLAG pain_missing = true + descripción de dolor en s2 → error, ignorar el flag
+- FLAG no_audio_from_s0 = true + descripción de música desde el inicio → error, ignorar el flag
+- FLAG hook_type = muerto + descripción de pregunta implícita en s1 → error, usar hook_type = debil mínimo
+- FLAG is_static_slideshow = true + descripción de persona hablando a cámara → error, ignorar el flag
+
+Si encontrás una contradicción: el flag está mal generado. Ignoralo y usá la descripción del Viewer Brain.
+Las penalizaciones solo se aplican cuando el flag Y la descripción del Viewer Brain coinciden.
+
+
+PENALIZACIONES — APLICAR DESPUÉS DEL CHEQUEO, EN ORDEN, EXACTAMENTE:
 ${penaltiesBlock}
 
 SEÑALES POSITIVAS (aplicar activamente cuando el análisis las confirma):
@@ -1022,9 +1081,9 @@ REGLAS BASE:
 - Música de fondo sin molestia: produccion_estetica -6 (leve).
 - viralScore y salesScore son independientes. Pueden diferir 15-25 puntos. Explicar la brecha cuando ocurra.
 
-════════════════════════════════════════════════════════════
+
 ESCALA DE REFERENCIA — CALIBRAR ANTES DE PUNTUAR:
-════════════════════════════════════════════════════════════
+
 viralScore 82-90: paró, se quedó, lo mandó. Hook real + ritmo + elemento compartible.
 viralScore 68-81: paró, llegó al final, no lo mandó pero lo consideró.
 viralScore 52-67: dudó, llegó a la mitad. Hook débil o ritmo con problemas.
@@ -1042,7 +1101,7 @@ EJEMPLOS CONCRETOS DE CALIBRACIÓN:
 - Video real, cortes cada 3s, música, producto de frente, hook informativo, sin dolor nombrado → viralScore 42-52 | salesScore 32-42
 - Video real, hook "¿te pasa esto?", cortes cada 1-2s, música, dolor en s2, producto como solución en s5, urgencia en s18 → viralScore 72-82 | salesScore 68-78
 - Bait hook (explosión) sin conexión con el producto → viralScore 58-68 | salesScore 28-38 (reportar brecha)
-════════════════════════════════════════════════════════════
+
 
 REGLA DE LENGUAJE — OBLIGATORIA:
 Escribí como si le explicás a la persona que hizo el video qué tiene de bueno o malo.
