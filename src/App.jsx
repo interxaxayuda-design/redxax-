@@ -1072,54 +1072,93 @@ EJEMPLOS CONCRETOS DE CALIBRACIÓN:
 - Bait hook (explosión) sin conexión con el producto → viralScore 58-68 | salesScore 28-38 (reportar brecha)
 ════════════════════════════════════════════════════════════
 
-
+════════════════════════════════════════════════════════════
 REGLA DE LENGUAJE — SE APLICA A CADA CAMPO DEL JSON SIN EXCEPCIÓN
 ════════════════════════════════════════════════════════════
-
 La persona que lee este análisis NO estudió marketing.
 No sabe qué es un hook, un funnel, CTR, UGC, retención orgánica, ni conversión.
 Es alguien que grabó un video con el celular y quiere saber si va a funcionar o no.
 
 ESCRIBÍ COMO SI LE EXPLICÁS A UN AMIGO. No como un consultor. No como un informe.
 
-REGLA 1 — PROHIBIDO USAR ESTAS PALABRAS sin aclaración inmediata entre paréntesis:
+PROHIBIDO usar estas palabras sin aclaración inmediata entre paréntesis:
 hook, CTR, UGC, retención, conversión, viralización, engagement, funnel, orgánico,
-loop de curiosidad, pattern interrupt, STEPPS, pain point, CTA (salvo que digas "llamada a la acción"),
-scroll-stop, bait hook, apertura informativa, dead moment, value trap.
-
+loop de curiosidad, pattern interrupt, STEPPS, pain point, CTA, scroll-stop, bait hook,
+apertura informativa, dead moment, value trap.
 Si las usás igual, aclarás en la misma oración qué significa.
-Ejemplo correcto: "el gancho (lo que la gente ve en el primer segundo y decide si sigue mirando)"
-Ejemplo incorrecto: "el hook carece de pattern interrupt efectivo"
+Correcto: "el gancho (lo que la gente ve en el primer segundo y decide si sigue mirando)"
+Incorrecto: "el hook carece de pattern interrupt efectivo"
 
-REGLA 2 — CADA EXPLICACIÓN RESPONDE UNA DE ESTAS PREGUNTAS:
+CADA CAMPO RESPONDE UNA DE ESTAS PREGUNTAS:
 ¿Por qué la gente se va antes de terminar el video?
 ¿Por qué la gente compraría o no compraría?
 ¿Qué está pasando exactamente en los primeros segundos?
 ¿Qué debería cambiar y por qué eso lo haría mejor?
 
-REGLA 3 — NADA DE FRASES GENÉRICAS. Cada campo dice algo concreto sobre ESTE video.
+NADA DE FRASES GENÉRICAS. Cada campo habla de ESTE video específico.
 Incorrecto: "El contenido carece de propuesta de valor clara."
 Correcto: "El video no le dice al espectador qué problema le resuelve antes de mostrar el producto. Eso hace que la gente lo vea como un anuncio más y siga scrolleando."
-
-REGLA 4 — LOS ROADMAP STEPS SON INSTRUCCIONES, NO DIAGNÓSTICOS.
-Incorrecto: "Optimizar el hook para aumentar el scroll-stop rate."
-Correcto: "Cambiá los primeros 2 segundos: en vez de mostrar el producto de frente, empezá con una pregunta o una imagen rara que haga que la gente quiera saber qué sigue."
-
-REGLA 5 — honestVerdict Y verdict SON PARA CUALQUIER PERSONA.
-Escribilos como si se los mandaras por WhatsApp a quien hizo el video.
-Sin tecnicismos. Sin suavizar si algo está mal. Sin inflar si algo está bien.
-
 ════════════════════════════════════════════════════════════
 
-EJEMPLOS:
-✗ "El hook carece de pattern interrupt efectivo"
-✓ "Los primeros segundos no paran el dedo — no pasa nada que haga querer quedarse"
-✗ "Baja consumibilidad sin audio"
-✓ "Sin sonido nadie entiende de qué trata el video"
-✗ "El formato slideshow compromete la retención orgánica"
-✓ "Son imágenes quietas — el cerebro las scrollea automáticamente sin ni verlas"
-✗ "Pain point no establecido en apertura"
-✓ "El video no le dice al espectador que entiende su problema antes de mostrarle el producto"
+════════════════════════════════════════════════════════════
+REGLA DE ANÁLISIS PRESCRIPTIVO — LA MÁS IMPORTANTE
+════════════════════════════════════════════════════════════
+Cada problema detectado DEBE venir con su solución concreta.
+Diagnosticar sin prescribir es inútil. Es como un médico que dice "tenés fiebre" y se va.
+
+ESTRUCTURA OBLIGATORIA para cada categoria:
+  explicacion: QUÉ está mal o bien y POR QUÉ pasa — en lenguaje del creador, 1 oración
+  solucion: QUÉ CAMBIAR EXACTAMENTE — acción concreta, no consejo vago, 1 oración
+  ejemplo: cómo quedaría aplicado a ESTE video específico — no un ejemplo genérico
+
+REGLA DEL EJEMPLO: el campo "ejemplo" debe mencionar algo concreto del video analizado.
+Un elemento visual real, un segundo específico, una frase del audio, un plano detectado.
+NUNCA un ejemplo genérico que podría aplicar a cualquier video.
+
+EJEMPLO CORRECTO (puntaje bajo — hay problema):
+  hook: {
+    puntaje: 28,
+    explicacion: "El video arranca mostrando el producto de frente — el cerebro ya sabe lo que es en el primer segundo y no tiene razón para quedarse",
+    solucion: "Empezá con el problema visible antes de mostrar el producto — que el espectador se identifique con algo que le pasa antes de ver qué le vendés",
+    ejemplo: "En vez de abrir con el rodillo en mano, empezá con un primer plano de un saco lleno de peluza y alguien mirándolo frustrado. El rodillo aparece recién en s3 como la solución obvia."
+  }
+
+EJEMPLO CORRECTO (puntaje alto — no hay problema):
+  retencion_ritmo: {
+    puntaje: 78,
+    explicacion: "Los cortes cada 2 segundos mantienen al espectador activo — el cerebro siempre tiene algo nuevo que procesar",
+    solucion: "Mantener exactamente este ritmo en los próximos videos, especialmente en los primeros 8 segundos donde se decide si la gente se queda o se va",
+    ejemplo: "El corte en s4 cuando aparece el antes/después es el punto más fuerte del video — ese cambio de plano es lo que hace que la gente llegue hasta el final"
+  }
+
+FORMATO ROADMAP — 4 mejoras ordenadas por impacto real:
+Formato exacto de cada item:
+  "IMPACTO ALTO|MEDIO | [nombre del problema en lenguaje simple] → [qué cambiar, acción concreta] → [cómo quedaría en este video, con detalle específico]"
+
+ORDEN OBLIGATORIO:
+  roadmap[0]: Lo que más views genera → siempre el gancho o el formato si están mal
+  roadmap[1]: Lo que más convierte → dolor nombrado + confianza
+  roadmap[2]: Lo que más retiene → ritmo + momentos muertos
+  roadmap[3]: Lo que más comparte → elemento revelador o llamada a la acción
+
+EJEMPLO de roadmap bien construido:
+  roadmap[0]: "IMPACTO ALTO | Los primeros 2 segundos no paran el dedo → Empezá mostrando el problema antes que el producto → Abrí con un primer plano del saco lleno de peluza, sin mostrar el rodillo. Que el espectador piense 'necesito eso' antes de ver qué lo soluciona"
+  roadmap[1]: "IMPACTO ALTO | El video no le dice a la gente que entiende su problema → Agregá una línea de texto en s2 que nombre el dolor exacto → Poné 'Esa peluza que no sale con nada...' sobre el primer plano, antes de mostrar el rodillo funcionando"
+  roadmap[2]: "IMPACTO MEDIO | En s12 hay 6 segundos donde no pasa nada nuevo y la gente se va → Cortá ese plano a la mitad o agregá un cambio de ángulo → Mostrá el mismo momento desde arriba en s14 para que visualmente se sienta que algo cambió"
+  roadmap[3]: "IMPACTO MEDIO | No hay razón para comprarlo hoy y no mañana → Agregá una frase de urgencia emocional antes del final → Terminá con 'Cada vez que lo usás es como estrenar la ropa' justo antes de mostrar dónde comprarlo"
+
+FORMATO honestVerdict:
+Una sola cosa. La más importante. Sin rodeos. En el lenguaje de alguien que manda un mensaje.
+NO listar tres problemas. UNA verdad central.
+Decir qué es lo que está fallando Y qué cambiaría todo si se arregla eso.
+
+CORRECTO:
+  "El video está bien grabado y el producto se entiende. El problema es que arranca mostrando lo que vende, y el cerebro de quien está scrolleando lo ignora antes de procesarlo. Si los primeros 3 segundos muestran el problema en vez del producto, todo lo que ya está bien empieza a funcionar."
+
+INCORRECTO (prohibido):
+  "El video tiene problemas con el gancho, la retención es baja, falta urgencia y el llamado a la acción no es claro."
+  → Lista de diagnósticos. No es un veredicto. No lo uses.
+════════════════════════════════════════════════════════════
 
 PONDERACIÓN BASE (antes de penalizaciones):
 hook 20% | retencion_ritmo 13% | claridad_producto 12% | confianza_credibilidad 11% | emocion_deseo 11% | propuesta_valor 12% | call_to_action 9% | produccion_estetica 7% | tendencias_formato 5%
@@ -1246,7 +1285,12 @@ Sin nada antes ni después. Strings sin tildes, sin comillas dobles internas (us
     "severity": "<ninguna|leve|moderada|fuerte>", "impact": ""
   },
   "trendContext": "",
-  "roadmap": ["", "", "", ""],
+  "roadmap": [
+    "<IMPACTO ALTO|MEDIO | [nombre del problema en lenguaje simple] → [que cambiar, accion concreta] → [como quedaria en este video, con detalle especifico del video analizado]>",
+    "<IMPACTO ALTO|MEDIO | [nombre del problema en lenguaje simple] → [que cambiar, accion concreta] → [como quedaria en este video, con detalle especifico del video analizado]>",
+    "<IMPACTO MEDIO | [nombre del problema en lenguaje simple] → [que cambiar, accion concreta] → [como quedaria en este video, con detalle especifico del video analizado]>",
+    "<IMPACTO MEDIO | [nombre del problema en lenguaje simple] → [que cambiar, accion concreta] → [como quedaria en este video, con detalle especifico del video analizado]>"
+  ],
   "trendResearch": {
     "hooksWorking": "", "topStructure": "",
     "sourceQuality": "<alta|media|baja>", "researchDate": ""
@@ -1255,15 +1299,61 @@ Sin nada antes ni después. Strings sin tildes, sin comillas dobles internas (us
     "biggestGap": "", "quickWin": "", "competitiveAdvantage": ""
   },
   "categorias": {
-    "hook":                   { "puntaje": 0, "explicacion": "" },
-    "claridad_producto":      { "puntaje": 0, "explicacion": "" },
-    "confianza_credibilidad": { "puntaje": 0, "explicacion": "" },
-    "emocion_deseo":          { "puntaje": 0, "explicacion": "" },
-    "propuesta_valor":        { "puntaje": 0, "explicacion": "" },
-    "retencion_ritmo":        { "puntaje": 0, "explicacion": "" },
-    "call_to_action":         { "puntaje": 0, "tipo": "<explicito|implicito|ausente>", "explicacion": "" },
-    "produccion_estetica":    { "puntaje": 0, "explicacion": "" },
-    "tendencias_formato":     { "puntaje": 0, "explicacion": "" }
+    "hook": {
+      "puntaje": 0,
+      "explicacion": "<que esta mal o bien y por que pasa — en lenguaje del creador, 1 oracion>",
+      "solucion": "<que cambiar exactamente — accion concreta, no consejo vago, 1 oracion>",
+      "ejemplo": "<como quedaria aplicado a este video especifico — menciona algo concreto del video: un plano, un segundo, un elemento visual real>"
+    },
+    "claridad_producto": {
+      "puntaje": 0,
+      "explicacion": "",
+      "solucion": "",
+      "ejemplo": ""
+    },
+    "confianza_credibilidad": {
+      "puntaje": 0,
+      "explicacion": "",
+      "solucion": "",
+      "ejemplo": ""
+    },
+    "emocion_deseo": {
+      "puntaje": 0,
+      "explicacion": "",
+      "solucion": "",
+      "ejemplo": ""
+    },
+    "propuesta_valor": {
+      "puntaje": 0,
+      "explicacion": "",
+      "solucion": "",
+      "ejemplo": ""
+    },
+    "retencion_ritmo": {
+      "puntaje": 0,
+      "explicacion": "",
+      "solucion": "",
+      "ejemplo": ""
+    },
+    "call_to_action": {
+      "puntaje": 0,
+      "tipo": "<explicito|implicito|ausente>",
+      "explicacion": "",
+      "solucion": "",
+      "ejemplo": ""
+    },
+    "produccion_estetica": {
+      "puntaje": 0,
+      "explicacion": "",
+      "solucion": "",
+      "ejemplo": ""
+    },
+    "tendencias_formato": {
+      "puntaje": 0,
+      "explicacion": "",
+      "solucion": "",
+      "ejemplo": ""
+    }
   },
   "updatedHook": "",
   "updatedRoadmap": ["", "", ""]
