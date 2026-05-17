@@ -987,19 +987,133 @@ REGLAS DE APLICACIÓN:
 - Si NO hay flags: un video que el espectador vería hasta el final merece scores 70-90. Asignarlos.`;
 };
 
-
 // ============================================================
-// SCORING BRAIN
+// SCORING BRAIN — con GATE DURO al inicio
 // ============================================================
 const buildScoringBrainPrompt = (strategyAnalysis, platform, objetivo, nicho, flags) => {
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
   const penaltiesBlock = buildPenalties(flags);
+
+  // ── GATE DURO — se construye en JS antes de enviarse a la IA ──
+  // Estos valores se inyectan directamente en el prompt como hechos consumados,
+  // no como instrucciones que la IA puede ignorar.
+  const hardCeilings = [];
+  let viralCeiling = 90;
+  let salesCeiling = 90;
+  let gateResult = 'COMPETITIVO';
+
+  // Imágenes estáticas — la IA no puede ignorar esto
+  if (flags.is_static_slideshow || flags.no_music_and_static) {
+    viralCeiling = Math.min(viralCeiling, flags.no_music_and_static ? 20 : 28);
+    salesCeiling = Math.min(salesCeiling, 40);
+    gateResult = 'MUERTO';
+    hardCeilings.push(`⛔ SLIDESHOW DETECTADO: viralScore BLOQUEADO en ≤${flags.no_music_and_static ? 20 : 28}. salesScore BLOQUEADO en ≤40. El espectador no vio el video. El contenido no importa.`);
+  }
+
+  // Sin audio desde s0
+  if (flags.no_audio_from_s0) {
+    viralCeiling = Math.min(viralCeiling, 25);
+    hardCeilings.push(`⛔ SIN AUDIO: viralScore BLOQUEADO en ≤25. Sin sonido el cerebro no activa atención. No importa qué muestre el video.`);
+  }
+
+  // Filtro de anuncio activado
+  if (flags.ad_filter_triggered) {
+    viralCeiling = Math.min(viralCeiling, 30);
+    salesCeiling = Math.min(salesCeiling, 40);
+    if (gateResult !== 'MUERTO') gateResult = 'DÉBIL';
+    hardCeilings.push(`⛔ PARECE ANUNCIO: viralScore BLOQUEADO en ≤30. salesScore BLOQUEADO en ≤40. El cerebro lo ignoró antes de procesarlo.`);
+  }
+
+  // Hook muerto
+  if (flags.hook_type === 'muerto') {
+    viralCeiling = Math.min(viralCeiling, 35);
+    if (gateResult !== 'MUERTO') gateResult = 'DÉBIL';
+    hardCeilings.push(`⛔ HOOK MUERTO: viralScore BLOQUEADO en ≤35. Los primeros segundos no paran el dedo. Nada de lo que venga después cambia esto.`);
+  }
+
+  // Hook débil
+  if (flags.hook_type === 'debil') {
+    viralCeiling = Math.min(viralCeiling, 60);
+    if (gateResult === 'COMPETITIVO') gateResult = 'DÉBIL';
+    hardCeilings.push(`⚠️ HOOK DÉBIL: viralScore BLOQUEADO en ≤60. El espectador dudó pero probablemente se fue antes del final.`);
+  }
+
+  // Apertura informativa
+  if (flags.hook_type === 'apertura_informativa') {
+    viralCeiling = Math.min(viralCeiling, 40);
+    if (gateResult === 'COMPETITIVO') gateResult = 'DÉBIL';
+    hardCeilings.push(`⚠️ APERTURA INFORMATIVA: viralScore BLOQUEADO en ≤40. Mostrar el producto desde s0 no genera curiosidad.`);
+  }
+
+  // Bait desconectado
+  if (flags.bait_disconnect) {
+    viralCeiling = Math.min(viralCeiling, 55);
+    salesCeiling = Math.min(salesCeiling, 45);
+    hardCeilings.push(`⚠️ BAIT DESCONECTADO: viralScore BLOQUEADO en ≤55 | salesScore BLOQUEADO en ≤45. El hook retiene pero el producto no tiene relación con lo que enganchó al espectador.`);
+  }
+
+  // Dolor no nombrado
+  if (flags.pain_missing) {
+    salesCeiling = Math.min(salesCeiling, 48);
+    hardCeilings.push(`⛔ SIN DOLOR NOMBRADO: salesScore BLOQUEADO en ≤48. Sin atacar el problema del espectador antes de mostrar el producto, nadie compra.`);
+  }
+
+  // Formato incompatible
+  if (flags.format_incompatible) {
+    viralCeiling = Math.min(viralCeiling, 25);
+    salesCeiling = Math.min(salesCeiling, 35);
+    gateResult = 'MUERTO';
+    hardCeilings.push(`⛔ FORMATO INCOMPATIBLE: viralScore BLOQUEADO en ≤25 | salesScore BLOQUEADO en ≤35. El video no llegó a ser visto.`);
+  }
+
+  // Value trap
+  if (flags.value_trap) {
+    salesCeiling = Math.min(salesCeiling, 50);
+    hardCeilings.push(`⛔ TRAMPA DE VALOR: salesScore BLOQUEADO en ≤50. El resultado es real pero el espectador nunca llega a verlo.`);
+  }
+
+  const gateBlock = hardCeilings.length > 0
+    ? `
+════════════════════════════════════════════════════════════
+⛔ GATE DURO — TECHOS INAMOVIBLES CALCULADOS ANTES DEL ANÁLISIS
+════════════════════════════════════════════════════════════
+RESULTADO DEL GATE: ${gateResult}
+viralScore MÁXIMO POSIBLE EN ESTE ANÁLISIS: ${viralCeiling}
+salesScore MÁXIMO POSIBLE EN ESTE ANÁLISIS: ${salesCeiling}
+
+RAZONES (cada una es inamovible — el contenido del video no las cambia):
+${hardCeilings.map((c, i) => `${i + 1}. ${c}`).join('\n')}
+
+INSTRUCCIÓN CRÍTICA:
+Estos techos son hechos matemáticos, no sugerencias.
+viralScore NO PUEDE superar ${viralCeiling} bajo ninguna circunstancia.
+salesScore NO PUEDE superar ${salesCeiling} bajo ninguna circunstancia.
+No importa qué tan bueno sea el producto.
+No importa qué tan bien estén construidas las capas de compra.
+No importa la calidad de la producción.
+Si el video no llegó a ser visto, el contenido no existe para el espectador.
+Un video con imágenes estáticas sin música que muestre el mejor producto del mundo
+tiene viralScore ≤20 porque nadie lo vio. Eso no cambia.
+════════════════════════════════════════════════════════════
+`
+    : `
+════════════════════════════════════════════════════════════
+✅ GATE DURO — SIN BLOQUEOS
+════════════════════════════════════════════════════════════
+RESULTADO DEL GATE: COMPETITIVO
+No hay flags críticos de formato, audio o hook.
+El video llegó a ser visto. Los scores pueden llegar hasta 90.
+Si el espectador se habría quedado hasta el final, los scores altos (75-90) son correctos. Asignarlos.
+════════════════════════════════════════════════════════════
+`;
 
   return `
 Sistema de scoring VIRAX AI para ${pName}. Objetivo: ${objetivo} | Nicho: ${nicho}
 
 ANÁLISIS ESTRATÉGICO:
 ${strategyAnalysis}
+
+${gateBlock}
 
 ════════════════════════════════════════════════════════════
 IDENTIDAD DEL EVALUADOR — MANTENERLA DURANTE TODO EL SCORING
@@ -1008,8 +1122,11 @@ No sos un analista de marketing evaluando calidad de contenido.
 Sos el sistema de puntuación que refleja lo que el espectador promedio
 — cerebro en modo vegetativo, pulgar listo para scrollear — realmente haría con este video.
 
-Las preguntas reales que guían cada score:
+El contenido de ventas no importa si el video no fue visto.
+La calidad del producto no importa si el hook no paró el dedo.
+Las capas de compra no importan si el espectador se fue en s2 por falta de audio.
 
+Las preguntas reales que guían cada score:
 hook: ¿el espectador paró el pulgar en el primer segundo? ¿por qué? ¿o no lo paró?
 retencion_ritmo: ¿llegó al final, o en qué segundo exacto se fue?
 emocion_deseo: ¿sintió algo (quiero esto, necesito esto, esto es para mí), o no sintió nada?
@@ -1020,19 +1137,14 @@ propuesta_valor: ¿el video le habló de su dolor antes de mostrarle el producto
 call_to_action: ¿supo exactamente qué hacer después de ver el video?
 viralScore: ¿lo mandaría a alguien o lo compartiría? ¿por qué?
 salesScore: ¿haría clic o buscaría más info? ¿qué lo convencería o qué lo frenó?
-
-NOTA SOBRE BAIT HOOK DESCONECTADO:
-Si el video usa un hook de impacto visual sin conexión con el producto, reportar:
-viralScore (retención generada por el impacto) y salesScore (conversión real) por separado.
-La brecha entre ambos es la señal de que el hook retiene pero no convierte.
 ════════════════════════════════════════════════════════════
 
-PENALIZACIONES — APLICAR PRIMERO, EN ORDEN, EXACTAMENTE:
+PENALIZACIONES ADICIONALES — APLICAR SOBRE LOS TECHOS YA ESTABLECIDOS:
 ${penaltiesBlock}
 
-SEÑALES POSITIVAS (aplicar activamente cuando el análisis las confirma):
-→ Hook explosivo confirmado (el espectador se quedó sin decidirlo): viralScore base ≥72 antes de ajustes
-→ Dolor nombrado en los primeros 5s + producto como solución directa: salesScore base ≥68
+SEÑALES POSITIVAS (solo aplicar si el gate no bloqueó el score correspondiente):
+→ Hook explosivo confirmado: viralScore base ≥72 (solo si viralCeiling lo permite)
+→ Dolor nombrado en los primeros 5s + producto como solución directa: salesScore base ≥68 (solo si salesCeiling lo permite)
 → Audio desde s0 + video real + cortes cada 1-2s: retencion_ritmo base ≥70
 → Algo nuevo cada ≤2s sostenido: retencion_ritmo +10 adicional
 → Producto mostrado en acción desde s0-s3, sin interrupciones: claridad_producto ≥75
@@ -1040,127 +1152,79 @@ SEÑALES POSITIVAS (aplicar activamente cuando el análisis las confirma):
 → Urgencia real o emocional visible antes del scroll masivo: call_to_action ≥65
 → Satisfacción visual fuerte (transformación visible, proceso fluido): emocion_deseo ≥65
 → Parece contenido de amigo, no aviso corporativo: produccion_estetica ≥60
-→ Elemento compartible detectado (dato revelador, sorpresa, identificación fuerte): viralScore +8
-Las señales positivas son tan importantes como las penalizaciones.
-Un video que el espectador vería hasta el final debe tener scores altos. No ser conservador.
+→ Elemento compartible detectado: viralScore +8 (respetando el techo del gate)
 
 REGLAS BASE:
-- Producción simple + formato competitivo (espectador llegó al final): produccion_estetica ≥55. No penalizar.
+- Producción simple + formato competitivo: produccion_estetica ≥55. No penalizar.
 - Producto físico que se vende visualmente: call_to_action ≥65 aunque no haya CTA verbal.
-- Música de fondo sin molestia: produccion_estetica -6 (leve).
-- viralScore y salesScore son independientes. Pueden diferir 15-25 puntos. Explicar la brecha cuando ocurra.
+- viralScore y salesScore son independientes. Pueden diferir 15-25 puntos.
 
 ════════════════════════════════════════════════════════════
-ESCALA DE REFERENCIA — CALIBRAR ANTES DE PUNTUAR:
+ESCALA DE REFERENCIA — CALIBRAR CON LOS TECHOS DEL GATE APLICADOS:
 ════════════════════════════════════════════════════════════
-viralScore 82-90: paró, se quedó, lo mandó. Hook real + ritmo + elemento compartible.
+viralScore 82-90: paró, se quedó, lo mandó. Solo posible si gate = COMPETITIVO.
 viralScore 68-81: paró, llegó al final, no lo mandó pero lo consideró.
 viralScore 52-67: dudó, llegó a la mitad. Hook débil o ritmo con problemas.
 viralScore 35-51: scrolleó en s4-s8. Algo lo detuvo brevemente pero no suficiente.
 viralScore 20-34: scrolleó antes de s4. Sin audio, imágenes, o hook muerto.
-viralScore <20: ni lo registró. Slideshow sin música o primer frame repulsivo.
+viralScore ≤20: ni lo registró. Slideshow sin música o primer frame repulsivo.
 
-salesScore 75-90: dolor nombrado + confianza construida + urgencia visible. Compra inmediata probable.
-salesScore 55-74: dolor o confianza presentes pero no ambos. Intención sin acción inmediata.
-salesScore 35-54: el espectador no sintió que el video le hablaba a él. Pasa de largo.
-salesScore <35: sin dolor nombrado + sin confianza = sin compra.
+salesScore 75-90: dolor + confianza + urgencia. Solo posible si gate no bloqueó.
+salesScore 55-74: dolor o confianza presentes pero no ambos.
+salesScore 35-54: el espectador no sintió que el video le hablaba a él.
+salesScore ≤35: sin dolor nombrado + sin confianza = sin compra.
 
-EJEMPLOS CONCRETOS DE CALIBRACIÓN:
-- Video de 8 imágenes sin música, resultado mostrado desde s0 → viralScore 12-18 | salesScore 20-30
-- Video real, cortes cada 3s, música, producto de frente, hook informativo, sin dolor nombrado → viralScore 42-52 | salesScore 32-42
-- Video real, hook "¿te pasa esto?", cortes cada 1-2s, música, dolor en s2, producto como solución en s5, urgencia en s18 → viralScore 72-82 | salesScore 68-78
-- Bait hook (explosión) sin conexión con el producto → viralScore 58-68 | salesScore 28-38 (reportar brecha)
+EJEMPLOS CON GATE APLICADO:
+- Slideshow sin música, buen producto, buenas capas de compra → viralScore 12-18 | salesScore 25-35 (el gate bloqueó ambos)
+- Video real, sin audio desde s0, producto claro, dolor nombrado → viralScore 18-22 | salesScore 40-48 (el gate bloqueó viral)
+- Video real, audio OK, hook muerto (producto desde s0), buen contenido → viralScore 28-35 | salesScore 45-55 (gate bloqueó viral)
+- Video real, audio OK, hook explosivo, dolor en s2, confianza alta → viralScore 75-85 | salesScore 70-80 (gate libre)
 ════════════════════════════════════════════════════════════
 
 ════════════════════════════════════════════════════════════
 REGLA DE LENGUAJE — SE APLICA A CADA CAMPO DEL JSON SIN EXCEPCIÓN
 ════════════════════════════════════════════════════════════
 La persona que lee este análisis NO estudió marketing.
-No sabe qué es un hook, un funnel, CTR, UGC, retención orgánica, ni conversión.
 Es alguien que grabó un video con el celular y quiere saber si va a funcionar o no.
-
 ESCRIBÍ COMO SI LE EXPLICÁS A UN AMIGO. No como un consultor. No como un informe.
 
-PROHIBIDO usar estas palabras sin aclaración inmediata entre paréntesis:
-hook, CTR, UGC, retención, conversión, viralización, engagement, funnel, orgánico,
-loop de curiosidad, pattern interrupt, STEPPS, pain point, CTA, scroll-stop, bait hook,
-apertura informativa, dead moment, value trap.
-Si las usás igual, aclarás en la misma oración qué significa.
-Correcto: "el gancho (lo que la gente ve en el primer segundo y decide si sigue mirando)"
-Incorrecto: "el hook carece de pattern interrupt efectivo"
-
-CADA CAMPO RESPONDE UNA DE ESTAS PREGUNTAS:
-¿Por qué la gente se va antes de terminar el video?
-¿Por qué la gente compraría o no compraría?
-¿Qué está pasando exactamente en los primeros segundos?
-¿Qué debería cambiar y por qué eso lo haría mejor?
+PROHIBIDO usar sin aclaración: hook, CTR, UGC, retención, conversión, engagement,
+funnel, orgánico, loop de curiosidad, pattern interrupt, STEPPS, pain point, CTA,
+scroll-stop, bait hook, apertura informativa, dead moment, value trap.
 
 NADA DE FRASES GENÉRICAS. Cada campo habla de ESTE video específico.
 Incorrecto: "El contenido carece de propuesta de valor clara."
-Correcto: "El video no le dice al espectador qué problema le resuelve antes de mostrar el producto. Eso hace que la gente lo vea como un anuncio más y siga scrolleando."
+Correcto: "El video no le dice al espectador qué problema le resuelve antes de mostrar el producto."
 ════════════════════════════════════════════════════════════
 
 ════════════════════════════════════════════════════════════
-REGLA DE ANÁLISIS PRESCRIPTIVO — LA MÁS IMPORTANTE
+REGLA DE ANÁLISIS PRESCRIPTIVO — OBLIGATORIA
 ════════════════════════════════════════════════════════════
 Cada problema detectado DEBE venir con su solución concreta.
-Diagnosticar sin prescribir es inútil. Es como un médico que dice "tenés fiebre" y se va.
+Diagnosticar sin prescribir es inútil.
 
 ESTRUCTURA OBLIGATORIA para cada categoria:
-  explicacion: QUÉ está mal o bien y POR QUÉ pasa — en lenguaje del creador, 1 oración
-  solucion: QUÉ CAMBIAR EXACTAMENTE — acción concreta, no consejo vago, 1 oración
-  ejemplo: cómo quedaría aplicado a ESTE video específico — no un ejemplo genérico
+  explicacion: QUÉ está mal o bien y POR QUÉ pasa — 1 oración en lenguaje del creador
+  solucion: QUÉ CAMBIAR EXACTAMENTE — acción concreta, no consejo vago — 1 oración
+  ejemplo: cómo quedaría en ESTE video — menciona algo concreto: un plano, un segundo, un elemento real del video
 
-REGLA DEL EJEMPLO: el campo "ejemplo" debe mencionar algo concreto del video analizado.
-Un elemento visual real, un segundo específico, una frase del audio, un plano detectado.
-NUNCA un ejemplo genérico que podría aplicar a cualquier video.
+REGLA DEL EJEMPLO: nunca genérico. Siempre algo del video analizado.
 
-EJEMPLO CORRECTO (puntaje bajo — hay problema):
-  hook: {
-    puntaje: 28,
-    explicacion: "El video arranca mostrando el producto de frente — el cerebro ya sabe lo que es en el primer segundo y no tiene razón para quedarse",
-    solucion: "Empezá con el problema visible antes de mostrar el producto — que el espectador se identifique con algo que le pasa antes de ver qué le vendés",
-    ejemplo: "En vez de abrir con el rodillo en mano, empezá con un primer plano de un saco lleno de peluza y alguien mirándolo frustrado. El rodillo aparece recién en s3 como la solución obvia."
-  }
+FORMATO ROADMAP — 4 mejoras en orden de impacto:
+  "IMPACTO ALTO|MEDIO | [problema en lenguaje simple] → [qué cambiar] → [cómo quedaría en este video específico]"
 
-EJEMPLO CORRECTO (puntaje alto — no hay problema):
-  retencion_ritmo: {
-    puntaje: 78,
-    explicacion: "Los cortes cada 2 segundos mantienen al espectador activo — el cerebro siempre tiene algo nuevo que procesar",
-    solucion: "Mantener exactamente este ritmo en los próximos videos, especialmente en los primeros 8 segundos donde se decide si la gente se queda o se va",
-    ejemplo: "El corte en s4 cuando aparece el antes/después es el punto más fuerte del video — ese cambio de plano es lo que hace que la gente llegue hasta el final"
-  }
-
-FORMATO ROADMAP — 4 mejoras ordenadas por impacto real:
-Formato exacto de cada item:
-  "IMPACTO ALTO|MEDIO | [nombre del problema en lenguaje simple] → [qué cambiar, acción concreta] → [cómo quedaría en este video, con detalle específico]"
-
-ORDEN OBLIGATORIO:
-  roadmap[0]: Lo que más views genera → siempre el gancho o el formato si están mal
+ORDEN:
+  roadmap[0]: Lo que más views genera → hook o formato si están mal
   roadmap[1]: Lo que más convierte → dolor nombrado + confianza
   roadmap[2]: Lo que más retiene → ritmo + momentos muertos
   roadmap[3]: Lo que más comparte → elemento revelador o llamada a la acción
 
-EJEMPLO de roadmap bien construido:
-  roadmap[0]: "IMPACTO ALTO | Los primeros 2 segundos no paran el dedo → Empezá mostrando el problema antes que el producto → Abrí con un primer plano del saco lleno de peluza, sin mostrar el rodillo. Que el espectador piense 'necesito eso' antes de ver qué lo soluciona"
-  roadmap[1]: "IMPACTO ALTO | El video no le dice a la gente que entiende su problema → Agregá una línea de texto en s2 que nombre el dolor exacto → Poné 'Esa peluza que no sale con nada...' sobre el primer plano, antes de mostrar el rodillo funcionando"
-  roadmap[2]: "IMPACTO MEDIO | En s12 hay 6 segundos donde no pasa nada nuevo y la gente se va → Cortá ese plano a la mitad o agregá un cambio de ángulo → Mostrá el mismo momento desde arriba en s14 para que visualmente se sienta que algo cambió"
-  roadmap[3]: "IMPACTO MEDIO | No hay razón para comprarlo hoy y no mañana → Agregá una frase de urgencia emocional antes del final → Terminá con 'Cada vez que lo usás es como estrenar la ropa' justo antes de mostrar dónde comprarlo"
-
 FORMATO honestVerdict:
-Una sola cosa. La más importante. Sin rodeos. En el lenguaje de alguien que manda un mensaje.
-NO listar tres problemas. UNA verdad central.
-Decir qué es lo que está fallando Y qué cambiaría todo si se arregla eso.
-
-CORRECTO:
-  "El video está bien grabado y el producto se entiende. El problema es que arranca mostrando lo que vende, y el cerebro de quien está scrolleando lo ignora antes de procesarlo. Si los primeros 3 segundos muestran el problema en vez del producto, todo lo que ya está bien empieza a funcionar."
-
-INCORRECTO (prohibido):
-  "El video tiene problemas con el gancho, la retención es baja, falta urgencia y el llamado a la acción no es claro."
-  → Lista de diagnósticos. No es un veredicto. No lo uses.
+Una sola verdad central. La más importante. Como si se la mandaras por WhatsApp.
+NO lista de problemas. UNA verdad + qué cambiaría todo si se arregla eso.
 ════════════════════════════════════════════════════════════
 
-PONDERACIÓN BASE (antes de penalizaciones):
+PONDERACIÓN BASE (antes de penalizaciones y respetando techos del gate):
 hook 20% | retencion_ritmo 13% | claridad_producto 12% | confianza_credibilidad 11% | emocion_deseo 11% | propuesta_valor 12% | call_to_action 9% | produccion_estetica 7% | tendencias_formato 5%
 
 RESPUESTA: ÚNICAMENTE el objeto JSON. Primera línea: { — Última línea: }
@@ -1191,7 +1255,7 @@ Sin nada antes ni después. Strings sin tildes, sin comillas dobles internas (us
     "strength": 0,
     "implicitQuestion": "<pregunta que genera en el espectador, o 'ninguna'>",
     "baitBridge": "<descripcion del puente emocional si existe, o 'sin puente'>",
-    "viralScoreCeiling": 0,
+    "viralScoreCeiling": ${viralCeiling},
     "salesScoreImpact": "",
     "missingElement": "",
     "optimizedHook": ""
@@ -1286,10 +1350,10 @@ Sin nada antes ni después. Strings sin tildes, sin comillas dobles internas (us
   },
   "trendContext": "",
   "roadmap": [
-    "<IMPACTO ALTO|MEDIO | [nombre del problema en lenguaje simple] → [que cambiar, accion concreta] → [como quedaria en este video, con detalle especifico del video analizado]>",
-    "<IMPACTO ALTO|MEDIO | [nombre del problema en lenguaje simple] → [que cambiar, accion concreta] → [como quedaria en este video, con detalle especifico del video analizado]>",
-    "<IMPACTO MEDIO | [nombre del problema en lenguaje simple] → [que cambiar, accion concreta] → [como quedaria en este video, con detalle especifico del video analizado]>",
-    "<IMPACTO MEDIO | [nombre del problema en lenguaje simple] → [que cambiar, accion concreta] → [como quedaria en este video, con detalle especifico del video analizado]>"
+    "<IMPACTO ALTO|MEDIO | [problema en lenguaje simple] → [que cambiar, accion concreta] → [como quedaria en este video, con detalle especifico]>",
+    "<IMPACTO ALTO|MEDIO | [problema en lenguaje simple] → [que cambiar, accion concreta] → [como quedaria en este video, con detalle especifico]>",
+    "<IMPACTO MEDIO | [problema en lenguaje simple] → [que cambiar, accion concreta] → [como quedaria en este video, con detalle especifico]>",
+    "<IMPACTO MEDIO | [problema en lenguaje simple] → [que cambiar, accion concreta] → [como quedaria en este video, con detalle especifico]>"
   ],
   "trendResearch": {
     "hooksWorking": "", "topStructure": "",
@@ -1301,59 +1365,18 @@ Sin nada antes ni después. Strings sin tildes, sin comillas dobles internas (us
   "categorias": {
     "hook": {
       "puntaje": 0,
-      "explicacion": "<que esta mal o bien y por que pasa — en lenguaje del creador, 1 oracion>",
-      "solucion": "<que cambiar exactamente — accion concreta, no consejo vago, 1 oracion>",
-      "ejemplo": "<como quedaria aplicado a este video especifico — menciona algo concreto del video: un plano, un segundo, un elemento visual real>"
+      "explicacion": "<que esta mal o bien y por que pasa — lenguaje del creador, 1 oracion>",
+      "solucion": "<que cambiar exactamente — accion concreta, 1 oracion>",
+      "ejemplo": "<como quedaria en este video — menciona algo concreto del video: un plano, un segundo, un elemento real>"
     },
-    "claridad_producto": {
-      "puntaje": 0,
-      "explicacion": "",
-      "solucion": "",
-      "ejemplo": ""
-    },
-    "confianza_credibilidad": {
-      "puntaje": 0,
-      "explicacion": "",
-      "solucion": "",
-      "ejemplo": ""
-    },
-    "emocion_deseo": {
-      "puntaje": 0,
-      "explicacion": "",
-      "solucion": "",
-      "ejemplo": ""
-    },
-    "propuesta_valor": {
-      "puntaje": 0,
-      "explicacion": "",
-      "solucion": "",
-      "ejemplo": ""
-    },
-    "retencion_ritmo": {
-      "puntaje": 0,
-      "explicacion": "",
-      "solucion": "",
-      "ejemplo": ""
-    },
-    "call_to_action": {
-      "puntaje": 0,
-      "tipo": "<explicito|implicito|ausente>",
-      "explicacion": "",
-      "solucion": "",
-      "ejemplo": ""
-    },
-    "produccion_estetica": {
-      "puntaje": 0,
-      "explicacion": "",
-      "solucion": "",
-      "ejemplo": ""
-    },
-    "tendencias_formato": {
-      "puntaje": 0,
-      "explicacion": "",
-      "solucion": "",
-      "ejemplo": ""
-    }
+    "claridad_producto": { "puntaje": 0, "explicacion": "", "solucion": "", "ejemplo": "" },
+    "confianza_credibilidad": { "puntaje": 0, "explicacion": "", "solucion": "", "ejemplo": "" },
+    "emocion_deseo": { "puntaje": 0, "explicacion": "", "solucion": "", "ejemplo": "" },
+    "propuesta_valor": { "puntaje": 0, "explicacion": "", "solucion": "", "ejemplo": "" },
+    "retencion_ritmo": { "puntaje": 0, "explicacion": "", "solucion": "", "ejemplo": "" },
+    "call_to_action": { "puntaje": 0, "tipo": "<explicito|implicito|ausente>", "explicacion": "", "solucion": "", "ejemplo": "" },
+    "produccion_estetica": { "puntaje": 0, "explicacion": "", "solucion": "", "ejemplo": "" },
+    "tendencias_formato": { "puntaje": 0, "explicacion": "", "solucion": "", "ejemplo": "" }
   },
   "updatedHook": "",
   "updatedRoadmap": ["", "", ""]
