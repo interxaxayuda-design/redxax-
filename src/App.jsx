@@ -522,61 +522,6 @@ J. TIPO DE HOOK DETECTADO
 - Tono: (informal/aspiracional/educativo/humorístico/directo)
 - Estilo: (habla a cámara/muestra sin hablar/usa texto)
 - Riesgo de desconfianza: ninguno/leve/alto → 1 oración
-
-
-REGLA DE CONSISTENCIA — ANTES DE CERRAR EL ANÁLISIS
-
-Antes de terminar, revisá estas preguntas de consistencia interna:
-
-1. ¿El hook que describiste en FASE 1 coincide con el tipo que pusiste en la sección J?
-   Si no coinciden: corregí la sección J para que refleje lo que describiste en FASE 1.
-
-2. ¿El dolor que describiste en CAPA 1 coincide con pain_missing del análisis?
-   Si el dolor aparece antes de s5: pain_missing = false, pain_late = false.
-   Si el dolor aparece entre s5 y s10: pain_missing = false, pain_late = true.
-   Si no aparece: pain_missing = true.
-   NO puede ser pain_missing = true si describiste el dolor en s2.
-
-3. ¿El tipo de hook que detectaste determina el techo de viralScore?
-   HOOK EXPLOSIVO → viralScore puede llegar a 90.
-   HOOK DÉBIL → viralScore techo 60.
-   HOOK MUERTO → viralScore techo 35.
-   Si el hook que describiste no coincide con el techo que implica, hay un error. Corregilo.
-
-4. ¿Hay algún elemento que describiste como positivo en FASE 2 pero que después penalizaste igual?
-   Si un elemento está bien ejecutado, no puede aparecer como fortaleza Y como penalización.
-   Elegí uno: o está bien o está mal. No los dos.
-
-REGLA FINAL: un video que ya funciona bien en el feed (audio desde s0, movimiento real,
-hook con pregunta implícita, dolor antes de s5, cortes cada 1-3s) NO puede tener
-viralScore menor a 65. Si tu análisis da menos de 65 con esas condiciones,
-hay un error de calibración. Revisá los flags antes de cerrar.
-
-Al final de tu análisis, devolvé ÚNICAMENTE este JSON con los valores que observaste.
-No agregues texto después del JSON.
-
-{
-  "audio_desde_s0": true/false,
-  "es_video_real": true/false,
-  "producto_en_s0": true/false,
-  "persona_visible_s3": true/false,
-  "dolor_antes_s5": true/false,
-  "texto_en_pantalla_s5": true/false,
-  "corte_antes_s3": true/false,
-  "primer_frame_logo_o_marca": true/false,
-  "hook_type_observado": "explosivo|bait_con_puente|debil|bait_desconectado|apertura_informativa|muerto",
-  "segundo_dolor": <número o null>,
-  "segundo_producto": <número o null>,
-  "hay_antes_despues": true/false,
-  "hay_testimonio": true/false,
-  "hay_urgencia_verbal": true/false,
-  "hay_cta_explicito": true/false,
-  "segundo_cta": <número o null>,
-  "plano_mas_largo_segundos": <número>,
-  "cortes_por_10s": <número>
-}
-
-
 `;
 };
 
@@ -594,27 +539,9 @@ Plataforma: ${pName} | Objetivo: ${objetivo} | Nicho: ${nicho}
 REPORTE FORENSE:
 ${viewerAnalysis}
 
-VERIFICACIÓN DE CONSISTENCIA INTERNA — EJECUTAR ANTES QUE TODO
-
-Antes de analizar nada, tomá el reporte del Viewer Brain y respondé:
-
-1. ¿Qué tipo de hook detectó el Viewer Brain? → [transcribir exactamente]
-2. ¿En qué segundo apareció el dolor? → [número exacto o "no apareció"]
-3. ¿Era video real con movimiento o imágenes quietas? → [una palabra]
-4. ¿Había audio desde s0? → [sí/no]
-
-Con esas 4 respuestas, calculá el techo máximo de viralScore ANTES de analizar el resto:
-- Si audio desde s0 + video real + hook explosivo + dolor antes de s5 → techo ≥ 82
-- Si audio desde s0 + video real + hook débil → techo entre 45 y 60
-- Si sin audio O imágenes → techo ≤ 30
-
-Este techo es INAMOVIBLE. El resto del análisis no puede superarlo ni bajarlo más del 15%.
-Si el análisis posterior contradice este techo: el error está en el análisis, no en el techo.
-
-
-
+════════════════════════════════════════════════════════════
 MARCO DE ANÁLISIS — NUNCA OLVIDARLO
-
+════════════════════════════════════════════════════════════
 
 El espectador promedio de este video tiene el cerebro en modo vegetativo.
 Está scrolleando sin buscar nada. No quiere esforzarse. No quiere aprender.
@@ -635,6 +562,8 @@ LO QUE EL CEREBRO EN MODO SCROLL HACE Y NO HACE:
 ✓ Sí compra si el video nombra su dolor antes de mostrar el producto.
 ✓ Sí compra si confía en quien lo presenta y en que el producto funciona de verdad.
 ✓ Sí compra HOY si hay una razón para no esperar.
+
+════════════════════════════════════════════════════════════
 
 STEP 1 — GATE DE FORMATO: ¿EL VIDEO LLEGÓ A SER VISTO?
 (Responder primero. Todo lo demás depende de esto.)
@@ -660,11 +589,11 @@ Pregunta 5: ¿Hay algo nuevo cada ≤3s que justifique que el espectador siga?
 → Si SÍ: puede llegar al final.
 
 RESULTADO DEL GATE:
- Pasó las 5 preguntas: FORMATO COMPETITIVO
- Pasó 3-4: FORMATO DÉBIL
- Pasó 0-2: FORMATO MUERTO
+→ Pasó las 5 preguntas: FORMATO COMPETITIVO
+→ Pasó 3-4: FORMATO DÉBIL
+→ Pasó 0-2: FORMATO MUERTO
 
-
+════════════════════════════════════════════════════════════
 
 STEP 2 — TECHO DE VIRALSCORE POR TIPO DE HOOK
 
@@ -687,7 +616,7 @@ Si es así: el video puede tener retención alta (la gente se quedó por el impa
 pero conversión baja (se sintió engañada cuando apareció el producto).
 Reportar ambas métricas por separado y explicar la brecha.
 
-
+════════════════════════════════════════════════════════════
 
 STEP 3 — ANÁLISIS DE LAS TRES CAPAS DE COMPRA
 
@@ -720,6 +649,7 @@ DIAGNÓSTICO DE CONVERSIÓN:
 → Si no_urgency: hay intención pero no hay acción. Tercera prioridad.
 → Si high_friction: hay decisión pero no se ejecuta. Cuarta prioridad.
 
+════════════════════════════════════════════════════════════
 
 STEP 4 — ANÁLISIS DE SUPERVIVENCIA SEGUNDO A SEGUNDO
 
@@ -770,6 +700,7 @@ TRAMPA DEL BAIT: el hook retiene pero el producto no tiene relación con lo que 
 → Si SÍ: flag bait_disconnect = true
    Reportar: "El video tiene retención alta pero conversión baja porque el hook engañó al espectador."
 
+════════════════════════════════════════════════════════════
 
 STEP 6 — ANÁLISIS DE COMPARTIBILIDAD
 
@@ -865,35 +796,6 @@ export const extractFlags = (strategyText) => {
     return JSON.parse(match[1]);
   } catch (err) { console.warn('[extractFlags] Error parseando FLAGS:', err.message); return {}; }
 };
-
-function calcularScores(hechos) {
-  let viralScore = 100;
-  let salesScore = 100;
-
-  // Techos inamovibles
-  if (!hechos.audio_desde_s0)         viralScore = Math.min(viralScore, 22);
-  if (!hechos.es_video_real)           viralScore = Math.min(viralScore, 28);
-  if (hechos.primer_frame_logo_o_marca) viralScore = Math.min(viralScore, 30);
-  
-  // Hook type → techo
-  const techos = {
-    explosivo:            90,
-    bait_con_puente:      85,
-    debil:                60,
-    bait_desconectado:    55,
-    apertura_informativa: 40,
-    muerto:               35,
-  };
-  viralScore = Math.min(viralScore, techos[hechos.hook_type_observado] ?? 50);
-
-  // Capas de compra
-  if (!hechos.dolor_antes_s5)   salesScore = Math.min(salesScore, 48);
-  if (!hechos.hay_urgencia_verbal) salesScore -= 10;
-  if (!hechos.hay_cta_explicito)   salesScore -= 12;
-
-  return { viralScore, salesScore };
-}
-
 
 export const stripFlags = (strategyText) =>
   strategyText.replace(/---FLAGS---[\s\S]*?---END---/, '').trim();
@@ -1071,10 +973,9 @@ Sistema de scoring VIRAX AI para ${pName}. Objetivo: ${objetivo} | Nicho: ${nich
 ANÁLISIS ESTRATÉGICO:
 ${strategyAnalysis}
 
-
-
+════════════════════════════════════════════════════════════
 IDENTIDAD DEL EVALUADOR — MANTENERLA DURANTE TODO EL SCORING
-
+════════════════════════════════════════════════════════════
 No sos un analista de marketing evaluando calidad de contenido.
 Sos el sistema de puntuación que refleja lo que el espectador promedio
 — cerebro en modo vegetativo, pulgar listo para scrollear — realmente haría con este video.
@@ -1096,23 +997,9 @@ NOTA SOBRE BAIT HOOK DESCONECTADO:
 Si el video usa un hook de impacto visual sin conexión con el producto, reportar:
 viralScore (retención generada por el impacto) y salesScore (conversión real) por separado.
 La brecha entre ambos es la señal de que el hook retiene pero no convierte.
+════════════════════════════════════════════════════════════
 
-
-ANTES DE APLICAR PENALIZACIONES — CHEQUEO DE CONTRADICCIONES
-
-Revisá si alguna penalización contradice lo que el Viewer Brain describió.
-
-Ejemplos de contradicciones que NO pueden existir:
-- FLAG pain_missing = true + descripción de dolor en s2 → error, ignorar el flag
-- FLAG no_audio_from_s0 = true + descripción de música desde el inicio → error, ignorar el flag
-- FLAG hook_type = muerto + descripción de pregunta implícita en s1 → error, usar hook_type = debil mínimo
-- FLAG is_static_slideshow = true + descripción de persona hablando a cámara → error, ignorar el flag
-
-Si encontrás una contradicción: el flag está mal generado. Ignoralo y usá la descripción del Viewer Brain.
-Las penalizaciones solo se aplican cuando el flag Y la descripción del Viewer Brain coinciden.
-
-
-PENALIZACIONES — APLICAR DESPUÉS DEL CHEQUEO, EN ORDEN, EXACTAMENTE:
+PENALIZACIONES — APLICAR PRIMERO, EN ORDEN, EXACTAMENTE:
 ${penaltiesBlock}
 
 SEÑALES POSITIVAS (aplicar activamente cuando el análisis las confirma):
@@ -1135,9 +1022,9 @@ REGLAS BASE:
 - Música de fondo sin molestia: produccion_estetica -6 (leve).
 - viralScore y salesScore son independientes. Pueden diferir 15-25 puntos. Explicar la brecha cuando ocurra.
 
-
+════════════════════════════════════════════════════════════
 ESCALA DE REFERENCIA — CALIBRAR ANTES DE PUNTUAR:
-
+════════════════════════════════════════════════════════════
 viralScore 82-90: paró, se quedó, lo mandó. Hook real + ritmo + elemento compartible.
 viralScore 68-81: paró, llegó al final, no lo mandó pero lo consideró.
 viralScore 52-67: dudó, llegó a la mitad. Hook débil o ritmo con problemas.
@@ -1155,7 +1042,7 @@ EJEMPLOS CONCRETOS DE CALIBRACIÓN:
 - Video real, cortes cada 3s, música, producto de frente, hook informativo, sin dolor nombrado → viralScore 42-52 | salesScore 32-42
 - Video real, hook "¿te pasa esto?", cortes cada 1-2s, música, dolor en s2, producto como solución en s5, urgencia en s18 → viralScore 72-82 | salesScore 68-78
 - Bait hook (explosión) sin conexión con el producto → viralScore 58-68 | salesScore 28-38 (reportar brecha)
-
+════════════════════════════════════════════════════════════
 
 REGLA DE LENGUAJE — OBLIGATORIA:
 Escribí como si le explicás a la persona que hizo el video qué tiene de bueno o malo.
@@ -1180,8 +1067,6 @@ REGLA DE ANÁLISIS PRESCRIPTIVO — LA MÁS IMPORTANTE
 ════════════════════════════════════════════════════════════
 Cada problema detectado DEBE venir con su solución concreta.
 Diagnosticar sin prescribir es inútil. Es como un médico que dice "tenés fiebre" y se va.
-
-
 
 ESTRUCTURA OBLIGATORIA para cada problema en categorias y roadmap:
 
@@ -1309,7 +1194,6 @@ Sin nada antes ni después. Strings sin tildes, sin comillas dobles internas (us
     "contrastLevel": "<alto|medio|bajo>", "emotionVisible": "",
     "emotionIntensity": 0, "verdict": ""
   },
-  
   "commentTrigger": {
     "probability": 0,
     "triggerType": "<debate|pregunta|identificacion|humor|sorpresa>",
@@ -1819,14 +1703,16 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   setStatusText("Subiendo video...");
   setAnalysisProgress(10);
 
+  // ── FIX: nombre de archivo seguro sin espacios ni caracteres raros ──
   const safeName = videoFile.name
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9._-]/g, '');
+    .replace(/[\u0300-\u036f]/g, '')     // saca tildes
+    .replace(/\s+/g, '_')                // espacios → guión bajo
+    .replace(/[^a-zA-Z0-9._-]/g, '');   // saca todo lo demás raro
 
   const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
 
+  // ── FIX: MIME type seguro — iOS Safari devuelve video/quicktime para .mp4 ──
   const mimeType = (videoFile.type && videoFile.type.startsWith('video/') && videoFile.type !== 'video/quicktime')
     ? videoFile.type
     : 'video/mp4';
@@ -1838,6 +1724,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
+    // ── Pequeña pausa para que Supabase propague el archivo antes de que el edge function lo lea ──
     await new Promise(r => setTimeout(r, 1500));
 
     // ── CALL 1 — Viewer Brain ──
@@ -1855,35 +1742,15 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     });
 
     if (call1Error) throw call1Error;
-    const viewerRaw = extractGeminiText(call1Data);
+    const viewerAnalysis = extractGeminiText(call1Data);
 
-    // ── EXTRAER JSON DE HECHOS del ViewerBrain ──
-    let hechosJSON = {};
-    try {
-      // Busca el último bloque JSON en la respuesta
-      const allMatches = [...viewerRaw.matchAll(/\{[\s\S]*?\}/g)];
-      // Tomamos el match más largo (el más completo)
-      if (allMatches.length > 0) {
-        const longest = allMatches.reduce((a, b) => a[0].length > b[0].length ? a : b);
-        hechosJSON = JSON.parse(longest[0]);
-      }
-    } catch (e) {
-      console.warn('[VIRAX] No se pudo extraer hechosJSON del ViewerBrain:', e.message);
-    }
-
-    console.log('[VIRAX] Hechos observados:', hechosJSON);
-
-    // ── CALCULAR SCORES CON FÓRMULA FIJA ──
-    const scoresCalculados = calcularScores(hechosJSON);
-    console.log('[VIRAX] Scores calculados por fórmula:', scoresCalculados);
-
-    // ── CALL 2 — Strategy Brain ──
+    // ── CALL 2 — Strategy Brain (genera FLAGS al final) ──
     setAnalysisProgress(50);
     setStatusText("Evaluando ventas y viralidad...");
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildStrategyBrainPrompt(viewerRaw, platform, selectedObjetivo, selectedNicho),
+        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho),
         maxOutputTokens: 6144
       }
     });
@@ -1891,6 +1758,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     if (call2Error) throw call2Error;
     const strategyRaw = extractGeminiText(call2Data);
 
+    // ── EXTRAER FLAGS y limpiar el texto ──
     const flags = extractFlags(strategyRaw);
     const strategyAnalysis = stripFlags(strategyRaw);
 
@@ -1900,34 +1768,13 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       console.warn('[VIRAX] Strategy Brain no generó FLAGS. Scoring Brain corre sin penalizaciones.');
     }
 
-    // ── CALL 3 — Scoring Brain ──
-    // Los scores ya están calculados. Gemini solo escribe los veredictos.
+    // ── CALL 3 — Scoring Brain (recibe flags ya computados) ──
     setAnalysisProgress(80);
     setStatusText("Calculando scores finales...");
 
-    const scoringPromptBase = buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flags);
-    const scoringPromptFinal = scoringPromptBase + `
-
-
-SCORES PRE-CALCULADOS POR FÓRMULA — NO MODIFICAR
-
-viralScore.score = ${scoresCalculados.viralScore}
-salesScore.score = ${scoresCalculados.salesScore}
-
-Estos valores fueron calculados matemáticamente a partir de hechos observables del video.
-Son INAMOVIBLES. No los recalculés ni los ajustés.
-
-Tu única tarea es escribir los campos de texto del JSON:
-verdict, razon_principal, accion_clave, honestVerdict, roadmap, categorias (explicacion, solucion, ejemplo),
-buyerJourney, hookAnalysis, retentionData, retentionCurve, y todos los demás campos narrativos.
-
-Los únicos números que podés calcular libremente son los que NO son viralScore ni salesScore:
-potentialScore, scrollStopScore, steppsScore, platformScores, phaseScores, commentTrigger, hookAnalysis.strength.
-`;
-
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: scoringPromptFinal,
+        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flags),
         expectsJson: true,
         maxOutputTokens: 8192
       }
@@ -1936,23 +1783,14 @@ potentialScore, scrollStopScore, steppsScore, platformScores, phaseScores, comme
     if (call3Error) throw call3Error;
     const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
 
-    // ── MERGE — los scores calculados por fórmula pisan lo que haya generado Gemini ──
+    // ── MERGE ──
     setAnalysisProgress(95);
     setStatusText("Preparando tu análisis completo...");
 
     const finalResult = {
       ...parsed,
-      salesScore: {
-        ...parsed.salesScore,
-        score: scoresCalculados.salesScore,
-      },
-      viralScore: {
-        ...parsed.viralScore,
-        score: scoresCalculados.viralScore,
-      },
       objetivo: selectedObjetivo,
       _flags: flags,
-      _hechos: hechosJSON,
     };
 
     setAiResult(finalResult);
