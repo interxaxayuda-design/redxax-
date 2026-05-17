@@ -552,6 +552,30 @@ hook con pregunta implícita, dolor antes de s5, cortes cada 1-3s) NO puede tene
 viralScore menor a 65. Si tu análisis da menos de 65 con esas condiciones,
 hay un error de calibración. Revisá los flags antes de cerrar.
 
+Al final de tu análisis, devolvé ÚNICAMENTE este JSON con los valores que observaste.
+No agregues texto después del JSON.
+
+{
+  "audio_desde_s0": true/false,
+  "es_video_real": true/false,
+  "producto_en_s0": true/false,
+  "persona_visible_s3": true/false,
+  "dolor_antes_s5": true/false,
+  "texto_en_pantalla_s5": true/false,
+  "corte_antes_s3": true/false,
+  "primer_frame_logo_o_marca": true/false,
+  "hook_type_observado": "explosivo|bait_con_puente|debil|bait_desconectado|apertura_informativa|muerto",
+  "segundo_dolor": <número o null>,
+  "segundo_producto": <número o null>,
+  "hay_antes_despues": true/false,
+  "hay_testimonio": true/false,
+  "hay_urgencia_verbal": true/false,
+  "hay_cta_explicito": true/false,
+  "segundo_cta": <número o null>,
+  "plano_mas_largo_segundos": <número>,
+  "cortes_por_10s": <número>
+}
+
 
 `;
 };
@@ -842,6 +866,35 @@ export const extractFlags = (strategyText) => {
   } catch (err) { console.warn('[extractFlags] Error parseando FLAGS:', err.message); return {}; }
 };
 
+function calcularScores(hechos) {
+  let viralScore = 100;
+  let salesScore = 100;
+
+  // Techos inamovibles
+  if (!hechos.audio_desde_s0)         viralScore = Math.min(viralScore, 22);
+  if (!hechos.es_video_real)           viralScore = Math.min(viralScore, 28);
+  if (hechos.primer_frame_logo_o_marca) viralScore = Math.min(viralScore, 30);
+  
+  // Hook type → techo
+  const techos = {
+    explosivo:            90,
+    bait_con_puente:      85,
+    debil:                60,
+    bait_desconectado:    55,
+    apertura_informativa: 40,
+    muerto:               35,
+  };
+  viralScore = Math.min(viralScore, techos[hechos.hook_type_observado] ?? 50);
+
+  // Capas de compra
+  if (!hechos.dolor_antes_s5)   salesScore = Math.min(salesScore, 48);
+  if (!hechos.hay_urgencia_verbal) salesScore -= 10;
+  if (!hechos.hay_cta_explicito)   salesScore -= 12;
+
+  return { viralScore, salesScore };
+}
+
+
 export const stripFlags = (strategyText) =>
   strategyText.replace(/---FLAGS---[\s\S]*?---END---/, '').trim();
 
@@ -1019,6 +1072,7 @@ ANÁLISIS ESTRATÉGICO:
 ${strategyAnalysis}
 
 
+
 IDENTIDAD DEL EVALUADOR — MANTENERLA DURANTE TODO EL SCORING
 
 No sos un analista de marketing evaluando calidad de contenido.
@@ -1126,6 +1180,8 @@ REGLA DE ANÁLISIS PRESCRIPTIVO — LA MÁS IMPORTANTE
 ════════════════════════════════════════════════════════════
 Cada problema detectado DEBE venir con su solución concreta.
 Diagnosticar sin prescribir es inútil. Es como un médico que dice "tenés fiebre" y se va.
+
+
 
 ESTRUCTURA OBLIGATORIA para cada problema en categorias y roadmap:
 
@@ -1253,6 +1309,7 @@ Sin nada antes ni después. Strings sin tildes, sin comillas dobles internas (us
     "contrastLevel": "<alto|medio|bajo>", "emotionVisible": "",
     "emotionIntensity": 0, "verdict": ""
   },
+  
   "commentTrigger": {
     "probability": 0,
     "triggerType": "<debate|pregunta|identificacion|humor|sorpresa>",
