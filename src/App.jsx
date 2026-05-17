@@ -1814,6 +1814,101 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   }
 };
 
+const runScriptAnalysis = async (platform, followerRange) => {
+  if (!scriptText.trim()) {
+    alert('Escribí el guion antes de analizar.');
+    return;
+  }
+
+  const cost = 50;
+  const approved = await deductGems(cost, 'script');
+  if (!approved) return;
+
+  setStep('analyzing');
+  setAnalysisMode('script');
+  setStatusText("Leyendo el guion...");
+  setAnalysisProgress(15);
+
+  try {
+    setAnalysisProgress(25);
+    setStatusText("Analizando estructura del guion...");
+
+    const viewerPrompt = `
+${buildViewerBrainPrompt(platform, selectedNicho)}
+
+IMPORTANTE: No hay video. Analizá únicamente el texto del guion que sigue.
+Evaluá el hook, el ritmo narrativo, las capas de compra y la retención basándote
+solo en las palabras, el orden de las ideas y la estructura del mensaje.
+Lo que no se puede evaluar sin video (producción, música, edición) marcalo como "No evaluable — solo guion".
+
+GUION A ANALIZAR:
+"${scriptText}"
+`;
+
+    const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: { text: viewerPrompt, maxOutputTokens: 4096 }
+    });
+    if (call1Error) throw call1Error;
+    const viewerAnalysis = extractGeminiText(call1Data);
+
+    setAnalysisProgress(50);
+    setStatusText("Evaluando potencial de ventas...");
+
+    const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho),
+        maxOutputTokens: 6144
+      }
+    });
+    if (call2Error) throw call2Error;
+    const strategyRaw = extractGeminiText(call2Data);
+
+    const flags = extractFlags(strategyRaw);
+    const strategyAnalysis = stripFlags(strategyRaw);
+    console.log('[VIRAX Script] Flags detectados:', flags);
+
+    setAnalysisProgress(80);
+    setStatusText("Calculando scores...");
+
+    const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flags),
+        expectsJson: true,
+        maxOutputTokens: 8192
+      }
+    });
+    if (call3Error) throw call3Error;
+    const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring-script');
+
+    setAnalysisProgress(95);
+    setStatusText("Preparando tu análisis...");
+
+    const finalResult = {
+      ...parsed,
+      objetivo: selectedObjetivo,
+      _flags: flags,
+    };
+
+    setAiResult(finalResult);
+    setCompletedSteps([]);
+    setChatMessages([{
+      role: 'bot',
+      text: `Guion analizado. Potencial de venta: ${finalResult.salesScore?.score ?? '—'}% | Potencial viral: ${finalResult.viralScore?.score ?? '—'}%. ¿Querés mejorar algo específico?`
+    }]);
+
+    setAnalysisProgress(100);
+    await saveAnalysisToHistory(finalResult, 'script');
+    await trackPrediction(finalResult);
+    setTimeout(() => setStep('results'), 500);
+
+  } catch (err) {
+    console.error('Error análisis de guion:', err);
+    alert('Error en el análisis. Revisá la consola.');
+    setStep('upload');
+  }
+};
+
+
 const sendMessage = async () => {
   if (!userInput.trim() || isTyping) return;
 
