@@ -1819,16 +1819,14 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   setStatusText("Subiendo video...");
   setAnalysisProgress(10);
 
-  // ── FIX: nombre de archivo seguro sin espacios ni caracteres raros ──
   const safeName = videoFile.name
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')     // saca tildes
-    .replace(/\s+/g, '_')                // espacios → guión bajo
-    .replace(/[^a-zA-Z0-9._-]/g, '');   // saca todo lo demás raro
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9._-]/g, '');
 
   const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
 
-  // ── FIX: MIME type seguro — iOS Safari devuelve video/quicktime para .mp4 ──
   const mimeType = (videoFile.type && videoFile.type.startsWith('video/') && videoFile.type !== 'video/quicktime')
     ? videoFile.type
     : 'video/mp4';
@@ -1840,7 +1838,6 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
-    // ── Pequeña pausa para que Supabase propague el archivo antes de que el edge function lo lea ──
     await new Promise(r => setTimeout(r, 1500));
 
     // ── CALL 1 — Viewer Brain ──
@@ -1858,15 +1855,35 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     });
 
     if (call1Error) throw call1Error;
-    const viewerAnalysis = extractGeminiText(call1Data);
+    const viewerRaw = extractGeminiText(call1Data);
 
-    // ── CALL 2 — Strategy Brain (genera FLAGS al final) ──
+    // ── EXTRAER JSON DE HECHOS del ViewerBrain ──
+    let hechosJSON = {};
+    try {
+      // Busca el último bloque JSON en la respuesta
+      const allMatches = [...viewerRaw.matchAll(/\{[\s\S]*?\}/g)];
+      // Tomamos el match más largo (el más completo)
+      if (allMatches.length > 0) {
+        const longest = allMatches.reduce((a, b) => a[0].length > b[0].length ? a : b);
+        hechosJSON = JSON.parse(longest[0]);
+      }
+    } catch (e) {
+      console.warn('[VIRAX] No se pudo extraer hechosJSON del ViewerBrain:', e.message);
+    }
+
+    console.log('[VIRAX] Hechos observados:', hechosJSON);
+
+    // ── CALCULAR SCORES CON FÓRMULA FIJA ──
+    const scoresCalculados = calcularScores(hechosJSON);
+    console.log('[VIRAX] Scores calculados por fórmula:', scoresCalculados);
+
+    // ── CALL 2 — Strategy Brain ──
     setAnalysisProgress(50);
     setStatusText("Evaluando ventas y viralidad...");
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho),
+        text: buildStrategyBrainPrompt(viewerRaw, platform, selectedObjetivo, selectedNicho),
         maxOutputTokens: 6144
       }
     });
@@ -1874,7 +1891,6 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     if (call2Error) throw call2Error;
     const strategyRaw = extractGeminiText(call2Data);
 
-    // ── EXTRAER FLAGS y limpiar el texto ──
     const flags = extractFlags(strategyRaw);
     const strategyAnalysis = stripFlags(strategyRaw);
 
@@ -1884,13 +1900,34 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       console.warn('[VIRAX] Strategy Brain no generó FLAGS. Scoring Brain corre sin penalizaciones.');
     }
 
-    // ── CALL 3 — Scoring Brain (recibe flags ya computados) ──
+    // ── CALL 3 — Scoring Brain ──
+    // Los scores ya están calculados. Gemini solo escribe los veredictos.
     setAnalysisProgress(80);
     setStatusText("Calculando scores finales...");
 
+    const scoringPromptBase = buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flags);
+    const scoringPromptFinal = scoringPromptBase + `
+
+
+SCORES PRE-CALCULADOS POR FÓRMULA — NO MODIFICAR
+
+viralScore.score = ${scoresCalculados.viralScore}
+salesScore.score = ${scoresCalculados.salesScore}
+
+Estos valores fueron calculados matemáticamente a partir de hechos observables del video.
+Son INAMOVIBLES. No los recalculés ni los ajustés.
+
+Tu única tarea es escribir los campos de texto del JSON:
+verdict, razon_principal, accion_clave, honestVerdict, roadmap, categorias (explicacion, solucion, ejemplo),
+buyerJourney, hookAnalysis, retentionData, retentionCurve, y todos los demás campos narrativos.
+
+Los únicos números que podés calcular libremente son los que NO son viralScore ni salesScore:
+potentialScore, scrollStopScore, steppsScore, platformScores, phaseScores, commentTrigger, hookAnalysis.strength.
+`;
+
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flags),
+        text: scoringPromptFinal,
         expectsJson: true,
         maxOutputTokens: 8192
       }
@@ -1899,14 +1936,23 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     if (call3Error) throw call3Error;
     const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
 
-    // ── MERGE ──
+    // ── MERGE — los scores calculados por fórmula pisan lo que haya generado Gemini ──
     setAnalysisProgress(95);
     setStatusText("Preparando tu análisis completo...");
 
     const finalResult = {
       ...parsed,
+      salesScore: {
+        ...parsed.salesScore,
+        score: scoresCalculados.salesScore,
+      },
+      viralScore: {
+        ...parsed.viralScore,
+        score: scoresCalculados.viralScore,
+      },
       objetivo: selectedObjetivo,
       _flags: flags,
+      _hechos: hechosJSON,
     };
 
     setAiResult(finalResult);
