@@ -1740,15 +1740,12 @@ const trackPrediction = async (result) => {
     hook_score: result.hookScore,
     predicted_retention_3s: result.retentionData?.at3s,
     created_at: new Date().toISOString(),
-    actual_views: null,    // Se rellena después
-    actual_viral: null     // Se rellena después
+    actual_views: null,
+    actual_viral: null
   });
 };
 
-
-
-// ── Función principal corregida ──
-// ── Función principal corregida ──
+// Función principal corregida
 const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   if (videoFile.size > 45 * 1024 * 1024) {
     alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB. Comprimí el video antes de subirlo.`);
@@ -1770,16 +1767,17 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   setStatusText("Subiendo video...");
   setAnalysisProgress(10);
 
-  // ── FIX: nombre de archivo seguro ──
-  const safeName = videoFile.name
-    .normalize('NFD')
+  // Nombre de archivo seguro
+  const safeName = videoFile?.name
+    ?.normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9._-]/g, '');
+    .replace(/[^a-zA-Z0-9._-]/g, '') || 'video.mp4';
 
+  // Definición de storagePath
   const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
 
-  // ── FIX: MIME type seguro ──
+  // MIME type seguro
   const mimeType = (videoFile.type && videoFile.type.startsWith('video/') && videoFile.type !== 'video/quicktime')
     ? videoFile.type
     : 'video/mp4';
@@ -1791,20 +1789,19 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
-    // ── Pequeña pausa para que Supabase propague el archivo ──
     await new Promise(r => setTimeout(r, 1500));
 
-    // ── CALL 0 — Pre-clasificador (nuevo, determinista) ──
+    // CALL 0 — Pre-clasificador
     setAnalysisProgress(18);
     setStatusText("Pre-clasificando video...");
 
     let preFacts = {};
-    let preHookType = 'debil'; // fallback por defecto
+    let preHookType = 'debil';
 
     try {
       const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
         body: {
-          text: buildPreClassifierPrompt(),
+          text: buildPreClassifierPrompt(storagePath, mimeType, duration),
           storagePath,
           videoMimeType: mimeType,
           duration: Math.round(duration),
@@ -1818,7 +1815,6 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
       preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
 
-      // Derivar hook_type determinístico a partir de preFacts (reglas duras)
       preHookType = (() => {
         if (preFacts.logo_en_s0) return 'muerto';
         if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0) return 'bait_con_puente';
@@ -1831,18 +1827,18 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       console.log('[VIRAX] Pre-facts:', preFacts);
       console.log('[VIRAX] Hook type pre-clasificado:', preHookType);
     } catch (e) {
-      console.warn('[CALL 0] Pre-clasificación falló o no disponible, usando fallback:', e.message);
+      console.warn('[CALL 0] Pre-clasificación falló, usando fallback:', e.message);
       preFacts = {};
       preHookType = 'debil';
     }
 
-    // ── CALL 1 — Viewer Brain ──
+    // CALL 1 — Viewer Brain
     setAnalysisProgress(25);
     setStatusText("Analizando el video...");
 
     const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildViewerBrainPrompt(platform, selectedNicho),
+        text: buildViewerBrainPrompt(platform, selectedNicho, storagePath, mimeType, duration),
         storagePath,
         videoMimeType: mimeType,
         duration: Math.round(duration),
@@ -1854,13 +1850,13 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     if (call1Error) throw call1Error;
     const viewerAnalysis = extractGeminiText(call1Data);
 
-    // ── CALL 2 — Strategy Brain (recibe preFacts y preHookType como verdad) ──
+    // CALL 2 — Strategy Brain
     setAnalysisProgress(50);
     setStatusText("Evaluando ventas y viralidad...");
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho, preFacts, preHookType),
+        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho, preFacts, preHookType, storagePath),
         maxOutputTokens: 6144,
         temperature: 0
       }
@@ -1868,9 +1864,9 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
     if (call2Error) throw call2Error;
     const strategyRaw = extractGeminiText(call2Data);
-    const strategyAnalysis = stripFlags(strategyRaw); // texto para humanos
+    const strategyAnalysis = stripFlags(strategyRaw);
 
-    // ── FLAGS deterministas: usar preFacts/preHookType y reglas duras ──
+    // FLAGS deterministas
     const flagsDeterministic = {
       hook_type: preHookType,
       pain_present: !!preFacts.dolor_antes_s5,
@@ -1878,25 +1874,20 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       movimiento_real: !!preFacts.movimiento_real,
       logo_en_s0: !!preFacts.logo_en_s0,
       segundo_dolor: Number(preFacts.segundo_dolor || 0),
-      // derivá otras flags con reglas explícitas si las necesitás
-      urgency_present: (() => {
-        // ejemplo simple: urgencia si el dolor aparece y segundo_dolor <= 5
-        if (preFacts.dolor_antes_s5) return true;
-        return false;
-      })(),
+      urgency_present: preFacts.dolor_antes_s5,
       trust_gap: false,
       ad_filter_triggered: !!preFacts.logo_en_s0
     };
 
     console.log('[VIRAX] Flags deterministas:', flagsDeterministic);
 
-    // ── CALL 3 — Scoring Brain (recibe SOLO flags deterministas para el cálculo) ──
+    // CALL 3 — Scoring Brain
     setAnalysisProgress(80);
     setStatusText("Calculando scores finales...");
 
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flagsDeterministic),
+        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flagsDeterministic, storagePath),
         expectsJson: true,
         maxOutputTokens: 8192,
         temperature: 0
@@ -1906,7 +1897,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     if (call3Error) throw call3Error;
     const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
 
-    // ── MERGE ──
+    // MERGE
     setAnalysisProgress(95);
     setStatusText("Preparando tu análisis completo...");
 
@@ -1938,6 +1929,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     await supabase.storage.from('videos').remove([storagePath]);
   }
 };
+
 
 const runScriptAnalysis = async (platform, followerRange) => {
   if (!scriptText.trim()) {
