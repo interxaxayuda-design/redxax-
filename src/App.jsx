@@ -219,22 +219,73 @@ const NICHE_CRITERIA = {
   ],
 };
 
-// ── NUEVO: prompt ultra corto que responde SOLO JSON ──
+// Prompt de observación (solo hechos, nada interpretativo)
 const buildPreClassifierPrompt = () => `
-Respond ONLY with this exact JSON object. No text before or after.
+Watch this video and answer ONLY with this exact JSON. No text before or after.
+Answer each question based strictly on what is visually/audibly present.
 
 {
-  "audio_desde_s0": <true|false>,
-  "movimiento_real": <true|false>,
-  "logo_en_s0": <true|false>,
-  "producto_en_s0": <true|false>,
-  "pregunta_al_espectador": <true|false>,
-  "afirmacion_contradictoria": <true|false>,
-  "imagen_alto_impacto": <true|false>,
-  "dolor_antes_s5": <true|false>,
-  "segundo_dolor": <number or 0>
+  "frame_0_has_logo": <true|false>,
+  "frame_0_has_face": <true|false>,
+  "frame_0_has_product": <true|false>,
+  "frame_0_has_text_overlay": <true|false>,
+  "frame_0_has_movement": <true|false>,
+  "audio_starts_at_s0": <true|false>,
+  "is_slideshow": <true|false>,
+  "pain_words_before_s5": <true|false>,
+  "pain_word_second": <number>,
+  "question_asked_to_viewer": <true|false>,
+  "contradictory_statement": <true|false>,
+  "high_impact_image": <true|false>,
+  "cuts_in_first_5s": <number>
 }
 `;
+
+// Reglas deterministas: convierten observaciones en flags
+const deriveFlags = (obs) => {
+  const hookType = (() => {
+    if (obs.frame_0_has_logo) return 'muerto';
+    if (obs.high_impact_image && obs.frame_0_has_product) return 'bait_con_puente';
+    if (obs.high_impact_image && !obs.frame_0_has_product) return 'bait_desconectado';
+    if (obs.question_asked_to_viewer || obs.contradictory_statement) return 'explosivo';
+    if (obs.frame_0_has_product && !obs.question_asked_to_viewer) return 'apertura_informativa';
+    if (obs.frame_0_has_face && obs.audio_starts_at_s0) return 'debil';
+    return 'muerto';
+  })();
+
+  return {
+    hook_type: hookType,
+    ad_filter_triggered: obs.frame_0_has_logo,
+    no_audio_from_s0: !obs.audio_starts_at_s0,
+    is_static_slideshow: obs.is_slideshow,
+    pain_missing: !obs.pain_words_before_s5,
+    pain_late: obs.pain_word_second > 5 && obs.pain_word_second < 99,
+    movimiento_real: obs.frame_0_has_movement,
+    cortes_primeros_5s: obs.cuts_in_first_5s
+  };
+};
+
+// Dentro de runNeuralAnalysis
+// ── CALL 0: pedir observaciones ──
+const { data: call0Data } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    text: buildPreClassifierPrompt(),
+    storagePath,
+    videoMimeType: mimeType,
+    duration: Math.round(duration),
+    maxOutputTokens: 256,
+    temperature: 0,
+    expectsJson: true
+  }
+});
+const obs = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier');
+const flagsDeterministic = deriveFlags(obs);
+console.log('[VIRAX] Flags deterministas:', flagsDeterministic);
+
+// ── CALL 1 y CALL 2: siguen igual, solo texto narrativo ──
+// ── Scoring: usar flagsDeterministic directamente ──
+const scores = buildPenalties(flagsDeterministic); // tu lógica de techos y penalizaciones
+
 
 // ============================================================
 // VIEWER BRAIN
