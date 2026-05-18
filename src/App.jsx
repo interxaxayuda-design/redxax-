@@ -219,6 +219,22 @@ const NICHE_CRITERIA = {
   ],
 };
 
+// ── NUEVO: prompt ultra corto que responde SOLO JSON ──
+const buildPreClassifierPrompt = () => `
+Respond ONLY with this exact JSON object. No text before or after.
+
+{
+  "audio_desde_s0": <true|false>,
+  "movimiento_real": <true|false>,
+  "logo_en_s0": <true|false>,
+  "producto_en_s0": <true|false>,
+  "pregunta_al_espectador": <true|false>,
+  "afirmacion_contradictoria": <true|false>,
+  "imagen_alto_impacto": <true|false>,
+  "dolor_antes_s5": <true|false>,
+  "segundo_dolor": <number or 0>
+}
+`;
 
 // ============================================================
 // VIEWER BRAIN
@@ -526,11 +542,34 @@ J. TIPO DE HOOK DETECTADO
 };
 
 
-// ============================================================
-// STRATEGY BRAIN
-// ============================================================
-const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, nicho) => {
+// firma nueva: recibe preFacts y preHookType
+const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, nicho, preFacts = {}, preHookType = null) => {
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
+
+  const truthBlock = preHookType ? `
+════════════════════════════════════════════════════════════
+VERDAD PRE-CLASIFICADA — NO MODIFICAR
+Estos hechos fueron clasificados de forma independiente antes de este análisis.
+No los interpretes ni los cambies. Úsalos como datos inamovibles.
+
+hook_type: ${preHookType}
+audio_desde_s0: ${preFacts.audio_desde_s0 ?? 'no_determinado'}
+movimiento_real: ${preFacts.movimiento_real ?? 'no_determinado'}
+logo_en_s0: ${preFacts.logo_en_s0 ?? 'no_determinado'}
+producto_en_s0: ${preFacts.producto_en_s0 ?? 'no_determinado'}
+dolor_antes_s5: ${preFacts.dolor_antes_s5 ?? 'no_determinado'}
+segundo_dolor: ${preFacts.segundo_dolor ?? '0'}
+
+CONSECUENCIA DIRECTA E INAMOVIBLE:
+- Si hook_type = muerto → viralScore TECHO = 35.
+- Si hook_type = debil → viralScore TECHO = 60.
+- Si hook_type = apertura_informativa → viralScore TECHO = 40.
+- Si hook_type = explosivo → viralScore puede llegar a 90.
+- Si hook_type = bait_con_puente → viralScore puede llegar a 85.
+- Si hook_type = bait_desconectado → viralScore TECHO = 55; salesScore TECHO = 45.
+- Si audio_desde_s0 = false → viralScore -15 adicional.
+════════════════════════════════════════════════════════════
+` : '';
 
   return `
 Estratega experto en ventas, viralidad y psicología del consumidor.
@@ -1655,34 +1694,11 @@ const trackPrediction = async (result) => {
   });
 };
 
-// Botón "Reportar resultado real" — el creador sube sus views después de publicar
-const reportActualOutcome = async (historyId, actualViews) => {
-  await supabase.from('prediction_tracking')
-    .update({ 
-      actual_views: actualViews,
-      actual_viral: actualViews > 50000 
-    })
-    .eq('history_id', historyId);
-  
-  // Mostrar accuracy del sistema al usuario
-  const { data } = await supabase
-    .from('prediction_tracking')
-    .select('predicted_score, actual_viral')
-    .not('actual_viral', 'is', null);
-  
-  if (data && data.length > 10) {
-    const correct = data.filter(d => 
-      (d.predicted_score >= 65) === d.actual_viral
-    ).length;
-    const accuracy = Math.round((correct / data.length) * 100);
-    console.log(`Precisión actual del sistema: ${accuracy}% en ${data.length} videos`);
-  } //onChange={(e) => {
-};
 
 
-
+// ── Función principal corregida ──
+// ── Función principal corregida ──
 const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
-
   if (videoFile.size > 45 * 1024 * 1024) {
     alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB. Comprimí el video antes de subirlo.`);
     return;
@@ -1703,16 +1719,16 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   setStatusText("Subiendo video...");
   setAnalysisProgress(10);
 
-  // ── FIX: nombre de archivo seguro sin espacios ni caracteres raros ──
+  // ── FIX: nombre de archivo seguro ──
   const safeName = videoFile.name
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')     // saca tildes
-    .replace(/\s+/g, '_')                // espacios → guión bajo
-    .replace(/[^a-zA-Z0-9._-]/g, '');   // saca todo lo demás raro
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9._-]/g, '');
 
   const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
 
-  // ── FIX: MIME type seguro — iOS Safari devuelve video/quicktime para .mp4 ──
+  // ── FIX: MIME type seguro ──
   const mimeType = (videoFile.type && videoFile.type.startsWith('video/') && videoFile.type !== 'video/quicktime')
     ? videoFile.type
     : 'video/mp4';
@@ -1724,8 +1740,50 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
-    // ── Pequeña pausa para que Supabase propague el archivo antes de que el edge function lo lea ──
+    // ── Pequeña pausa para que Supabase propague el archivo ──
     await new Promise(r => setTimeout(r, 1500));
+
+    // ── CALL 0 — Pre-clasificador (nuevo, determinista) ──
+    setAnalysisProgress(18);
+    setStatusText("Pre-clasificando video...");
+
+    let preFacts = {};
+    let preHookType = 'debil'; // fallback por defecto
+
+    try {
+      const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildPreClassifierPrompt(),
+          storagePath,
+          videoMimeType: mimeType,
+          duration: Math.round(duration),
+          maxOutputTokens: 256,
+          temperature: 0,
+          expectsJson: true
+        }
+      });
+
+      if (call0Error) throw call0Error;
+
+      preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
+
+      // Derivar hook_type determinístico a partir de preFacts (reglas duras)
+      preHookType = (() => {
+        if (preFacts.logo_en_s0) return 'muerto';
+        if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0) return 'bait_con_puente';
+        if (preFacts.imagen_alto_impacto) return 'bait_desconectado';
+        if (preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria) return 'explosivo';
+        if (preFacts.producto_en_s0) return 'apertura_informativa';
+        return 'debil';
+      })();
+
+      console.log('[VIRAX] Pre-facts:', preFacts);
+      console.log('[VIRAX] Hook type pre-clasificado:', preHookType);
+    } catch (e) {
+      console.warn('[CALL 0] Pre-clasificación falló o no disponible, usando fallback:', e.message);
+      preFacts = {};
+      preHookType = 'debil';
+    }
 
     // ── CALL 1 — Viewer Brain ──
     setAnalysisProgress(25);
@@ -1737,46 +1795,60 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
         storagePath,
         videoMimeType: mimeType,
         duration: Math.round(duration),
-        maxOutputTokens: 4096
+        maxOutputTokens: 4096,
+        temperature: 0
       }
     });
 
     if (call1Error) throw call1Error;
     const viewerAnalysis = extractGeminiText(call1Data);
 
-    // ── CALL 2 — Strategy Brain (genera FLAGS al final) ──
+    // ── CALL 2 — Strategy Brain (recibe preFacts y preHookType como verdad) ──
     setAnalysisProgress(50);
     setStatusText("Evaluando ventas y viralidad...");
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho),
-        maxOutputTokens: 6144
+        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho, preFacts, preHookType),
+        maxOutputTokens: 6144,
+        temperature: 0
       }
     });
 
     if (call2Error) throw call2Error;
     const strategyRaw = extractGeminiText(call2Data);
+    const strategyAnalysis = stripFlags(strategyRaw); // texto para humanos
 
-    // ── EXTRAER FLAGS y limpiar el texto ──
-    const flags = extractFlags(strategyRaw);
-    const strategyAnalysis = stripFlags(strategyRaw);
+    // ── FLAGS deterministas: usar preFacts/preHookType y reglas duras ──
+    const flagsDeterministic = {
+      hook_type: preHookType,
+      pain_present: !!preFacts.dolor_antes_s5,
+      audio_desde_s0: !!preFacts.audio_desde_s0,
+      movimiento_real: !!preFacts.movimiento_real,
+      logo_en_s0: !!preFacts.logo_en_s0,
+      segundo_dolor: Number(preFacts.segundo_dolor || 0),
+      // derivá otras flags con reglas explícitas si las necesitás
+      urgency_present: (() => {
+        // ejemplo simple: urgencia si el dolor aparece y segundo_dolor <= 5
+        if (preFacts.dolor_antes_s5) return true;
+        return false;
+      })(),
+      trust_gap: false,
+      ad_filter_triggered: !!preFacts.logo_en_s0
+    };
 
-    console.log('[VIRAX] Flags detectados:', flags);
+    console.log('[VIRAX] Flags deterministas:', flagsDeterministic);
 
-    if (Object.keys(flags).length === 0) {
-      console.warn('[VIRAX] Strategy Brain no generó FLAGS. Scoring Brain corre sin penalizaciones.');
-    }
-
-    // ── CALL 3 — Scoring Brain (recibe flags ya computados) ──
+    // ── CALL 3 — Scoring Brain (recibe SOLO flags deterministas para el cálculo) ──
     setAnalysisProgress(80);
     setStatusText("Calculando scores finales...");
 
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flags),
+        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flagsDeterministic),
         expectsJson: true,
-        maxOutputTokens: 8192
+        maxOutputTokens: 8192,
+        temperature: 0
       }
     });
 
@@ -1790,7 +1862,9 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const finalResult = {
       ...parsed,
       objetivo: selectedObjetivo,
-      _flags: flags,
+      _flags: flagsDeterministic,
+      _strategy_text: strategyAnalysis,
+      _viewer_text: viewerAnalysis
     };
 
     setAiResult(finalResult);
