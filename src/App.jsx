@@ -1781,7 +1781,6 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
           videoMimeType: mimeType,
           duration: Math.round(duration),
           maxOutputTokens: 256,
-          temperature: 0,
           expectsJson: true
         }
       });
