@@ -265,26 +265,7 @@ const deriveFlags = (obs) => {
   };
 };
 
-// Dentro de runNeuralAnalysis
-// ── CALL 0: pedir observaciones ──
-const { data: call0Data } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildPreClassifierPrompt(),
-    storagePath,
-    videoMimeType: mimeType,
-    duration: Math.round(duration),
-    maxOutputTokens: 256,
-    temperature: 0,
-    expectsJson: true
-  }
-});
-const obs = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier');
-const flagsDeterministic = deriveFlags(obs);
-console.log('[VIRAX] Flags deterministas:', flagsDeterministic);
 
-// ── CALL 1 y CALL 2: siguen igual, solo texto narrativo ──
-// ── Scoring: usar flagsDeterministic directamente ──
-const scores = buildPenalties(flagsDeterministic); // tu lógica de techos y penalizaciones
 
 
 // ============================================================
@@ -1743,7 +1724,7 @@ const trackPrediction = async (result) => {
     actual_views: null,
     actual_viral: null
   });
-};
+};  //const scores = buildPenalties(flagsDeterministic)
 
 // Función principal corregida
 const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
