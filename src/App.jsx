@@ -19,7 +19,7 @@ import {
   X,
   Zap
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react'; //const buildPreClassifierPrompt = () => `
 import logo from './assets/logo.png';
 
 import { createClient } from '@supabase/supabase-js'; //phaseScores  //toggleStep  //const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
@@ -219,29 +219,23 @@ const NICHE_CRITERIA = {
   ],
 };
 
-// Prompt de observación (solo hechos, nada interpretativo)
 const buildPreClassifierPrompt = () => `
-Watch this video and answer ONLY with this exact JSON. No text before or after.
-Answer each question based strictly on what is visually/audibly present.
+Watch this video carefully and answer ONLY with this exact JSON. No text before. No text after. No explanation.
 
 {
-  "frame_0_has_logo": <true|false>,
-  "frame_0_has_face": <true|false>,
-  "frame_0_has_product": <true|false>,
-  "frame_0_has_text_overlay": <true|false>,
-  "frame_0_has_movement": <true|false>,
-  "audio_starts_at_s0": <true|false>,
-  "is_slideshow": <true|false>,
-  "pain_words_before_s5": <true|false>,
-  "pain_word_second": <number>,
-  "question_asked_to_viewer": <true|false>,
-  "contradictory_statement": <true|false>,
-  "high_impact_image": <true|false>,
-  "cuts_in_first_5s": <number>
+  "logo_en_s0": <true if the first frame shows a brand logo or brand name prominently | false>,
+  "producto_en_s0": <true if the product or service being sold is the main visual element in the first frame | false>,
+  "audio_desde_s0": <true if there is music or voice with energy starting at or before second 1 | false>,
+  "movimiento_real": <true if there is real movement: person talking, hands in action, product being used, camera moving — NOT automatic slideshow transitions | false>,
+  "imagen_alto_impacto": <true if the first second shows an explosion, fall, conflict, extreme result, or other high-impact visual event | false>,
+  "pregunta_al_espectador": <true if the video opens with a direct question to the viewer in text or audio | false>,
+  "afirmacion_contradictoria": <true if the video opens with a statement that contradicts common beliefs | false>,
+  "dolor_antes_s5": <true if a specific problem of the viewer is named or shown before second 5 | false>,
+  "segundo_dolor": <exact second when the problem first appears, or 0 if it does not appear>
 }
 `;
 
-// Reglas deterministas: convierten observaciones en flags
+// Reglas deterministas: convierten observaciones en flags  //const buildPreClassifierPrompt = () => `
 const deriveFlags = (obs) => {
   const hookType = (() => {
     if (obs.frame_0_has_logo) return 'muerto';
@@ -1824,7 +1818,6 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
         videoMimeType: mimeType,
         duration: Math.round(duration),
         maxOutputTokens: 4096,
-        temperature: 0
       }
     });
 
@@ -1839,7 +1832,6 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       body: {
         text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho, preFacts, preHookType, storagePath),
         maxOutputTokens: 6144,
-        temperature: 0
       }
     });
 
@@ -1871,7 +1863,6 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
         text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flagsDeterministic, storagePath),
         expectsJson: true,
         maxOutputTokens: 8192,
-        temperature: 0
       }
     });
 
