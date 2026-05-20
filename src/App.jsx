@@ -1315,52 +1315,53 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     await new Promise(r => setTimeout(r, 1500));
 
     // CALL 0 — Pre-clasificador
-    setAnalysisProgress(18);
-    setStatusText("Pre-clasificando video...");
+setAnalysisProgress(18);
+setStatusText("Pre-clasificando video...");
 
-    let preFacts = {};
-    let preHookType = 'debil';
+let preFacts = {};
+let preHookType = 'debil';
 
-    try {
-      const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: buildPreClassifierPrompt(storagePath, mimeType, duration),
-          storagePath,
-          videoMimeType: mimeType,
-          duration: Math.round(duration),
-          maxOutputTokens: 512,  // subilo de 256 a 512
-          expectsJson: true
-        }
-      });
+try {
+  console.log('[CALL 0] storagePath:', storagePath);
+  console.log('[CALL 0] mimeType:', mimeType);
+  console.log('[CALL 0] duration:', Math.round(duration));
 
-      if (call0Error) {
-  // Loguear el error completo para ver qué dice
-  console.error('[CALL 0] Error completo:', JSON.stringify(call0Error));
-  const errorBody = await call0Error.context?.response?.text?.();
-  console.error('[CALL 0] Body del error:', errorBody);
-  throw call0Error; // que tire para ver el mensaje real
+  const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
+    body: {
+      text: buildPreClassifierPrompt(),  // sin parámetros
+      storagePath,
+      videoMimeType: mimeType,
+      duration: Math.round(duration),
+      maxOutputTokens: 512,
+      expectsJson: true
+    }
+  });
+
+  if (call0Error) {
+    const errorBody = await call0Error.context?.response?.text?.();
+    console.error('[CALL 0] Error:', JSON.stringify(call0Error), '| Body:', errorBody);
+    throw new Error(errorBody || JSON.stringify(call0Error));
   }
 
-      if (call0Error) throw call0Error;
+  preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
 
-      preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
+  preHookType = (() => {
+    if (preFacts.logo_en_s0) return 'muerto';
+    if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0) return 'bait_con_puente';
+    if (preFacts.imagen_alto_impacto) return 'bait_desconectado';
+    if (preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria) return 'explosivo';
+    if (preFacts.producto_en_s0) return 'apertura_informativa';
+    return 'debil';
+  })();
 
-      preHookType = (() => {
-        if (preFacts.logo_en_s0) return 'muerto';
-        if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0) return 'bait_con_puente';
-        if (preFacts.imagen_alto_impacto) return 'bait_desconectado';
-        if (preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria) return 'explosivo';
-        if (preFacts.producto_en_s0) return 'apertura_informativa';
-        return 'debil';
-      })();
+  console.log('[VIRAX] Pre-facts:', preFacts);
+  console.log('[VIRAX] Hook type:', preHookType);
 
-      console.log('[VIRAX] Pre-facts:', preFacts);
-      console.log('[VIRAX] Hook type pre-clasificado:', preHookType);
-    } catch (e) {
-      console.warn('[CALL 0] Pre-clasificación falló, usando fallback:', e.message);
-      preFacts = {};
-      preHookType = 'debil';
-    }
+} catch (e) {
+  console.warn('[CALL 0] Falló, usando fallback:', e.message);
+  preFacts = {};
+  preHookType = 'debil';
+}
 
     // CALL 1 — Viewer Brain
     setAnalysisProgress(25);
