@@ -1328,10 +1328,18 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
           storagePath,
           videoMimeType: mimeType,
           duration: Math.round(duration),
-          maxOutputTokens: 256,
+          maxOutputTokens: 512,  // subilo de 256 a 512
           expectsJson: true
         }
       });
+
+      if (call0Error) {
+  // Loguear el error completo para ver qué dice
+  console.error('[CALL 0] Error completo:', JSON.stringify(call0Error));
+  const errorBody = await call0Error.context?.response?.text?.();
+  console.error('[CALL 0] Body del error:', errorBody);
+  throw call0Error; // que tire para ver el mensaje real
+  }
 
       if (call0Error) throw call0Error;
 
