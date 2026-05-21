@@ -1378,7 +1378,7 @@ try {
     });
 
     if (call1Error) throw call1Error;
-    const viewerAnalysis = extractGeminiText(call1Data);
+    const viewerAnalysis = extractGeminiText(call1Data);  //const flagsDeterministic
 
     // CALL 2 — Strategy Brain
     setAnalysisProgress(50);
@@ -1391,22 +1391,33 @@ try {
       }
     });
 
-    if (call2Error) throw call2Error;
-    const strategyRaw = extractGeminiText(call2Data);
-    const strategyAnalysis = stripFlags(strategyRaw);
+   if (call2Error) throw call2Error;
 
-    // FLAGS deterministas
-    const flagsDeterministic = {
-      hook_type: preHookType,
-      pain_present: !!preFacts.dolor_antes_s5,
-      audio_desde_s0: !!preFacts.audio_desde_s0,
-      movimiento_real: !!preFacts.movimiento_real,
-      logo_en_s0: !!preFacts.logo_en_s0,
-      segundo_dolor: Number(preFacts.segundo_dolor || 0),
-      urgency_present: preFacts.dolor_antes_s5,
-      trust_gap: false,
-      ad_filter_triggered: !!preFacts.logo_en_s0
-    };
+const strategyRaw = extractGeminiText(call2Data);
+const flagsFromStrategy = extractFlags(strategyRaw);   // primero extraer flags
+const strategyAnalysis = stripFlags(strategyRaw);      // después limpiar
+
+const flagsDeterministic = {
+  ...flagsFromStrategy,
+  hook_type: preHookType,
+  ad_filter_triggered: !!preFacts.logo_en_s0,
+  no_audio_from_s0: preFacts.audio_desde_s0 === false
+    ? true
+    : flagsFromStrategy.no_audio_from_s0,
+  is_static_slideshow: preFacts.movimiento_real === false
+    ? true
+    : flagsFromStrategy.is_static_slideshow,
+  pain_missing: preFacts.dolor_antes_s5 === false
+    ? true
+    : flagsFromStrategy.pain_missing,
+  pain_late: Number(preFacts.segundo_dolor) > 5
+    ? true
+    : flagsFromStrategy.pain_late,
+};
+
+console.log('[VIRAX] Flags finales (merge):', flagsDeterministic);
+
+ 
 
     console.log('[VIRAX] Flags deterministas:', flagsDeterministic);
 
