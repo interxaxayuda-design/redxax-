@@ -1373,7 +1373,7 @@ try {
         storagePath,
         videoMimeType: mimeType,
         duration: Math.round(duration),
-        maxOutputTokens: 4096,
+        maxOutputTokens: 8192,
       }
     });
 
