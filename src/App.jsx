@@ -235,29 +235,29 @@ Watch this video carefully and answer ONLY with this exact JSON. No text before.
 }
 `;
 
-// Reglas deterministas: convierten observaciones en flags  //const buildPreClassifierPrompt = () => `
 const deriveFlags = (obs) => {
   const hookType = (() => {
-    if (obs.frame_0_has_logo) return 'muerto';
-    if (obs.high_impact_image && obs.frame_0_has_product) return 'bait_con_puente';
-    if (obs.high_impact_image && !obs.frame_0_has_product) return 'bait_desconectado';
-    if (obs.question_asked_to_viewer || obs.contradictory_statement) return 'explosivo';
-    if (obs.frame_0_has_product && !obs.question_asked_to_viewer) return 'apertura_informativa';
-    if (obs.frame_0_has_face && obs.audio_starts_at_s0) return 'debil';
+    if (obs.logo_en_s0) return 'muerto';
+    if (obs.imagen_alto_impacto && obs.producto_en_s0) return 'bait_con_puente';
+    if (obs.imagen_alto_impacto && !obs.producto_en_s0) return 'bait_desconectado';
+    if (obs.pregunta_al_espectador || obs.afirmacion_contradictoria) return 'explosivo';
+    if (obs.producto_en_s0 && !obs.pregunta_al_espectador) return 'apertura_informativa';
+    if (obs.movimiento_real && obs.audio_desde_s0) return 'debil';
     return 'muerto';
   })();
 
   return {
     hook_type: hookType,
-    ad_filter_triggered: obs.frame_0_has_logo,
-    no_audio_from_s0: !obs.audio_starts_at_s0,
-    is_static_slideshow: obs.is_slideshow,
-    pain_missing: !obs.pain_words_before_s5,
-    pain_late: obs.pain_word_second > 5 && obs.pain_word_second < 99,
-    movimiento_real: obs.frame_0_has_movement,
-    cortes_primeros_5s: obs.cuts_in_first_5s
+    ad_filter_triggered: !!obs.logo_en_s0,
+    no_audio_from_s0: !obs.audio_desde_s0,
+    is_static_slideshow: !obs.movimiento_real,
+    pain_missing: !obs.dolor_antes_s5,
+    pain_late: Number(obs.segundo_dolor) > 5 && Number(obs.segundo_dolor) > 0,
+    movimiento_real: !!obs.movimiento_real,
+    // flags subjetivos los toma Gemini Strategy Brain
   };
-};
+}; //const strategyAnalysis = stripFlags(strategyRaw);
+
 
 
 
@@ -1076,7 +1076,7 @@ const App = () => {
   const [selectedPlatform, setSelectedPlatform] = useState(null);
   const [selectedFollowerRange, setSelectedFollowerRange] = useState(null);
   const [selectedObjetivo, setSelectedObjetivo] = useState('ventas'); // ← agregá esto
-  const [selectedNicho, setSelectedNicho] = useState('producto_fisico');
+  const [selectedNicho, setSelectedNicho] = useState('producto_fisico');  //const deriveFlags
   const [pendingVideoFile, setPendingVideoFile] = useState(null);
   const [pendingVideoUrl, setPendingVideoUrl] = useState(null);
   const [scriptText, setScriptText] = useState('');
@@ -1390,6 +1390,7 @@ try {
         maxOutputTokens: 6144,
       }
     });
+  //const strategyAnalysis = stripFlags(strategyRaw);
 
    if (call2Error) throw call2Error;
 
@@ -1397,22 +1398,11 @@ const strategyRaw = extractGeminiText(call2Data);
 const flagsFromStrategy = extractFlags(strategyRaw);   // primero extraer flags
 const strategyAnalysis = stripFlags(strategyRaw);      // después limpiar
 
+
+
 const flagsDeterministic = {
   ...flagsFromStrategy,
-  hook_type: preHookType,
-  ad_filter_triggered: !!preFacts.logo_en_s0,
-  no_audio_from_s0: preFacts.audio_desde_s0 === false
-    ? true
-    : flagsFromStrategy.no_audio_from_s0,
-  is_static_slideshow: preFacts.movimiento_real === false
-    ? true
-    : flagsFromStrategy.is_static_slideshow,
-  pain_missing: preFacts.dolor_antes_s5 === false
-    ? true
-    : flagsFromStrategy.pain_missing,
-  pain_late: Number(preFacts.segundo_dolor) > 5
-    ? true
-    : flagsFromStrategy.pain_late,
+  ...deriveFlags(preFacts),
 };
 
 console.log('[VIRAX] Flags finales (merge):', flagsDeterministic);
