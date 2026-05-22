@@ -252,7 +252,7 @@ const deriveFlags = (obs) => {
     no_audio_from_s0: !obs.audio_desde_s0,
     is_static_slideshow: !obs.movimiento_real,
     pain_missing: !obs.dolor_antes_s5,
-    pain_late: Number(obs.segundo_dolor) > 5 && Number(obs.segundo_dolor) > 0,
+    pain_late: Number(obs.segundo_dolor) > 5 && Number(obs.segundo_dolor) > 0,   //<p className={`${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'} font-bold animate-pulse text-lg tracking-tight uppercase`}>{statusText}</p>
     movimiento_real: !!obs.movimiento_real,
     // flags subjetivos los toma Gemini Strategy Brain
   };
@@ -2137,6 +2137,17 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
               </div>
             </div>
             <p className={`${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'} font-bold animate-pulse text-lg tracking-tight uppercase`}>{statusText}</p>
+            <p className="text-slate-600 text-[11px] font-medium italic tracking-wide text-center max-w-xs"
+            style={{
+    background: 'linear-gradient(90deg, #475569 0%, #94a3b8 40%, #cbd5e1 50%, #94a3b8 60%, #475569 100%)',
+    backgroundSize: '200% auto',
+    WebkitBackgroundClip: 'text',
+    backgroundClip: 'text',
+    WebkitTextFillColor: 'transparent',
+    animation: 'shimmer-text 3s linear infinite',
+  }}>
+  Virax puede tardar entre 1 y 2 minutos en el análisis, dependiendo de tu calidad de WIFI o video.
+</p>
           </div>
         )}
 
@@ -2835,10 +2846,14 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
         )}
       </main>
 
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-      `}</style>
+    <style>{`
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
+  @keyframes shimmer-text {
+    0%   { background-position: 200% center; }
+    100% { background-position: -200% center; }
+  }
+`}</style>
     </div>
   );
 };
