@@ -1314,7 +1314,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
     await new Promise(r => setTimeout(r, 1500));
 
-    // CALL 0 — Pre-clasificador
+// CALL 0 — Pre-clasificador
 setAnalysisProgress(18);
 setStatusText("Pre-clasificando video...");
 
@@ -1322,28 +1322,28 @@ let preFacts = {};
 let preHookType = 'debil';
 
 try {
-  console.log('[CALL 0] storagePath:', storagePath);
-  console.log('[CALL 0] mimeType:', mimeType);
-  console.log('[CALL 0] duration:', Math.round(duration));
-
   const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
     body: {
-      text: buildPreClassifierPrompt(),  // sin parámetros
+      text: buildPreClassifierPrompt(),
       storagePath,
       videoMimeType: mimeType,
       duration: Math.round(duration),
-      maxOutputTokens: 512,
+      maxOutputTokens: 1024,   // ← subido de 512
       expectsJson: true
     }
   });
 
+  // FunctionsHttpError incluye el status en context — leerlo antes de tirar
   if (call0Error) {
-    const errorBody = await call0Error.context?.response?.text?.();
-    console.error('[CALL 0] Error:', JSON.stringify(call0Error), '| Body:', errorBody);
-    throw new Error(errorBody || JSON.stringify(call0Error));
+    const status = call0Error.context?.status ?? call0Error.status ?? 0;
+    // 422 = MAX_TOKENS en JSON → fallback silencioso
+    // Cualquier otro error → también fallback, pero lo logueamos
+    console.warn(`[CALL 0] HTTP ${status} — usando fallback. Error:`, call0Error.name);
+    throw new Error(`HTTP ${status}`);
   }
 
-  preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
+  const rawText = extractGeminiText(call0Data);
+  preFacts = safeParseJSON(rawText, 'pre-classifier') || {};
 
   preHookType = (() => {
     if (preFacts.logo_en_s0) return 'muerto';
@@ -1357,8 +1357,8 @@ try {
   console.log('[VIRAX] Pre-facts:', preFacts);
   console.log('[VIRAX] Hook type:', preHookType);
 
-} catch (e) {
-  console.warn('[CALL 0] Falló, usando fallback:', e.message);
+ } catch (e) {
+  console.warn('[CALL 0] Fallback activado:', e.message);
   preFacts = {};
   preHookType = 'debil';
 }
