@@ -1272,7 +1272,7 @@ const trackPrediction = async (result) => {
     actual_views: null,
     actual_viral: null
   });
-};  //const scores = buildPenalties(flagsDeterministic)
+};  //const scores = buildPenalties(flagsDeterministic)  //catch (err)
 
 // Función principal corregida
 const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
@@ -1475,7 +1475,13 @@ console.log('[VIRAX] Flags finales (merge):', flagsDeterministic);
 
   } catch (err) {
     console.error('Error análisis:', err);
-    alert('Error en el análisis. Revisá la consola.');
+    const msg = err?.message || String(err);
+    const isCodec = msg.toLowerCase().includes('codec') || msg.toLowerCase().includes('h.264');
+    alert(
+      isCodec
+        ? '❌ El video usa un codec no soportado (probablemente H.265/HEVC).\n\nSolución: convertí el video a H.264 MP4 con cualquier editor antes de subirlo.\n\niPhone → usá "Compartir > Comprimir" o exportá desde Fotos.'
+        : `❌ Error en el análisis:\n${msg}`
+    );
     setStep('upload');
   } finally {
     await supabase.storage.from('videos').remove([storagePath]);
