@@ -1084,7 +1084,7 @@ const App = () => {
   const [selectedObjetivo, setSelectedObjetivo] = useState('ventas'); // ← agregá esto
   const [selectedNicho, setSelectedNicho] = useState('producto_fisico');  //const deriveFlags
   const [pendingVideoFile, setPendingVideoFile] = useState(null);
-  const [pendingVideoUrl, setPendingVideoUrl] = useState(null);
+  const [pendingVideoUrl, setPendingVideoUrl] = useState(null);        //mimeType 
   const [scriptText, setScriptText] = useState('');
   const [completedSteps, setCompletedSteps] = useState([]);
   const [currentHistoryId, setCurrentHistoryId] = useState(null);
@@ -1306,10 +1306,12 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   // Definición de storagePath
   const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
 
-  // MIME type seguro
-  const mimeType = (videoFile.type && videoFile.type.startsWith('video/') && videoFile.type !== 'video/quicktime')
-    ? videoFile.type
-    : 'video/mp4';
+  const mimeType = (() => {
+  if (!videoFile.type || videoFile.type === 'video/quicktime') return 'video/mp4';
+  if (videoFile.type === 'video/x-m4v') return 'video/mp4';
+  if (videoFile.type === 'video/x-matroska') return 'video/webm';
+  return videoFile.type.startsWith('video/') ? videoFile.type : 'video/mp4';
+})();
 
   try {
     const { error: uploadError } = await supabase.storage
