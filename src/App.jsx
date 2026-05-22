@@ -1370,21 +1370,36 @@ try {
 }
 
     // CALL 1 — Viewer Brain
-    setAnalysisProgress(25);
-    setStatusText("Analizando el video...");
+setAnalysisProgress(25);
+setStatusText("Analizando el video...");
 
-    const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildViewerBrainPrompt(platform, selectedNicho, storagePath, mimeType, duration),
-        storagePath,
-        videoMimeType: mimeType,
-        duration: Math.round(duration),
-        maxOutputTokens: 8192,
-      }
-    });
+let call1Data, call1Error;
+try {
+  const res = await supabase.functions.invoke('gemini-proxy', {
+    body: {
+      text: buildViewerBrainPrompt(platform, selectedNicho),
+      storagePath,
+      videoMimeType: mimeType,
+      duration: Math.round(duration),
+      maxOutputTokens: 8192,
+    }
+  });
+  call1Data = res.data;
+  call1Error = res.error;
 
-    if (call1Error) throw call1Error;
-    const viewerAnalysis = extractGeminiText(call1Data);  //const flagsDeterministic
+  if (call1Error) {
+    // Leer el body real del error para diagnóstico
+    const rawBody = await call1Error.context?.text?.();
+    console.error('[CALL 1] Error HTTP:', call1Error);
+    console.error('[CALL 1] Body real:', rawBody);
+    throw new Error(`CALL 1 falló: ${rawBody || call1Error.message}`);
+  }
+} catch (e) {
+  console.error('[CALL 1] Exception:', e.message);
+  throw e;
+}
+
+const viewerAnalysis = extractGeminiText(call1Data);
 
     // CALL 2 — Strategy Brain
     setAnalysisProgress(50);
