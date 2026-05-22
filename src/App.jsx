@@ -230,8 +230,10 @@ Watch this video carefully and answer ONLY with this exact JSON. No text before.
   "imagen_alto_impacto": <true if the first second shows an explosion, fall, conflict, extreme result, or other high-impact visual event | false>,
   "pregunta_al_espectador": <true if the video opens with a direct question to the viewer in text or audio | false>,
   "afirmacion_contradictoria": <true if the video opens with a statement that contradicts common beliefs | false>,
-  "dolor_antes_s5": <true if a specific problem of the viewer is named or shown before second 5 | false>,
-  "segundo_dolor": <exact second when the problem first appears, or 0 if it does not appear>
+  "dolor_antes_s5": <true ONLY if you can transcribe a specific word, phrase or visual that names a viewer problem before second 5 | false>,
+  "dolor_transcripcion": <exact words spoken or shown on screen that express the pain, or "" if none>,
+  "dolor_tipo": <"activo" if the problem is something the viewer already experiences now | "latente" if the video reveals a problem they didn't know they had | "ninguno" if no pain is named>,
+  "segundo_dolor": <exact second when the pain words or image first appear, or 0 if none>
 }
 `;
 
@@ -380,6 +382,10 @@ const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, nicho, pre
 HECHOS PRE-CLASIFICADOS — INAMOVIBLES. NO MODIFICAR.
 hook_type: ${preHookType}
 audio_desde_s0: ${preFacts.audio_desde_s0 ?? 'no_determinado'}
+dolor_antes_s5: ${preFacts.dolor_antes_s5 ?? 'no_determinado'}
+dolor_transcripcion: "${preFacts.dolor_transcripcion ?? ''}"
+dolor_tipo: ${preFacts.dolor_tipo ?? 'no_determinado'}
+segundo_dolor: ${preFacts.segundo_dolor ?? '0'}
 movimiento_real: ${preFacts.movimiento_real ?? 'no_determinado'}
 logo_en_s0: ${preFacts.logo_en_s0 ?? 'no_determinado'}
 producto_en_s0: ${preFacts.producto_en_s0 ?? 'no_determinado'}
