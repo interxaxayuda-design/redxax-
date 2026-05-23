@@ -19,7 +19,7 @@ import {
   X,
   Zap
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react'; //const buildPreClassifierPrompt = () => `
+import { useEffect, useRef, useState } from 'react'; //const buildPreClassifierPrompt = () => `  //import { FFmpeg } from '@ffmpeg/ffmpeg';
 import logo from './assets/logo.png';
 
 import { createClient } from '@supabase/supabase-js'; //phaseScores  //toggleStep  //const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
@@ -1174,44 +1174,8 @@ const ShinyCard = ({ children, className = '', tilt }) => {
   );
 };
 
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
-//
-const transcodeToH264 = async (videoFile, onProgress) => {
-  const ffmpeg = new FFmpeg();
 
-  // Versión sin SharedArrayBuffer — funciona en Vercel sin headers especiales //{ id: 'producto_fisico', label: 'Producto físico' },
-  await ffmpeg.load({
-    coreURL: await toBlobURL(
-      'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',   //<div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-12 md:p-16 shadow-2xl">
-      'text/javascript'
-    ),
-    wasmURL: await toBlobURL(
-      'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm',
-      'application/wasm'
-    ),
-  });
 
-  ffmpeg.on('progress', ({ progress }) => {
-    onProgress?.(Math.round(progress * 100));
-  });
-
-  const ext = videoFile.name.split('.').pop() || 'mp4';
-  await ffmpeg.writeFile(`input.${ext}`, await fetchFile(videoFile));
-
-  await ffmpeg.exec([
-    '-i', `input.${ext}`,
-    '-c:v', 'libx264',
-    '-preset', 'fast',
-    '-crf', '28',          // calidad razonable, archivo más liviano  //const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
-    '-c:a', 'aac',
-    '-movflags', '+faststart',
-    'output.mp4'
-  ]);
-
-  const data = await ffmpeg.readFile('output.mp4');
-  return new File([data.buffer], 'video.mp4', { type: 'video/mp4' });
-};
 
 const applyDeterministicScoring = (parsed, flags) => {
 
