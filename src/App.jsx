@@ -202,6 +202,44 @@ const NICHE_CRITERIA = {
     "¿Botón de descarga/prueba gratis claro?",
     "¿Genera curiosidad de probarlo?",
   ],
+
+  experiencia_deseo: [
+  // ── PRIMER FRAME Y DESEO INMEDIATO ──
+  "¿El primer frame genera hambre, envidia, deseo o FOMO antes de que el cerebro procese qué es?",
+  "¿La imagen o video es tan atractiva que el espectador para el dedo solo por lo visual?",
+  "¿Se ve apetecible, deseable o aspiracional sin necesidad de leerlo?",
+
+  // ── PLACER Y EMOCIÓN (reemplaza 'dolor') ──
+  "¿El video apela al placer sensorial: visual del plato, textura de la ropa, sonido del ambiente?",
+  "¿Genera la sensación de 'quiero estar ahí' o 'quiero eso ahora'?",
+  "¿El espectador se imagina a sí mismo disfrutándolo antes de terminar el video?",
+  "¿Hay un momento en el video que haría que alguien lo mande con 'mirá esto' o 'vamos acá'?",
+
+  // ── IDENTIDAD Y PERTENENCIA ──
+  "¿El video comunica a qué tipo de persona le gusta esto (sin decirlo explícitamente)?",
+  "¿Compartir este video diría algo positivo sobre quien lo comparte?",
+  "¿La estética del video es compatible con la identidad que el cliente quiere proyectar?",
+
+  // ── PRESENTACIÓN DEL PRODUCTO/EXPERIENCIA ──
+  "¿El plato, prenda o producto se muestra en su mejor momento: con luz, movimiento, close-up o reacción real?",
+  "¿Hay una reacción humana real (cara, expresión, comentario) que valide el placer?",
+  "¿La presentación genera la percepción de que vale lo que cuesta?",
+
+  // ── CONTEXTO Y AMBIENTE ──
+  "¿El lugar, ambiente o contexto suma deseo o lo resta?",
+  "¿Se transmite la experiencia completa, no solo el producto aislado?",
+  "¿Hay detalles que hacen sentir que es especial o diferente a cualquier otro del mismo rubro?",
+
+  // ── URGENCIA Y FRICCIÓN ──
+  "¿Hay alguna razón para ir o pedir hoy: promoción, novedad, temporada, evento?",
+  "¿El siguiente paso (reservar, pedir, ir) queda claro y parece fácil?",
+  "¿El precio o acceso parece accesible o genera barrera mental?",
+
+  // ── DIFERENCIACIÓN ──
+  "¿Hay algo que solo este lugar o marca podría mostrar?",
+  "¿Se diferencia del resto de videos similares en el feed solo por lo visual?",
+],
+
   otro: [
   // ── HOOK Y PRIMER FRAME ──
   "¿El primer frame genera curiosidad, deseo o impacto antes de que el cerebro decida scrollear?",
