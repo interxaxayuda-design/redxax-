@@ -2378,23 +2378,23 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
   </p>
   <div className="grid grid-cols-2 gap-2">
     {[
-  { id: 'producto_fisico',    label: 'Producto físico'       },
-  { id: 'curso',              label: 'Curso / Info'          },
-  { id: 'servicio',           label: 'Servicio'              },
-  { id: 'inmobiliaria',       label: 'Inmobiliaria'          },
-  { id: 'app_software',       label: 'App / Software'        },
-  { id: 'restaurante_comida', label: 'Restaurante / Comida'  },
-  { id: 'otro',               label: 'Otro / General'        },
-].map((n) => (
+      { id: 'producto_fisico',    label: 'Producto físico'      },
+      { id: 'curso',              label: 'Curso / Info'         },
+      { id: 'servicio',           label: 'Servicio'             },
+      { id: 'inmobiliaria',       label: 'Inmobiliaria'         },
+      { id: 'app_software',       label: 'App / Software'       },
+      { id: 'restaurante_comida', label: 'Restaurante / Comida' },
+      { id: 'otro',               label: 'Otro / General'       },
+    ].map((n) => (
       <button
         key={n.id}
         onClick={() => setSelectedNicho(n.id)}
-        className={`relative flex items-center justify-between px-5 py-4 rounded-[1.25rem] border transition-all duration-200 text-left
+        className={`relative flex items-center justify-between px-4 py-3 rounded-[1.25rem] border transition-all duration-200 text-left
           ${selectedNicho === n.id
             ? 'border-purple-500/50 bg-purple-500/[0.08]'
             : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:-translate-y-px'}`}
       >
-        <p className={`text-[13px] font-black italic tracking-tight transition-colors duration-200
+        <p className={`text-[12px] font-black italic tracking-tight transition-colors duration-200
           ${selectedNicho === n.id ? 'text-white' : 'text-slate-500'}`}>
           {n.label}
         </p>
