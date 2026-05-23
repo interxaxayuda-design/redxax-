@@ -1082,7 +1082,7 @@ const transcodeToH264 = async (videoFile, onProgress) => {
     '-i', `input.${ext}`,
     '-c:v', 'libx264',
     '-preset', 'fast',
-    '-crf', '28',          // calidad razonable, archivo más liviano
+    '-crf', '28',          // calidad razonable, archivo más liviano  //const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
     '-c:a', 'aac',
     '-movflags', '+faststart',
     'output.mp4'
@@ -1090,6 +1090,187 @@ const transcodeToH264 = async (videoFile, onProgress) => {
 
   const data = await ffmpeg.readFile('output.mp4');
   return new File([data.buffer], 'video.mp4', { type: 'video/mp4' });
+};
+
+const applyDeterministicScoring = (parsed, flags) => {
+  const cap = (v, max) => Math.min(v, max);
+  const sub = (v, n)   => Math.max(0, v - n);
+
+  let viral = parsed.viralScore?.score  ?? 50;
+  let sales = parsed.salesScore?.score  ?? 50;
+  const cats = JSON.parse(JSON.stringify(parsed.categorias ?? {}));
+  const c = (key) => cats[key]; // acceso rápido
+
+  // ── BLOQUE 0: Filtro de anuncio ──
+  if (flags.ad_filter_triggered) {
+    viral = cap(viral, 30); sales = cap(sales, 40);
+    if (c('hook')) c('hook').puntaje = cap(c('hook').puntaje, 25);
+  }
+
+  // ── BLOQUE 1: Audio ──
+  if (flags.no_audio_from_s0) {
+    viral = sub(viral, 15);
+    if (c('retencion_ritmo')) c('retencion_ritmo').puntaje = cap(c('retencion_ritmo').puntaje, 30);
+  }
+
+  // ── BLOQUE 2: Hook ──
+  if (flags.hook_type === 'muerto') {
+    viral = cap(viral, 35);
+    if (c('hook')) c('hook').puntaje = cap(c('hook').puntaje, 25);
+  }
+  if (flags.hook_type === 'debil') {
+    viral = cap(viral, 60);
+    if (c('hook')) c('hook').puntaje = cap(c('hook').puntaje, 50);
+  }
+  if (flags.hook_type === 'apertura_informativa') {
+    viral = cap(viral, 40);
+    if (c('hook')) c('hook').puntaje = cap(c('hook').puntaje, 38);
+  }
+  if (flags.bait_disconnect) {
+    viral = cap(viral, 55); sales = cap(sales, 45);
+  }
+  if (flags.hook_is_direct_info && !flags.bait_disconnect && flags.hook_type !== 'explosivo') {
+    if (c('hook')) c('hook').puntaje = sub(c('hook').puntaje, 10);
+  }
+
+  // ── BLOQUE 3: Formato ──
+  if (flags.is_static_slideshow) {
+    viral = cap(viral, 28);
+    if (c('retencion_ritmo'))    c('retencion_ritmo').puntaje    = cap(c('retencion_ritmo').puntaje, 25);
+    if (c('emocion_deseo'))      c('emocion_deseo').puntaje      = cap(c('emocion_deseo').puntaje, 35);
+    if (c('produccion_estetica'))c('produccion_estetica').puntaje= cap(c('produccion_estetica').puntaje, 38);
+  }
+  if (flags.no_music_and_static) {
+    viral = cap(viral, 20);
+    if (c('produccion_estetica'))c('produccion_estetica').puntaje= cap(c('produccion_estetica').puntaje, 28);
+  }
+  if (flags.slow_cuts_no_music) {
+    viral = cap(viral, 30);
+    if (c('retencion_ritmo')) c('retencion_ritmo').puntaje = cap(c('retencion_ritmo').puntaje, 28);
+  }
+  if (flags.format_incompatible) {
+    ['claridad_producto','confianza_credibilidad','propuesta_valor'].forEach(k => {
+      if (c(k)) c(k).puntaje = sub(c(k).puntaje, 25);
+    });
+  }
+  if (flags.format_weak && !flags.format_incompatible) {
+    ['claridad_producto','confianza_credibilidad','propuesta_valor'].forEach(k => {
+      if (c(k)) c(k).puntaje = sub(c(k).puntaje, 12);
+    });
+    if (c('retencion_ritmo')) c('retencion_ritmo').puntaje = cap(c('retencion_ritmo').puntaje, 50);
+  }
+
+  // ── BLOQUE 4: Capas de compra ──
+  if (flags.pain_missing) {
+    sales = cap(sales, 48);
+    if (c('propuesta_valor')) c('propuesta_valor').puntaje = cap(c('propuesta_valor').puntaje, 42);
+    if (c('emocion_deseo'))   c('emocion_deseo').puntaje   = cap(c('emocion_deseo').puntaje, 40);
+  }
+  if (flags.pain_late && !flags.pain_missing) {
+    sales = sub(sales, 12);
+    if (c('propuesta_valor')) c('propuesta_valor').puntaje = sub(c('propuesta_valor').puntaje, 10);
+  }
+  if (flags.trust_gap) {
+    sales = sub(sales, 15);
+    if (c('confianza_credibilidad')) c('confianza_credibilidad').puntaje = cap(c('confianza_credibilidad').puntaje, 45);
+  }
+  if (flags.no_urgency) {
+    sales = sub(sales, 10);
+    if (c('call_to_action')) c('call_to_action').puntaje = sub(c('call_to_action').puntaje, 12);
+  }
+  if (flags.high_friction) {
+    sales = sub(sales, 8);
+    if (c('call_to_action')) c('call_to_action').puntaje = cap(c('call_to_action').puntaje, 40);
+  }
+
+  // ── BLOQUE 5: Presentación del producto ──
+  if (flags.product_shown_late) {
+    sales = sub(sales, 12);
+    if (c('claridad_producto')) c('claridad_producto').puntaje = sub(c('claridad_producto').puntaje, 15);
+  }
+  if (flags.product_shown_sideways) {
+    if (c('claridad_producto')) c('claridad_producto').puntaje = sub(c('claridad_producto').puntaje, 12);
+    if (c('emocion_deseo'))     c('emocion_deseo').puntaje     = sub(c('emocion_deseo').puntaje, 10);
+  }
+  if (flags.product_presentation_interrupted) {
+    if (c('retencion_ritmo'))    c('retencion_ritmo').puntaje    = sub(c('retencion_ritmo').puntaje, 10);
+    if (c('produccion_estetica'))c('produccion_estetica').puntaje= sub(c('produccion_estetica').puntaje, 8);
+  }
+
+  // ── BLOQUE 6: Valor enterrado ──
+  if (flags.value_trap)            { sales = cap(sales, 50); }
+  if (flags.value_behind_scroll_wall) { sales = sub(sales, 20); viral = sub(viral, 20); }
+  if (flags.recompensa_tardia) {
+    sales = sub(sales, 12);
+    if (c('emocion_deseo')) c('emocion_deseo').puntaje = sub(c('emocion_deseo').puntaje, 18);
+  }
+  if (flags.buried_result) { sales = cap(sales, 45); }
+
+  // ── BLOQUE 7: Ritmo y energía ──
+  if (flags.boring_full_video) {
+    if (c('emocion_deseo'))   c('emocion_deseo').puntaje   = cap(c('emocion_deseo').puntaje, 33);
+    if (c('retencion_ritmo')) c('retencion_ritmo').puntaje = cap(c('retencion_ritmo').puntaje, 35);
+  }
+  if (flags.flat_energy && !flags.boring_full_video) {
+    if (c('emocion_deseo'))   c('emocion_deseo').puntaje   = sub(c('emocion_deseo').puntaje, 15);
+    if (c('retencion_ritmo')) c('retencion_ritmo').puntaje = sub(c('retencion_ritmo').puntaje, 12);
+  }
+  if (flags.no_retention_engines) {
+    viral = sub(viral, 10);
+    if (c('retencion_ritmo')) c('retencion_ritmo').puntaje = cap(c('retencion_ritmo').puntaje, 38);
+  }
+  if (flags.no_share_trigger) { viral = sub(viral, 8); }
+
+  // ── BLOQUE 8: Rechazo visual ──
+  if (flags.first_frame_repulsion) {
+    if (c('hook')) c('hook').puntaje = cap(c('hook').puntaje, 30);
+  }
+  if (flags.visual_repulsion) {
+    const sev = flags.visual_repulsion_severity || 'moderada';
+    if (sev === 'fuerte') {
+      if (c('produccion_estetica'))    c('produccion_estetica').puntaje    = cap(c('produccion_estetica').puntaje, 40);
+      if (c('confianza_credibilidad')) c('confianza_credibilidad').puntaje = cap(c('confianza_credibilidad').puntaje, 38);
+    } else if (sev === 'moderada') {
+      if (c('produccion_estetica'))    c('produccion_estetica').puntaje    = sub(c('produccion_estetica').puntaje, 20);
+      if (c('confianza_credibilidad')) c('confianza_credibilidad').puntaje = sub(c('confianza_credibilidad').puntaje, 15);
+    } else if (sev === 'leve') {
+      if (c('produccion_estetica')) c('produccion_estetica').puntaje = sub(c('produccion_estetica').puntaje, 10);
+    }
+  }
+  if (flags.product_damage) {
+    sales = cap(sales, 53);
+    if (c('confianza_credibilidad')) c('confianza_credibilidad').puntaje = cap(c('confianza_credibilidad').puntaje, 43);
+  }
+  if (flags.audio_issue) {
+    if (c('produccion_estetica'))    c('produccion_estetica').puntaje    = sub(c('produccion_estetica').puntaje, 15);
+    if (c('confianza_credibilidad')) c('confianza_credibilidad').puntaje = sub(c('confianza_credibilidad').puntaje, 10);
+  }
+
+  // ── BLOQUE 9: Producto ──
+  if (flags.product_unclear) {
+    sales = cap(sales, 50);
+    if (c('claridad_producto')) c('claridad_producto').puntaje = cap(c('claridad_producto').puntaje, 45);
+    if (c('propuesta_valor'))   c('propuesta_valor').puntaje   = cap(c('propuesta_valor').puntaje, 45);
+  }
+  if (flags.product_difficult_to_sell) { sales = cap(sales, 53); }
+
+  // ── Clamp final ──
+  viral = Math.max(0, Math.min(100, Math.round(viral)));
+  sales = Math.max(0, Math.min(100, Math.round(sales)));
+  Object.keys(cats).forEach(k => {
+    if (cats[k]?.puntaje !== undefined)
+      cats[k].puntaje = Math.max(0, Math.min(100, Math.round(cats[k].puntaje)));
+  });
+
+  const potential = Math.round(viral * 0.45 + sales * 0.55);
+
+  return {
+    ...parsed,
+    viralScore:     { ...parsed.viralScore,  score: viral },
+    salesScore:     { ...parsed.salesScore,  score: sales },
+    potentialScore: potential,
+    categorias:     cats,
+  };
 };
 
 const App = () => {
@@ -1292,7 +1473,7 @@ const trackPrediction = async (result) => {
 
 const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   if (videoFile.size > 45 * 1024 * 1024) {
-    alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB.`);
+    alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB.`);  //const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
     return;
   }
 
@@ -1320,7 +1501,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
   const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
 
-  // ✅ CAMBIO 1: usar el mimeType real del archivo, no forzar nada
+  // ✅ CAMBIO 1: usar el mimeType real del archivo, no forzar nada  //flagsDeterministic
   const mimeType = videoFile.type || 'video/mp4';
 
   // ✅ CAMBIO 2: subir el archivo original sin envolverlo en new File()
@@ -1427,18 +1608,29 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const flagsDeterministic = {
   ...flagsFromStrategy,
   ...(Object.keys(preFacts).length > 0 && {
+    // Hook: el pre-clasificador sí es bueno detectando el primer frame
     hook_type: preHookType,
     ad_filter_triggered: !!preFacts.logo_en_s0,
-    no_audio_from_s0: preFacts.audio_desde_s0 === false
-      ? true : flagsFromStrategy.no_audio_from_s0,
-    is_static_slideshow: preFacts.movimiento_real === false
-      ? true : flagsFromStrategy.is_static_slideshow,
-    pain_missing: preFacts.dolor_antes_s5 === false
-      ? true : flagsFromStrategy.pain_missing,
-    pain_late: Number(preFacts.segundo_dolor) > 5
-      ? true : flagsFromStrategy.pain_late,
+
+    no_audio_from_s0: (preFacts.audio_desde_s0 === false && flagsFromStrategy.no_audio_from_s0)
+      ? true
+      : flagsFromStrategy.no_audio_from_s0,
+
+    is_static_slideshow: (preFacts.movimiento_real === false && flagsFromStrategy.is_static_slideshow)
+      ? true
+      : flagsFromStrategy.is_static_slideshow,
+
+    // Dolor: solo si pre-clasificador confirma ausencia Y strategy también
+    pain_missing: (preFacts.dolor_antes_s5 === false && flagsFromStrategy.pain_missing)
+      ? true
+      : flagsFromStrategy.pain_missing,
+
+    pain_late: (Number(preFacts.segundo_dolor) > 5 && flagsFromStrategy.pain_late)
+      ? true
+      : flagsFromStrategy.pain_late,
   }),
 };
+
     console.log('[VIRAX] Flags:', flagsDeterministic);
 
     // CALL 3 — Scoring Brain
@@ -1459,14 +1651,16 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     setAnalysisProgress(95);
     setStatusText("Preparando tu análisis completo...");
 
-    const finalResult = {
-      ...parsed,
-      objetivo: selectedObjetivo,
-      _flags: flagsDeterministic,
-      _strategy_text: strategyAnalysis,
-      _viewer_text: viewerAnalysis
-    };
+    // ← aplicar scoring determinístico encima de lo que tiró la IA
+const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic);
 
+const finalResult = {
+  ...parsedFinal,           // ← parsedFinal en vez de parsed
+  objetivo: selectedObjetivo,
+  _flags: flagsDeterministic,
+  _strategy_text: strategyAnalysis,
+  _viewer_text: viewerAnalysis
+};
     setAiResult(finalResult);
     setCompletedSteps([]);
     setChatMessages([{
@@ -1558,13 +1752,17 @@ GUION A ANALIZAR:
       }
     });
     if (call3Error) throw call3Error;
+
     const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring-script');
+
+    // ← scoring determinístico encima de lo que tiró la IA
+    const parsedFinal = applyDeterministicScoring(parsed, flags);
 
     setAnalysisProgress(95);
     setStatusText("Preparando tu análisis...");
 
     const finalResult = {
-      ...parsed,
+      ...parsedFinal,
       objetivo: selectedObjetivo,
       _flags: flags,
     };
