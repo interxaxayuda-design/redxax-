@@ -1313,10 +1313,9 @@ const trackPrediction = async (result) => {
   });
 };  //const scores = buildPenalties(flagsDeterministic)  //catch (err)
 
-// Función principal corregida
 const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   if (videoFile.size > 45 * 1024 * 1024) {
-    alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB. Comprimí el video antes de subirlo.`);
+    alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB.`);
     return;
   }
 
@@ -1332,135 +1331,106 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
   setStep('analyzing');
   setAnalysisMode('video');
-  setStatusText("Subiendo video...");
-  setAnalysisProgress(10);
+  setStatusText("Preparando video...");
+  setAnalysisProgress(5);
 
-  // Nombre de archivo seguro
+  // Nombre seguro
   const safeName = videoFile?.name
     ?.normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/\s+/g, '_')
     .replace(/[^a-zA-Z0-9._-]/g, '') || 'video.mp4';
 
-  // Definición de storagePath
   const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
 
-if (!approved) return;
+  // Forzar video/mp4 siempre — independiente del codec real
+  const mimeType = 'video/mp4';
 
-setStep('analyzing');
-setAnalysisMode('video');
-
-setStatusText("Preparando video...");
-setAnalysisProgress(5);
-
-let fileToUpload = videoFile;
-
-setStatusText("Optimizando video para análisis...");
-
-try {
-  fileToUpload = await transcodeToH264(videoFile, (pct) => {
-    setStatusText(`Optimizando video... ${pct}%`);
-    setAnalysisProgress(5 + Math.round(pct * 0.08));
-  });
-  console.log('[VIRAX] Transcodificación exitosa:', fileToUpload.size, 'bytes, type:', fileToUpload.type);
-} catch (transcodeErr) {
-  console.warn('[VIRAX] Transcodificación FALLÓ:', transcodeErr);
-  fileToUpload = videoFile;
-}
-
-const mimeType = 'video/mp4';
-
+  // Crear un nuevo File con type forzado a mp4
+  const fileToUpload = new File([videoFile], 'video.mp4', { type: 'video/mp4' });
+  console.log('[VIRAX] Subiendo:', fileToUpload.name, fileToUpload.size, 'bytes');
 
   try {
+    setStatusText("Subiendo video...");
+    setAnalysisProgress(10);
+
     const { error: uploadError } = await supabase.storage
-  .from('videos')
-  .upload(storagePath, fileToUpload, { upsert: true });
-  //fileToUpload = await transcodeToH264(videoFile, (pct) => {
+      .from('videos')
+      .upload(storagePath, fileToUpload, { upsert: true });
 
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
     await new Promise(r => setTimeout(r, 1500));
 
-// CALL 0 — Pre-clasificador
-setAnalysisProgress(18);
-setStatusText("Pre-clasificando video...");
+    // CALL 0 — Pre-clasificador
+    setAnalysisProgress(18);
+    setStatusText("Pre-clasificando video...");
 
-let preFacts = {};
-let preHookType = 'debil';
+    let preFacts = {};
+    let preHookType = 'debil';
 
-try {
-  const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
-    body: {
-      text: buildPreClassifierPrompt(),
-      storagePath,
-      videoMimeType: mimeType,
-      duration: Math.round(duration),
-      maxOutputTokens: 1024,   // ← subido de 512
-      expectsJson: true
+    try {
+      const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildPreClassifierPrompt(),
+          storagePath,
+          videoMimeType: mimeType,
+          duration: Math.round(duration),
+          maxOutputTokens: 1024,
+          expectsJson: true
+        }
+      });
+
+      if (call0Error) {
+        const status = call0Error.context?.status ?? 0;
+        console.warn(`[CALL 0] HTTP ${status} — fallback`);
+        throw new Error(`HTTP ${status}`);
+      }
+
+      preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
+      preHookType = (() => {
+        if (preFacts.logo_en_s0) return 'muerto';
+        if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0) return 'bait_con_puente';
+        if (preFacts.imagen_alto_impacto) return 'bait_desconectado';
+        if (preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria) return 'explosivo';
+        if (preFacts.producto_en_s0) return 'apertura_informativa';
+        return 'debil';
+      })();
+
+      console.log('[VIRAX] Pre-facts:', preFacts, '| Hook:', preHookType);
+    } catch (e) {
+      console.warn('[CALL 0] Fallback:', e.message);
     }
-  });
-
-  // FunctionsHttpError incluye el status en context — leerlo antes de tirar
-  if (call0Error) {
-    const status = call0Error.context?.status ?? call0Error.status ?? 0;
-    // 422 = MAX_TOKENS en JSON → fallback silencioso
-    // Cualquier otro error → también fallback, pero lo logueamos
-    console.warn(`[CALL 0] HTTP ${status} — usando fallback. Error:`, call0Error.name);
-    throw new Error(`HTTP ${status}`);
-  }
-
-  const rawText = extractGeminiText(call0Data);
-  preFacts = safeParseJSON(rawText, 'pre-classifier') || {};
-
-  preHookType = (() => {
-    if (preFacts.logo_en_s0) return 'muerto';
-    if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0) return 'bait_con_puente';
-    if (preFacts.imagen_alto_impacto) return 'bait_desconectado';
-    if (preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria) return 'explosivo';
-    if (preFacts.producto_en_s0) return 'apertura_informativa';
-    return 'debil';
-  })();
-
-  console.log('[VIRAX] Pre-facts:', preFacts);
-  console.log('[VIRAX] Hook type:', preHookType);
-
- } catch (e) {
-  console.warn('[CALL 0] Fallback activado:', e.message);
-  preFacts = {};
-  preHookType = 'debil';
-}
 
     // CALL 1 — Viewer Brain
-setAnalysisProgress(25);
-setStatusText("Analizando el video...");
+    setAnalysisProgress(25);
+    setStatusText("Analizando el video...");
 
-let call1Data, call1Error;
-try {
-  const res = await supabase.functions.invoke('gemini-proxy', {
-    body: {
-      text: buildViewerBrainPrompt(platform, selectedNicho),
-      storagePath,
-      videoMimeType: mimeType,
-      duration: Math.round(duration),
-      maxOutputTokens: 8192,
+    let call1Data, call1Error;
+    try {
+      const res = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildViewerBrainPrompt(platform, selectedNicho),
+          storagePath,
+          videoMimeType: mimeType,
+          duration: Math.round(duration),
+          maxOutputTokens: 8192,
+        }
+      });
+      call1Data = res.data;
+      call1Error = res.error;
+
+      if (call1Error) {
+        const rawBody = await call1Error.context?.text?.();
+        console.error('[CALL 1] Body:', rawBody);
+        throw new Error(`CALL 1 falló: ${rawBody || call1Error.message}`);
+      }
+    } catch (e) {
+      console.error('[CALL 1] Exception:', e.message);
+      throw e;
     }
-  });
-  call1Data = res.data;
-  call1Error = res.error;
 
-  if (call1Error) {
-    // Leer el body real del error para diagnóstico
-    const rawBody = await call1Error.context?.text?.();
-    console.error('[CALL 1] Error HTTP:', call1Error);
-    console.error('[CALL 1] Body real:', rawBody);
-    throw new Error(`CALL 1 falló: ${rawBody || call1Error.message}`);
-  }
-} catch (e) {
-  console.error('[CALL 1] Exception:', e.message);
-  throw e;
-}
-
-const viewerAnalysis = extractGeminiText(call1Data);   //const { error: uploadError } = await supabase.storage
+    const viewerAnalysis = extractGeminiText(call1Data);
 
     // CALL 2 — Strategy Brain
     setAnalysisProgress(50);
@@ -1468,30 +1438,17 @@ const viewerAnalysis = extractGeminiText(call1Data);   //const { error: uploadEr
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho, preFacts, preHookType, storagePath),
+        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho, preFacts, preHookType),
         maxOutputTokens: 6144,
       }
     });
-  //const strategyAnalysis = stripFlags(strategyRaw);
+    if (call2Error) throw call2Error;
 
-   if (call2Error) throw call2Error;
-
-const strategyRaw = extractGeminiText(call2Data);
-const flagsFromStrategy = extractFlags(strategyRaw);   // primero extraer flags
-const strategyAnalysis = stripFlags(strategyRaw);      // después limpiar
-
-
-
-const flagsDeterministic = {
-  ...flagsFromStrategy,
-  ...deriveFlags(preFacts),
-};
-
-console.log('[VIRAX] Flags finales (merge):', flagsDeterministic);
-
- 
-
-    console.log('[VIRAX] Flags deterministas:', flagsDeterministic);
+    const strategyRaw = extractGeminiText(call2Data);
+    const flagsFromStrategy = extractFlags(strategyRaw);
+    const strategyAnalysis = stripFlags(strategyRaw);
+    const flagsDeterministic = { ...flagsFromStrategy, ...deriveFlags(preFacts) };
+    console.log('[VIRAX] Flags:', flagsDeterministic);
 
     // CALL 3 — Scoring Brain
     setAnalysisProgress(80);
@@ -1499,16 +1456,15 @@ console.log('[VIRAX] Flags finales (merge):', flagsDeterministic);
 
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flagsDeterministic, storagePath),
+        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flagsDeterministic),
         expectsJson: true,
         maxOutputTokens: 8192,
       }
     });
-
     if (call3Error) throw call3Error;
+
     const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
 
-    // MERGE
     setAnalysisProgress(95);
     setStatusText("Preparando tu análisis completo...");
 
@@ -1535,18 +1491,17 @@ console.log('[VIRAX] Flags finales (merge):', flagsDeterministic);
   } catch (err) {
     console.error('Error análisis:', err);
     const msg = err?.message || String(err);
-    const isCodec = msg.toLowerCase().includes('codec') || msg.toLowerCase().includes('h.264');
+    const isCodec = msg.includes('video_upload_failed') || msg.includes('codec') || msg.includes('HEVC');
     alert(
       isCodec
-        ? '❌ El video usa un codec no soportado (probablemente H.265/HEVC).\n\nSolución: convertí el video a H.264 MP4 con cualquier editor antes de subirlo.\n\niPhone → usá "Compartir > Comprimir" o exportá desde Fotos.'
-        : `❌ Error en el análisis:\n${msg}`
+        ? '❌ Tu video usa un formato que Google no puede procesar.\n\nCambiá la configuración de la cámara:\nSamsung → Configuración de cámara → Formato → Compatible (H.264)\n\nDespués grabá un video nuevo y subilo.'
+        : `❌ Error: ${msg}`
     );
     setStep('upload');
   } finally {
     await supabase.storage.from('videos').remove([storagePath]);
   }
 };
-
 
 const runScriptAnalysis = async (platform, followerRange) => {
   if (!scriptText.trim()) {
