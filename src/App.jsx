@@ -455,15 +455,36 @@ producto_en_s0: ${preFacts.producto_en_s0 ?? 'no_determinado'}
 dolor_antes_s5: ${preFacts.dolor_antes_s5 ?? 'no_determinado'}
 segundo_dolor: ${preFacts.segundo_dolor ?? '0'}
 
+
 TECHOS DERIVADOS (aplicar sin excepción):
 muerto → viralScore ≤35 | debil → viralScore ≤60 | apertura_informativa → viralScore ≤40
 explosivo → viralScore hasta 90 | bait_con_puente → hasta 85 | bait_desconectado → viralScore ≤55, salesScore ≤45
 audio_desde_s0=false → viralScore -15 adicional sobre cualquier techo
 ` : '';
 
+ // ← AGREGÁ ESTO ACÁ
+  const nichoComidaOverride = nicho === 'restaurante_comida' ? `
+⚠️ NICHO COMIDA/RESTAURANTE — REGLAS ESPECIALES INAMOVIBLES:
+El framework de DOLOR no aplica. La gente no come para resolver un problema — come porque quiere placer.
+REEMPLAZAR capas de compra por:
+1. DESEO SENSORIAL: ¿el primer frame activa antojo antes de s3?
+2. AMBIENTE: ¿el lugar genera ganas de estar ahí físicamente?
+3. FRICCIÓN: ¿queda claro cómo llegar, pedir o reservar? (ubicación en pantalla = CTA suficiente)
+4. IDENTIDAD: ¿compartir este video dice algo sobre quien lo comparte?
+REGLAS FIJAS:
+- pain_missing = false SIEMPRE en este nicho. No existe dolor en contenido de comida.
+- Un CTA implícito (nombre del lugar visible, ubicación, hashtag del local) ES un CTA completo.
+- Un video con alto deseo visual que se vende solo = salesScore base mínimo 55, aunque no haya CTA verbal.
+- no_urgency solo aplica si hay una promo o evento específico que debería aparecer y no aparece.
+` : '';
+
   return `Estratega de ventas y viralidad. Plataforma: ${pName} | Objetivo: ${objetivo} | Nicho: ${nicho}
 
+  
+  
+
 ${truthBlock}
+${nichoComidaOverride}
 REPORTE FORENSE:
 ${viewerAnalysis}
 
@@ -763,11 +784,25 @@ const buildScoringBrainPrompt = (strategyAnalysis, platform, objetivo, nicho, fl
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
   const penaltiesBlock = buildPenalties(flags);
 
+    // ← ACÁ va la variable, ANTES del return
+  const nichoScoringNote = nicho === 'restaurante_comida' ? `
+NOTA CRÍTICA — NICHO RESTAURANTE/COMIDA:
+- pain_missing NO penaliza en este nicho. El motor de conversión es deseo, no dolor.
+- call_to_action: un nombre de lugar visible o ubicación en pantalla = CTA implícito válido. No penalizar ausencia de CTA verbal.
+- salesScore base mínimo 50 si el video activa deseo visual fuerte (plato apetecible, ambiente atractivo, reacción genuina).
+- Un video de comida viral con 200K+ interacciones que no tiene CTA explícito pero genera antojo = salesScore ≥60.
+` : '';
+
+
   return `
 Sistema de scoring VIRAX AI para ${pName}. Objetivo: ${objetivo} | Nicho: ${nicho}
 
+
+
 ANÁLISIS ESTRATÉGICO:
 ${strategyAnalysis}
+
+
 
 ════════════════════════════════════════════════════════════
 IDENTIDAD DEL EVALUADOR — MANTENERLA DURANTE TODO EL SCORING
@@ -793,8 +828,8 @@ NOTA SOBRE BAIT HOOK DESCONECTADO:
 Si el video usa un hook de impacto visual sin conexión con el producto, reportar:
 viralScore (retención generada por el impacto) y salesScore (conversión real) por separado.
 La brecha entre ambos es la señal de que el hook retiene pero no convierte.
-════════════════════════════════════════════════════════════
 
+${nichoScoringNote}
 PENALIZACIONES — APLICAR PRIMERO, EN ORDEN, EXACTAMENTE:
 ${penaltiesBlock}
 
@@ -1179,6 +1214,12 @@ const transcodeToH264 = async (videoFile, onProgress) => {
 };
 
 const applyDeterministicScoring = (parsed, flags) => {
+
+    // Para restaurante/comida, pain_missing no penaliza
+  if (nicho === 'restaurante_comida') {
+    flags = { ...flags, pain_missing: false, pain_late: false };
+  }
+  
   const cap = (v, max) => Math.min(v, max);
   const sub = (v, n)   => Math.max(0, v - n);
 
@@ -1542,7 +1583,7 @@ useEffect(() => {
 
   // Guardar predicción para calibración futura
 const trackPrediction = async (result) => {
-  const userId = localStorage.getItem('redxax_user_id');   //TREND CONTEXT
+  const userId = localStorage.getItem('redxax_user_id');   //TREND CONTEXT const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic);
   await supabase.from('prediction_tracking').insert({
     user_id: userId,
     predicted_score: result.potentialScore,
@@ -1738,7 +1779,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     setStatusText("Preparando tu análisis completo...");
 
     // ← aplicar scoring determinístico encima de lo que tiró la IA
-const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic);
+const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic, selectedNicho);  //const parsedFinal = applyDeterministicScoring(parsed, flags);
 
 // Si el video tiene buen viral, los scores no pueden caer en rojo
 const viralScore = parsedFinal.viralScore?.score ?? 0;
@@ -1852,7 +1893,7 @@ GUION A ANALIZAR:
     const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring-script');
 
     // ← scoring determinístico encima de lo que tiró la IA
-    const parsedFinal = applyDeterministicScoring(parsed, flags);
+    const parsedFinal = applyDeterministicScoring(parsed, flags, selectedNicho);
 
     setAnalysisProgress(95);
     setStatusText("Preparando tu análisis...");
