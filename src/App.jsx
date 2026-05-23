@@ -1148,7 +1148,7 @@ const transcodeToH264 = async (videoFile, onProgress) => {
   // Versión sin SharedArrayBuffer — funciona en Vercel sin headers especiales //{ id: 'producto_fisico', label: 'Producto físico' },
   await ffmpeg.load({
     coreURL: await toBlobURL(
-      'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+      'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',   //<div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-12 md:p-16 shadow-2xl">
       'text/javascript'
     ),
     wasmURL: await toBlobURL(
@@ -2283,7 +2283,7 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
 )}
         {step === 'platform_select' && (
   <div className="max-w-2xl mx-auto animate-in slide-in-from-bottom-10 duration-500">
-    <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-12 md:p-16 shadow-2xl">
+    <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-8 md:p-12 shadow-2xl overflow-y-auto max-h-[88vh]">
       <div className="mb-10 text-center">
         <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
           <TrendingUp className="w-3 h-3" /> Paso previo al análisis
