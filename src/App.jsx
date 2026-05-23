@@ -203,6 +203,51 @@ const NICHE_CRITERIA = {
     "¿Genera curiosidad de probarlo?",
   ],
 
+  restaurante_comida: [
+  // ── PRIMER FRAME — APETITO INMEDIATO ──
+  "¿El primer frame activa hambre, antojo o FOMO antes de que el cerebro procese qué es?",
+  "¿El plato, bebida o ambiente es tan visual que el espectador para el dedo sin decidirlo?",
+  "¿Se ve rico, fresco, abundante o especial sin necesidad de leer nada?",
+  "¿La iluminación y el encuadre hacen justicia al plato o lo apagan?",
+
+  // ── PLACER SENSORIAL (reemplaza completamente al 'dolor') ──
+  "¿El video activa los sentidos: se escucha el crujido, el chisporroteo, la salsa cayendo, el queso estirándose?",
+  "¿Hay un momento específico que haría que alguien mande el video con 'quiero esto'?",
+  "¿El espectador se imagina el sabor o la textura antes de que termine el video?",
+  "¿Hay close-ups que muestran la textura, el vapor, el color o el movimiento del alimento?",
+  "¿La comida o bebida se ve en su mejor momento posible, o parece foto de menú genérico?",
+
+  // ── AMBIENTE Y EXPERIENCIA ──
+  "¿El lugar suma deseo o es neutro/negativo para la experiencia?",
+  "¿Se transmite la vibra del lugar: tranquilo, animado, íntimo, familiar, exclusivo?",
+  "¿El ambiente hace que el espectador quiera estar ahí, no solo pedir delivery?",
+  "¿Hay detalles del lugar (decoración, luz, música visible, gente disfrutando) que construyen deseo?",
+
+  // ── REACCIÓN HUMANA ──
+  "¿Hay una reacción real de alguien comiendo: expresión, comentario, gesto de placer?",
+  "¿La reacción se siente genuina o parece actuada?",
+  "¿La persona que aparece genera identificación — es alguien como el espectador?",
+
+  // ── IDENTIDAD Y PERTENENCIA ──
+  "¿El video comunica a qué tipo de persona le gusta este lugar (sin decirlo explícitamente)?",
+  "¿Compartir este video diría algo sobre el gusto o estilo de quien lo comparte?",
+  "¿La estética del video encaja con la identidad que el lugar quiere proyectar?",
+
+  // ── ANTICIPACIÓN Y URGENCIA ──
+  "¿Hay alguna razón para ir hoy o esta semana: novedad del menú, promoción, evento, temporada?",
+  "¿El video genera la sensación de que si no vas pronto, te lo vas a perder?",
+  "¿El precio o ticket promedio parece accesible o genera barrera sin contexto?",
+
+  // ── FRICCIÓN Y SIGUIENTE PASO ──
+  "¿Queda claro cómo llegar, pedir o reservar sin tener que buscar?",
+  "¿El proceso parece simple: un mensaje, una llamada, un link, una dirección?",
+
+  // ── DIFERENCIACIÓN ──
+  "¿Hay algo en el video que solo este lugar podría mostrar?",
+  "¿Se diferencia visualmente de otros restaurants o videos de comida en el feed?",
+  "¿Hay un plato, preparación o detalle que sea la razón para ir específicamente ahí?",
+],
+
   
   otro: [
   // ── HOOK Y PRIMER FRAME ──
@@ -1100,7 +1145,7 @@ import { fetchFile, toBlobURL } from '@ffmpeg/util';
 const transcodeToH264 = async (videoFile, onProgress) => {
   const ffmpeg = new FFmpeg();
 
-  // Versión sin SharedArrayBuffer — funciona en Vercel sin headers especiales
+  // Versión sin SharedArrayBuffer — funciona en Vercel sin headers especiales //{ id: 'producto_fisico', label: 'Producto físico' },
   await ffmpeg.load({
     coreURL: await toBlobURL(
       'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
@@ -1142,7 +1187,7 @@ const applyDeterministicScoring = (parsed, flags) => {
   const cats = JSON.parse(JSON.stringify(parsed.categorias ?? {}));
   const c = (key) => cats[key]; // acceso rápido
 
-  // ── BLOQUE 0: Filtro de anuncio ──
+  // ── BLOQUE 0: Filtro de anuncio ──  //platform_select
   if (flags.ad_filter_triggered) {
     viral = cap(viral, 30); sales = cap(sales, 40);
     if (c('hook')) c('hook').puntaje = cap(c('hook').puntaje, 25);
@@ -2338,6 +2383,7 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
       { id: 'servicio',       label: 'Servicio'        },
       { id: 'inmobiliaria',   label: 'Inmobiliaria'    },
       { id: 'app_software',   label: 'App / Software'  },
+      { id: 'restaurante_comida', label: 'Restaurante / Comida'  },
       { id: 'otro',           label: 'Otro'            },
     ].map((n) => (
       <button
