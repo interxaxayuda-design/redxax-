@@ -1375,6 +1375,17 @@ const mimeType = 'video/mp4';
   .from('videos')
   .upload(storagePath, fileToUpload, { upsert: true });
 
+  try {
+  fileToUpload = await transcodeToH264(videoFile, (pct) => {
+    setStatusText(`Optimizando video... ${pct}%`);
+    setAnalysisProgress(5 + Math.round(pct * 0.08));
+  });
+  console.log('[VIRAX] Transcodificación exitosa:', fileToUpload.size, 'bytes, type:', fileToUpload.type);
+} catch (transcodeErr) {
+  console.warn('[VIRAX] Transcodificación FALLÓ:', transcodeErr);
+  fileToUpload = videoFile;
+}
+
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
     await new Promise(r => setTimeout(r, 1500));
