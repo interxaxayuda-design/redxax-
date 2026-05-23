@@ -1343,12 +1343,12 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
   const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
 
-  // Forzar video/mp4 siempre — independiente del codec real
-  const mimeType = 'video/mp4';
+  // ✅ CAMBIO 1: usar el mimeType real del archivo, no forzar nada
+  const mimeType = videoFile.type || 'video/mp4';
 
-  // Crear un nuevo File con type forzado a mp4
-  const fileToUpload = new File([videoFile], 'video.mp4', { type: 'video/mp4' });
-  console.log('[VIRAX] Subiendo:', fileToUpload.name, fileToUpload.size, 'bytes');
+  // ✅ CAMBIO 2: subir el archivo original sin envolverlo en new File()
+  const fileToUpload = videoFile;
+  console.log('[VIRAX] Subiendo:', fileToUpload.name, fileToUpload.size, 'bytes', mimeType);
 
   try {
     setStatusText("Subiendo video...");
