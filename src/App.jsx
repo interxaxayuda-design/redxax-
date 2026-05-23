@@ -2372,11 +2372,11 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
 </div> 
 
 {/* ── NICHO ── */}
-<div className="mb-8">
-  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-600 mb-4">
+<div className="mb-6">
+  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-600 mb-3">
     Tipo de contenido
   </p>
-  <div className="grid grid-cols-2 gap-2">
+  <div className="flex flex-wrap gap-2">
     {[
       { id: 'producto_fisico',    label: 'Producto físico'      },
       { id: 'curso',              label: 'Curso / Info'         },
@@ -2389,17 +2389,12 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
       <button
         key={n.id}
         onClick={() => setSelectedNicho(n.id)}
-        className={`relative flex items-center justify-between px-4 py-3 rounded-[1.25rem] border transition-all duration-200 text-left
+        className={`px-4 py-2 rounded-full border text-[12px] font-black italic transition-all duration-200
           ${selectedNicho === n.id
-            ? 'border-purple-500/50 bg-purple-500/[0.08]'
-            : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:-translate-y-px'}`}
+            ? 'border-purple-500/60 bg-purple-500/15 text-white'
+            : 'border-white/10 bg-white/[0.02] text-slate-500 hover:border-white/20 hover:text-slate-300'}`}
       >
-        <p className={`text-[12px] font-black italic tracking-tight transition-colors duration-200
-          ${selectedNicho === n.id ? 'text-white' : 'text-slate-500'}`}>
-          {n.label}
-        </p>
-        <div className={`w-1.5 h-1.5 rounded-full border transition-all duration-200 shrink-0
-          ${selectedNicho === n.id ? 'bg-purple-500 border-purple-500' : 'border-purple-500/40'}`} />
+        {n.label}
       </button>
     ))}
   </div>
