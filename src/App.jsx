@@ -2370,7 +2370,6 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
             { id: 'inmobiliaria',       label: 'Inmobiliaria'         },
             { id: 'app_software',       label: 'App / Software'       },
             { id: 'restaurante_comida', label: 'Restaurante / Comida' },
-            { id: 'otro',               label: 'Otro / General'       },
           ].map((n) => (
             <button
               key={n.id}
