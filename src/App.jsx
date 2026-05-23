@@ -1350,40 +1350,31 @@ if (!approved) return;
 setStep('analyzing');
 setAnalysisMode('video');
 
-// ← acá va todo el bloque nuevo
 setStatusText("Preparando video...");
 setAnalysisProgress(5);
 
 let fileToUpload = videoFile;
 
-const needsTranscode = 
-  videoFile.type === 'video/quicktime' ||
-  videoFile.type === 'video/x-m4v' ||
-  videoFile.type === 'video/hevc' ||
-  videoFile.name.toLowerCase().endsWith('.mov') ||
-  videoFile.name.toLowerCase().endsWith('.hevc');
-
-if (needsTranscode) {
-  setStatusText("Optimizando formato del video...");
-  try {
-    fileToUpload = await transcodeToH264(videoFile, (pct) => {
-      setStatusText(`Optimizando video... ${pct}%`);
-      setAnalysisProgress(5 + Math.round(pct * 0.05));
-    });
-  } catch (transcodeErr) {
-    console.warn('Transcodificación falló, intentando con original:', transcodeErr);
-    fileToUpload = videoFile;
-  }
+// Siempre transcodificar — garantiza H.264 sin importar el codec original
+setStatusText("Optimizando video para análisis...");
+try {
+  fileToUpload = await transcodeToH264(videoFile, (pct) => {
+    setStatusText(`Optimizando video... ${pct}%`);
+    setAnalysisProgress(5 + Math.round(pct * 0.08));
+  });
+  console.log('[VIRAX] Transcodificación exitosa:', fileToUpload.size, 'bytes');
+} catch (transcodeErr) {
+  console.warn('[VIRAX] Transcodificación falló, usando original:', transcodeErr);
+  fileToUpload = videoFile;
 }
 
 const mimeType = 'video/mp4';
-// ← fin del bloque nuevo
 
 
   try {
     const { error: uploadError } = await supabase.storage
-      .from('videos')
-      .upload(storagePath, videoFile, { upsert: true });
+  .from('videos')
+  .upload(storagePath, fileToUpload, { upsert: true });
 
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
@@ -1468,7 +1459,7 @@ try {
   throw e;
 }
 
-const viewerAnalysis = extractGeminiText(call1Data);
+const viewerAnalysis = extractGeminiText(call1Data);   //const { error: uploadError } = await supabase.storage
 
     // CALL 2 — Strategy Brain
     setAnalysisProgress(50);
