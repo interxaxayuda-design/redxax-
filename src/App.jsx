@@ -203,62 +203,40 @@ const NICHE_CRITERIA = {
     "¿Genera curiosidad de probarlo?",
   ],
 
-  experiencia_deseo: [
-  // ── PRIMER FRAME Y DESEO INMEDIATO ──
-  "¿El primer frame genera hambre, envidia, deseo o FOMO antes de que el cerebro procese qué es?",
-  "¿La imagen o video es tan atractiva que el espectador para el dedo solo por lo visual?",
-  "¿Se ve apetecible, deseable o aspiracional sin necesidad de leerlo?",
-
-  // ── PLACER Y EMOCIÓN (reemplaza 'dolor') ──
-  "¿El video apela al placer sensorial: visual del plato, textura de la ropa, sonido del ambiente?",
-  "¿Genera la sensación de 'quiero estar ahí' o 'quiero eso ahora'?",
-  "¿El espectador se imagina a sí mismo disfrutándolo antes de terminar el video?",
-  "¿Hay un momento en el video que haría que alguien lo mande con 'mirá esto' o 'vamos acá'?",
-
-  // ── IDENTIDAD Y PERTENENCIA ──
-  "¿El video comunica a qué tipo de persona le gusta esto (sin decirlo explícitamente)?",
-  "¿Compartir este video diría algo positivo sobre quien lo comparte?",
-  "¿La estética del video es compatible con la identidad que el cliente quiere proyectar?",
-
-  // ── PRESENTACIÓN DEL PRODUCTO/EXPERIENCIA ──
-  "¿El plato, prenda o producto se muestra en su mejor momento: con luz, movimiento, close-up o reacción real?",
-  "¿Hay una reacción humana real (cara, expresión, comentario) que valide el placer?",
-  "¿La presentación genera la percepción de que vale lo que cuesta?",
-
-  // ── CONTEXTO Y AMBIENTE ──
-  "¿El lugar, ambiente o contexto suma deseo o lo resta?",
-  "¿Se transmite la experiencia completa, no solo el producto aislado?",
-  "¿Hay detalles que hacen sentir que es especial o diferente a cualquier otro del mismo rubro?",
-
-  // ── URGENCIA Y FRICCIÓN ──
-  "¿Hay alguna razón para ir o pedir hoy: promoción, novedad, temporada, evento?",
-  "¿El siguiente paso (reservar, pedir, ir) queda claro y parece fácil?",
-  "¿El precio o acceso parece accesible o genera barrera mental?",
-
-  // ── DIFERENCIACIÓN ──
-  "¿Hay algo que solo este lugar o marca podría mostrar?",
-  "¿Se diferencia del resto de videos similares en el feed solo por lo visual?",
-],
-
+  
   otro: [
   // ── HOOK Y PRIMER FRAME ──
   "¿El primer frame genera curiosidad, deseo o impacto antes de que el cerebro decida scrollear?",
   "¿El video abre con algo que el espectador NO esperaba ver?",
   "¿Se entiende de qué trata en menos de 5 segundos, incluso sin audio?",
 
-  // ── DOLOR Y DESEO ──
+  // ── DOLOR, DESEO O PLACER ──
   "¿El audio o texto nombra un dolor, problema o deseo concreto del espectador antes de mostrar la solución?",
   "¿El espectador siente que el video le está hablando a él específicamente?",
   "¿Genera una emoción fuerte: deseo, curiosidad, urgencia, identificación o sorpresa?",
+  "¿El primer frame genera hambre, envidia, deseo o FOMO antes de que el cerebro procese qué es?",
+  "¿La imagen o video es tan atractiva que el espectador para el dedo solo por lo visual?",
+  "¿Se ve apetecible, deseable o aspiracional sin necesidad de leerlo?",
+  "¿El video apela al placer sensorial: visual del plato, textura de la ropa, sonido del ambiente?",
+  "¿Genera la sensación de 'quiero estar ahí' o 'quiero eso ahora'?",
+  "¿El espectador se imagina a sí mismo disfrutándolo antes de terminar el video?",
 
-  // ── PRODUCTO O NEGOCIO ──
-  "¿Lo que se vende (producto, local, plato, servicio, experiencia) aparece como solución obvia al problema planteado?",
+  // ── PRODUCTO, SERVICIO O EXPERIENCIA ──
+  "¿Lo que se vende aparece como solución obvia al problema planteado, o como algo deseable por sí solo?",
   "¿Se ve funcionando, en uso, o en contexto real — no solo de frente o de costado?",
   "¿Queda claro qué es y por qué vale la pena en menos de 10 segundos?",
+  "¿El plato, prenda o producto se muestra en su mejor momento: con luz, movimiento, close-up o reacción real?",
+  "¿Hay una reacción humana real (cara, expresión, comentario) que valide el placer o el resultado?",
+  "¿La presentación genera la percepción de que vale lo que cuesta?",
+  "¿Se transmite la experiencia completa, no solo el producto aislado?",
+
+  // ── IDENTIDAD Y PERTENENCIA ──
+  "¿El video comunica a qué tipo de persona le gusta esto (sin decirlo explícitamente)?",
+  "¿Compartir este video diría algo positivo sobre quien lo comparte?",
+  "¿La estética del video es compatible con la identidad que el cliente quiere proyectar?",
 
   // ── CONFIANZA Y PRUEBA ──
   "¿Hay alguna prueba real: reseña, resultado, testimonio, cantidad de clientes, premio o certificación?",
-  "¿La persona que aparece genera confianza o autoridad sobre lo que muestra?",
   "¿La calidad visual suma credibilidad o la resta?",
 
   // ── RITMO Y RETENCIÓN ──
@@ -268,17 +246,18 @@ const NICHE_CRITERIA = {
 
   // ── URGENCIA Y FRICCIÓN ──
   "¿Hay una razón concreta para actuar hoy: oferta, stock limitado, temporada, evento próximo?",
-  "¿El siguiente paso (ir al local, llamar, pedir, comprar) queda claro sin tener que pensar?",
+  "¿El siguiente paso (ir al local, llamar, pedir, comprar, reservar) queda claro sin tener que pensar?",
   "¿El proceso para obtenerlo parece simple o genera fricción?",
 
   // ── COMPARTIBILIDAD ──
+  "¿Hay un momento en el video que haría que alguien lo mande con 'mirá esto' o 'vamos acá'?",
   "¿El video tiene algún elemento que haría que alguien lo mande a un amigo: dato revelador, humor, sorpresa o identificación fuerte?",
-  "¿Hay algo en el video que el espectador usaría para decir algo sobre sí mismo al compartirlo?",
 
   // ── DIFERENCIACIÓN ──
   "¿Se diferencia visualmente de otros videos del mismo rubro en el feed?",
-  "¿Hay algo en el video que solo este negocio o producto podría mostrar?",
+  "¿Hay algo en el video que solo este negocio, lugar o producto podría mostrar?",
 ],
+
 };
 
 const buildPreClassifierPrompt = () => `
