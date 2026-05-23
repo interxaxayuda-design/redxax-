@@ -1177,9 +1177,9 @@ const ShinyCard = ({ children, className = '', tilt }) => {
 
 
 
-const applyDeterministicScoring = (parsed, flags) => {
+const applyDeterministicScoring = (parsed, flags, nicho = '') => {
 
-    // Para restaurante/comida, pain_missing no penaliza
+    // Para restaurante/comida, pain_missing no penaliza //const applyDeterministicScoring = (parsed, flags) => {  // ← falta nicho acá
   if (nicho === 'restaurante_comida') {
     flags = { ...flags, pain_missing: false, pain_late: false };
   }
