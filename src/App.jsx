@@ -1076,6 +1076,45 @@ const ShinyCard = ({ children, className = '', tilt }) => {
   );
 };
 
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
+//
+const transcodeToH264 = async (videoFile, onProgress) => {
+  const ffmpeg = new FFmpeg();
+
+  // Versión sin SharedArrayBuffer — funciona en Vercel sin headers especiales
+  await ffmpeg.load({
+    coreURL: await toBlobURL(
+      'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+      'text/javascript'
+    ),
+    wasmURL: await toBlobURL(
+      'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.wasm',
+      'application/wasm'
+    ),
+  });
+
+  ffmpeg.on('progress', ({ progress }) => {
+    onProgress?.(Math.round(progress * 100));
+  });
+
+  const ext = videoFile.name.split('.').pop() || 'mp4';
+  await ffmpeg.writeFile(`input.${ext}`, await fetchFile(videoFile));
+
+  await ffmpeg.exec([
+    '-i', `input.${ext}`,
+    '-c:v', 'libx264',
+    '-preset', 'fast',
+    '-crf', '28',          // calidad razonable, archivo más liviano
+    '-c:a', 'aac',
+    '-movflags', '+faststart',
+    'output.mp4'
+  ]);
+
+  const data = await ffmpeg.readFile('output.mp4');
+  return new File([data.buffer], 'video.mp4', { type: 'video/mp4' });
+};
+
 const App = () => {
   const [step, setStep] = useState('upload');
   const [analysisMode, setAnalysisMode] = useState('video');
@@ -1306,12 +1345,40 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   // Definición de storagePath
   const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
 
-  const mimeType = (() => {
-  if (!videoFile.type || videoFile.type === 'video/quicktime') return 'video/mp4';
-  if (videoFile.type === 'video/x-m4v') return 'video/mp4';
-  if (videoFile.type === 'video/x-matroska') return 'video/webm';
-  return videoFile.type.startsWith('video/') ? videoFile.type : 'video/mp4';
-})();
+if (!approved) return;
+
+setStep('analyzing');
+setAnalysisMode('video');
+
+// ← acá va todo el bloque nuevo
+setStatusText("Preparando video...");
+setAnalysisProgress(5);
+
+let fileToUpload = videoFile;
+
+const needsTranscode = 
+  videoFile.type === 'video/quicktime' ||
+  videoFile.type === 'video/x-m4v' ||
+  videoFile.type === 'video/hevc' ||
+  videoFile.name.toLowerCase().endsWith('.mov') ||
+  videoFile.name.toLowerCase().endsWith('.hevc');
+
+if (needsTranscode) {
+  setStatusText("Optimizando formato del video...");
+  try {
+    fileToUpload = await transcodeToH264(videoFile, (pct) => {
+      setStatusText(`Optimizando video... ${pct}%`);
+      setAnalysisProgress(5 + Math.round(pct * 0.05));
+    });
+  } catch (transcodeErr) {
+    console.warn('Transcodificación falló, intentando con original:', transcodeErr);
+    fileToUpload = videoFile;
+  }
+}
+
+const mimeType = 'video/mp4';
+// ← fin del bloque nuevo
+
 
   try {
     const { error: uploadError } = await supabase.storage
