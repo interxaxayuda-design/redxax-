@@ -851,7 +851,7 @@ EJEMPLO de honestVerdict bien construido:
 EJEMPLO de honestVerdict MAL construido (prohibido):
   "El video tiene problemas con el hook, la retención es baja, falta urgencia y el CTA no es claro."
   → Eso es una lista de diagnósticos. No es un veredicto. No lo uses.
-════════════════════════════════════════════════════════════
+
 
 PONDERACIÓN BASE (antes de penalizaciones):
 hook 20% | retencion_ritmo 13% | claridad_producto 12% | confianza_credibilidad 11% | emocion_deseo 11% | propuesta_valor 12% | call_to_action 9% | produccion_estetica 7% | tendencias_formato 5%
@@ -1355,7 +1355,6 @@ setAnalysisProgress(5);
 
 let fileToUpload = videoFile;
 
-// Siempre transcodificar — garantiza H.264 sin importar el codec original
 setStatusText("Optimizando video para análisis...");
 try {
   fileToUpload = await transcodeToH264(videoFile, (pct) => {
