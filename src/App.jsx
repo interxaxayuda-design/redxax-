@@ -237,31 +237,6 @@ Watch this video carefully and answer ONLY with this exact JSON. No text before.
 }
 `;
 
-const deriveFlags = (obs) => {
-  // Si preFacts está vacío (CALL 0 falló), no derivar nada
-  // Dejar que los flags de Gemini Strategy Brain sean la fuente
-  if (!obs || Object.keys(obs).length === 0) return {};
-
-  const hookType = (() => {
-    if (obs.logo_en_s0) return 'muerto';
-    if (obs.imagen_alto_impacto && obs.producto_en_s0) return 'bait_con_puente';
-    if (obs.imagen_alto_impacto && !obs.producto_en_s0) return 'bait_desconectado';
-    if (obs.pregunta_al_espectador || obs.afirmacion_contradictoria) return 'explosivo';
-    if (obs.producto_en_s0 && !obs.pregunta_al_espectador) return 'apertura_informativa';
-    if (obs.movimiento_real && obs.audio_desde_s0) return 'debil';
-    return 'muerto';
-  })();
-
-  return {
-    hook_type: hookType,
-    ad_filter_triggered: !!obs.logo_en_s0,
-    no_audio_from_s0: !obs.audio_desde_s0,
-    is_static_slideshow: !obs.movimiento_real,
-    pain_missing: !obs.dolor_antes_s5,
-    pain_late: Number(obs.segundo_dolor) > 5 && Number(obs.segundo_dolor) > 0,
-    movimiento_real: !!obs.movimiento_real,
-  };
-};
 
 
 
@@ -1449,7 +1424,21 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const strategyRaw = extractGeminiText(call2Data);
     const flagsFromStrategy = extractFlags(strategyRaw);
     const strategyAnalysis = stripFlags(strategyRaw);
-    const flagsDeterministic = { ...flagsFromStrategy, ...deriveFlags(preFacts) };
+    const flagsDeterministic = {
+  ...flagsFromStrategy,
+  ...(Object.keys(preFacts).length > 0 && {
+    hook_type: preHookType,
+    ad_filter_triggered: !!preFacts.logo_en_s0,
+    no_audio_from_s0: preFacts.audio_desde_s0 === false
+      ? true : flagsFromStrategy.no_audio_from_s0,
+    is_static_slideshow: preFacts.movimiento_real === false
+      ? true : flagsFromStrategy.is_static_slideshow,
+    pain_missing: preFacts.dolor_antes_s5 === false
+      ? true : flagsFromStrategy.pain_missing,
+    pain_late: Number(preFacts.segundo_dolor) > 5
+      ? true : flagsFromStrategy.pain_late,
+  }),
+};
     console.log('[VIRAX] Flags:', flagsDeterministic);
 
     // CALL 3 — Scoring Brain
