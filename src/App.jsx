@@ -2282,134 +2282,122 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
   </div>
 )}
         {step === 'platform_select' && (
-  <div className="max-w-2xl mx-auto animate-in slide-in-from-bottom-10 duration-500">
-    <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-8 md:p-12 shadow-2xl overflow-y-auto max-h-[88vh]">
-      <div className="mb-10 text-center">
-        <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
+  <div className="max-w-2xl mx-auto animate-in slide-in-from-bottom-10 duration-500 pb-12">
+    <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-6 shadow-2xl">
+      
+      <div className="mb-6 text-center">
+        <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-3">
           <TrendingUp className="w-3 h-3" /> Paso previo al análisis
         </div>
-        <h3 className="text-3xl font-black italic uppercase tracking-tighter">
+        <h3 className="text-2xl font-black italic uppercase tracking-tighter">
           Configurá el análisis
         </h3>
-        <p className="text-slate-400 mt-3 font-medium">
-          El algoritmo se calibra según tu plataforma y tamaño de cuenta.
-        </p>
       </div>
 
       {/* ── PLATAFORMA ── */}
-<div className="mb-8">
-  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-600 mb-4">
-    Plataforma objetivo
-  </p>
-  <div className="grid grid-cols-3 gap-2">
-    {[
-      { id: 'tiktok', name: 'TikTok',  sub: 'FYP',     icon: '🎵' },
-      { id: 'reels',  name: 'Reels',   sub: 'Explorar', icon: '📸' },
-      { id: 'shorts', name: 'Shorts',  sub: 'Feed',     icon: '▶️' },
-    ].map((p) => (
-      <button
-        key={p.id}
-        onClick={() => setSelectedPlatform(p.id)}
-        className={`relative flex flex-col items-center gap-1.5 p-4 rounded-[1.25rem] border transition-all duration-200 overflow-hidden
-          ${selectedPlatform === p.id
-            ? 'border-purple-500/50 bg-purple-500/[0.08]'
-            : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:bg-white/[0.04] hover:-translate-y-px'}`}
-      >
-        <div className={`absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full border transition-all duration-200
-          ${selectedPlatform === p.id ? 'bg-purple-500 border-purple-500' : 'border-purple-500/40'}`} />
-        <span className="text-lg leading-none">{p.icon}</span>
-        <span className={`text-[11px] font-black uppercase tracking-wide transition-colors duration-200
-          ${selectedPlatform === p.id ? 'text-slate-200' : 'text-slate-500'}`}>
-          {p.name}
-        </span>
-        <span className={`text-[10px] italic font-bold transition-colors duration-200
-          ${selectedPlatform === p.id ? 'text-purple-400' : 'text-slate-700'}`}>
-          {p.sub}
-        </span>
-      </button>
-    ))}
-  </div>
-</div>
-
-{/* ── SEGUIDORES ── */}
-<div className="mb-8">
-  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-600 mb-4">
-    Tamaño de cuenta
-  </p>
-  <div className="grid grid-cols-2 gap-2">
-    {[
-      { id: 'nano',  range: '0 – 1K',      label: 'Nano'  },
-      { id: 'micro', range: '1K – 10K',    label: 'Micro' },
-      { id: 'mid',   range: '10K – 100K',  label: 'Mid'   },
-      { id: 'macro', range: '100K+',       label: 'Macro' },
-    ].map((r) => (
-      <button
-        key={r.id}
-        onClick={() => setSelectedFollowerRange(r.id)}
-        className={`relative flex items-center justify-between px-5 py-4 rounded-[1.25rem] border transition-all duration-200 overflow-hidden text-left
-          ${selectedFollowerRange === r.id
-            ? 'border-purple-500/50 bg-purple-500/[0.08]'
-            : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:-translate-y-px'}`}
-      >
-        <div>
-          <p className={`text-[15px] font-black italic tracking-tight transition-colors duration-200
-            ${selectedFollowerRange === r.id ? 'text-white' : 'text-slate-500'}`}>
-            {r.range}
-          </p>
-          <p className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-200
-            ${selectedFollowerRange === r.id ? 'text-purple-700' : 'text-slate-800'}`}>
-            {r.label}
-          </p>
+      <div className="mb-5">
+        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-600 mb-3">
+          Plataforma objetivo
+        </p>
+        <div className="grid grid-cols-3 gap-2">
+          {[
+            { id: 'tiktok', name: 'TikTok',  sub: 'FYP',      icon: '🎵' },
+            { id: 'reels',  name: 'Reels',   sub: 'Explorar', icon: '📸' },
+            { id: 'shorts', name: 'Shorts',  sub: 'Feed',     icon: '▶️' },
+          ].map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setSelectedPlatform(p.id)}
+              className={`relative flex flex-col items-center gap-1 p-3 rounded-[1.25rem] border transition-all duration-200
+                ${selectedPlatform === p.id
+                  ? 'border-purple-500/50 bg-purple-500/[0.08]'
+                  : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14]'}`}
+            >
+              <span className="text-lg leading-none">{p.icon}</span>
+              <span className={`text-[11px] font-black uppercase tracking-wide ${selectedPlatform === p.id ? 'text-white' : 'text-slate-500'}`}>
+                {p.name}
+              </span>
+            </button>
+          ))}
         </div>
-        <div className={`w-1.5 h-1.5 rounded-full border transition-all duration-200 shrink-0
-          ${selectedFollowerRange === r.id ? 'bg-purple-500 border-purple-500' : 'border-purple-500/40'}`} />
-        {/* barra inferior animada */}
-        <div className={`absolute bottom-0 left-0 h-[2px] bg-purple-500 rounded-r-full transition-all duration-300
-          ${selectedFollowerRange === r.id ? 'w-full' : 'w-0'}`} />
-      </button>
-    ))}
-  </div>
-</div> 
+      </div>
 
-{/* ── NICHO ── */}
-<div className="mb-6">
-  <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-600 mb-3">
-    Tipo de contenido
-  </p>
-  <div className="flex flex-wrap gap-2">
-    {[
-      { id: 'producto_fisico',    label: 'Producto físico'      },
-      { id: 'curso',              label: 'Curso / Info'         },
-      { id: 'servicio',           label: 'Servicio'             },
-      { id: 'inmobiliaria',       label: 'Inmobiliaria'         },
-      { id: 'app_software',       label: 'App / Software'       },
-      { id: 'restaurante_comida', label: 'Restaurante / Comida' },
-      { id: 'otro',               label: 'Otro / General'       },
-    ].map((n) => (
-      <button
-        key={n.id}
-        onClick={() => setSelectedNicho(n.id)}
-        className={`px-4 py-2 rounded-full border text-[12px] font-black italic transition-all duration-200
-          ${selectedNicho === n.id
-            ? 'border-purple-500/60 bg-purple-500/15 text-white'
-            : 'border-white/10 bg-white/[0.02] text-slate-500 hover:border-white/20 hover:text-slate-300'}`}
-      >
-        {n.label}
-      </button>
-    ))}
-  </div>
-</div>
+      {/* ── SEGUIDORES ── */}
+      <div className="mb-5">
+        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-600 mb-3">
+          Tamaño de cuenta
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { id: 'nano',  range: '0 – 1K',     label: 'Nano'  },
+            { id: 'micro', range: '1K – 10K',   label: 'Micro' },
+            { id: 'mid',   range: '10K – 100K', label: 'Mid'   },
+            { id: 'macro', range: '100K+',      label: 'Macro' },
+          ].map((r) => (
+            <button
+              key={r.id}
+              onClick={() => setSelectedFollowerRange(r.id)}
+              className={`relative flex items-center justify-between px-4 py-3 rounded-[1.25rem] border transition-all duration-200 text-left overflow-hidden
+                ${selectedFollowerRange === r.id
+                  ? 'border-purple-500/50 bg-purple-500/[0.08]'
+                  : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14]'}`}
+            >
+              <div>
+                <p className={`text-[13px] font-black italic ${selectedFollowerRange === r.id ? 'text-white' : 'text-slate-500'}`}>
+                  {r.range}
+                </p>
+                <p className={`text-[9px] font-black uppercase tracking-[0.2em] ${selectedFollowerRange === r.id ? 'text-purple-400' : 'text-slate-700'}`}>
+                  {r.label}
+                </p>
+              </div>
+              <div className={`w-1.5 h-1.5 rounded-full border shrink-0 ${selectedFollowerRange === r.id ? 'bg-purple-500 border-purple-500' : 'border-purple-500/40'}`} />
+              <div className={`absolute bottom-0 left-0 h-[2px] bg-purple-500 transition-all duration-300 ${selectedFollowerRange === r.id ? 'w-full' : 'w-0'}`} />
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── NICHO ── */}
+      <div className="mb-6">
+        <p className="text-[10px] font-black uppercase tracking-[0.25em] text-slate-600 mb-3">
+          Tipo de contenido
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { id: 'producto_fisico',    label: 'Producto físico'      },
+            { id: 'curso',              label: 'Curso / Info'         },
+            { id: 'servicio',           label: 'Servicio'             },
+            { id: 'inmobiliaria',       label: 'Inmobiliaria'         },
+            { id: 'app_software',       label: 'App / Software'       },
+            { id: 'restaurante_comida', label: 'Restaurante / Comida' },
+            { id: 'otro',               label: 'Otro / General'       },
+          ].map((n) => (
+            <button
+              key={n.id}
+              onClick={() => setSelectedNicho(n.id)}
+              className={`px-4 py-2 rounded-full border text-[12px] font-black italic transition-all duration-200
+                ${selectedNicho === n.id
+                  ? 'border-purple-500/60 bg-purple-500/15 text-white'
+                  : 'border-white/10 bg-white/[0.02] text-slate-500 hover:border-white/20 hover:text-slate-300'}`}
+            >
+              {n.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="flex justify-between items-center">
-        <button onClick={() => { setStep('upload'); setPendingVideoUrl(null); setSelectedPlatform(null); setSelectedFollowerRange(null); }}
-          className="text-sm font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-widest">
+        <button
+          onClick={() => { setStep('upload'); setPendingVideoUrl(null); setSelectedPlatform(null); setSelectedFollowerRange(null); }}
+          className="text-sm font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-widest"
+        >
           ← Volver
         </button>
         <button
           disabled={!selectedPlatform || !selectedFollowerRange || !selectedNicho}
           onClick={() => {
             if (analysisMode === 'video' && pendingVideoUrl) {
-             runNeuralAnalysis(pendingVideoUrl, selectedPlatform, selectedFollowerRange, pendingVideoFile); // ← cambiás esta línea
+              runNeuralAnalysis(pendingVideoUrl, selectedPlatform, selectedFollowerRange, pendingVideoFile);
             } else {
               runScriptAnalysis(selectedPlatform, selectedFollowerRange);
             }
