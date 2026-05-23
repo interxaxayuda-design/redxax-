@@ -203,20 +203,44 @@ const NICHE_CRITERIA = {
     "¿Genera curiosidad de probarlo?",
   ],
   otro: [
-    "¿Audio/texto ataca dolor o deseo concreto?",
-    "¿Producto/servicio aparece como solución?",
-    "¿Se entiende qué es sin pensar?",
-    "¿Ritmo mantiene atención hasta el final?",
-    "¿Queda claro qué debe hacer el espectador?",
-    "¿Genera emoción fuerte: deseo, curiosidad o urgencia?",
-    "¿Se entiende en <5 segundos incluso sin audio?",
-    "¿El primer frame genera curiosidad o deseo?",
-    "¿Se muestran pruebas o resultados verificables?",
-    "¿El video invita a comentar o compartir?",
-    "¿Se comunica urgencia o escasez?",
-    "¿Hay micro-recompensas cada 2–3 segundos?",
-    "¿Se diferencia claramente de la competencia?",
-  ],
+  // ── HOOK Y PRIMER FRAME ──
+  "¿El primer frame genera curiosidad, deseo o impacto antes de que el cerebro decida scrollear?",
+  "¿El video abre con algo que el espectador NO esperaba ver?",
+  "¿Se entiende de qué trata en menos de 5 segundos, incluso sin audio?",
+
+  // ── DOLOR Y DESEO ──
+  "¿El audio o texto nombra un dolor, problema o deseo concreto del espectador antes de mostrar la solución?",
+  "¿El espectador siente que el video le está hablando a él específicamente?",
+  "¿Genera una emoción fuerte: deseo, curiosidad, urgencia, identificación o sorpresa?",
+
+  // ── PRODUCTO O NEGOCIO ──
+  "¿Lo que se vende (producto, local, plato, servicio, experiencia) aparece como solución obvia al problema planteado?",
+  "¿Se ve funcionando, en uso, o en contexto real — no solo de frente o de costado?",
+  "¿Queda claro qué es y por qué vale la pena en menos de 10 segundos?",
+
+  // ── CONFIANZA Y PRUEBA ──
+  "¿Hay alguna prueba real: reseña, resultado, testimonio, cantidad de clientes, premio o certificación?",
+  "¿La persona que aparece genera confianza o autoridad sobre lo que muestra?",
+  "¿La calidad visual suma credibilidad o la resta?",
+
+  // ── RITMO Y RETENCIÓN ──
+  "¿Hay algo nuevo cada 2–3 segundos: cambio de plano, texto, ángulo, acción o dato?",
+  "¿Hay algún plano de más de 4 segundos donde no pasa nada nuevo que haría scrollear?",
+  "¿El ritmo de edición es compatible con la energía del negocio o producto que se muestra?",
+
+  // ── URGENCIA Y FRICCIÓN ──
+  "¿Hay una razón concreta para actuar hoy: oferta, stock limitado, temporada, evento próximo?",
+  "¿El siguiente paso (ir al local, llamar, pedir, comprar) queda claro sin tener que pensar?",
+  "¿El proceso para obtenerlo parece simple o genera fricción?",
+
+  // ── COMPARTIBILIDAD ──
+  "¿El video tiene algún elemento que haría que alguien lo mande a un amigo: dato revelador, humor, sorpresa o identificación fuerte?",
+  "¿Hay algo en el video que el espectador usaría para decir algo sobre sí mismo al compartirlo?",
+
+  // ── DIFERENCIACIÓN ──
+  "¿Se diferencia visualmente de otros videos del mismo rubro en el feed?",
+  "¿Hay algo en el video que solo este negocio o producto podría mostrar?",
+],
 };
 
 const buildPreClassifierPrompt = () => `
@@ -1469,7 +1493,7 @@ const trackPrediction = async (result) => {
     actual_views: null,
     actual_viral: null
   });
-};  //const scores = buildPenalties(flagsDeterministic)  //catch (err)
+};  //const scores = buildPenalties(flagsDeterministic)  //catch (err)  //const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic)
 
 const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   if (videoFile.size > 45 * 1024 * 1024) {
@@ -1653,6 +1677,16 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
     // ← aplicar scoring determinístico encima de lo que tiró la IA
 const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic);
+
+// Si el video tiene buen viral, los scores no pueden caer en rojo
+const viralScore = parsedFinal.viralScore?.score ?? 0;
+if (viralScore >= 65) {
+  parsedFinal.salesScore = {
+    ...parsedFinal.salesScore,
+    score: Math.max(parsedFinal.salesScore?.score ?? 0, 35)
+  };
+  parsedFinal.potentialScore = Math.max(parsedFinal.potentialScore ?? 0, 38);
+}
 
 const finalResult = {
   ...parsedFinal,           // ← parsedFinal en vez de parsed
