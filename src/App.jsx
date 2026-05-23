@@ -2378,14 +2378,14 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
   </p>
   <div className="grid grid-cols-2 gap-2">
     {[
-      { id: 'producto_fisico', label: 'Producto físico' },
-      { id: 'curso',          label: 'Curso / Info'    },
-      { id: 'servicio',       label: 'Servicio'        },
-      { id: 'inmobiliaria',   label: 'Inmobiliaria'    },
-      { id: 'app_software',   label: 'App / Software'  },
-      { id: 'restaurante_comida', label: 'Restaurante / Comida'  },
-      { id: 'otro',           label: 'Otro'            },
-    ].map((n) => (
+  { id: 'producto_fisico',    label: 'Producto físico'       },
+  { id: 'curso',              label: 'Curso / Info'          },
+  { id: 'servicio',           label: 'Servicio'              },
+  { id: 'inmobiliaria',       label: 'Inmobiliaria'          },
+  { id: 'app_software',       label: 'App / Software'        },
+  { id: 'restaurante_comida', label: 'Restaurante / Comida'  },
+  { id: 'otro',               label: 'Otro / General'        },
+].map((n) => (
       <button
         key={n.id}
         onClick={() => setSelectedNicho(n.id)}
