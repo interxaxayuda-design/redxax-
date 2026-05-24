@@ -340,6 +340,10 @@ CONTEXTO INAMOVIBLE:
 - El hook más efectivo genera "¿qué es eso?" — no muestra el producto directamente.
 - La gente compra para escapar del dolor. Si el video no nombra el dolor antes de mostrar el producto, no conecta.
 - La gente comparte lo que dice algo sobre ellos: identidad, utilidad social, sorpresa o validación.
+- Un video que parece hecho por un usuario real convierte más que uno que parece publicidad, aunque tenga menos producción.
+- Lo absurdo o inesperado desactiva el filtro de anuncio — el cerebro no tiene respuesta automática para "esto no lo esperaba".
+- Una marca grande que actúa como usuario genera curiosidad por contraste: "¿por qué hacen esto?"
+- El audio trending no es decoración — le dice al algoritmo y al espectador que el creador está dentro de la cultura.
 
 HOOK — TIPOS (elegir uno al reportar):
 - explosivo: el espectador no puede saber qué sigue en s0
@@ -542,6 +546,13 @@ TRAMPA DEL BAIT: hook retiene pero producto no tiene relación → bait_disconne
 STEP 5 — COMPARTIBILIDAD
 ¿Por qué alguien compartiría? → identidad / utilidad social / sorpresa / validación / ninguno
 ¿Hay elemento "no sabía eso"? → describir o indicar ausencia
+
+FACTORES ADICIONALES DE VIRALIDAD (evaluar si están presentes):
+- AUTENTICIDAD PERCIBIDA: ¿el video parece hecho por una persona real o por un departamento de marketing? Real = ventaja enorme.
+- SORPRESA CONTEXTUAL: ¿el video hace algo que NO se esperaría de este tipo de cuenta o producto? Ej: marca grande usando audio turbio, producto serio mostrado de forma absurda.
+- AUDIO CULTURAL: ¿el audio usado está en tendencia o es propio de la plataforma? Audio trending = distribución orgánica extra.
+- PRODUCTO QUE SE DEMUESTRA A SÍ MISMO: ¿el video muestra el producto haciendo algo que parece imposible o sorprendente? La demostración inesperada vende sin necesitar texto.
+Si alguno está presente: viralScore +5 a +12 según intensidad. Reportar cuál y por qué.
 
 STEP 6 — VEREDICTO FINAL
 - Fortalezas reales (solo las visibles antes del scroll)
