@@ -158,21 +158,66 @@ const safeParseJSON = (rawText, context = '') => {
 
 const NICHE_CRITERIA = {
   producto_fisico: [
-    "¿Ataca un problema cotidiano real?",
-    "¿El producto aparece como solución obvia sin explicación?",
-    "¿Qué es y para qué sirve en <5 segundos?",
-    "¿Se ve funcionando de verdad, no solo de costado?",
-    "¿Genera sensación de 'necesito esto'?",
-    "¿Sin CTA explícito, el producto se vende solo visualmente?",
-  ],
-  inmobiliaria: [
-    "¿Luz natural y espacios amplios visibles?",
-    "¿Barrio/zona mencionado como beneficio concreto?",
-    "¿Genera aspiración de vivir ahí?",
-    "¿Precio o contacto aparece claramente?",
-    "¿Hay persona real que genere confianza?",
-    "¿Transmite seriedad profesional?",
-  ],
+  // ── EL PROBLEMA PRIMERO (motor principal de conversión) ──
+  "¿El video muestra el PROBLEMA antes de mostrar el producto — o arranca directo con el producto?",
+  "¿El espectador puede identificarse con el problema en menos de 3 segundos?",
+  "¿El problema que resuelve es algo que le pasa a la mayoría de la gente, no a un nicho muy específico?",
+
+  // ── LA DEMO QUE CONVIERTE ──
+  "¿El producto se ve FUNCIONANDO de verdad, no de costado o en packaging?",
+  "¿Hay un momento de resultado sorprendente o que parece imposible — el tipo de cosa que haría decir 'esperá, ¿en serio funciona así'?",
+  "¿El before/after o la transformación es visible en el video?",
+
+  // ── EL EFECTO SCRAPPY (dato de investigación clave) ──
+  // UGC-style convierte 40% mejor que producción pulida
+  "¿El video parece grabado por una persona real usando el producto, o parece un anuncio corporativo?",
+  "¿La calidad de producción es honesta — ni demasiado pulida (parece aviso) ni tan mala que reste credibilidad?",
+  
+  // ── IDENTIDAD ──
+  "¿Usar o tener este producto diría algo sobre el estilo de vida o la identidad de quien lo compra?",
+  "¿El espectador puede imaginarse mostrándoselo a alguien con 'mirá esto'?",
+
+  // ── URGENCIA E IMPULSO ──
+  "¿El precio parece accesible o genera barrera de entrada sin contexto?",
+  "¿El CTA es claro — hay un paso obvio y simple para conseguirlo?",
+  "¿Hay razón para comprarlo ahora y no la semana que viene?",
+],
+
+ inmobiliaria: [
+  // ── EL HOOK INMOBILIARIO (radicalmente distinto al de producto) ──
+  // La investigación confirma: "¿Adivinás cuánto sale esta casa en Texas?" 
+  // genera más engagement que "Hermosa casa de 3 ambientes"
+  "¿El video abre con una pregunta de precio, un dato de mercado o algo que genere '¿en serio?' antes de mostrar la propiedad?",
+  "¿El primer frame muestra el detalle más impactante de la propiedad — no la fachada, no el living genérico?",
+  "¿Hay algún dato revelador — precio sorprendente, zona codiciada, detalle oculto — que active 'tengo que mandárselo a alguien'?",
+
+  // ── EL AGENTE COMO PRODUCTO ──
+  // Investigación Bloomberg: la honestidad radical gana sobre los tours perfectos
+  "¿El agente aparece en el video con personalidad visible — humor, punto de vista propio, comentario inesperado?",
+  "¿El video parece hecho por una persona real o por un departamento de marketing?",
+  "¿Hay un momento de honestidad — mencionar algo imperfecto, gracioso o inesperado de la propiedad?",
+  "¿El agente genera confianza genuina, no confianza corporativa?",
+
+  // ── ASPIRACIÓN E IDENTIDAD (el motor viral real) ──
+  "¿El video comunica un estilo de vida, no solo metros cuadrados?",
+  "¿El espectador puede imaginarse viviendo ahí — no solo visitando?",
+  "¿Compartir este video diría algo sobre las aspiraciones o el gusto de quien lo comparte?",
+  "¿Hay un elemento de FOMO inmobiliario — 'esto no va a durar', precio que sorprende, zona que explota?",
+
+  // ── BARRIO Y ZONA (hiperlocal = viral en inmobiliaria) ──
+  "¿El barrio o zona aparece como beneficio concreto, no solo mencionado de pasada?",
+  "¿Hay referencia a algo específico del lugar — comercios, transporte, ambiente — que lo haga real?",
+
+  // ── CTA INMOBILIARIO ──
+  // Muy diferente al de producto: es conversacional, no transaccional
+  "¿El CTA es conversacional — 'escribime', 'comentá tu presupuesto' — no un link de compra?",
+  "¿Queda claro cómo contactar al agente en máximo 2 pasos?",
+
+  // ── RITMO ESPECÍFICO ──
+  "¿El recorrido tiene cortes cada 2-3 segundos o es un plano largo aburrido?",
+  "¿Cada ambiente se muestra con su mejor ángulo antes de cortar?",
+],
+
   curso: [
     "¿Se muestra resultado/transformación del alumno en el primer frame?",
     "¿Problema que resuelve claro en <5 segundos?",
@@ -203,51 +248,36 @@ const NICHE_CRITERIA = {
     "¿Genera curiosidad de probarlo?",
   ],
 
-  restaurante_comida: [
-  // ── PRIMER FRAME — APETITO INMEDIATO ──
+restaurante_comida: [
+  // ── PRIMER FRAME = ANTOJO INMEDIATO ──
   "¿El primer frame activa hambre, antojo o FOMO antes de que el cerebro procese qué es?",
-  "¿El plato, bebida o ambiente es tan visual que el espectador para el dedo sin decidirlo?",
   "¿Se ve rico, fresco, abundante o especial sin necesidad de leer nada?",
-  "¿La iluminación y el encuadre hacen justicia al plato o lo apagan?",
+  "¿La iluminación hace justicia al plato o lo apaga?",
 
-  // ── PLACER SENSORIAL (reemplaza completamente al 'dolor') ──
-  "¿El video activa los sentidos: se escucha el crujido, el chisporroteo, la salsa cayendo, el queso estirándose?",
-  "¿Hay un momento específico que haría que alguien mande el video con 'quiero esto'?",
-  "¿El espectador se imagina el sabor o la textura antes de que termine el video?",
+  // ── ASMR SENSORIAL (investigación: es el principal motor de retención en comida) ──
+  "¿Se escucha el crujido, el chisporroteo, la salsa cayendo, el queso estirándose?",
   "¿Hay close-ups que muestran la textura, el vapor, el color o el movimiento del alimento?",
-  "¿La comida o bebida se ve en su mejor momento posible, o parece foto de menú genérico?",
+  "¿El espectador se imagina el sabor o la textura antes de que termine el video?",
+  "¿Hay un momento específico que haría que alguien mande el video con 'quiero esto'?",
 
   // ── AMBIENTE Y EXPERIENCIA ──
-  "¿El lugar suma deseo o es neutro/negativo para la experiencia?",
   "¿Se transmite la vibra del lugar: tranquilo, animado, íntimo, familiar, exclusivo?",
   "¿El ambiente hace que el espectador quiera estar ahí, no solo pedir delivery?",
-  "¿Hay detalles del lugar (decoración, luz, música visible, gente disfrutando) que construyen deseo?",
 
   // ── REACCIÓN HUMANA ──
   "¿Hay una reacción real de alguien comiendo: expresión, comentario, gesto de placer?",
   "¿La reacción se siente genuina o parece actuada?",
-  "¿La persona que aparece genera identificación — es alguien como el espectador?",
 
-  // ── IDENTIDAD Y PERTENENCIA ──
-  "¿El video comunica a qué tipo de persona le gusta este lugar (sin decirlo explícitamente)?",
-  "¿Compartir este video diría algo sobre el gusto o estilo de quien lo comparte?",
-  "¿La estética del video encaja con la identidad que el lugar quiere proyectar?",
+  // ── IDENTIDAD (motor viral específico de comida) ──
+  // Investigación: la gente comparte comida porque dice "soy la persona que conoce los mejores lugares"
+  "¿El video comunica a qué tipo de persona le gusta este lugar — sin decirlo explícitamente?",
+  "¿Compartir este video diría algo positivo sobre el gusto o el estilo de quien lo comparte?",
 
-  // ── ANTICIPACIÓN Y URGENCIA ──
-  "¿Hay alguna razón para ir hoy o esta semana: novedad del menú, promoción, evento, temporada?",
-  "¿El video genera la sensación de que si no vas pronto, te lo vas a perder?",
-  "¿El precio o ticket promedio parece accesible o genera barrera sin contexto?",
-
-  // ── FRICCIÓN Y SIGUIENTE PASO ──
-  "¿Queda claro cómo llegar, pedir o reservar sin tener que buscar?",
-  "¿El proceso parece simple: un mensaje, una llamada, un link, una dirección?",
-
-  // ── DIFERENCIACIÓN ──
-  "¿Hay algo en el video que solo este lugar podría mostrar?",
-  "¿Se diferencia visualmente de otros restaurants o videos de comida en el feed?",
-  "¿Hay un plato, preparación o detalle que sea la razón para ir específicamente ahí?",
+  // ── URGENCIA Y FRICCIÓN ──
+  "¿Hay razón para ir esta semana: ítem nuevo, temporada, evento, oferta?",
+  "¿El nombre del lugar o la ubicación aparece claramente en algún momento del video?",
+  "¿El proceso para llegar o pedir parece simple — un mensaje, una dirección, un link?",
 ],
-
   
   otro: [
   // ── HOOK Y PRIMER FRAME ──
@@ -466,6 +496,26 @@ explosivo → viralScore hasta 90 | bait_con_puente → hasta 85 | bait_desconec
 audio_desde_s0=false → viralScore -15 adicional sobre cualquier techo
 ` : '';
 
+const nichoInmobiliariaOverride = nicho === 'inmobiliaria' ? `
+⚠️ NICHO INMOBILIARIA — REGLAS INAMOVIBLES:
+El motor de conversión NO es dolor. Es ASPIRACIÓN + CONFIANZA EN EL AGENTE.
+
+REEMPLAZAR capas de compra estándar por:
+1. ASPIRACIÓN: ¿el primer frame genera deseo de vivir ese estilo de vida antes de s3?
+2. AGENTE: ¿hay persona real con personalidad visible — humor, honestidad, punto de vista propio?
+3. DATO VIRAL: ¿hay algo que active "tengo que mandárselo" — precio sorprendente, zona, detalle oculto?
+4. FRICCIÓN DE CONTACTO: ¿queda claro cómo llegar al agente en máximo 2 pasos?
+
+REGLAS FIJAS DE SCORING:
+- pain_missing = false SIEMPRE. No existe dolor en inmobiliaria.
+- Un agente con personalidad + honestidad > un tour perfectamente producido sin cara.
+- Hook efectivo en inmobiliaria = pregunta de precio o dato de mercado antes de mostrar la propiedad.
+- salesScore base mínimo 50 si hay agente visible + propiedad aspiracional + contacto claro.
+- CTA implícito (nombre del agente + zona visibles) ES un CTA completo para este nicho.
+- no_urgency solo aplica si hay oportunidad de precio o temporalidad que debería aparecer y no aparece.
+- El motor de compartir en inmobiliaria es DATO REVELADOR o ASPIRACIÓN, nunca identificación con un dolor.
+` : '';
+
  // ← AGREGÁ ESTO ACÁ
   const nichoComidaOverride = nicho === 'restaurante_comida' ? `
 ⚠️ NICHO COMIDA/RESTAURANTE — REGLAS ESPECIALES INAMOVIBLES:
@@ -482,13 +532,17 @@ REGLAS FIJAS:
 - no_urgency solo aplica si hay una promo o evento específico que debería aparecer y no aparece.
 ` : '';
 
+
+
   return `Estratega de ventas y viralidad. Plataforma: ${pName} | Objetivo: ${objetivo} | Nicho: ${nicho}
 
+  
   
   
 
 ${truthBlock}
 ${nichoComidaOverride}
+${nichoInmobiliariaOverride}   // ← agregás esta línea
 REPORTE FORENSE:
 ${viewerAnalysis}
 
@@ -794,15 +848,23 @@ REGLAS DE APLICACIÓN:
 const buildScoringBrainPrompt = (strategyAnalysis, platform, objetivo, nicho, flags) => {
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
   const penaltiesBlock = buildPenalties(flags);
-
-    // ← ACÁ va la variable, ANTES del return
-  const nichoScoringNote = nicho === 'restaurante_comida' ? `
-NOTA CRÍTICA — NICHO RESTAURANTE/COMIDA:
-- pain_missing NO penaliza en este nicho. El motor de conversión es deseo, no dolor.
-- call_to_action: un nombre de lugar visible o ubicación en pantalla = CTA implícito válido. No penalizar ausencia de CTA verbal.
-- salesScore base mínimo 50 si el video activa deseo visual fuerte (plato apetecible, ambiente atractivo, reacción genuina).
-- Un video de comida viral con 200K+ interacciones que no tiene CTA explícito pero genera antojo = salesScore ≥60.
+  
+const nichoScoringNote = nicho === 'restaurante_comida' ? `
+NOTA — NICHO RESTAURANTE/COMIDA:
+- pain_missing NO penaliza. Motor = deseo sensorial.
+- salesScore base mínimo 50 si activa deseo visual fuerte.
+- CTA implícito (nombre del lugar visible) es suficiente.
+` : nicho === 'inmobiliaria' ? `
+NOTA — NICHO INMOBILIARIA:
+- pain_missing NO penaliza. Motor = aspiración + agente.
+- salesScore base mínimo 50 si hay agente con personalidad + propiedad aspiracional.
+- El hook más efectivo es pregunta de precio o dato de mercado, no el producto desde s0.
+- Un tour producido perfecto sin agente visible = menor salesScore que un video raw con agente auténtico.
+- confianza_credibilidad evalúa al AGENTE, no al producto.
+- call_to_action: "escribime", "comentá tu zona" = CTA completo para este nicho.
 ` : '';
+
+
 
 
   return `
@@ -1189,9 +1251,14 @@ const ShinyCard = ({ children, className = '', tilt }) => {
 
 const applyDeterministicScoring = (parsed, flags, nicho = '') => {
 
-    // Para restaurante/comida, pain_missing no penaliza //const applyDeterministicScoring = (parsed, flags) => {  // ← falta nicho acá
+    // Para restaurante/comida, pain_missing no penaliza //const applyDeterministicScoring = (parsed, flags) => {  // ← falta nicho acá  //const flagsDeterministic = {
   if (nicho === 'restaurante_comida') {
     flags = { ...flags, pain_missing: false, pain_late: false };
+
+    // Para nichos sin dolor, nunca penalizar por pain_missing
+if (nicho === 'restaurante_comida' || nicho === 'inmobiliaria') {
+  flags = { ...flags, pain_missing: false, pain_late: false };
+}
   }
   
   const cap = (v, max) => Math.min(v, max);
@@ -1708,29 +1775,27 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const strategyAnalysis = stripFlags(strategyRaw);
     const flagsDeterministic = {
   ...flagsFromStrategy,
-  ...(Object.keys(preFacts).length > 0 && {
-    // Hook: el pre-clasificador sí es bueno detectando el primer frame
-    hook_type: preHookType,
-    ad_filter_triggered: !!preFacts.logo_en_s0,
 
-    no_audio_from_s0: (preFacts.audio_desde_s0 === false && flagsFromStrategy.no_audio_from_s0)
-      ? true
-      : flagsFromStrategy.no_audio_from_s0,
+  // ── HOOK: siempre del pre-clasificador, es más corto y preciso ──
+  hook_type: preHookType,
+  ad_filter_triggered: !!preFacts.logo_en_s0,
 
-    is_static_slideshow: (preFacts.movimiento_real === false && flagsFromStrategy.is_static_slideshow)
-      ? true
-      : flagsFromStrategy.is_static_slideshow,
+  // ── AUDIO: si CUALQUIERA lo detecta, es real (OR, no AND) ──
+  no_audio_from_s0: (preFacts.audio_desde_s0 === false) 
+    || flagsFromStrategy.no_audio_from_s0,
 
-    // Dolor: solo si pre-clasificador confirma ausencia Y strategy también
-    pain_missing: (preFacts.dolor_antes_s5 === false && flagsFromStrategy.pain_missing)
-      ? true
-      : flagsFromStrategy.pain_missing,
+  // ── IMÁGENES ESTÁTICAS: igual ──
+  is_static_slideshow: (preFacts.movimiento_real === false) 
+    || flagsFromStrategy.is_static_slideshow,
 
-    pain_late: (Number(preFacts.segundo_dolor) > 5 && flagsFromStrategy.pain_late)
-      ? true
-      : flagsFromStrategy.pain_late,
-  }),
-};
+  // ── DOLOR: para nichos donde el dolor existe ──
+  // Si el pre-clasificador dice no hay dolor, creerle
+  pain_missing: (preFacts.dolor_antes_s5 === false) 
+    || flagsFromStrategy.pain_missing,
+
+  pain_late: (Number(preFacts.segundo_dolor) > 5) 
+    || flagsFromStrategy.pain_late,
+};  //applyDeterministicScoring
 
     console.log('[VIRAX] Flags:', flagsDeterministic);
 
