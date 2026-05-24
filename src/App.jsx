@@ -336,11 +336,13 @@ restaurante_comida: [
 };
 
 const buildPreClassifierPrompt = () => `
-Watch this video carefully and answer ONLY with this exact JSON. No text before. No text after. No explanation.
+Watch this video carefully and answer ONLY with this exact JSON. No text before. No text after.
 
 {
   "logo_en_s0": <true if the first frame shows a brand logo or brand name prominently | false>,
   "producto_en_s0": <true if the product or service being sold is the main visual element in the first frame | false>,
+  "producto_en_accion_s0": <true if the product is actively DOING something in the first frame — transforming, cleaning, fixing, pressing, cutting, demonstrating a result — NOT just displayed or shown statically | false>,
+  "transformacion_visible": <true if the video shows a clear before/after, a problem being solved visually, or a satisfying transformation process (ironing wrinkles, cleaning dirt, cutting food, applying something) | false>,
   "audio_desde_s0": <true if there is music or voice with energy starting at or before second 1 | false>,
   "movimiento_real": <true if there is real movement: person talking, hands in action, product being used, camera moving — NOT automatic slideshow transitions | false>,
   "imagen_alto_impacto": <true if the first second shows an explosion, fall, conflict, extreme result, or other high-impact visual event | false>,
@@ -352,6 +354,8 @@ Watch this video carefully and answer ONLY with this exact JSON. No text before.
   "segundo_dolor": <exact second when the pain words or image first appear, or 0 if none>
 }
 `;
+
+//preHookType
 
 
 
@@ -842,7 +846,7 @@ REGLAS DE APLICACIÓN:
 };
 
 
-// ============================================================
+// ============================================================  //buildPreClassifierPrompt
 // SCORING BRAIN
 // ============================================================
 const buildScoringBrainPrompt = (strategyAnalysis, platform, objetivo, nicho, flags) => {
@@ -1251,9 +1255,21 @@ const ShinyCard = ({ children, className = '', tilt }) => {
 
 const applyDeterministicScoring = (parsed, flags, nicho = '') => {
 
-    // Para restaurante/comida, pain_missing no penaliza //const applyDeterministicScoring = (parsed, flags) => {  // ← falta nicho acá  //const flagsDeterministic = {
-  if (nicho === 'restaurante_comida') {
-    flags = { ...flags, pain_missing: false, pain_late: false };
+ if (nicho === 'restaurante_comida') {
+  flags = {
+    ...flags,
+    pain_missing: false,
+    pain_late: false,
+    // Mostrar el plato desde s0 ES el hook correcto en comida — no penalizar
+    hook_is_direct_info: false,
+    // Si el hook fue clasificado como apertura_informativa solo por mostrar
+    // la comida desde s0, ignorar ese cap — en comida eso es un hook visual fuerte
+    hook_type: flags.hook_type === 'apertura_informativa' ? 'debil' : flags.hook_type,
+    // La urgencia en comida es implícita (local visible, ambiente), no verbal
+    no_urgency: false,
+    // Confianza en comida = atractivo visual, no demo de producto
+    trust_gap: false,
+  };
 
     // Para nichos sin dolor, nunca penalizar por pain_missing
 if (nicho === 'restaurante_comida' || nicho === 'inmobiliaria') {
@@ -1715,13 +1731,21 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
       preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
       preHookType = (() => {
-        if (preFacts.logo_en_s0) return 'muerto';
-        if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0) return 'bait_con_puente';
-        if (preFacts.imagen_alto_impacto) return 'bait_desconectado';
-        if (preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria) return 'explosivo';
-        if (preFacts.producto_en_s0) return 'apertura_informativa';
-        return 'debil';
-      })();
+  if (preFacts.logo_en_s0) return 'muerto';
+  
+  if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0) return 'bait_con_puente';
+  if (preFacts.imagen_alto_impacto) return 'bait_desconectado';
+  if (preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria) return 'explosivo';
+  
+  // ← NUEVO: producto en acción o transformación visible = bait_con_puente, no apertura informativa
+  // Un video de plancha en acción resolviendo el problema ES un hook con puente emocional
+  if (preFacts.producto_en_accion_s0 || preFacts.transformacion_visible) return 'bait_con_puente';
+  
+  // Solo llega acá si el producto está estático, de frente, sin hacer nada
+  if (preFacts.producto_en_s0) return 'apertura_informativa';
+  
+  return 'debil';
+})();
 
       console.log('[VIRAX] Pre-facts:', preFacts, '| Hook:', preHookType);
     } catch (e) {
