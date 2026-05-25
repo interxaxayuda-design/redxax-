@@ -1549,25 +1549,41 @@ useEffect(() => {
     }
   };
 
-  const deductGems = async (amount, reason) => {
-  // Fix causa 1 y 2: asegurar que userId existe antes de continuar
+  // ── FIX: deductGems ──────────────────────────────────────────
+// El cambio está en el bloque if (error): ahora lee el body real
+// de la respuesta para que puedas ver qué está tirando la función.
+
+// ── FIX: deductGems ──────────────────────────────────────────
+// El cambio está en el bloque if (error): ahora lee el body real
+// de la respuesta para que puedas ver qué está tirando la función.
+
+const deductGems = async (amount, reason) => {
   let userId = localStorage.getItem('redxax_user_id');
   if (!userId) {
     userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     localStorage.setItem('redxax_user_id', userId);
-    // Crear el usuario en Supabase antes de descontar
     await supabase.functions.invoke('get-gems', { body: { userId } });
-  } //uploadVideoToFileAPI
+  }
 
   try {
     const { data, error } = await supabase.functions.invoke('deduct-gems', {
       body: { userId, amount, reason }
     });
 
-    // Fix causa 3: loguear el error real para diagnosticar
     if (error) {
-      console.error('deduct-gems network/function error:', error);
-      alert('Error de conexión al procesar las gemas. Revisá tu internet e intentá de nuevo.');
+      // ── ESTO ES LO QUE CAMBIA: leer el body real del error ──
+      let errorBody = '';
+      try {
+        // Supabase guarda la Response original en error.context
+        errorBody = await error.context?.text?.();
+      } catch (_) {}
+
+      console.error('deduct-gems error (status):', error.message);
+      console.error('deduct-gems error (body):', errorBody);  // ← ACÁ vas a ver el error real
+
+      // Si la función tiró 500, mostrar el body real en el alert
+      const legibleError = errorBody || error.message || 'Error desconocido';
+      alert(`Error al procesar las gemas:\n${legibleError}\n\nCopiá este mensaje y revisá los logs de tu Edge Function en Supabase.`);
       return false;
     }
 
@@ -1576,7 +1592,6 @@ useEffect(() => {
         alert(`Gemas insuficientes. Tenés ${data.balance} y necesitás ${amount}.`);
         setShowGemStore(true);
       } else {
-        // Mostrar el error real en vez de mensaje genérico
         console.error('deduct-gems logic error:', data);
         alert(`Error al procesar las gemas: ${data?.error || 'Error desconocido'}. Intentá de nuevo.`);
       }
@@ -1588,9 +1603,9 @@ useEffect(() => {
 
   } catch (err) {
     console.error('deduct-gems exception:', err);
-    alert('Error inesperado al procesar las gemas. Intentá de nuevo.'); //const [selectedPlatform, setSelectedPlatform] = useState(null);
+    alert('Error inesperado al procesar las gemas. Intentá de nuevo.');
     return false;
-  } //RETENCIÓN
+  }
 };
 
   const saveAnalysisToHistory = async (result, mode) => {
