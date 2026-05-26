@@ -1630,44 +1630,35 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       }
     });
     if (call1Error) throw call1Error;
-    const viewerAnalysis = extractGeminiText(call1Data);
+    const viewerRaw = extractGeminiText(call1Data);
 
-    // CALL 2 — Strategy Brain
-    setAnalysisProgress(50);
-    setStatusText("Evaluando ventas y viralidad...");
+    // Extraer FLAGS del Viewer Brain y limpiar el texto
+    const flagsFromViewer = extractFlags(viewerRaw);
+    const viewerAnalysis = stripFlags(viewerRaw);
+
+    // Merge determinístico de flags
+    const flagsDeterministic = {
+      ...flagsFromViewer,
+      hook_type: preHookType,
+      ad_filter_triggered: !!preFacts.logo_en_s0,
+      no_audio_from_s0: (preFacts.audio_desde_s0 === false) || !!flagsFromViewer.no_audio_from_s0,
+      is_static_slideshow: (preFacts.movimiento_real === false) || !!flagsFromViewer.is_static_slideshow,
+      pain_missing: (preFacts.dolor_antes_s5 === false) || !!flagsFromViewer.pain_missing,
+      pain_late: (Number(preFacts.segundo_dolor) > 5) || !!flagsFromViewer.pain_late,
+      no_rehook: (!preFacts.tiene_rehook && (preFacts.duracion_estimada ?? 0) > 20) || !!flagsFromViewer.no_rehook,
+      short_video_advantage: (preFacts.duracion_estimada ?? 999) < 15 || !!flagsFromViewer.short_video_advantage,
+      duration_kills_completion: ((preFacts.duracion_estimada ?? 0) > 60 && !preFacts.tiene_rehook) || !!flagsFromViewer.duration_kills_completion,
+    };
+
+    console.log('[VIRAX] Flags determinísticos:', flagsDeterministic);
+
+    // CALL 2 — Scoring Brain (Strategy Brain eliminado, lógica unificada acá)
+    setAnalysisProgress(60);
+    setStatusText("Calculando score final...");
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho, preFacts, preHookType),
-        maxOutputTokens: 6144,
-      }
-    });
-    if (call2Error) throw call2Error;
-
-    const strategyRaw = extractGeminiText(call2Data);
-    const flagsFromStrategy = extractFlags(strategyRaw);
-    const strategyAnalysis = stripFlags(strategyRaw);
-
-    const flagsDeterministic = {
-      ...flagsFromStrategy,
-      hook_type: preHookType,
-      ad_filter_triggered: !!preFacts.logo_en_s0,
-      no_audio_from_s0: (preFacts.audio_desde_s0 === false) || flagsFromStrategy.no_audio_from_s0,
-      is_static_slideshow: (preFacts.movimiento_real === false) || flagsFromStrategy.is_static_slideshow,
-      pain_missing: (preFacts.dolor_antes_s5 === false) || flagsFromStrategy.pain_missing,
-      pain_late: (Number(preFacts.segundo_dolor) > 5) || flagsFromStrategy.pain_late,
-      no_rehook: (!preFacts.tiene_rehook && (preFacts.duracion_estimada ?? 0) > 20) || !!flagsFromStrategy.no_rehook,
-      short_video_advantage: (preFacts.duracion_estimada ?? 999) < 15 || !!flagsFromStrategy.short_video_advantage,
-      duration_kills_completion: ((preFacts.duracion_estimada ?? 0) > 60 && !preFacts.tiene_rehook) || !!flagsFromStrategy.duration_kills_completion,
-    };
-
-    // CALL 3 — Scoring Brain
-    setAnalysisProgress(75);
-    setStatusText("Calculando score final...");
-
-    const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildScoringBrainPrompt(strategyAnalysis, preFacts, flagsDeterministic, platform, selectedObjetivo, selectedNicho),
+        text: buildScoringBrainPrompt(viewerAnalysis, preFacts, flagsDeterministic, platform, selectedObjetivo, selectedNicho),
         storagePath,
         videoMimeType: mimeType,
         duration: Math.round(duration),
@@ -1675,14 +1666,15 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
         expectsJson: true
       }
     });
-    if (call3Error) throw call3Error;
+    if (call2Error) throw call2Error;
 
-    const scores = safeParseJSON(extractGeminiText(call3Data), 'scoring') || {};
-    console.log('[VIRAX] Scores:', scores);
+    const scoresRaw = safeParseJSON(extractGeminiText(call2Data), 'scoring') || {};
+    const scores = applyDeterministicScoring(scoresRaw, flagsDeterministic, selectedNicho);
+    console.log('[VIRAX] Scores finales:', scores);
 
     setAnalysisProgress(100);
     setStatusText("Análisis completo.");
-    return { preFacts, viewerAnalysis, strategyAnalysis, flagsDeterministic, scores };
+    return { preFacts, viewerAnalysis, flagsDeterministic, scores };
 
   } catch (err) {
     console.error('[runNeuralAnalysis] Error:', err.message);
