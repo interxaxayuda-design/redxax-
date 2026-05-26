@@ -130,7 +130,7 @@ const safeParseJSON = (rawText, context = '') => {
     const start = s.indexOf('{');
     if (start !== -1) s = s.slice(start);
 
-   
+    // Remover coma trailing antes de cerrar
     s = s.replace(/,\s*([\]}])/g, '$1');
 
     // Contar llaves/corchetes para cerrar lo que falta
@@ -414,13 +414,6 @@ TRAMPA DE VALOR: contenido valioso que el espectador nunca ve → value_trap = t
 VALOR DETRÁS DEL SCROLL: mejor momento después del scroll masivo → value_behind_scroll_wall = true
 TRAMPA DEL BAIT: hook retiene pero el contenido no tiene relación → bait_disconnect = true
 
-STEP 5 — COMPARTIBILIDAD, TENDENCIAS Y BÚSQUEDA
-Si necesitás verificar si un audio está en tendencia, si un formato está funcionando
-en este nicho, o si hay datos recientes sobre comportamiento del algoritmo en esta plataforma,
-buscalo antes de responder. No inventes datos de tendencias — verificalos.
-Buscar cuando: el audio suena familiar pero no estás seguro si es trending ahora,
-el formato parece nuevo o el nicho tiene dinámicas recientes que podrían cambiar el análisis.
-
 STEP 5 — COMPARTIBILIDAD Y GUARDADO
 ¿Por qué alguien compartiría? → identidad / utilidad social / sorpresa / validación / ninguno
 ¿Por qué alguien GUARDARÍA? → referencia / tutorial / inspiración / precio / ninguno
@@ -628,7 +621,6 @@ const buildScoringBrainPrompt = (strategyAnalysis, platform, objetivo, nicho, fl
   
 
   return `Scoring VIRAX AI — ${pName} | Objetivo: ${objetivo} | Nicho: ${nicho}
-
   
 
 ROL: Sos el sistema que refleja lo que el espectador promedio haría con este video.
@@ -696,39 +688,10 @@ CÓMO REEMPLAZARLOS:
 ✗ "Hook carece de pattern interrupt"
 ✓ "Los primeros segundos no paran el dedo — no pasa nada que haga querer quedarse"
 
-FORMATO OBLIGATORIO para cada categoría — INSTRUCCIÓN CRÍTICA:
-La persona que lee esto grabó un video con el celular. No estudió marketing.
-Cada campo debe cumplir esto:
-
-  explicacion: 
-    - Mínimo 2 oraciones. Máximo 4.
-    - Primera oración: QUÉ está pasando exactamente en el video (observable, concreto).
-    - Segunda oración: POR QUÉ eso hace que el espectador scrollee o se quede.
-    - Si hay algo positivo que rescatar, decirlo también — no solo problemas.
-    - NUNCA usar términos técnicos sin explicarlos entre paréntesis.
-    
-  solucion:
-    - Una acción concreta. No "mejorar el inicio" — eso no ayuda a nadie.
-    - Decir exactamente QUÉ filmar, QUÉ decir, QUÉ cambiar, en QUÉ orden.
-    - Si implica regrabar, decir qué parte y cómo.
-    - Si es solo edición, decir exactamente qué cortar o mover.
-    
-  ejemplo:
-    - Escribir el texto, el guión o la descripción visual exacta de cómo quedaría.
-    - Específico para ESTE video — no un ejemplo genérico de otro nicho.
-    - Que la persona pueda leerlo y saber exactamente qué hacer.
-    - Formato: "En lugar de [lo que hay ahora] → [esto exactamente]"
-
-EJEMPLO DE LO QUE SE ESPERA:
-  explicacion: "El video arranca mostrando el producto en una mesa, quieto, sin que pase nada. 
-    En el feed, el cerebro ignora todo lo que no se mueve en los primeros 2 segundos — 
-    así que la mayoría pasó de largo antes de ver lo que hace el producto."
-  solucion: "Empezá el video con el producto ya en acción — no lo presentes, mostralo funcionando 
-    desde el primer frame. Si es una plancha, que el primer frame sea la plancha quitando 
-    una arruga. Si es un limpiador, que sea el antes sucio convirtiéndose en limpio."
-  ejemplo: "En lugar de: [producto en mesa, cámara estática] → 
-    Empezá con: mano aplicando el producto sobre la superficie sucia, 
-    zoom al resultado en 1 segundo, luego mostrás el producto."
+FORMATO para cada categoría:
+  explicacion: QUÉ está mal/bien y POR QUÉ en lenguaje del creador
+  solucion: QUÉ cambiar — acción concreta
+  ejemplo: cómo quedaría en ESTE video específico
 
 ROADMAP — 4 mejoras por impacto:
   [0] Lo que más views genera
@@ -1562,7 +1525,6 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       body: {
         text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho, preFacts, preHookType),
         maxOutputTokens: 8192,
-        enableSearch: true,  // ← activa Google Search
       }
     });
     if (call2Error) throw call2Error;
@@ -1618,7 +1580,6 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
         text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flagsDeterministic),
         expectsJson: true,
         maxOutputTokens: 8192,
-        enableSearch: true,  // ← activa Google Search
       }
     });
     if (call3Error) throw call3Error;
