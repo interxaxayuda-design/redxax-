@@ -163,153 +163,15 @@ const safeParseJSON = (rawText, context = '') => {
 // mejoras de nicho (comida + inmobiliaria), fixes de flags
 // ============================================================
 
-const NICHE_CRITERIA = {
-  producto_fisico: [
-    // ── EL PROBLEMA PRIMERO ──
-    "¿El video muestra el PROBLEMA antes de mostrar el producto — o arranca directo con el producto?",
-    "¿El espectador puede identificarse con el problema en menos de 3 segundos?",
-    "¿El problema que resuelve es algo que le pasa a la mayoría de la gente, no a un nicho muy específico?",
-
-    // ── LA DEMO QUE CONVIERTE ──
-    "¿El producto se ve FUNCIONANDO de verdad, no de costado o en packaging?",
-    "¿Hay un momento de resultado sorprendente o que parece imposible — el tipo de cosa que haría decir 'esperá, ¿en serio funciona así'?",
-    "¿El before/after o la transformación es visible en el video?",
-
-    // ── EL EFECTO SCRAPPY — UGC convierte 40% mejor que producción pulida ──
-    "¿El video parece grabado por una persona real usando el producto, o parece un anuncio corporativo?",
-    "¿La calidad de producción es honesta — ni demasiado pulida (parece aviso) ni tan mala que reste credibilidad?",
-
-    // ── IDENTIDAD ──
-    "¿Usar o tener este producto diría algo sobre el estilo de vida o la identidad de quien lo compra?",
-    "¿El espectador puede imaginarse mostrándoselo a alguien con 'mirá esto'?",
-
-    // ── URGENCIA E IMPULSO ──
-    "¿El precio parece accesible o genera barrera de entrada sin contexto?",
-    "¿El CTA es claro — hay un paso obvio y simple para conseguirlo?",
-    "¿Hay razón para comprarlo ahora y no la semana que viene?",
-  ],
-
-  inmobiliaria: [
-    // ── HOOK INMOBILIARIO ──
-    "¿El video abre con una pregunta de precio, un dato de mercado o algo que genere '¿en serio?' antes de mostrar la propiedad?",
-    "¿El primer frame muestra el detalle más impactante de la propiedad — no la fachada, no el living genérico?",
-    "¿Hay algún dato revelador — precio sorprendente, zona codiciada, detalle oculto — que active 'tengo que mandárselo a alguien'?",
-
-    // ── EL AGENTE COMO PRODUCTO ──
-    "¿El agente aparece en el video con personalidad visible — humor, punto de vista propio, comentario inesperado?",
-    "¿El video parece hecho por una persona real o por un departamento de marketing?",
-    "¿Hay un momento de honestidad — mencionar algo imperfecto, gracioso o inesperado de la propiedad?",
-    "¿El agente genera confianza genuina, no confianza corporativa?",
-
-    // ── ASPIRACIÓN E IDENTIDAD ──
-    "¿El video comunica un estilo de vida, no solo metros cuadrados?",
-    "¿El espectador puede imaginarse viviendo ahí — no solo visitando?",
-    "¿Compartir este video diría algo sobre las aspiraciones o el gusto de quien lo comparte?",
-    "¿Hay un elemento de FOMO inmobiliario — 'esto no va a durar', precio que sorprende, zona que explota?",
-
-    // ── BARRIO Y ZONA ──
-    "¿El barrio o zona aparece como beneficio concreto, no solo mencionado de pasada?",
-    "¿Hay referencia a algo específico del lugar — comercios, transporte, ambiente — que lo haga real?",
-
-    // ── CTA INMOBILIARIO ──
-    "¿El CTA es conversacional — 'escribime', 'comentá tu presupuesto' — no un link de compra?",
-    "¿Queda claro cómo contactar al agente en máximo 2 pasos?",
-
-    // ── RITMO ──
-    "¿El recorrido tiene cortes cada 2-3 segundos o es un plano largo aburrido?",
-    "¿Cada ambiente se muestra con su mejor ángulo antes de cortar?",
-  ],
-
-  curso: [
-    "¿Se muestra resultado/transformación del alumno en el primer frame?",
-    "¿Problema que resuelve claro en <5 segundos?",
-    "¿Creador transmite autoridad y credibilidad con pruebas visuales?",
-    "¿Contenido concreto, no solo promesas vagas?",
-    "¿Hay urgencia o razón para comprar ahora en los primeros 15s?",
-    "¿Precio/acceso aparece en momento correcto?",
-    "¿Hay música o ritmo que sostenga energía en los primeros 10s?",
-    "¿Se plantea pregunta o reto al espectador en los primeros 5s?",
-    "¿Se diferencia de otros cursos similares en algo concreto?",
-  ],
-
-  servicio: [
-    "¿Se entiende exactamente qué problema resuelve?",
-    "¿Muestra antes/después o resultado concreto?",
-    "¿Genera confianza quien lo presenta?",
-    "¿Hay movimiento real o todo son imágenes estáticas sin transición?",
-    "¿Contacto/siguiente paso fácil y obvio?",
-    "¿Parece accesible o genera miedo al precio?",
-    "¿Se diferencia de competencia en algo concreto?",
-  ],
-
-  app_software: [
-    "¿App funcionando en pantalla real?",
-    "¿Problema que resuelve claro sin texto técnico?",
-    "¿Interfaz parece fácil de usar?",
-    "¿Demo o caso de uso real?",
-    "¿Ataca el dolor en algo en específico?",
-    "¿Botón de descarga/prueba gratis claro?",
-    "¿Genera curiosidad de probarlo?",
-  ],
-
-  restaurante_comida: [
-    // ── PRIMER FRAME ──
-    "¿El primer frame activa hambre, antojo o FOMO antes de que el cerebro procese qué es?",
-    "¿Se ve rico, fresco, abundante o especial sin necesidad de leer nada?",
-    "¿La iluminación hace justicia al plato o lo apaga?",
-
-    // ── ASMR SENSORIAL ──
-    "¿Se escucha el crujido, el chisporroteo, la salsa cayendo, el queso estirándose?",
-    "¿Hay close-ups que muestran la textura, el vapor, el color o el movimiento del alimento?",
-    "¿El espectador se imagina el sabor o la textura antes de que termine el video?",
-    "¿Hay un momento específico que haría que alguien mande el video con 'quiero esto'?",
-
-    // ── AMBIENTE Y EXPERIENCIA ──
-    "¿Se transmite la vibra del lugar: tranquilo, animado, íntimo, familiar, exclusivo?",
-    "¿El ambiente hace que el espectador quiera estar ahí, no solo pedir delivery?",
-
-    // ── REACCIÓN HUMANA ──
-    "¿Hay una reacción real de alguien comiendo: expresión, comentario, gesto de placer?",
-    "¿La reacción se siente genuina o parece actuada?",
-
-    // ── IDENTIDAD ──
-    "¿El video comunica a qué tipo de persona le gusta este lugar — sin decirlo explícitamente?",
-    "¿Compartir este video diría algo positivo sobre el gusto o el estilo de quien lo comparte?",
-
-    // ── URGENCIA Y FRICCIÓN ──
-    "¿Hay razón para ir esta semana: ítem nuevo, temporada, evento, oferta?",
-    "¿El nombre del lugar o la ubicación aparece claramente en algún momento del video?",
-    "¿El proceso para llegar o pedir parece simple — un mensaje, una dirección, un link?",
-  ],
-
-  otro: [
-    "¿El primer frame genera curiosidad, deseo o impacto antes de que el cerebro decida scrollear?",
-    "¿El video abre con algo que el espectador NO esperaba ver?",
-    "¿Se entiende de qué trata en menos de 5 segundos, incluso sin audio?",
-    "¿El audio o texto nombra un dolor, problema o deseo concreto del espectador antes de mostrar la solución?",
-    "¿El espectador siente que el video le está hablando a él específicamente?",
-    "¿Genera una emoción fuerte: deseo, curiosidad, urgencia, identificación o sorpresa?",
-    "¿Lo que se vende aparece como solución obvia al problema planteado, o como algo deseable por sí solo?",
-    "¿Se ve funcionando, en uso, o en contexto real — no solo de frente o de costado?",
-    "¿Queda claro qué es y por qué vale la pena en menos de 10 segundos?",
-    "¿Hay una reacción humana real (cara, expresión, comentario) que valide el placer o el resultado?",
-    "¿La presentación genera la percepción de que vale lo que cuesta?",
-    "¿El video comunica a qué tipo de persona le gusta esto (sin decirlo explícitamente)?",
-    "¿Compartir este video diría algo positivo sobre quien lo comparte?",
-    "¿Hay alguna prueba real: reseña, resultado, testimonio, cantidad de clientes, premio o certificación?",
-    "¿Hay algo nuevo cada 2-3 segundos: cambio de plano, texto, ángulo, acción o dato?",
-    "¿Hay algún plano de más de 4 segundos donde no pasa nada nuevo que haría scrollear?",
-    "¿Hay una razón concreta para actuar hoy: oferta, stock limitado, temporada, evento próximo?",
-    "¿El siguiente paso queda claro sin tener que pensar?",
-    "¿Hay un momento en el video que haría que alguien lo mande con 'mirá esto' o 'vamos acá'?",
-    "¿Se diferencia visualmente de otros videos del mismo rubro en el feed?",
-    "¿Hay algo en el video que solo este negocio, lugar o producto podría mostrar?",
-  ],
-};
+// ============================================================
+// VIRAX AI — SISTEMA DE PROMPTS
+// Versión con razonamiento adaptativo por nicho
+// Gemini ya sabe cómo funciona cada nicho — no hace falta explicárselo
+// ============================================================
 
 
 // ============================================================
-// CALL 0 — PRE-CLASIFICADOR
+// CALL 0 — PRE-CLASIFICADOR (sin cambios — es objetivo, no nicho-dependiente)
 // ============================================================
 const buildPreClassifierPrompt = () => `
 Watch this video carefully and answer ONLY with this exact JSON. No text before. No text after.
@@ -318,7 +180,7 @@ Watch this video carefully and answer ONLY with this exact JSON. No text before.
   "logo_en_s0": <true if the first frame shows a brand logo or brand name prominently | false>,
   "producto_en_s0": <true if the product or service being sold is the main visual element in the first frame | false>,
   "producto_en_accion_s0": <true if the product is actively DOING something in the first frame — transforming, cleaning, fixing, pressing, cutting, demonstrating a result — NOT just displayed or shown statically | false>,
-  "transformacion_visible": <true if the video shows a clear before/after, a problem being solved visually, or a satisfying transformation process (ironing wrinkles, cleaning dirt, cutting food, applying something) | false>,
+  "transformacion_visible": <true if the video shows a clear before/after, a problem being solved visually, or a satisfying transformation process | false>,
   "audio_desde_s0": <true if there is music or voice with energy starting at or before second 1 | false>,
   "movimiento_real": <true if there is real movement: person talking, hands in action, product being used, camera moving — NOT automatic slideshow transitions | false>,
   "imagen_alto_impacto": <true if the first second shows an explosion, fall, conflict, extreme result, or other high-impact visual event | false>,
@@ -328,7 +190,7 @@ Watch this video carefully and answer ONLY with this exact JSON. No text before.
   "dolor_transcripcion": <exact words spoken or shown on screen that express the pain, or "" if none>,
   "dolor_tipo": <"activo" if the problem is something the viewer already experiences now | "latente" if the video reveals a problem they didn't know they had | "ninguno" if no pain is named>,
   "segundo_dolor": <exact second when the pain words or image first appear, or 0 if none>,
-  "duracion_estimada": <estimated video duration in seconds — your best estimate from watching>,
+  "duracion_estimada": <estimated video duration in seconds>,
   "tiene_rehook": <true if between seconds 5-15 there is a new visual, question, reveal, or change that would re-engage someone who was about to scroll | false>,
   "segundo_rehook": <the second where the re-hook moment occurs, or 0 if none>,
   "completion_rate_esperado": <"muy_alto" if video is under 15s | "alto" if 15-30s | "medio" if 30-60s | "bajo" if over 60s>
@@ -340,43 +202,53 @@ Watch this video carefully and answer ONLY with this exact JSON. No text before.
 // CALL 1 — VIEWER BRAIN
 // ============================================================
 const buildViewerBrainPrompt = (platform, nicho) => {
-  const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
-  const criterios = (NICHE_CRITERIA[nicho] || NICHE_CRITERIA['otro']).map((c, i) => `${i + 1}. ${c}`).join('\n');
+  const pName = {
+    tiktok: 'TikTok', reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
+  }[platform];
 
-  return `Sos un analista forense de videos para ${pName}. Tu trabajo es observar y reportar hechos sensoriales exactos. Sin adjetivos evaluativos. Sin opiniones. Solo lo que se ve y se escucha.
+  return `Sos un analista forense de videos para ${pName}. Nicho: ${nicho}.
+Tu trabajo es observar y reportar hechos sensoriales exactos. Sin adjetivos evaluativos. Sin opiniones. Solo lo que se ve y se escucha.
 
-CONTEXTO INAMOVIBLE:
+PASO 0 — ANTES DE ANALIZAR: CALIBRÁ TU CRITERIO PARA ESTE NICHO
+El nicho es "${nicho}". Antes de aplicar cualquier criterio, respondé internamente:
+- ¿Cuál es el motor de conversión real en este nicho? (dolor→solución / deseo→acción / aspiración→confianza / otro)
+- ¿Qué hace que alguien en este nicho pare el dedo, se quede y actúe?
+- ¿Qué sería un hook exitoso en este nicho específicamente?
+- ¿Qué señales visuales o sonoras activan la respuesta emocional correcta aquí?
+- ¿Qué errores típicos cometen los creadores en este nicho?
+Usá ese conocimiento para calibrar TODO el análisis que sigue. No impongas el framework de producto físico sobre un nicho que funciona distinto.
+
+CONTEXTO DE COMPORTAMIENTO REAL EN EL FEED:
 - El espectador scrollea en 2-4s si no pasa nada. No tiene paciencia.
 - Sin audio desde s0 = no activa atención.
 - Imágenes quietas = invisibles para el cerebro en scroll.
 - El hook más efectivo genera "¿qué es eso?" — no muestra el producto directamente.
-- La gente compra para escapar del dolor. Si el video no nombra el dolor antes de mostrar el producto, no conecta.
 - La gente comparte lo que dice algo sobre ellos: identidad, utilidad social, sorpresa o validación.
-- Un video que parece hecho por un usuario real convierte más que uno que parece publicidad, aunque tenga menos producción.
+- Un video que parece hecho por un usuario real convierte más que uno que parece publicidad.
 - Lo absurdo o inesperado desactiva el filtro de anuncio.
-- El audio trending no es decoración — le dice al algoritmo y al espectador que el creador está dentro de la cultura.
-- Videos <15s tienen ventaja estructural de completion rate (75-85% promedio). Videos >60s caen a 25-40%.
-- El re-hook entre s5-s12 es lo que decide si la gente que pasó el primer filtro llega al final.
+- Videos <15s tienen ventaja estructural de completion rate (75-85%). Videos >60s caen a 25-40%.
+- El re-hook entre s5-s12 decide si la gente que pasó el primer filtro llega al final.
 
 HOOK — TIPOS (elegir uno al reportar):
 - explosivo: el espectador no puede saber qué sigue en s0
-- bait_con_puente: impacto visual + conexión temática con el producto
-- bait_desconectado: impacto visual sin relación con el producto
+- bait_con_puente: impacto visual + conexión temática con el contenido
+- bait_desconectado: impacto visual sin relación con el contenido
 - debil: interesante pero ya intuye de qué trata
 - apertura_informativa: muestra el producto/resultado desde s0 sin tensión
 - muerto: logo, marca, locutor, fondo blanco con producto centrado
 
-CAPAS DE COMPRA (en orden de prioridad):
-1. DOLOR: ¿el problema del espectador se nombra antes de s5?
-2. CONFIANZA: ¿el producto se ve funcionando de verdad?
-3. URGENCIA: ¿hay razón para comprar hoy y no mañana?
-4. FRICCIÓN: ¿el siguiente paso está claro?
-
-Si un elemento aparece después del segundo en que el espectador scrolleó, marcarlo con [TARDE - sX]. No contarlo como fortaleza.
+CAPAS DE CONVERSIÓN — ADAPTAR AL NICHO:
+No todos los nichos usan el framework dolor→solución. Aplicá las capas correctas según el nicho declarado.
+Para producto físico: DOLOR → DEMO → CONFIANZA → URGENCIA
+Para comida/restaurante: DESEO SENSORIAL → AMBIENTE → IDENTIDAD → FRICCIÓN DE LLEGADA
+Para inmobiliaria: ASPIRACIÓN → AGENTE → DATO VIRAL → FRICCIÓN DE CONTACTO
+Para otros nichos: usá tu conocimiento para determinar el orden correcto.
+Si un elemento aparece después del segundo en que el espectador scrolleó, marcarlo con [TARDE - sX].
 
 ---
 
-INVENTARIO PREVIO (responder antes de analizar):
+INVENTARIO PREVIO:
 - ¿Hay secuencia antes/después? → s inicio: / s resultado:
 - ¿Resultado exitoso visible? → describir exactamente
 - ¿Timeline o duración mencionada? → transcribir literal
@@ -389,14 +261,11 @@ INVENTARIO PREVIO (responder antes de analizar):
 A. PRIMER FRAME
 - ¿Qué ve exactamente el espectador en s0?
 - ¿Fondo limpio o distrae?
-- ¿Suciedad/deterioro visible? → [descripción][segundo]
 - ¿Hay persona? ¿Expresión? ¿Mira a cámara?
 
-B. CAPAS DE COMPRA
-DOLOR: ¿aparece antes de s5? SÍ/TARDE/NO | ¿activo o latente? | segundo exacto | transcripción literal
-CONFIANZA: prueba social visible | producto en acción o de costado | calidad visual suma o resta | algo destruye confianza
-URGENCIA: ¿real (stock/oferta)? SÍ/NO → literal | ¿emocional? SÍ/NO → literal | segundo en que aparece
-FRICCIÓN: ¿CTA claro? | segundo del CTA | ¿proceso simple o complicado?
+B. CAPAS DE CONVERSIÓN (según el nicho)
+Reportar cada capa relevante: ¿aparece? ¿en qué segundo? ¿antes o después del scroll masivo?
+Indicar SÍ / TARDE / NO para cada una.
 
 C. RITMO Y RE-HOOK
 - Cortes cada 10s: número exacto
@@ -408,23 +277,22 @@ C. RITMO Y RE-HOOK
   → Segundo exacto:
   → Si no hay re-hook en video >20s: ¿en qué segundo exacto la mayoría scrollearía?
 
-D. PRODUCTO
+D. CONTENIDO PRINCIPAL
 - ¿Aparece en primeros 3s? SÍ/NO + segundo exacto
-- ¿En acción o de costado/tarde?
-- ¿Resuelve un problema concreto o solo existe?
+- ¿En acción/contexto real o de costado/estático?
+- ¿Resuelve/activa/aspira algo concreto, o solo existe?
 
-E. VIABILIDAD DEL PRODUCTO (FUERTE/ACEPTABLE/DÉBIL + 1 línea cada uno):
-1. Frecuencia de uso
-2. Claridad instantánea (<5s)
-3. Problema cotidiano
-4. Amplitud (de 100 personas, ¿cuántas lo necesitan?)
-5. Fricción de compra (impulso vs investigación)
-6. Factor wow visual
-7. Credibilidad del resultado
-→ Si 3+ son DÉBIL: PRODUCTO DE VENTA DIFÍCIL EN REDES: [razón]
+E. VIABILIDAD DEL CONTENIDO (FUERTE/ACEPTABLE/DÉBIL + 1 línea):
+Evaluá según el nicho. Las dimensiones relevantes cambian:
+- Para producto: frecuencia de uso, claridad, problema cotidiano, wow visual, credibilidad
+- Para servicio/local: claridad de propuesta, confianza del presentador, fricción de contacto
+- Para contenido aspiracional: potencia del deseo generado, identidad comunicada, shareable
+→ Si 3+ dimensiones clave son DÉBIL: CONTENIDO DE DIFÍCIL CONVERSIÓN EN REDES: [razón]
 
-F. CRITERIOS DE NICHO (SÍ/PARCIALMENTE/NO + 1 línea):
-${criterios}
+F. CRITERIOS ESPECÍFICOS DEL NICHO
+Basándote en tu conocimiento del nicho "${nicho}", listá los 5-7 criterios más importantes
+que determinan si un video en este nicho funciona o no. Evaluá cada uno: SÍ/PARCIALMENTE/NO + 1 línea.
+No uses criterios genéricos — usá los que realmente importan en este nicho específico.
 
 G. TRANSCRIPCIÓN LITERAL
 → [s0] "texto exacto"
@@ -439,18 +307,20 @@ H. AUDIO Y TENDENCIA
 - ¿El audio suena como un sonido trending de la plataforma o es música propia/genérica?
 
 I. MOTORES DE RETENCIÓN (PRESENTE/PARCIAL/AUSENTE + 1 oración + segundo):
-- Dolor nombrado
+- Motor principal del nicho (dolor / deseo sensorial / aspiración / curiosidad — el que aplique)
 - Re-hook (segundo gancho s5-s15)
-- Loop de curiosidad (segundo apertura + cierre)
+- Loop de curiosidad (apertura + cierre)
 - Micro-recompensas (algo nuevo cada 2-3s o no)
 - Consumibilidad (entendible sin audio)
-- Parece contenido o parece aviso
+- Parece contenido orgánico o parece aviso
 - Elemento compartible
-- Elemento guardable (razón para guardar el video como referencia futura)
+- Elemento guardable
 
 J. HOOK DETECTADO
 - Tipo: (explosivo/bait_con_puente/bait_desconectado/debil/apertura_informativa/muerto)
-- Si es bait: ¿puente emocional con el producto? SÍ/NO → describir
+- Nota: en nichos donde mostrar el producto/plato/propiedad desde s0 ES el hook correcto,
+  no clasificar como apertura_informativa si el contenido genera deseo inmediato.
+- Si es bait: ¿puente emocional con el contenido? SÍ/NO → describir
 - Tono: (informal/aspiracional/educativo/humoristico/directo)
 - Estilo: (habla a camara/muestra sin hablar/usa texto)
 - Riesgo de desconfianza: ninguno/leve/alto → 1 oración
@@ -468,7 +338,10 @@ VEREDICTO FINAL DE FASE 1:
 // CALL 2 — STRATEGY BRAIN
 // ============================================================
 const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, nicho, preFacts = {}, preHookType = null) => {
-  const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
+  const pName = {
+    tiktok: 'TikTok', reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
+  }[platform];
 
   const truthBlock = preHookType ? `
 HECHOS PRE-CLASIFICADOS — INAMOVIBLES. NO MODIFICAR.
@@ -496,126 +369,67 @@ duracion >60s + sin rehook → retencion_ritmo ≤45 | viralScore -8
 video <15s + hook bueno → completion_rate estructuralmente alto, retencion_ritmo base +10
 ` : '';
 
-  const nichoComidaOverride = nicho === 'restaurante_comida' ? `
-⚠️ NICHO COMIDA/RESTAURANTE — REGLAS ESPECIALES INAMOVIBLES:
-El framework de DOLOR no aplica. La gente no come para resolver un problema — come porque quiere placer.
-REEMPLAZAR capas de compra por:
-1. DESEO SENSORIAL: ¿el primer frame activa antojo antes de s3?
-2. AMBIENTE: ¿el lugar genera ganas de estar ahí físicamente?
-3. FRICCIÓN: ¿queda claro cómo llegar, pedir o reservar? (ubicación en pantalla = CTA suficiente)
-4. IDENTIDAD: ¿compartir este video dice algo sobre quien lo comparte?
-REGLAS FIJAS:
-- pain_missing = false SIEMPRE. No existe dolor en contenido de comida.
-- Un CTA implícito (nombre del lugar visible, ubicación, hashtag del local) ES un CTA completo.
-- Un video con alto deseo visual = salesScore base mínimo 55, aunque no haya CTA verbal.
-- no_urgency solo aplica si hay una promo o evento específico que debería aparecer y no aparece.
-- trust_gap = false si la calidad visual del plato es atractiva.
-- Mostrar el plato desde s0 = hook correcto en este nicho. NO es apertura_informativa.
-` : '';
-
-  const nichoInmobiliariaOverride = nicho === 'inmobiliaria' ? `
-⚠️ NICHO INMOBILIARIA — REGLAS INAMOVIBLES:
-El motor de conversión NO es dolor. Es ASPIRACIÓN + CONFIANZA EN EL AGENTE.
-REEMPLAZAR capas de compra estándar por:
-1. ASPIRACIÓN: ¿el primer frame genera deseo de vivir ese estilo de vida antes de s3?
-2. AGENTE: ¿hay persona real con personalidad visible — humor, honestidad, punto de vista propio?
-3. DATO VIRAL: ¿hay algo que active "tengo que mandárselo" — precio sorprendente, zona, detalle oculto?
-4. FRICCIÓN DE CONTACTO: ¿queda claro cómo llegar al agente en máximo 2 pasos?
-REGLAS FIJAS:
-- pain_missing = false SIEMPRE. No existe dolor en inmobiliaria.
-- Un agente con personalidad + honestidad > un tour perfectamente producido sin cara.
-- Hook efectivo = pregunta de precio o dato de mercado antes de mostrar la propiedad.
-- salesScore base mínimo 50 si hay agente visible + propiedad aspiracional + contacto claro.
-- CTA implícito (nombre del agente + zona visibles) ES un CTA completo para este nicho.
-- no_urgency solo aplica si hay oportunidad de precio o temporalidad que debería aparecer y no aparece.
-- trust_gap evalúa al AGENTE, no al producto/propiedad.
-` : '';
-
   return `Estratega de ventas y viralidad. Plataforma: ${pName} | Objetivo: ${objetivo} | Nicho: ${nicho}
 
 ${truthBlock}
-${nichoComidaOverride}
-${nichoInmobiliariaOverride}
+
+CALIBRACIÓN DE NICHO — INSTRUCCIÓN CENTRAL:
+El nicho es "${nicho}". Antes de analizar, determiná:
+1. ¿Cuál es el motor de conversión real aquí? No todos los nichos funcionan por dolor.
+   Usá tu conocimiento: comida = deseo sensorial, inmobiliaria = aspiración + agente,
+   producto físico = problema + solución, app = claridad + demo, etc.
+2. ¿Qué flags son relevantes para este nicho y cuáles no aplican?
+   Ejemplo: pain_missing no penaliza en nichos donde el motor no es dolor.
+   Ejemplo: apertura_informativa no penaliza en nichos donde mostrar el producto ES el hook correcto.
+3. ¿Qué constituye un CTA suficiente aquí? En algunos nichos un nombre visible es suficiente.
+4. ¿Qué constituye confianza en este nicho? No siempre es demo del producto.
+Aplicá ese razonamiento a TODO el análisis. No uses el framework de producto físico como default universal.
+
 REPORTE FORENSE:
 ${viewerAnalysis}
 
-STEP 1 — GATE DE FORMATO (responder primero)
-1. ¿Activa filtro de anuncio en s0? → si SÍ: dato inamovible, continuar con ese contexto
+STEP 1 — GATE DE FORMATO
+1. ¿Activa filtro de anuncio en s0? → si SÍ: dato inamovible
 2. ¿Audio con energía desde s0? → si NO: scrolleó antes de s2
 3. ¿Video real con movimiento o imágenes quietas? → imágenes: scrolleó antes de s3
-4. ¿El primer segundo genera "¿qué es eso?"? → si NO: scrolleó entre s1 y s4
-5. ¿Algo nuevo cada ≤3s? → si NO: scrolleó en el primer plano largo
+4. ¿El primer segundo genera "¿qué es eso?" o la respuesta emocional correcta para este nicho?
+5. ¿Algo nuevo cada ≤3s?
+Resultado: 5/5 COMPETITIVO | 3-4 DÉBIL | 0-2 MUERTO
 
-Resultado: 5/5 = FORMATO COMPETITIVO | 3-4 = FORMATO DÉBIL | 0-2 = FORMATO MUERTO
-
-STEP 2 — CAPAS DE COMPRA
-DOLOR: ¿nombrado antes de s5? ¿activo o latente? ¿espectador se identifica antes de ver qué se vende?
-→ si falta o es tarde: pain_missing = true (primera prioridad)
-
-CONFIANZA: ¿producto en acción real o solo afirmado? ¿prueba social verificable? ¿calidad visual suma o resta?
-→ si baja: trust_gap = true (segunda prioridad)
-
-URGENCIA: ¿razón concreta para comprar hoy? ¿el espectador llega a verla?
-→ si falta: no_urgency = true (tercera prioridad)
-
-FRICCIÓN: ¿CTA claro antes del scroll masivo? ¿proceso parece simple?
-→ si no: high_friction = true (cuarta prioridad)
+STEP 2 — CAPAS DE CONVERSIÓN (adaptadas al nicho)
+Evaluá las capas correctas para "${nicho}" según tu conocimiento.
+Para cada capa: ¿presente antes del scroll masivo? ¿activa la respuesta emocional correcta?
+Asignar flags solo cuando el problema es real en este nicho específico.
 
 STEP 3 — SUPERVIVENCIA SEGUNDO A SEGUNDO
-Reglas de comportamiento real:
-- logo/anuncio s0 → scroll s0-s1
-- sin audio → scroll s1-s2
-- imágenes quietas → scroll s2-s3
-- video+audio sin hook → scroll s3-s5
-- hook débil → scroll s5-s8
-- hook explosivo → puede llegar al final si ritmo sostiene
-- plano +4s sin nada → scroll en ese segundo exacto
-- bait desconectado → se queda hasta que aparece el producto, luego scroll
-- sin re-hook en video >20s → la mayoría scrollea s8-s12 aunque hook haya sido bueno
-
-Reportar:
-→ s0-s3: ¿qué ve? ¿audio? ¿hook? ¿se queda? SÍ/NO + por qué
-→ s3-s7: ¿algo nuevo? ¿dolor? ¿se queda? SÍ/NO
-→ s7-s15: ¿ritmo sostenido? ¿re-hook? ¿confianza? ¿se queda? SÍ/NO
+→ s0-s3: ¿qué ve? ¿audio? ¿se queda? SÍ/NO + por qué
+→ s3-s7: ¿algo nuevo? ¿motor de conversión activado? ¿se queda? SÍ/NO
+→ s7-s15: ¿ritmo sostenido? ¿re-hook? ¿confianza del nicho? ¿se queda? SÍ/NO
 → s15-fin: ¿llega? SÍ/NO + % que llegaría
-
-Métricas duras:
-- Segundo exacto de scroll masivo
-- % que llega al final
-- Cortes en primeros 3s
-- Plano más largo sin nada nuevo
-- Audio desde s0: SÍ/NO | Dolor antes de s5: SÍ/NO | Re-hook s5-s15: SÍ/NO | Confianza antes del scroll: SÍ/NO | Urgencia visible: SÍ/NO
-- Qualified views estimadas (% que llega a s5+): → si <40%: no_rehook_distribution_risk = true
+→ Segundo exacto de scroll masivo:
+→ % que llega al final:
 
 STEP 4 — TRAMPAS
 TRAMPA DE VALOR: contenido valioso que el espectador nunca ve → value_trap = true
-VALOR DETRÁS DEL SCROLL: mejor momento después del segundo de scroll masivo → value_behind_scroll_wall = true
-TRAMPA DEL BAIT: hook retiene pero producto no tiene relación → bait_disconnect = true
+VALOR DETRÁS DEL SCROLL: mejor momento después del scroll masivo → value_behind_scroll_wall = true
+TRAMPA DEL BAIT: hook retiene pero el contenido no tiene relación → bait_disconnect = true
 
 STEP 5 — COMPARTIBILIDAD Y GUARDADO
 ¿Por qué alguien compartiría? → identidad / utilidad social / sorpresa / validación / ninguno
-¿Por qué alguien GUARDARÍA este video? → referencia futura / tutorial a repetir / inspiración / precio a comparar / ninguno
-¿Hay elemento "no sabía eso"? → describir o indicar ausencia
-
-FACTORES ADICIONALES DE VIRALIDAD:
-- AUTENTICIDAD PERCIBIDA: ¿parece hecho por una persona real o por un departamento de marketing? Real = ventaja enorme.
-- SORPRESA CONTEXTUAL: ¿el video hace algo que NO se esperaría de este tipo de cuenta o producto?
-- AUDIO CULTURAL: ¿el audio está en tendencia en la plataforma? Audio trending = distribución orgánica extra.
-- PRODUCTO QUE SE DEMUESTRA A SÍ MISMO: ¿muestra algo que parece imposible o sorprendente?
-- RE-HOOK EFECTIVO: ¿hay un segundo gancho entre s5-s15 que recupera a quien dudó? Re-hook fuerte = viralScore +8
-Si alguno está presente: viralScore +5 a +12 según intensidad. Reportar cuál y por qué.
+¿Por qué alguien GUARDARÍA? → referencia / tutorial / inspiración / precio / ninguno
 
 STEP 6 — VEREDICTO FINAL
-- Fortalezas reales (solo las visibles antes del scroll)
+- Fortalezas reales (visibles antes del scroll)
 - Debilidades sin suavizar
-- ¿Compraría o scrollearía?
-- 3 mejoras concretas (si value_trap: primera mejora = hook/formato siempre; si bait_disconnect: segunda = puente emocional)
+- 3 mejoras concretas ordenadas por impacto
 
 ESCALA:
 viralScore: 80-90 paró+quedó+compartió | 65-79 paró+llegó al final | 50-64 dudó+mitad | 35-49 scrolleó s4-s8 | 20-34 scrolleó antes de s4 | <20 ni lo registró
-salesScore: 75-90 dolor+confianza+urgencia | 55-74 parcial | 35-54 no conectó | <35 sin dolor ni confianza
+salesScore: 75-90 motor activo+confianza+acción | 55-74 parcial | 35-54 no conectó | <35 sin motor de conversión
 
----FLAGS--- (OBLIGATORIO. Todos los campos. Sin omitir.)
+---FLAGS--- (OBLIGATORIO. Todos los campos. Sin omitir.
+IMPORTANTE: asignar pain_missing=true SOLO si el motor de conversión del nicho es dolor y no aparece.
+En nichos donde el motor es deseo/aspiración, pain_missing=false siempre.)
 {
   "ad_filter_triggered": <true|false>,
   "no_audio_from_s0": <true|false>,
@@ -627,10 +441,10 @@ salesScore: 75-90 dolor+confianza+urgencia | 55-74 parcial | 35-54 no conectó |
   "hook_is_direct_info": <true|false>,
   "bait_disconnect": <true|false>,
   "dead_hook": <true|false>,
-  "pain_missing": <true|false>,
+  "pain_missing": <true SOLO si el nicho funciona por dolor y no aparece | false en nichos de deseo/aspiración>,
   "pain_late": <true|false>,
-  "trust_gap": <true|false>,
-  "no_urgency": <true|false>,
+  "trust_gap": <true si falta la señal de confianza correcta PARA ESTE NICHO | false>,
+  "no_urgency": <true si falta urgencia relevante PARA ESTE NICHO | false>,
   "high_friction": <true|false>,
   "product_damage": <true|false>,
   "visual_repulsion": <true|false>,
@@ -659,11 +473,11 @@ salesScore: 75-90 dolor+confianza+urgencia | 55-74 parcial | 35-54 no conectó |
   "value_trap": <true|false>,
   "recompensa_tardia": <true|false>,
   "buried_result": <true|false>,
-  "no_rehook": <true si el video dura mas de 20s y no hay segundo gancho entre s5-s15 | false>,
-  "short_video_advantage": <true si el video dura menos de 15s — ventaja estructural de completion rate | false>,
-  "duration_kills_completion": <true si el video dura mas de 60s sin rehooks suficientes | false>,
-  "audio_trending": <true si el audio suena como un sonido en tendencia en la plataforma | false>,
-  "has_save_trigger": <true si hay una razon clara para que alguien guarde el video como referencia | false>
+  "no_rehook": <true si video >20s sin segundo gancho s5-s15 | false>,
+  "short_video_advantage": <true si video <15s | false>,
+  "duration_kills_completion": <true si video >60s sin rehooks | false>,
+  "audio_trending": <true si el audio suena como sonido trending | false>,
+  "has_save_trigger": <true si hay razón clara para guardar el video | false>
 }
 ---END---
 `;
@@ -671,7 +485,7 @@ salesScore: 75-90 dolor+confianza+urgencia | 55-74 parcial | 35-54 no conectó |
 
 
 // ============================================================
-// HELPERS
+// HELPERS — sin cambios
 // ============================================================
 export const extractFlags = (strategyText) => {
   try {
@@ -686,163 +500,111 @@ export const stripFlags = (strategyText) =>
 
 
 // ============================================================
-// PENALTIES
+// PENALTIES — sin cambios (la lógica determinística se queda igual)
 // ============================================================
 export const buildPenalties = (flags) => {
   if (!flags || !Object.keys(flags).length)
-    return 'Sin flags criticos. Evaluar con libertad. Si el espectador se habría quedado a mirar, los scores altos son correctos.';
+    return 'Sin flags criticos. Si el espectador se habría quedado a mirar, los scores altos son correctos.';
 
   const rules = [];
 
-  // ── BLOQUE 0: Filtro de anuncio ──
   if (flags.ad_filter_triggered)
-    rules.push('⛔ FILTRO DE ANUNCIO ACTIVADO: viralScore TECHO = 30 | scrollStopScore ≤20 | salesScore ≤40. El cerebro lo ignoró antes de procesarlo.');
-
-  // ── BLOQUE 1: Audio ──
+    rules.push('⛔ FILTRO DE ANUNCIO: viralScore TECHO = 30 | scrollStopScore ≤20 | salesScore ≤40.');
   if (flags.no_audio_from_s0)
-    rules.push('⛔ SIN AUDIO DESDE S0: scrollStopScore ≤22 | retencion_ritmo ≤30 | viralScore -15 adicional. Sin audio el cerebro no activa modo atención en el feed.');
-
-  // ── BLOQUE 2: Hook ──
+    rules.push('⛔ SIN AUDIO DESDE S0: scrollStopScore ≤22 | retencion_ritmo ≤30 | viralScore -15.');
   if (flags.hook_type === 'muerto')
-    rules.push('⛔ HOOK MUERTO: viralScore TECHO ABSOLUTO = 35. hook ≤25 | scrollStopScore ≤28 | honestVerdict: "Los primeros segundos no paran el dedo — no pasa nada que haga que el cerebro quiera quedarse."');
-
+    rules.push('⛔ HOOK MUERTO: viralScore TECHO = 35 | hook ≤25 | scrollStopScore ≤28.');
   if (flags.hook_type === 'debil')
-    rules.push('⚠️ HOOK DÉBIL: viralScore TECHO = 60 | hook ≤50 | scrollStopScore ≤45');
-
+    rules.push('⚠️ HOOK DÉBIL: viralScore TECHO = 60 | hook ≤50 | scrollStopScore ≤45.');
   if (flags.hook_type === 'apertura_informativa')
-    rules.push('⚠️ APERTURA INFORMATIVA: viralScore TECHO = 40 | hook ≤38. Mostrar el resultado desde s0 no es un hook — el espectador ya sabe lo que es y no tiene razón para quedarse.');
-
+    rules.push('⚠️ APERTURA INFORMATIVA: viralScore TECHO = 40 | hook ≤38.');
   if (flags.bait_disconnect)
-    rules.push('⚠️ BAIT HOOK DESCONECTADO: viralScore TECHO = 55 | salesScore TECHO = 45. El video retiene con el impacto visual pero cuando aparece el producto el espectador se siente engañado. Reportar brecha viralScore vs salesScore.');
-
+    rules.push('⚠️ BAIT DESCONECTADO: viralScore TECHO = 55 | salesScore TECHO = 45.');
   if (flags.hook_is_direct_info && !flags.bait_disconnect && flags.hook_type !== 'explosivo')
-    rules.push('⚠️ APERTURA DIRECTA SIN TENSIÓN: hook -10 adicional. Mostrar el producto desde s0 informa pero no genera curiosidad.');
-
-  // ── BLOQUE 3: Formato ──
+    rules.push('⚠️ APERTURA DIRECTA SIN TENSIÓN: hook -10.');
   if (flags.is_static_slideshow)
-    rules.push('⛔ SLIDESHOW DE IMÁGENES: retencion_ritmo ≤25 | emocion_deseo ≤35 | produccion_estetica ≤38 | viralScore TECHO = 28. Las imágenes quietas son invisibles en el feed en 2026.');
-
+    rules.push('⛔ SLIDESHOW: retencion_ritmo ≤25 | emocion_deseo ≤35 | produccion_estetica ≤38 | viralScore TECHO = 28.');
   if (flags.no_music_and_static)
-    rules.push('⛔ IMÁGENES SIN MÚSICA: produccion_estetica ≤28 | scrollStopScore ≤18 | viralScore TECHO = 20. Peor combinación posible — ni detiene ni retiene.');
-
+    rules.push('⛔ IMÁGENES SIN MÚSICA: produccion_estetica ≤28 | scrollStopScore ≤18 | viralScore TECHO = 20.');
   if (flags.slow_cuts_no_music)
-    rules.push('⛔ CORTES LENTOS SIN MÚSICA: retencion_ritmo ≤28 | viralScore TECHO = 30. Scrolleó antes de s4.');
-
+    rules.push('⛔ CORTES LENTOS SIN MÚSICA: retencion_ritmo ≤28 | viralScore TECHO = 30.');
   if (flags.format_incompatible)
-    rules.push('⛔ FORMATO INCOMPATIBLE (0-2 Gate): claridad_producto -25 | confianza_credibilidad -25 | propuesta_valor -25. El espectador no vio el video.');
-
+    rules.push('⛔ FORMATO INCOMPATIBLE: claridad_producto -25 | confianza_credibilidad -25 | propuesta_valor -25.');
   if (flags.format_weak && !flags.format_incompatible)
-    rules.push('⚠️ FORMATO DÉBIL (3-4 Gate): claridad_producto -12 | confianza_credibilidad -12 | propuesta_valor -12 | retencion_ritmo ≤50.');
-
-  // ── BLOQUE 4: Capas de compra ──
+    rules.push('⚠️ FORMATO DÉBIL: claridad_producto -12 | confianza_credibilidad -12 | propuesta_valor -12 | retencion_ritmo ≤50.');
   if (flags.pain_missing)
-    rules.push('⛔ DOLOR NO NOMBRADO: salesScore ≤48 | propuesta_valor ≤42 | emocion_deseo ≤40. Sin nombrar el dolor antes de mostrar el producto, el video no conecta con nadie. Primera mejora del roadmap siempre.');
-
+    rules.push('⛔ MOTOR DE CONVERSIÓN AUSENTE: salesScore ≤48 | propuesta_valor ≤42 | emocion_deseo ≤40.');
   if (flags.pain_late && !flags.pain_missing)
-    rules.push('⚠️ DOLOR NOMBRADO TARDE (después de s5): salesScore -12 | propuesta_valor -10. El espectador se fue antes de sentir que el video le habla a él.');
-
+    rules.push('⚠️ MOTOR DE CONVERSIÓN TARDE: salesScore -12 | propuesta_valor -10.');
   if (flags.trust_gap)
-    rules.push('⚠️ BRECHA DE CONFIANZA: salesScore -15 | confianza_credibilidad ≤45. Hay interés pero no hay acción porque el espectador no cree que funcione de verdad.');
-
+    rules.push('⚠️ BRECHA DE CONFIANZA: salesScore -15 | confianza_credibilidad ≤45.');
   if (flags.no_urgency)
-    rules.push('⚠️ SIN URGENCIA: salesScore -10 | call_to_action -12. Hay intención de compra pero no hay razón para actuar hoy.');
-
+    rules.push('⚠️ SIN URGENCIA: salesScore -10 | call_to_action -12.');
   if (flags.high_friction)
-    rules.push('⚠️ FRICCIÓN ALTA: call_to_action ≤40 | salesScore -8. El siguiente paso no está claro o parece complicado.');
-
-  // ── BLOQUE 5: Presentación del producto ──
+    rules.push('⚠️ FRICCIÓN ALTA: call_to_action ≤40 | salesScore -8.');
   if (flags.product_shown_late)
-    rules.push('⚠️ PRODUCTO MOSTRADO TARDE (después de s8): claridad_producto -15 | salesScore -12.');
-
+    rules.push('⚠️ CONTENIDO PRINCIPAL TARDE: claridad_producto -15 | salesScore -12.');
   if (flags.product_shown_sideways)
-    rules.push('⚠️ PRODUCTO DE COSTADO O PARCIAL: claridad_producto -12 | emocion_deseo -10.');
-
+    rules.push('⚠️ CONTENIDO PARCIAL: claridad_producto -12 | emocion_deseo -10.');
   if (flags.product_presentation_interrupted)
     rules.push('⚠️ PRESENTACIÓN INTERRUMPIDA: retencion_ritmo -10 | produccion_estetica -8.');
-
-  // ── BLOQUE 6: Valor enterrado ──
   if (flags.value_trap)
-    rules.push('⛔ TRAMPA DE VALOR: salesScore ≤50 | potentialScore ≤53. El resultado es real pero nadie llega a verlo con este formato.');
-
+    rules.push('⛔ TRAMPA DE VALOR: salesScore ≤50 | potentialScore ≤53.');
   if (flags.value_behind_scroll_wall)
-    rules.push('⚠️ VALOR DETRÁS DEL SCROLL: no contarlo como fortaleza. Scores que dependen de ese elemento bajan 20 puntos.');
-
+    rules.push('⚠️ VALOR DETRÁS DEL SCROLL: scores dependientes -20.');
   if (flags.recompensa_tardia)
-    rules.push('⚠️ RECOMPENSA TARDÍA: emocion_deseo -18 | salesScore -12. Primera mejora del roadmap: mover ese elemento a los primeros 5 segundos.');
-
+    rules.push('⚠️ RECOMPENSA TARDÍA: emocion_deseo -18 | salesScore -12.');
   if (flags.buried_result)
-    rules.push('⛔ RESULTADO ENTERRADO (después de s15): salesScore ≤45. No puede aparecer como fortaleza.');
-
-  // ── BLOQUE 7: Ritmo y energía ──
+    rules.push('⛔ RESULTADO ENTERRADO: salesScore ≤45.');
   if (flags.boring_full_video)
-    rules.push('⛔ VIDEO ABURRIDO COMPLETO: emocion_deseo ≤33 | retencion_ritmo ≤35 | retentionCurve con caída pronunciada antes de s8.');
-
+    rules.push('⛔ VIDEO ABURRIDO: emocion_deseo ≤33 | retencion_ritmo ≤35.');
   if (flags.flat_energy && !flags.boring_full_video)
-    rules.push('⚠️ ENERGÍA PLANA: emocion_deseo -15 | retencion_ritmo -12. Sin picos ni escalada el espectador siente que "ya vio suficiente".');
-
+    rules.push('⚠️ ENERGÍA PLANA: emocion_deseo -15 | retencion_ritmo -12.');
   if (flags.dead_moment && !flags.boring_full_video)
-    rules.push(`⚠️ MOMENTO MUERTO (~s${flags.dead_moment_second || '?'}): retencion_ritmo ≤52. El espectador scrollea exactamente ahí.`);
-
+    rules.push(`⚠️ MOMENTO MUERTO (~s${flags.dead_moment_second || '?'}): retencion_ritmo ≤52.`);
   if (flags.no_retention_engines)
-    rules.push('⛔ SIN MOTORES DE RETENCIÓN: viralScore -10 adicional | retencion_ritmo ≤38.');
-
+    rules.push('⛔ SIN MOTORES DE RETENCIÓN: viralScore -10 | retencion_ritmo ≤38.');
   if (flags.no_share_trigger)
-    rules.push('⚠️ SIN MOTOR DE COMPARTIR: viralScore -8. El video no activa ninguno de los 4 motores de compartir.');
-
-  // ── BLOQUE 8: Rechazo visual ──
+    rules.push('⚠️ SIN MOTOR DE COMPARTIR: viralScore -8.');
   if (flags.first_frame_repulsion)
-    rules.push('⛔ PRIMER FRAME REPULSIVO: hook ≤30 | scrollStopScore ≤25. Scrolleó en s0.');
-
+    rules.push('⛔ PRIMER FRAME REPULSIVO: hook ≤30 | scrollStopScore ≤25.');
   if (flags.visual_repulsion) {
     const s = flags.visual_repulsion_severity || 'moderada';
     if (s === 'fuerte')        rules.push('⛔ RECHAZO VISUAL FUERTE: produccion_estetica ≤40 | confianza_credibilidad ≤38 | potentialScore ≤48.');
     else if (s === 'moderada') rules.push('⚠️ RECHAZO VISUAL MODERADO: produccion_estetica -20 | confianza_credibilidad -15.');
     else if (s === 'leve')     rules.push('⚠️ RECHAZO VISUAL LEVE: produccion_estetica -10.');
   }
-
   if (flags.product_damage)
-    rules.push('⛔ DAÑO VISIBLE EN PRODUCTO: confianza_credibilidad ≤43 | potentialScore ≤58 | salesScore ≤53.');
-
+    rules.push('⛔ DAÑO VISIBLE: confianza_credibilidad ≤43 | potentialScore ≤58 | salesScore ≤53.');
   if (flags.audio_issue)
     rules.push('⚠️ AUDIO PROBLEMÁTICO: produccion_estetica -15 | confianza_credibilidad -10.');
-
-  // ── BLOQUE 9: Producto ──
   if (flags.product_unclear)
-    rules.push('⛔ PRODUCTO POCO CLARO: claridad_producto ≤45 | salesScore ≤50 | propuesta_valor ≤45.');
-
+    rules.push('⛔ CONTENIDO POCO CLARO: claridad_producto ≤45 | salesScore ≤50 | propuesta_valor ≤45.');
   if (flags.product_difficult_to_sell)
-    rules.push('⚠️ PRODUCTO DIFÍCIL EN REDES: potentialScore ≤58 | salesScore ≤53. La limitación es del producto, no del video.');
-
-  // ── BLOQUE 10: Re-hook y duración ──
+    rules.push('⚠️ DIFÍCIL CONVERSIÓN EN REDES: potentialScore ≤58 | salesScore ≤53.');
   if (flags.no_rehook)
-    rules.push('⚠️ SIN RE-HOOK: el espectador que pasó el primer filtro scrollea entre s8-s12 porque ya entendió de qué va el video. retencion_ritmo ≤55. Solo aplica en videos >20s — en videos cortos no hay tiempo de perder a la audiencia.');
-
+    rules.push('⚠️ SIN RE-HOOK: retencion_ritmo ≤55. Solo aplica en videos >20s.');
   if (flags.duration_kills_completion)
-    rules.push('⚠️ DURACIÓN DESTRUYE COMPLETION RATE: video >60s sin re-hooks suficientes. retencion_ritmo ≤45 | viralScore -8. El algoritmo mide watch time total — un video largo que nadie ve hasta el final penaliza la distribución.');
-
+    rules.push('⚠️ DURACIÓN DESTRUYE COMPLETION RATE: retencion_ritmo ≤45 | viralScore -8.');
   if (flags.short_video_advantage)
-    rules.push('✅ VENTAJA ESTRUCTURAL DE DURACIÓN: video <15s tiene completion rate naturalmente alto (75-85%). retencion_ritmo base +10 si el hook es bueno. No aplicar penalizaciones de retención a menos que el hook sea muerto.');
-
-  // ── BLOQUE 11: Audio trending y save ──
+    rules.push('✅ VENTAJA DE DURACIÓN CORTA (<15s): retencion_ritmo base +10 si hook es bueno.');
   if (flags.audio_trending)
-    rules.push('✅ AUDIO TRENDING DETECTADO: viralScore +8 si coincide con el contenido. El algoritmo favorece el audio en tendencia para distribución orgánica. No aplicar si el audio no encaja con la energía del video.');
-
+    rules.push('✅ AUDIO TRENDING: viralScore +8 si coincide con el contenido.');
   if (flags.has_save_trigger)
-    rules.push('✅ ELEMENTO GUARDABLE DETECTADO: viralScore +5. Los saves son la señal más fuerte después de los shares — le dicen al algoritmo que el contenido tiene valor de referencia.');
+    rules.push('✅ ELEMENTO GUARDABLE: viralScore +5.');
 
-  if (!rules.length) return `Sin flags criticos. Si el espectador se habría quedado a mirar — audio desde s0, movimiento real, hook con curiosidad, dolor nombrado, cortes cada 1-3s — los scores altos (70-90) son correctos y deben asignarse.`;
+  if (!rules.length)
+    return 'Sin flags negativos. Un video que el espectador vería hasta el final merece scores 70-90. Asignarlos.';
 
-  return `PENALIZACIONES DERIVADAS DEL COMPORTAMIENTO REAL DEL ESPECTADOR — APLICAR EN ORDEN:
+  return `PENALIZACIONES — APLICAR EN ORDEN:
 ${rules.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
-REGLAS DE APLICACIÓN:
-- TECHO (≤X): valor máximo absoluto. El contenido del video no lo supera.
+REGLAS:
+- TECHO (≤X): máximo absoluto.
 - RESTA (-Y): restar del score base antes de comparar contra techos.
-- Si hay múltiples techos sobre el mismo score: aplicar siempre el más restrictivo.
-- TECHOS DE VIRALSCORE se acumulan: hook muerto (≤35) + no_audio (-15) = techo efectivo ≤20.
-- BAIT DESCONECTADO: reportar viralScore y salesScore por separado y explicar la brecha.
-- ✅ = señal positiva. Sumar cuando el análisis la confirma, nunca sumarla si hay dudas.
-- Si NO hay flags negativos: un video que el espectador vería hasta el final merece scores 70-90. Asignarlos.`;
+- Múltiples techos: aplicar el más restrictivo.
+- TECHOS DE VIRALSCORE se acumulan.
+- ✅ = sumar solo cuando el análisis la confirma.`;
 };
 
 
@@ -850,112 +612,97 @@ REGLAS DE APLICACIÓN:
 // CALL 3 — SCORING BRAIN
 // ============================================================
 const buildScoringBrainPrompt = (strategyAnalysis, platform, objetivo, nicho, flags) => {
-  const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
+  const pName = {
+    tiktok: 'TikTok', reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
+  }[platform];
   const penaltiesBlock = buildPenalties(flags);
-
-  const nichoScoringNote = nicho === 'restaurante_comida' ? `
-NICHO COMIDA: pain_missing no penaliza. Motor = deseo sensorial.
-salesScore minimo 50 si activa deseo visual. CTA implicito (lugar visible) es suficiente.
-no_urgency no penaliza si el lugar queda claro. trust_gap no penaliza si lo visual es atractivo.
-Hook correcto en comida = mostrar el plato desde s0. NO aplicar cap de apertura_informativa.
-apertura_informativa en comida = hook correcto. Tratarlo como debil a lo sumo, nunca como muerto.
-` : nicho === 'inmobiliaria' ? `
-NICHO INMOBILIARIA: pain_missing no penaliza. Motor = aspiracion + agente.
-salesScore minimo 50 si hay agente visible + propiedad aspiracional.
-Hook correcto = pregunta de precio o dato de mercado. NO penalizar tour desde s0 como apertura_informativa si hay personalidad del agente.
-confianza_credibilidad evalua al AGENTE. CTA conversacional ("escribime") es suficiente.
-no_urgency no penaliza si no habia oferta temporal especifica que mostrar.
-trust_gap no penaliza si el agente tiene personalidad visible y genera confianza humana.
-` : '';
 
   return `Scoring VIRAX AI — ${pName} | Objetivo: ${objetivo} | Nicho: ${nicho}
 
-ANALISIS ESTRATEGICO:
+ROL: Sos el sistema que refleja lo que el espectador promedio haría con este video.
+No evaluás calidad de contenido. Evaluás comportamiento real.
+
+CALIBRACIÓN DE NICHO — CRÍTICO:
+El nicho es "${nicho}". Antes de aplicar cualquier penalización, verificá:
+- ¿El flag pain_missing aplica en este nicho? Solo penaliza si el motor de conversión ES dolor.
+  En comida, inmobiliaria, lifestyle, entretenimiento y nichos aspiracionales: pain_missing NO penaliza.
+- ¿El flag no_urgency aplica? Solo si había una urgencia concreta que mostrar y no apareció.
+- ¿El flag trust_gap aplica? Evaluá confianza según LO QUE GENERA CONFIANZA EN ESTE NICHO ESPECÍFICO.
+- ¿apertura_informativa penaliza? Solo si mostrar el contenido desde s0 NO es el hook correcto aquí.
+  En nichos donde la respuesta emocional inmediata al contenido ES el hook (comida, arte, moda,
+  transformaciones físicas, etc.), apertura_informativa no aplica o penaliza mínimo.
+Usá tu conocimiento del nicho. No apliques el framework de producto físico como default.
+
+ANÁLISIS ESTRATÉGICO:
 ${strategyAnalysis}
 
-ROL: Sos el sistema que refleja lo que el espectador promedio — pulgar listo para scrollear — haria con este video. No evaluás calidad de contenido. Evaluás comportamiento real.
-
-${nichoScoringNote}
-
-PENALIZACIONES — APLICAR PRIMERO EN ORDEN:
+PENALIZACIONES — APLICAR CON LA CALIBRACIÓN DE NICHO ACTIVA:
 ${penaltiesBlock}
 
-SENALES POSITIVAS (aplicar cuando el analisis las confirma):
-- Hook explosivo confirmado: viralScore base ≥72
-- Dolor en s0-s5 + producto como solucion: salesScore base ≥68
+SEÑALES POSITIVAS (aplicar cuando el análisis las confirma):
+- Hook explosivo: viralScore base ≥72
+- Motor de conversión activo en s0-s5 + solución/contenido como respuesta: salesScore base ≥68
 - Audio s0 + video real + cortes 1-2s: retencion_ritmo base ≥70
 - Algo nuevo cada ≤2s sostenido: retencion_ritmo +10
 - Re-hook efectivo s5-s15 en video >20s: retencion_ritmo +12 | viralScore +5
-- Video <15s + hook bueno: retencion_ritmo base +10 (completion rate estructural alto)
-- Audio trending confirmado + match contenido: viralScore +8
-- Elemento guardable detectado (tutorial, referencia, dato): viralScore +5
-- Producto en accion s0-s3: claridad_producto ≥75
-- Transformacion satisfactoria visible: emocion_deseo ≥65
-- Prueba social real + demo funcionando: confianza_credibilidad ≥70
+- Video <15s + hook bueno: retencion_ritmo base +10
+- Audio trending confirmado + match: viralScore +8
+- Elemento guardable: viralScore +5
+- Contenido en acción s0-s3: claridad_producto ≥75
+- Respuesta emocional fuerte activada visualmente: emocion_deseo ≥65
+- Confianza establecida según el nicho: confianza_credibilidad ≥70
 - Urgencia visible antes del scroll masivo: call_to_action ≥65
-- Parece contenido de amigo: produccion_estetica ≥60
-- Elemento compartible (dato, sorpresa, identificacion): viralScore +8
-Un video que el espectador veria hasta el final merece scores 70-90. No ser conservador.
+- Parece contenido orgánico: produccion_estetica ≥60
+- Elemento compartible claro: viralScore +8
+Un video que el espectador vería hasta el final merece scores 70-90. No ser conservador.
 
 ESCALA:
-viralScore: 82-90 paro+quedo+compartio | 68-81 paro+llego al final | 52-67 llego a la mitad | 35-51 scrolleo s4-s8 | 20-34 scrolleo antes de s4 | <20 ni lo registro
-salesScore: 75-90 dolor+confianza+urgencia | 55-74 parcial | 35-54 no conecto | <35 sin motor de compra
+viralScore: 82-90 paró+quedó+compartió | 68-81 paró+llegó al final | 52-67 llegó a la mitad | 35-51 scrolleó s4-s8 | 20-34 scrolleó antes de s4 | <20 ni lo registró
+salesScore: 75-90 motor activo+confianza+acción | 55-74 parcial | 35-54 no conectó | <35 sin motor
 
-CALIBRACION:
-- 8 imagenes sin musica → viral 12-18 | sales 20-30
-- Video real, hook informativo, sin dolor → viral 42-52 | sales 32-42
-- Hook "te pasa esto?", cortes 1-2s, dolor s2, producto s5, re-hook s8 → viral 72-82 | sales 68-78
-- Bait sin conexion al producto → viral 58-68 | sales 28-38
-- Video 10s con hook fuerte + transformacion visible → viral 70-82 | completion rate ventaja estructural
-- Video 90s sin re-hooks + hook medio → viral 35-48 | completion rate destruido por duracion
+CALIBRACIÓN:
+- 8 imágenes sin música → viral 12-18 | sales 20-30
+- Video real, apertura directa, sin motor activo → viral 42-52 | sales 32-42
+- Motor activo s0-s5, cortes 1-2s, re-hook s8 → viral 72-82 | sales 68-78
+- Bait sin conexión → viral 58-68 | sales 28-38
+- Video 10s + respuesta emocional inmediata → viral 70-82
+- Video 90s sin re-hooks → viral 35-48
 
-LENGUAJE — REGLA MÁS IMPORTANTE DEL PROMPT. NUNCA IGNORARLA.
+LENGUAJE — REGLA MÁS IMPORTANTE. NUNCA IGNORARLA.
+Hablale como a un amigo que pregunta "¿por qué no funciona mi video?"
+Directo. Sin rodeos. Sin palabras técnicas sin explicación.
 
-La persona que va a leer este análisis grabó un video con el celular o contrató a alguien para hacerlo.
-No estudió marketing. No sabe qué es un "hook", un "funnel" ni una "tasa de conversión".
-Si usás esas palabras, no va a entender nada y va a sentir que le estás hablando a otra persona.
-
-Hablale como le hablarías a un amigo que te pregunta "¿por qué no funciona mi video?"
-Directo. Sin rodeos. Sin palabras que necesiten ser explicadas.
-
-TÉRMINOS PROHIBIDOS — si aparecen sin explicación entre paréntesis, la respuesta es inválida:
+TÉRMINOS PROHIBIDOS sin explicación entre paréntesis:
 hook, re-hook, retención, conversión, UGC, CTR, engagement, funnel, pain point, orgánico,
 viralización, pattern interrupt, loop de curiosidad, call to action, scroll-stop, completion rate,
 watch time, qualified views, bait, apertura informativa, value proposition, KPI, ROI,
-brand awareness, segmentación, alcance orgánico, STEPPS, tasa de rebote, audiencia objetiva,
-copywriting, storytelling, open loop, micro-rewards, consumabilidad, ad filter.
+brand awareness, copywriting, storytelling, open loop, micro-rewards, consumabilidad, ad filter.
 
-CÓMO REEMPLAZARLOS — ejemplos obligatorios:
-✗ "El hook carece de pattern interrupt"
-✓ "Los primeros segundos no paran el dedo — no pasa nada que haga querer quedarse"
-
+CÓMO REEMPLAZARLOS:
 ✗ "Pain point no establecido antes del s5"
 ✓ "El video no le dice al espectador que entiende su problema antes de mostrarle el producto"
+✗ "Hook carece de pattern interrupt"
+✓ "Los primeros segundos no paran el dedo — no pasa nada que haga querer quedarse"
 
-REGLA GENERAL:
-Si la explicación necesita un glosario para entenderse, está mal escrita.
-Si un chico de 16 años que hace videos de TikTok no lo entiende, reescribilo.
-El objetivo es que la persona lea el análisis y piense "tiene razón, ahora sé qué cambiar."
-No que piense "¿qué significa esto?"
+FORMATO para cada categoría:
+  explicacion: QUÉ está mal/bien y POR QUÉ en lenguaje del creador
+  solucion: QUÉ cambiar — acción concreta
+  ejemplo: cómo quedaría en ESTE video específico
 
-FORMATO OBLIGATORIO para cada categoria:
-  explicacion: QUE esta mal o bien y POR QUE — en lenguaje del creador
-  solucion: QUE cambiar exactamente — accion concreta
-  ejemplo: como quedaria en ESTE video especifico — no generico
+ROADMAP — 4 mejoras por impacto:
+  [0] Lo que más views genera
+  [1] Lo que más convierte
+  [2] Lo que más retiene
+  [3] Lo que más comparte o guarda
+Formato: "IMPACTO ALTO|MEDIO | [problema] → [qué cambiar] → [cómo quedaría]"
 
-ROADMAP — 4 mejoras ordenadas por impacto:
-  [0] Lo que mas views genera (hook/formato si estan mal)
-  [1] Lo que mas convierte (dolor + confianza)
-  [2] Lo que mas retiene (ritmo + re-hook + energia)
-  [3] Lo que mas comparte o guarda (elemento revelador, CTA, save trigger)
-Formato: "IMPACTO ALTO|MEDIO | [problema] → [que cambiar] → [como quedaria en este video]"
+HONESTVERDICT: Una sola cosa. La más importante. Sin rodeos.
 
-HONESVERDICT: Una sola cosa. La mas importante. Sin rodeos. Que cambiaria todo si se arregla.
+PONDERACIÓN: hook 20% | retencion_ritmo 13% | claridad_producto 12% | propuesta_valor 12% | confianza_credibilidad 11% | emocion_deseo 11% | call_to_action 9% | produccion_estetica 7% | tendencias_formato 5%
 
-PONDERACION: hook 20% | retencion_ritmo 13% | claridad_producto 12% | propuesta_valor 12% | confianza_credibilidad 11% | emocion_deseo 11% | call_to_action 9% | produccion_estetica 7% | tendencias_formato 5%
-
-RESPUESTA: UNICAMENTE el objeto JSON. Primera linea: { — Ultima linea: }
-Sin nada antes ni despues. Sin tildes en strings. Sin comillas dobles internas. Sin saltos de linea dentro de strings.
+RESPUESTA: ÚNICAMENTE el objeto JSON. Primera línea: { — Última línea: }
+Sin nada antes ni después. Sin tildes en strings. Sin comillas dobles internas. Sin saltos de línea dentro de strings.
 
 {
   "vision": { "niche": "", "type": "<UGC|profesional|mixto>", "audience": "", "promise": "" },
@@ -1027,17 +774,17 @@ Sin nada antes ni despues. Sin tildes en strings. Sin comillas dobles internas. 
   "retentionData": {
     "at3s": "", "at10s": "", "final": "",
     "scrollMassiveSecond": 0,
-    "qualifiedViewRate": "<porcentaje estimado de espectadores que llegan a s5+>",
+    "qualifiedViewRate": "",
     "passesDistributionTest": "<si|no|marginal>",
     "contentVisibleBeforeScroll": "",
     "contentMissedByMost": ""
   },
   "retentionCurve": [100, 0, 0, 0, 0, 0, 0, 0, 0, 0],
   "phaseScores": {
-    "hook":       { "label": "Hook",       "score": 0, "verdict": "", "consequence": "" },
-    "desarrollo": { "label": "Desarrollo", "score": 0, "verdict": "", "consequence": "" },
-    "escalada":   { "label": "Escalada",   "score": 0, "verdict": "", "consequence": "" },
-    "cierre":     { "label": "Cierre",     "score": 0, "verdict": "", "consequence": "" }
+    "hook":       { "label": "Primeros segundos", "score": 0, "verdict": "", "consequence": "" },
+    "desarrollo": { "label": "Desarrollo",        "score": 0, "verdict": "", "consequence": "" },
+    "escalada":   { "label": "Escalada",          "score": 0, "verdict": "", "consequence": "" },
+    "cierre":     { "label": "Cierre",            "score": 0, "verdict": "", "consequence": "" }
   },
   "steppsScore": {
     "socialCurrency": 0, "triggers": 0, "emotion": 0, "public": 0,
@@ -1124,7 +871,6 @@ Sin nada antes ni despues. Sin tildes en strings. Sin comillas dobles internas. 
   "updatedRoadmap": ["", "", ""]
 }`;
 };
-
 
 // ============================================================
 // DERIVACIÓN DEL HOOK TYPE (llamar después del pre-clasificador)
