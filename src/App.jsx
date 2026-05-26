@@ -130,7 +130,7 @@ const safeParseJSON = (rawText, context = '') => {
     const start = s.indexOf('{');
     if (start !== -1) s = s.slice(start);
 
-    // Remover coma trailing antes de cerrar
+   
     s = s.replace(/,\s*([\]}])/g, '$1');
 
     // Contar llaves/corchetes para cerrar lo que falta
