@@ -1027,6 +1027,27 @@ const trackPrediction = async (result) => {
 };  //const scores = buildPenalties(flagsDeterministic)  //catch (err)  //const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic)
 
 // ============================================================
+// UTILITY FUNCTIONS — Parsing y extracción
+// ============================================================
+
+const extractFlags = (strategyText) => {
+  try {
+    const match = strategyText.match(/---FLAGS---\s*([\s\S]*?)\s*---END---/);
+    if (!match) {
+      console.warn('[extractFlags] Bloque FLAGS no encontrado');
+      return {};
+    }
+    return JSON.parse(match[1]);
+  } catch (err) {
+    console.warn('[extractFlags] Error parseando FLAGS:', err.message);
+    return {};
+  }
+};
+
+const stripFlags = (strategyText) =>
+  strategyText.replace(/---FLAGS---[\s\S]*?---END---/, '').trim();
+
+// ============================================================
 // DETERMINISTIC SCORING — Aplica penalties y techos
 // ============================================================
 const applyDeterministicScoring = (parsed, flags, nicho) => {
