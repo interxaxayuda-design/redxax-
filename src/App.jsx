@@ -209,9 +209,121 @@ Mira este video y dame SOLO estos datos. JSON exacto, nada antes ni después.
   "duracion_estimada": <segundos>,
   "tiene_rehook": <true|false>,
   "segundo_rehook": <número o 0>,
-  "completion_rate_esperado": "<muy_alto|alto|medio|bajo>"
+  "completion_rate_esperado": "<muy_alto|alto|medio|bajo>",
+  
+  "EDICIÓN Y FORMATO":
+  "es_slideshow_imagenes": <true si el video es principalmente imágenes estáticas con ken burns | false>,
+  "porcentaje_video_real": <0-100 estimado de video real vs imágenes>,
+  "cortes_por_minuto": <número exacto de cortes en el video>,
+  "corte_promedio_segundos": <duración promedio de cada plano>,
+  "plano_mas_largo_segundos": <el plano más largo sin corte>,
+  "hay_transiciones_rapidas": <true si hay jump cuts o transiciones abruptas | false>,
+  "ritmo_visual": "<frenético|dinamico|normal|lento|muy_lento>",
+  "momento_muerto": "<segundo exacto del primer momento sin cambios >2s sin acción | 0 si no hay>",
+  "ratio_movimiento": "<todo_estatico|mayoria_estatica|equilibrado|mayoria_dinamico|todo_dinamico>",
+  "tipo_edicion": "<profesional|amateur|sin_editar|automatica|slideshow>",
+  "cambio_visual_cada_ns": <promedio de segundos entre cambios visuales>,
+  "musica_tiene_cambios_ritmo": <true si la música cambia de energía en el video | false>,
+  "segundo_donde_musica_cambia": <número o 0 si no cambia>,
+  "zoom_o_pan_detectado": <true si hay movimiento de cámara, zoom, pan, etc | false>,
+  "efectos_visuales": "<ninguno|leve|moderado|excesivo>",
+  "transiciones_suave_vs_abrupta": "<suave|abrupta|mixta>",
+  "calidad_imagen": "<baja|media|alta|profesional>"
 }
 `;
+
+const buildResearchBrainPrompt = (platform, nicho, objetivo) => {
+  const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
+  
+  return `INVESTIGACIÓN DE MERCADO — ${pName} | ${nicho} | Objetivo: ${objetivo}
+
+TAREA: Investigá en ${pName} cuáles son los MEJORES contenidos de ${nicho} que lograron VIRAL + CONVERSIÓN.
+
+Buscá:
+1. Marcas o creadores en ${nicho} que tienen contenido viral (millones de views)
+2. ¿Qué hacen diferente? ¿Hook? ¿Edición? ¿Música? ¿Mensaje?
+3. ¿Cuál es el patrón de éxito en ${nicho}?
+4. ¿Qué errores cometen las marcas que NO viralizan?
+
+RESPUESTA: JSON exacto, nada antes ni después.
+
+{
+  "niche": "${nicho}",
+  "platform": "${pName}",
+  "top_3_successful_brands": [
+    {
+      "nombre": "<nombre de marca o creador>",
+      "tipo_contenido": "<tipo de video que les funciona>",
+      "hook_pattern": "<qué gancho usan>",
+      "editing_style": "<edición que usan: rápida|lenta|profesional|amateur>",
+      "musica_style": "<estilo de música>",
+      "conversion_signal": "<cómo cierran la venta>",
+      "why_works": "<por qué funciona en ${nicho}>"
+    }
+  ],
+  "common_mistakes": [
+    "<error 1 que cometen los que NO viralizan>",
+    "<error 2>",
+    "<error 3>"
+  ],
+  "success_formula": "<resumen de 1 línea: qué hay que hacer para viral + ventas en ${nicho}>",
+  "red_flags": [
+    "<roja bandera 1: qué evitar a toda costa>",
+    "<roja bandera 2>"
+  ]
+}
+`;
+};
+
+const buildApplyResearchBrainPrompt = (preFacts, researchData, platform, nicho) => {
+  const nicheDef = NICHE_MOTORS[nicho] || NICHE_MOTORS["producto_fisico"];
+  const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
+
+  return `COMPARATIVA: TU VIDEO vs FÓRMULA DE ÉXITO — ${pName} | ${nicho}
+
+FÓRMULA DE ÉXITO INVESTIGADA:
+- Success formula: ${researchData.success_formula}
+- Marcas que funcionan: ${researchData.top_3_successful_brands.map(b => b.nombre).join(', ')}
+
+TU VIDEO:
+- Es slideshow de imágenes: ${preFacts.es_slideshow_imagenes ? 'SÍ ⚠️' : 'NO ✅'}
+- Porcentaje video real: ${preFacts.porcentaje_video_real}%
+- Edición: ${preFacts.tipo_edicion}
+- Ritmo visual: ${preFacts.ritmo_visual}
+- Hook: ${preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria ? 'PRESENTE' : 'AUSENTE'}
+- Dolor antes s5: ${preFacts.dolor_antes_s5 ? 'SÍ' : 'NO'}
+
+TAREA: Analiza punto por punto si tu video sigue o no la fórmula de éxito.
+
+RESPUESTA: JSON exacto, nada antes ni después.
+
+{
+  "gap_analysis": [
+    {
+      "aspecto": "<aspecto clave en ${nicho}>",
+      "success_formula_dice": "<qué dice la fórmula>",
+      "tu_video": "<qué tiene tu video>",
+      "match": "<SÍ|NO|PARCIAL>",
+      "impact": "<CRÍTICO|ALTO|MEDIO|BAJO>",
+      "fix": "<qué cambiar exactamente>"
+    }
+  ],
+  "red_flags_en_tu_video": [
+    "<red flag detectada 1>",
+    "<red flag 2>"
+  ],
+  "compliance_score": <0-100 cuánto se alinea con la fórmula de éxito>,
+  "critical_issues": [
+    "<problema crítico 1>",
+    "<problema crítico 2>"
+  ],
+  "strengths_vs_competition": [
+    "<ventaja 1 vs lo investigado>",
+    "<ventaja 2>"
+  ]
+}
+`;
+};
 
 // ============================================================
 // CALL 2 — VIEWER BRAIN
@@ -356,9 +468,6 @@ FLAGS CRÍTICOS (asignar SÍ/NO):
 `;
 };
 
-// ============================================================
-// PENALTIES — determinístico, sin ambigüedad
-// ============================================================
 export const calculatePenalties = (flags, nicho) => {
   const nicheDef = NICHE_MOTORS[nicho] || NICHE_MOTORS["producto_fisico"];
   const penalties = {};
@@ -367,10 +476,47 @@ export const calculatePenalties = (flags, nicho) => {
   const hookCeiling = HOOK_CEILINGS[flags.hook_type] || 70;
   penalties.viral_ceiling_from_hook = hookCeiling;
 
+    // ← NUEVO: SLIDESHOW DE IMÁGENES = MUERTE
+  if (flags.es_slideshow_imagenes) {
+    penalties.viral_penalty = (penalties.viral_penalty || 0) - 35;
+    penalties.viral_ceiling_from_hook = Math.min(penalties.viral_ceiling_from_hook, 25);
+    penalties.produccion_ceiling = 20;
+    penalties.retencion_ritmo_ceiling = 15;
+  }
+
   // Audio desde s0
   if (!flags.audio_desde_s0) {
     penalties.viral_penalty = (penalties.viral_penalty || 0) - 15;
     penalties.scroll_threshold = SCROLL_THRESHOLDS.no_audio_s0;
+  }
+
+  // ← NUEVO: EDICIÓN Y RITMO
+  if (flags.ratio_movimiento === 'todo_estatico' || flags.ratio_movimiento === 'mayoria_estatica') {
+    penalties.viral_penalty = (penalties.viral_penalty || 0) - 20;
+    penalties.retencion_ritmo_ceiling = 35;
+  }
+
+  if (flags.ritmo_visual === 'muy_lento' || flags.ritmo_visual === 'lento') {
+    penalties.viral_penalty = (penalties.viral_penalty || 0) - 12;
+    penalties.retencion_ritmo_ceiling = 45;
+  }
+
+  if (flags.plano_mas_largo_segundos > 4 && flags.tipo_edicion !== 'profesional') {
+    penalties.retencion_ritmo_ceiling = 50;
+  }
+
+  if (flags.momento_muerto > 0 && flags.momento_muerto < 5) {
+    penalties.retencion_ritmo_ceiling = 55;
+  }
+
+  if (flags.cambio_visual_cada_ns > 3) {
+    // Si no hay un cambio visual cada 3s o menos, retención baja
+    penalties.viral_penalty = (penalties.viral_penalty || 0) - 8;
+  }
+
+  if (flags.tipo_edicion === 'sin_editar') {
+    penalties.viral_penalty = (penalties.viral_penalty || 0) - 18;
+    penalties.produccion_ceiling = 40;
   }
 
   // Motor de conversión ausente
@@ -446,6 +592,27 @@ ESCALA DE REFERENCIA:
 PESOS PARA ESTE NICHO:
 hook: 22% | retencion_ritmo: 14% | motor_activo: 18% | confianza: 12% | claridad: 12% | emocion: 10% | produccion: 8% | cta: 4%
 (Los pesos cambian por nicho. Esto es default para ${nicho})
+
+SISTEMA DE VERDAD:
+- Hook ceiling: ${HOOK_CEILINGS[flags.hook_type] || 70}
+- Motor: ${nicheDef.motor}
+- Trust signal: ${nicheDef.trust_signal}
+- CTA type: ${nicheDef.cta_type}
+
+EDICIÓN Y RITMO DETECTADOS:
+- Cortes por minuto: ${flags.cortes_por_minuto ?? '?'}
+- Plano más largo: ${flags.plano_mas_largo_segundos ?? '?'}s
+- Ratio movimiento: ${flags.ratio_movimiento ?? 'no detectado'}
+- Cambio visual cada: ${flags.cambio_visual_cada_ns ?? '?'}s
+- Tipo de edición: ${flags.tipo_edicion ?? 'desconocido'}
+- Momento muerto en s${flags.momento_muerto ?? '0'}
+
+PENALIZACIONES APLICADAS:
+${penaltyText}
+
+ANÁLISIS ESTRATÉGICO:
+${strategyAnalysis}
+
 
 SCORES A CALCULAR:
 
@@ -1178,7 +1345,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
           storagePath,
           videoMimeType: mimeType,
           duration: Math.round(duration),
-          maxOutputTokens: 1024,
+          maxOutputTokens: 2048,
           expectsJson: true
         }
       });
@@ -1238,9 +1405,68 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const viewerAnalysis = extractGeminiText(call1Data);
 
     // ============================================================
+    // CALL 1.5 — Research Brain (Investigar competencia)
+    // ============================================================
+    setAnalysisProgress(33);
+    setStatusText("Investigando marcas exitosas en tu nicho...");
+
+    let researchData = {};
+    try {
+      const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildResearchBrainPrompt(platform, selectedNicho, selectedObjetivo),
+          expectsJson: true,
+          maxOutputTokens: 2048,
+        }
+      });
+      if (call1_5Error) throw call1_5Error;
+
+      researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
+      console.log('[VIRAX] Research:', researchData);
+    } catch (e) {
+      console.warn('[CALL 1.5] Research fallback:', e.message);
+      researchData = {
+        success_formula: 'Video real + edición rápida + hook fuerte',
+        top_3_successful_brands: [],
+        common_mistakes: [],
+        red_flags: []
+      };
+    }
+
+    // ============================================================
+    // CALL 1.75 — Apply Research (Comparar con competencia)
+    // ============================================================
+    setAnalysisProgress(40);
+    setStatusText("Comparando tu video con marcas exitosas...");
+
+    let gapAnalysis = {};
+    try {
+      const { data: call1_75Data, error: call1_75Error } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildApplyResearchBrainPrompt(preFacts, researchData, platform, selectedNicho),
+          expectsJson: true,
+          maxOutputTokens: 2048,
+        }
+      });
+      if (call1_75Error) throw call1_75Error;
+
+      gapAnalysis = safeParseJSON(extractGeminiText(call1_75Data), 'gap-analysis') || {};
+      console.log('[VIRAX] Gap Analysis:', gapAnalysis);
+    } catch (e) {
+      console.warn('[CALL 1.75] Gap Analysis fallback:', e.message);
+      gapAnalysis = {
+        gap_analysis: [],
+        red_flags_en_tu_video: [],
+        compliance_score: 50,
+        critical_issues: [],
+        strengths_vs_competition: []
+      };
+    }
+
+    // ============================================================
     // CALL 2 — Strategy Brain
     // ============================================================
-    setAnalysisProgress(50);
+    setAnalysisProgress(55);
     setStatusText("Evaluando ventas y viralidad...");
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
@@ -1255,7 +1481,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const flagsFromStrategy = extractFlags(strategyRaw);
     const strategyAnalysis = stripFlags(strategyRaw);
 
-    // ── FUSIONAR FLAGS: determinísticos + estrategia ──
+    // ── FUSIONAR FLAGS: determinísticos + estrategia + research ──
     const flagsDeterministic = {
       ...flagsFromStrategy,
       hook_type: preHookType,
@@ -1267,6 +1493,15 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       no_rehook: (!preFacts.tiene_rehook && (preFacts.duracion_estimada ?? 0) > 20) || !!flagsFromStrategy.no_rehook,
       short_video_advantage: (preFacts.duracion_estimada ?? 999) < 15 || !!flagsFromStrategy.short_video_advantage,
       duration_kills_completion: ((preFacts.duracion_estimada ?? 0) > 60 && !preFacts.tiene_rehook) || !!flagsFromStrategy.duration_kills_completion,
+      // ← NUEVOS FLAGS DE EDICIÓN
+      es_slideshow_imagenes: preFacts.es_slideshow_imagenes,
+      porcentaje_video_real: preFacts.porcentaje_video_real ?? 100,
+      tipo_edicion: preFacts.tipo_edicion || 'desconocido',
+      ritmo_visual: preFacts.ritmo_visual || 'normal',
+      cortes_por_minuto: preFacts.cortes_por_minuto ?? 0,
+      cambio_visual_cada_ns: preFacts.cambio_visual_cada_ns ?? 3,
+      compliance_score: gapAnalysis.compliance_score ?? 50,
+      has_red_flags: (gapAnalysis.red_flags_en_tu_video?.length ?? 0) > 0,
     };
 
     console.log('[VIRAX] Flags:', flagsDeterministic);
@@ -1274,7 +1509,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     // ============================================================
     // CALL 3 — Scoring Brain
     // ============================================================
-    setAnalysisProgress(80);
+    setAnalysisProgress(75);
     setStatusText("Calculando scores finales...");
 
     // ← CALCULAR PENALTIES ANTES
@@ -1294,7 +1529,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
     console.log('[VIRAX] Parsed raw:', parsed);
 
-    setAnalysisProgress(95);
+    setAnalysisProgress(90);
     setStatusText("Preparando tu análisis completo...");
 
     // ← APLICAR SCORING DETERMINÍSTICO
@@ -1322,7 +1557,9 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       _flags: flagsDeterministic,
       _penalties: penalties,
       _strategy_text: strategyAnalysis,
-      _viewer_text: viewerAnalysis
+      _viewer_text: viewerAnalysis,
+      _research_data: researchData,
+      _gap_analysis: gapAnalysis,
     };
 
     console.log('[VIRAX] FinalResult:', finalResult);
@@ -1331,7 +1568,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     setCompletedSteps([]);
     setChatMessages([{
       role: 'bot',
-      text: `Análisis completado. Potencial de venta: ${finalResult.salesScore?.score ?? '—'}% | Potencial viral: ${finalResult.viralScore?.score ?? '—'}%. ¿Querés profundizar en algo?`
+      text: `Análisis completado. Potencial de venta: ${finalResult.salesScore?.score ?? '—'}% | Potencial viral: ${finalResult.viralScore?.score ?? '—'}% | Compliance con marcas exitosas: ${finalResult._gap_analysis?.compliance_score ?? '—'}%. ¿Querés profundizar en algo?`
     }]);
 
     setAnalysisProgress(100);
