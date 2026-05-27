@@ -1026,6 +1026,49 @@ const trackPrediction = async (result) => {
   });
 };  //const scores = buildPenalties(flagsDeterministic)  //catch (err)  //const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic)
 
+// ============================================================
+// DETERMINISTIC SCORING — Aplica penalties y techos
+// ============================================================
+const applyDeterministicScoring = (parsed, flags, nicho) => {
+  const penalties = calculatePenalties(flags, nicho);
+  const hookCeiling = HOOK_CEILINGS[flags.hook_type] || 70;
+
+  // Aplicar viral score ceiling
+  let viralScore = parsed.viralScore?.score ?? 60;
+  if (penalties.viral_ceiling_from_hook) {
+    viralScore = Math.min(viralScore, penalties.viral_ceiling_from_hook);
+  }
+  if (penalties.viral_penalty) {
+    viralScore = Math.max(0, viralScore + penalties.viral_penalty);
+  }
+
+  // Aplicar sales score ceiling
+  let salesScore = parsed.salesScore?.score ?? 60;
+  if (penalties.sales_ceiling) {
+    salesScore = Math.min(salesScore, penalties.sales_ceiling);
+  }
+  if (penalties.sales_penalty) {
+    salesScore = Math.max(0, salesScore + penalties.sales_penalty);
+  }
+
+  // Recalcular potential
+  const potentialScore = Math.round(viralScore * 0.6 + salesScore * 0.4);
+
+  return {
+    ...parsed,
+    viralScore: {
+      ...parsed.viralScore,
+      score: Math.round(viralScore)
+    },
+    salesScore: {
+      ...parsed.salesScore,
+      score: Math.round(salesScore)
+    },
+    potentialScore,
+    _appliedPenalties: penalties
+  };
+};
+
 const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   if (videoFile.size > 45 * 1024 * 1024) {
     alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB.`);  //const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
