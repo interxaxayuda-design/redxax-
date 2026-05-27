@@ -1059,10 +1059,14 @@ const stripFlags = (strategyText) =>
 // DETERMINISTIC SCORING — Aplica penalties y techos
 // ============================================================
 const applyDeterministicScoring = (parsed, flags, nicho) => {
+  // ← VALIDACIÓN: si parsed es undefined o null, crear estructura base
+  if (!parsed || typeof parsed !== 'object') {
+    parsed = {};
+  }
+
   const penalties = calculatePenalties(flags, nicho);
   const hookCeiling = HOOK_CEILINGS[flags.hook_type] || 70;
 
-  // Aplicar viral score ceiling
   let viralScore = parsed.viralScore?.score ?? 60;
   if (penalties.viral_ceiling_from_hook) {
     viralScore = Math.min(viralScore, penalties.viral_ceiling_from_hook);
@@ -1071,7 +1075,6 @@ const applyDeterministicScoring = (parsed, flags, nicho) => {
     viralScore = Math.max(0, viralScore + penalties.viral_penalty);
   }
 
-  // Aplicar sales score ceiling
   let salesScore = parsed.salesScore?.score ?? 60;
   if (penalties.sales_ceiling) {
     salesScore = Math.min(salesScore, penalties.sales_ceiling);
@@ -1080,20 +1083,34 @@ const applyDeterministicScoring = (parsed, flags, nicho) => {
     salesScore = Math.max(0, salesScore + penalties.sales_penalty);
   }
 
-  // Recalcular potential
   const potentialScore = Math.round(viralScore * 0.6 + salesScore * 0.4);
 
+  // ← ASEGURAR estructura completa
   return {
-    ...parsed,
+    vision: parsed.vision || { niche: nicho, type: 'video', audience: '', promise: '' },
     viralScore: {
-      ...parsed.viralScore,
-      score: Math.round(viralScore)
+      score: Math.round(viralScore),
+      razon_principal: parsed.viralScore?.razon_principal || 'Análisis completado',
+      accion_clave: parsed.viralScore?.accion_clave || 'Revisar video'
     },
     salesScore: {
-      ...parsed.salesScore,
-      score: Math.round(salesScore)
+      score: Math.round(salesScore),
+      razon_principal: parsed.salesScore?.razon_principal || 'Análisis completado',
+      accion_clave: parsed.salesScore?.accion_clave || 'Revisar video'
     },
     potentialScore,
+    scrollStopScore: parsed.scrollStopScore ?? 50,
+    completionRate: parsed.completionRate ?? 50,
+    shareMotivation: parsed.shareMotivation ?? 50,
+    conversionClarity: parsed.conversionClarity ?? 50,
+    trustSignal: parsed.trustSignal ?? 50,
+    retentionRhythm: parsed.retentionRhythm ?? 50,
+    honestVerdict: parsed.honestVerdict || 'Video con potencial medio',
+    roadmap: parsed.roadmap || [
+      { impacto: 'ALTO', problema: 'Sin datos', solucion: 'Revisar análisis', resultado: 'Aplicar mejoras' },
+      { impacto: 'MEDIO', problema: 'Sin datos', solucion: 'Revisar análisis', resultado: 'Aplicar mejoras' },
+      { impacto: 'BAJO', problema: 'Sin datos', solucion: 'Revisar análisis', resultado: 'Aplicar mejoras' }
+    ],
     _appliedPenalties: penalties
   };
 };
@@ -1274,12 +1291,19 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     if (call3Error) throw call3Error;
 
     const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
+    console.log('[VIRAX] Parsed raw:', parsed);
 
     setAnalysisProgress(95);
     setStatusText("Preparando tu análisis completo...");
 
     // ← APLICAR SCORING DETERMINÍSTICO
     const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic, selectedNicho);
+
+    // ← LOGS DE DEBUG
+    console.log('[VIRAX] ParsedFinal:', parsedFinal);
+    console.log('[VIRAX] Vision:', parsedFinal.vision);
+    console.log('[VIRAX] ViralScore:', parsedFinal.viralScore);
+    console.log('[VIRAX] SalesScore:', parsedFinal.salesScore);
 
     // Si el video tiene buen viral, los scores no pueden caer en rojo
     const viralScore = parsedFinal.viralScore?.score ?? 0;
@@ -1299,6 +1323,8 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
       _strategy_text: strategyAnalysis,
       _viewer_text: viewerAnalysis
     };
+
+    console.log('[VIRAX] FinalResult:', finalResult);
 
     setAiResult(finalResult);
     setCompletedSteps([]);
