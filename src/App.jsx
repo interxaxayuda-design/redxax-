@@ -403,9 +403,16 @@ const buildScoringBrainPrompt = (strategyAnalysis, platform, objetivo, nicho, fl
   const nicheDef = NICHE_MOTORS[nicho] || NICHE_MOTORS["producto_fisico"];
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
 
-  const penaltyText = Object.entries(penalties)
-    .map(([k, v]) => `${k}: ${v}`)
-    .join('\n');
+  // ← VALIDACIÓN: si penalties es undefined, usar objeto vacío
+  if (!penalties || typeof penalties !== 'object') {
+    penalties = {};
+  }
+
+  const penaltyText = Object.entries(penalties).length > 0
+    ? Object.entries(penalties)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join('\n')
+    : 'Sin penalizaciones aplicadas.';
 
   return `SCORING VIRAX — ${pName} | ${objetivo} | ${nicho}
 
@@ -507,6 +514,7 @@ RESPUESTA: JSON ÚNICAMENTE, nada antes ni después:
 }
 `;
 };
+
 
 // ============================================================
 // EXPORTS
@@ -1092,7 +1100,7 @@ const applyDeterministicScoring = (parsed, flags, nicho) => {
 
 const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   if (videoFile.size > 45 * 1024 * 1024) {
-    alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB.`);  //const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
+    alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB.`);
     return;
   }
 
@@ -1119,12 +1127,9 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     .replace(/[^a-zA-Z0-9._-]/g, '') || 'video.mp4';
 
   const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
-
-  // ✅ CAMBIO 1: usar el mimeType real del archivo, no forzar nada  //flagsDeterministic
   const mimeType = videoFile.type || 'video/mp4';
-
-  // ✅ CAMBIO 2: subir el archivo original sin envolverlo en new File()
   const fileToUpload = videoFile;
+
   console.log('[VIRAX] Subiendo:', fileToUpload.name, fileToUpload.size, 'bytes', mimeType);
 
   try {
@@ -1139,7 +1144,9 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
     await new Promise(r => setTimeout(r, 1500));
 
+    // ============================================================
     // CALL 0 — Pre-clasificador
+    // ============================================================
     setAnalysisProgress(18);
     setStatusText("Pre-clasificando video...");
 
@@ -1166,28 +1173,23 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
       preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
       preHookType = (() => {
-  if (preFacts.logo_en_s0) return 'muerto';
-  
-  if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0) return 'bait_con_puente';
-  if (preFacts.imagen_alto_impacto) return 'bait_desconectado';
-  if (preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria) return 'explosivo';
-  
-  // ← NUEVO: producto en acción o transformación visible = bait_con_puente, no apertura informativa
-  // Un video de plancha en acción resolviendo el problema ES un hook con puente emocional
-  if (preFacts.producto_en_accion_s0 || preFacts.transformacion_visible) return 'bait_con_puente';
-  
-  // Solo llega acá si el producto está estático, de frente, sin hacer nada
-  if (preFacts.producto_en_s0) return 'apertura_informativa';
-  
-  return 'debil';
-})();
+        if (preFacts.logo_en_s0) return 'muerto';
+        if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0) return 'bait_con_puente';
+        if (preFacts.imagen_alto_impacto) return 'bait_desconectado';
+        if (preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria) return 'explosivo';
+        if (preFacts.producto_en_accion_s0 || preFacts.transformacion_visible) return 'bait_con_puente';
+        if (preFacts.producto_en_s0) return 'apertura_informativa';
+        return 'debil';
+      })();
 
       console.log('[VIRAX] Pre-facts:', preFacts, '| Hook:', preHookType);
     } catch (e) {
       console.warn('[CALL 0] Fallback:', e.message);
     }
 
+    // ============================================================
     // CALL 1 — Viewer Brain
+    // ============================================================
     setAnalysisProgress(25);
     setStatusText("Analizando el video...");
 
@@ -1217,7 +1219,9 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
     const viewerAnalysis = extractGeminiText(call1Data);
 
+    // ============================================================
     // CALL 2 — Strategy Brain
+    // ============================================================
     setAnalysisProgress(50);
     setStatusText("Evaluando ventas y viralidad...");
 
@@ -1232,52 +1236,37 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     const strategyRaw = extractGeminiText(call2Data);
     const flagsFromStrategy = extractFlags(strategyRaw);
     const strategyAnalysis = stripFlags(strategyRaw);
+
+    // ── FUSIONAR FLAGS: determinísticos + estrategia ──
     const flagsDeterministic = {
-  ...flagsFromStrategy,
-
-  // ── HOOK: siempre del pre-clasificador ──
-  hook_type: preHookType,
-  ad_filter_triggered: !!preFacts.logo_en_s0,
-
-  // ── AUDIO: OR ──
-  no_audio_from_s0: (preFacts.audio_desde_s0 === false)
-    || flagsFromStrategy.no_audio_from_s0,
-
-  // ── IMÁGENES ESTÁTICAS: OR ──
-  is_static_slideshow: (preFacts.movimiento_real === false)
-    || flagsFromStrategy.is_static_slideshow,
-
-  // ── DOLOR ──
-  pain_missing: (preFacts.dolor_antes_s5 === false)
-    || flagsFromStrategy.pain_missing,
-
-  pain_late: (Number(preFacts.segundo_dolor) > 5)
-    || flagsFromStrategy.pain_late,
-
-  // ── NUEVO: RE-HOOK ──
-  // Si el pre-clasificador no detectó re-hook y el video es largo, marcarlo
-  no_rehook: (!preFacts.tiene_rehook && (preFacts.duracion_estimada ?? 0) > 20)
-    || !!flagsFromStrategy.no_rehook,
-
-  // ── NUEVO: VENTAJA DE VIDEO CORTO ──
-  short_video_advantage: (preFacts.duracion_estimada ?? 999) < 15
-    || !!flagsFromStrategy.short_video_advantage,
-
-  // ── NUEVO: DURACIÓN LARGA SIN RE-HOOKS ──
-  duration_kills_completion: (
-    (preFacts.duracion_estimada ?? 0) > 60 && !preFacts.tiene_rehook
-  ) || !!flagsFromStrategy.duration_kills_completion,
-};
+      ...flagsFromStrategy,
+      hook_type: preHookType,
+      ad_filter_triggered: !!preFacts.logo_en_s0,
+      no_audio_from_s0: (preFacts.audio_desde_s0 === false) || flagsFromStrategy.no_audio_from_s0,
+      is_static_slideshow: (preFacts.movimiento_real === false) || flagsFromStrategy.is_static_slideshow,
+      pain_missing: (preFacts.dolor_antes_s5 === false) || flagsFromStrategy.pain_missing,
+      pain_late: (Number(preFacts.segundo_dolor) > 5) || flagsFromStrategy.pain_late,
+      no_rehook: (!preFacts.tiene_rehook && (preFacts.duracion_estimada ?? 0) > 20) || !!flagsFromStrategy.no_rehook,
+      short_video_advantage: (preFacts.duracion_estimada ?? 999) < 15 || !!flagsFromStrategy.short_video_advantage,
+      duration_kills_completion: ((preFacts.duracion_estimada ?? 0) > 60 && !preFacts.tiene_rehook) || !!flagsFromStrategy.duration_kills_completion,
+    };
 
     console.log('[VIRAX] Flags:', flagsDeterministic);
 
+    // ============================================================
     // CALL 3 — Scoring Brain
+    // ============================================================
     setAnalysisProgress(80);
     setStatusText("Calculando scores finales...");
 
+    // ← CALCULAR PENALTIES ANTES
+    const penalties = calculatePenalties(flagsDeterministic, selectedNicho);
+    console.log('[VIRAX] Penalties:', penalties);
+
+    // ← PASAR PENALTIES AL PROMPT
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flagsDeterministic),
+        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flagsDeterministic, penalties),
         expectsJson: true,
         maxOutputTokens: 8192,
       }
@@ -1289,26 +1278,28 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     setAnalysisProgress(95);
     setStatusText("Preparando tu análisis completo...");
 
-    // ← aplicar scoring determinístico encima de lo que tiró la IA
-const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic, selectedNicho);  //const parsedFinal = applyDeterministicScoring(parsed, flags);
+    // ← APLICAR SCORING DETERMINÍSTICO
+    const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic, selectedNicho);
 
-// Si el video tiene buen viral, los scores no pueden caer en rojo
-const viralScore = parsedFinal.viralScore?.score ?? 0;
-if (viralScore >= 65) {
-  parsedFinal.salesScore = {
-    ...parsedFinal.salesScore,
-    score: Math.max(parsedFinal.salesScore?.score ?? 0, 35)
-  };
-  parsedFinal.potentialScore = Math.max(parsedFinal.potentialScore ?? 0, 38);
-}
+    // Si el video tiene buen viral, los scores no pueden caer en rojo
+    const viralScore = parsedFinal.viralScore?.score ?? 0;
+    if (viralScore >= 65) {
+      parsedFinal.salesScore = {
+        ...parsedFinal.salesScore,
+        score: Math.max(parsedFinal.salesScore?.score ?? 0, 35)
+      };
+      parsedFinal.potentialScore = Math.max(parsedFinal.potentialScore ?? 0, 38);
+    }
 
-const finalResult = {
-  ...parsedFinal,           // ← parsedFinal en vez de parsed
-  objetivo: selectedObjetivo,
-  _flags: flagsDeterministic,
-  _strategy_text: strategyAnalysis,
-  _viewer_text: viewerAnalysis
-};
+    const finalResult = {
+      ...parsedFinal,
+      objetivo: selectedObjetivo,
+      _flags: flagsDeterministic,
+      _penalties: penalties,
+      _strategy_text: strategyAnalysis,
+      _viewer_text: viewerAnalysis
+    };
+
     setAiResult(finalResult);
     setCompletedSteps([]);
     setChatMessages([{
