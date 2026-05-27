@@ -15,7 +15,8 @@ import {
   Target,
   TrendingUp,
   Upload,
-  Users,
+  Users //finalResult  //{/* HOJA DE RUTA */}
+  ,
   X,
   Zap
 } from 'lucide-react';
@@ -2646,26 +2647,49 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
 )}
 
       {/* HOJA DE RUTA */}
-      <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/5 p-10 rounded-[3.5rem] space-y-8">
-        <div className="flex items-center gap-4">
-          <CheckCircle className="text-green-500" />
-          <h3 className="text-2xl font-black italic uppercase tracking-tighter">Hoja de Ruta</h3>
+<ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/5 p-10 rounded-[3.5rem] space-y-8">
+  <div className="flex items-center gap-4">
+    <CheckCircle className="text-green-500" />
+    <h3 className="text-2xl font-black italic uppercase tracking-tighter">Hoja de Ruta</h3>
+  </div>
+  <div className="space-y-4">
+    {(aiResult.roadmap || []).map((step, i) => {
+      const isCompleted = completedSteps.includes(i);
+      return (
+        <div key={i} onClick={() => toggleStep(i)}
+          className={`p-6 rounded-[2.5rem] transition-all cursor-pointer border ${isCompleted ? 'bg-green-500/10 border-green-500/30 opacity-50' : 'bg-black/40 border-white/5 hover:border-purple-500/30'}`}>
+          
+          {/* Header con impacto */}
+          <div className="flex items-center gap-3 mb-3">
+            <div className={`shrink-0 transition-colors ${isCompleted ? 'text-green-400' : 'text-slate-600'}`}>
+              {isCompleted ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+            </div>
+            <span className={`text-xs font-black uppercase px-3 py-1 rounded-full ${
+              step.impacto === 'ALTO' ? 'bg-red-500/20 text-red-400' :
+              step.impacto === 'MEDIO' ? 'bg-yellow-500/20 text-yellow-400' :
+              'bg-blue-500/20 text-blue-400'
+            }`}>
+              {step.impacto}
+            </span>
+          </div>
+
+          {/* Contenido */}
+          <div className={`space-y-2 ${isCompleted ? 'opacity-50' : ''}`}>
+            <p className="text-sm font-bold text-slate-300">
+              <strong>Problema:</strong> {step.problema}
+            </p>
+            <p className="text-sm text-slate-400">
+              <strong>Solución:</strong> {step.solucion}
+            </p>
+            <p className="text-sm text-slate-400">
+              <strong>Resultado:</strong> {step.resultado}
+            </p>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {(aiResult.roadmap || []).map((step, i) => {
-            const isCompleted = completedSteps.includes(i);
-            return (
-              <div key={i} onClick={() => toggleStep(i)}
-                className={`flex items-center gap-6 p-6 rounded-[2.5rem] transition-all cursor-pointer border ${isCompleted ? 'bg-green-500/10 border-green-500/30 opacity-50' : 'bg-black/40 border-white/5 hover:border-purple-500/30'}`}>
-                <div className={`shrink-0 transition-colors ${isCompleted ? 'text-green-400' : 'text-slate-600'}`}>
-                  {isCompleted ? <CheckSquare className="w-6 h-6" /> : <Square className="w-6 h-6" />}
-                </div>
-                <p className={`font-bold italic text-sm transition-all ${isCompleted ? 'text-slate-500 line-through' : 'text-slate-300'}`}>{step}</p>
-              </div>
-            );
-          })}
-        </div>
-      </ShinyCard>
+      );
+    })}
+  </div>
+</ShinyCard>
 
       {/* CHAT */}
       {!showChat ? (
