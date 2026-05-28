@@ -2090,12 +2090,13 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
               </span>
             </div>
             
-            <input 
-              type="text"
+            {/* Se cambió a textarea para permitir saltos de línea sin cortar palabras */}
+            <textarea 
+              rows={2}
               value={perception?.industria || ''}
               onChange={(e) => setPerception({...perception, industria: e.target.value})}
               placeholder="Ej. Estética masculina, E-commerce de zapatillas..."
-              className="bg-transparent text-lg text-white font-bold outline-none border-b border-white/10 focus:border-purple-500 pb-1 transition-colors w-full"
+              className="bg-transparent text-lg text-white font-bold outline-none border-b border-white/10 focus:border-purple-500 pb-1 transition-colors w-full resize-none break-words whitespace-pre-wrap leading-relaxed"
             />
 
             {/* Sugerencias en Chips */}
@@ -2107,7 +2108,7 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
                     key={nicho}
                     type="button"
                     onClick={() => setPerception({...perception, industria: nicho})}
-                    className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
+                    className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all break-words text-left ${
                       perception?.industria === nicho 
                         ? 'bg-purple-500/20 border border-purple-500/40 text-purple-300' 
                         : 'bg-white/[0.02] border border-white/[0.05] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200'
@@ -2131,12 +2132,13 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
               </span>
             </div>
 
-            <input 
-              type="text"
+            {/* Se cambió a textarea para evitar desbordes y cortes de texto */}
+            <textarea 
+              rows={2}
               value={perception?.palanca_psicologica || ''}
               onChange={(e) => setPerception({...perception, palanca_psicologica: e.target.value})}
               placeholder="Ej. Frustración por falta de tiempo, Curiosidad visual..."
-              className="bg-transparent text-lg text-white font-bold outline-none border-b border-white/10 focus:border-purple-500 pb-1 transition-colors w-full"
+              className="bg-transparent text-lg text-white font-bold outline-none border-b border-white/10 focus:border-purple-500 pb-1 transition-colors w-full resize-none break-words whitespace-pre-wrap leading-relaxed"
             />
 
             {/* Sugerencias en Chips */}
@@ -2148,7 +2150,7 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
                     key={palanca}
                     type="button"
                     onClick={() => setPerception({...perception, palanca_psicologica: palanca})}
-                    className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
+                    className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all break-words text-left ${
                       perception?.palanca_psicologica === palanca 
                         ? 'bg-purple-500/20 border border-purple-500/40 text-purple-300' 
                         : 'bg-white/[0.02] border border-white/[0.05] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200'
