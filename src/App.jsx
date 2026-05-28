@@ -226,47 +226,49 @@ Determiná los valores de forma libre según lo que ves — no hay opciones pred
 }
 `;
  
-// ============================================================
-// CALL 0B — PRE-CLASSIFIER
-// Datos técnicos puros que JS necesita para calcularScores().
-// Gemini ya sabe qué es cada campo — no hace falta explicarlo.
-// Solo hechos observables. Sin opinión.
-// ============================================================
-export const buildPreClassifierPrompt = () => `
-Analiza el video y responde SOLO con este JSON estricto. 
-Evalúa el contenido visual y auditivo. Si un dato no aplica, usa null o 0.
+const buildPreClassifierPrompt = () => {
+  return `Eres un auditor de videos de alto rendimiento, experto en neuromarketing, copywriting y retención orgánica. Tu objetivo es desglosar de forma quirúrgica los primeros segundos de este video.
 
+Instrucciones cruciales para evitar respuestas genéricas:
+
+1. INDUSTRIA / NICHO (Prohibido usar palabras macro como "Servicio", "Producto", "Curso"):
+   Debes detectar el MICRO-NICHO ultra-específico analizando visualmente lo que se muestra y lo que se dice. Si ves unas zapatillas y se habla de envíos, es "E-commerce de Calzado Urbano". Si ves un software de gestión, es "SaaS B2B para Productividad". Si es un infoproducto de trading, es "Educación Financiera y Day Trading". Sé jodidamente específico. Tienes un catálogo infinito en tu conocimiento, úsalo.
+
+2. PALANCA PSICOLÓGICA DOMINANTE (Prohibido responder "Curiosidad" o "Retención"):
+   Todo video busca retener, eso no es una palanca de marketing. Debes identificar el gatillo psicológico humano real que activa el deseo de compra o atención. Elige o define la más exacta según este marco de copywriting:
+   - "Alivio de Frustración Crónica" (Muestra un dolor de cabeza diario y cómo resolverlo)
+   - "Deseo de Estatus / Elevación de Identidad" (Apela a verse mejor, pertenecer a una élite o presumir)
+   - "Ganancia Rápida / Atajo de Tiempo" (Promete un resultado deseado sin el esfuerzo habitual)
+   - "FOMO / Miedo a Quedarse Atrás" (Alerta sobre una oportunidad única o tendencia que se están perdiendo)
+   - "Prueba de Incompetencia" (Le demuestra al espectador que está cometiendo un error grave sin saberlo)
+   - "Placer Hedonista / Antojo Inmediato" (Estética visual pura, comida chorreando, ASMR de producto)
+
+Devuelve ESTRICTAMENTE un objeto JSON válido con la siguiente estructura, sin texto antes ni después:
 {
-  "hook_visual": {
-    "logo_en_s0_3": <true|false>,
-    "producto_en_s0_3": <true|false>,
-    "producto_en_accion": <true|false>,
-    "imagen_alto_impacto_inicio": <true|false>
-  },
-  "hook_narrativo": {
-    "audio_desde_s0": <true|false>,
-    "pregunta_al_espectador_inicio": <true|false>,
-    "afirmacion_contradictoria": <true|false>,
-    "menciona_dolor_antes_s5": <true|false>,
-    "palabras_clave_dolor": "<resumen de 3 palabras o vacío>"
-  },
-  "retencion_y_ritmo": {
-    "ritmo_visual_percibido": "<frenetico|dinamico|normal|lento>",
-    "densidad_de_cortes": "<muy_alta_menos_2s|alta_3_5s|media|baja_tomas_largas>",
-    "hay_transiciones_rapidas": <true|false>,
-    "momento_muerto_detectado": <true|false>,
-    "segundo_aprox_momento_muerto": <numero aproximado o 0>,
-    "tiene_rehook_mitad_video": <true|false>
-  },
-  "composicion_tecnica": {
-    "formato_visual": "<video_real_dinamico|mayoria_estatico|slideshow_imagenes>",
-    "calidad_produccion": "<profesional|amateur|generado_por_ia>",
-    "efectos_visuales": "<ninguno|leve|excesivo>",
-    "musica_cambia_con_narrativa": <true|false>
-  }
-}
-`;
- 
+  "industria": "Micro-nicho específico detectado aquí",
+  "palanca_psicologica": "Gatillo psicológico real detectado aquí",
+  "logo_en_s0": false,
+  "imagen_alto_impacto": false,
+  "producto_en_s0": false,
+  "producto_en_accion_s0": false,
+  "transformacion_visible": false,
+  "pregunta_al_espectador": false,
+  "afirmacion_contradictoria": false,
+  "audio_desde_s0": true,
+  "movimiento_real": true,
+  "dolor_antes_s5": false,
+  "segundo_dolor": null,
+  "tiene_rehook": false,
+  "duracion_estimada": 30,
+  "es_slideshow_imagenes": false,
+  "porcentaje_video_real": 100,
+  "tipo_edicion": "cinemática / dinámica / UGC / infomercial / estética",
+  "ritmo_visual": "rápido / normal / lento",
+  "cortes_por_minuto": 20,
+  "cambio_visual_cada_ns": 2.5
+}`;
+};
+
 // ============================================================
 // CALL 1 — VIEWER BRAIN (Optimizado para Inferencia IA)
 // ============================================================
