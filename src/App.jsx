@@ -2039,7 +2039,7 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
 
 {/* ── 3. PANTALLA DE VALIDACIÓN ESTRATÉGICA CORREGIDA ── */}
 {step === 'validation' && (() => {
-  // 1. Listas estándar de respaldo (manteniendo los mismos nombres de tu pantalla anterior)
+  // 1. Listas estándar de respaldo
   const STANDARD_NICHOS = [
     "Producto físico",
     "Curso / Info",
@@ -2057,10 +2057,6 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
     "FOMO / Urgencia"
   ];
 
-  // 2. Combinamos lo que detectó la IA con lo estándar eliminando duplicados automáticamente con Set
-  const opcionesNichos = Array.from(new Set([perception?.industria, ...STANDARD_NICHOS])).filter(Boolean);
-  const opcionesPalancas = Array.from(new Set([perception?.palanca_psicologica, ...STANDARD_PALANCAS])).filter(Boolean);
-
   return (
     <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-10 duration-500">
       <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-8 md:p-12 shadow-2xl">
@@ -2074,47 +2070,93 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
             Verificación de Estrategia
           </h3>
           <p className="text-slate-400 mt-3 font-medium">
-            Confirmá si la IA interpretó bien el ángulo antes de gastar gemas en el análisis profundo.
+            Confirmá o editá el ángulo que interpretó la IA antes de lanzar la auditoría profunda.
           </p>
         </div>
 
-        {/* Selectores Premium Dinámicos */}
-        <div className="space-y-4 mb-10">
+        {/* Inputs Premium Editables */}
+        <div className="space-y-6 mb-10">
           
-          {/* Selector: Nicho / Industria */}
-          <div className="group flex flex-col space-y-1.5 p-5 rounded-[1.5rem] border border-white/[0.07] bg-white/[0.02] hover:border-purple-500/30 hover:bg-purple-500/[0.02] transition-all duration-300">
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 group-hover:text-purple-400 transition-colors">
-              Nicho / Industria
-            </label>
-            <select 
+          {/* Campo: Nicho / Industria */}
+          <div className="group flex flex-col space-y-3 p-5 rounded-[2rem] border border-white/[0.07] bg-white/[0.02] hover:border-purple-500/20 transition-all duration-300">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 group-hover:text-purple-400 transition-colors">
+                Nicho / Industria (Hacé clic para editar)
+              </label>
+              <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
+                Editable 📝
+              </span>
+            </div>
+            
+            <input 
+              type="text"
               value={perception?.industria || ''}
               onChange={(e) => setPerception({...perception, industria: e.target.value})}
-              className="bg-transparent text-lg text-slate-200 font-bold focus:text-white outline-none cursor-pointer"
-            >
-              {opcionesNichos.map((nicho) => (
-                <option key={nicho} value={nicho} className="bg-[#0d0d0f] text-white">
-                  {nicho} {nicho === perception?.industria ? '✨ (Detectado)' : ''}
-                </option>
-              ))}
-            </select>
+              placeholder="Ej. Estética masculina, E-commerce de zapatillas..."
+              className="bg-transparent text-lg text-white font-bold outline-none border-b border-white/10 focus:border-purple-500 pb-1 transition-colors w-full"
+            />
+
+            {/* Sugerencias en Chips */}
+            <div className="pt-1">
+              <p className="text-[9px] font-bold text-slate-600 uppercase tracking-wider mb-2">Alternativas rápidas:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {STANDARD_NICHOS.map((nicho) => (
+                  <button
+                    key={nicho}
+                    type="button"
+                    onClick={() => setPerception({...perception, industria: nicho})}
+                    className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
+                      perception?.industria === nicho 
+                        ? 'bg-purple-500/20 border border-purple-500/40 text-purple-300' 
+                        : 'bg-white/[0.02] border border-white/[0.05] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200'
+                    }`}
+                  >
+                    {nicho}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
-          {/* Selector: Palanca Psicológica */}
-          <div className="group flex flex-col space-y-1.5 p-5 rounded-[1.5rem] border border-white/[0.07] bg-white/[0.02] hover:border-purple-500/30 hover:bg-purple-500/[0.02] transition-all duration-300">
-            <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 group-hover:text-purple-400 transition-colors">
-              Palanca Psicológica Dominante
-            </label>
-            <select 
+          {/* Campo: Palanca Psicológica */}
+          <div className="group flex flex-col space-y-3 p-5 rounded-[2rem] border border-white/[0.07] bg-white/[0.02] hover:border-purple-500/20 transition-all duration-300">
+            <div className="flex justify-between items-center">
+              <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 group-hover:text-purple-400 transition-colors">
+                Palanca Psicológica Dominante
+              </label>
+              <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
+                Editable 📝
+              </span>
+            </div>
+
+            <input 
+              type="text"
               value={perception?.palanca_psicologica || ''}
               onChange={(e) => setPerception({...perception, palanca_psicologica: e.target.value})}
-              className="bg-transparent text-lg text-slate-200 font-bold focus:text-white outline-none cursor-pointer"
-            >
-              {opcionesPalancas.map((palanca) => (
-                <option key={palanca} value={palanca} className="bg-[#0d0d0f] text-white">
-                  {palanca} {palanca === perception?.palanca_psicologica ? '✨ (Detectado)' : ''}
-                </option>
-              ))}
-            </select>
+              placeholder="Ej. Frustración por falta de tiempo, Curiosidad visual..."
+              className="bg-transparent text-lg text-white font-bold outline-none border-b border-white/10 focus:border-purple-500 pb-1 transition-colors w-full"
+            />
+
+            {/* Sugerencias en Chips */}
+            <div className="pt-1">
+              <p className="text-[9px] font-bold text-slate-600 uppercase tracking-wider mb-2">Alternativas rápidas:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {STANDARD_PALANCAS.map((palanca) => (
+                  <button
+                    key={palanca}
+                    type="button"
+                    onClick={() => setPerception({...perception, palanca_psicologica: palanca})}
+                    className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
+                      perception?.palanca_psicologica === palanca 
+                        ? 'bg-purple-500/20 border border-purple-500/40 text-purple-300' 
+                        : 'bg-white/[0.02] border border-white/[0.05] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200'
+                    }`}
+                  >
+                    {palanca}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
         </div>
@@ -2122,17 +2164,14 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
         {/* Botones de Acción de la parte inferior */}
         <div className="flex justify-between items-center">
           <button 
-            onClick={() => setStep('platform_select')}
+            onClick={() => setStep('upload')}
             className="text-sm font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-widest"
           >
             ← Volver
           </button>
           
           <button
-            onClick={() => {
-              // Esta función ejecutará tu pipeline profundo de backend (CALL 1, 2 y 3)
-              runDeepAnalysis(); 
-            }}
+            onClick={runDeepAnalysis}
             className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             Confirmar y Analizar →
