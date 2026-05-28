@@ -1326,7 +1326,7 @@ const applyDeterministicScoring = (parsed, flags, nicho) => {
 };
 
 // ============================================================
-// FASE 1: CALIBRACIÓN (Sube video y ejecuta CALL 0)
+// FASE 1: CALIBRACIÓN (Sube video y ejecuta CALL 0)           //const strategyRaw = extractGeminiText(call2Data);
 // ============================================================
 const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   if (videoFile.size > 45 * 1024 * 1024) {
@@ -1531,9 +1531,18 @@ const runDeepAnalysis = async () => {
     });
     if (call2Error) throw call2Error;
 
-    const strategyRaw = extractGeminiText(call2Data);
-    const flagsFromStrategy = extractFlags(strategyRaw);
-    const strategyAnalysis = stripFlags(strategyRaw);
+const strategyRaw = extractGeminiText(call2Data);
+let flagsFromStrategy = {};
+let strategyAnalysis = strategyRaw;
+
+try {
+  const strategyParsed = safeParseJSON(strategyRaw, 'strategy-flags');
+  flagsFromStrategy = strategyParsed?.flags_binarios ?? {};
+  // Guardamos el texto completo igual para el contexto del scoring brain
+  strategyAnalysis = JSON.stringify(strategyParsed?.analisis_cualitativo ?? strategyParsed, null, 2);
+} catch (e) {
+  console.warn('[Strategy] No se pudo parsear como JSON, usando texto plano:', e.message);
+}
 
     // FUSIONAR FLAGS
     const flagsDeterministic = {
