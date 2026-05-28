@@ -544,15 +544,19 @@ const buildScoringBrainPrompt = (strategyAnalysis, platform, objetivo, perceptio
 
   return `SCORING BRAIN — ${pName} | ${objetivo} | ${nichoStr}
 
-CONTEXTO:
-- Industria: ${nichoStr}
-- Motor psicológico: ${palancaStr || 'No especificado'}
-- Objetivo: ${objetivo}
+SISTEMA OPERATIVO DE EVALUACIÓN:
+Actúa como un Growth Hacker nativo de la cultura de internet y experto en algoritmos short-form. 
+USA TU CONOCIMIENTO INTERNO sobre dinámicas virales reales (ej: el vicio y furor masivo de las figuritas/cromos Panini, el deseo visual del ASMR de comida, loops perfectos, tendencias de audio). Evalúa este video con la cabeza de un usuario de TikTok del 2026, NO con la mente de un publicista tradicional.
 
-FLAGS DETECTADOS:
+CONTEXTO INTEGRADO:
+- Industria/Micro-nicho: ${nichoStr}
+- Motor psicológico real: ${palancaStr || 'No especificado'}
+- Objetivo del creador: ${objetivo}
+
+FLAGS TÉCNICOS DETECTADOS:
 ${JSON.stringify(flags, null, 2)}
 
-PENALIZACIONES YA CALCULADAS (Úsalas como límite estricto para no inflar notas):
+PENALIZACIONES DETERMINÍSTICAS (Úsalas como límite estricto para no inflar notas):
 - Techo viral: ${penalties?.viral_ceiling_from_hook ?? 'sin techo'}
 - Penalización viral: ${penalties?.viral_penalty ?? 0}
 - Techo ventas: ${penalties?.sales_ceiling ?? 'sin techo'}
@@ -563,13 +567,12 @@ ${strategyAnalysis}
 
 ---
 
-REGLAS DE ORO PARA LA CALIBRACIÓN (CRUCIAL PARA PRECISIÓN):
-1. CONSISTENCIA DE RETENCIÓN: El array "retentionCurve" DEBE ser descendente y matemáticamente coherente con "retentionData". El valor en el índice 3 (30%) debe alinearse con "at3s" y el del índice 10 (100%) con "final".
-2. CORRELACIÓN STEPPS: El "viralScore" y el "viralCoefficient" de STEPPS deben hablarse. Si los factores de STEPPS (emoción, disparadores, valor práctico) son bajos (1-4), el score viral NO puede superar los 40 puntos.
-3. RESPETO A LOS TECHOS: Si el Techo Viral o de Ventas es un número (ej. 35), el score correspondiente NO puede superar ese valor bajo ninguna circunstancia.
-4. HONESTIDAD AUDITORA: Sé crudo. Un score de >75 significa que el video está listo para volverse masivo o vender miles de dólares hoy mismo. Si le falta edición, ritmo o un hook potente, calibra entre 15 y 55.
+REGLAS DE EVALUACIÓN NATIVA (PROHIBIDO MENALIDAD DE TV):
+1. GANCHOS DE OBJETO (Object-Based Hooks): Si el video inicia con una acción magnética sobre un objeto (abrir un paquete de figuritas, comida chorreando, un unboxing fluido), esto es un ScrollStop PERFECTO. Tu variable "faceDetected" puede ser false, pero el "scrollStopScore" debe ser alto (>80) si el objeto genera dopamina inmediata. Usa tu conocimiento de retención visual para medirlo.
+2. ALINEACIÓN AL OBJETIVO ORGÁNICO: Si el objetivo es "Viral" o "Trend-jacking", meter un llamado a la acción comercial directo ("comprame", "visita el local") es un error burdo que mata el alcance. El éxito aquí se mide en ganas de compartir, guardar o comentar. Evalúa el potencial de conversión según el CTA orgánico (debatir, etiquetar a un amigo, guardar para después).
+3. CONSISTENCIA MATEMÁTICA: Tu "retentionCurve" debe ser un reflejo lógico y descendente de tu "retentionData".
 
-TAREA: Con base en el análisis estratégico, las reglas de calibración y los flags, generá los scores y el veredicto.
+TAREA: Generá los scores finales y el veredicto aplicando tu criterio nativo de internet.
 RESPONDE ÚNICAMENTE CON ESTE JSON EXACTO, nada antes ni después:
 
 {
@@ -582,14 +585,14 @@ RESPONDE ÚNICAMENTE CON ESTE JSON EXACTO, nada antes ni después:
   "viralScore": {
     "score": <0-100>,
     "titulo": "Potencial Viral",
-    "verdict": "<una línea: por qué este número>",
-    "razon_principal": "<explicación con momento concreto del video>",
+    "verdict": "<una línea: justificación algorítmica>",
+    "razon_principal": "<explicación basada en la retención del video>",
     "accion_clave": "<qué cambiar para subirlo>"
   },
   "salesScore": {
     "score": <0-100>,
     "titulo": "Potencial de Ventas",
-    "verdict": "<una línea>",
+    "verdict": "<una línea aclarando si la venta es implícita/orgánica o si faltó estructura>",
     "razon_principal": "<explicación concreta>",
     "accion_clave": "<acción específica>"
   },
@@ -600,7 +603,7 @@ RESPONDE ÚNICAMENTE CON ESTE JSON EXACTO, nada antes ni después:
     "contrastLevel": "<alto|medio|bajo>",
     "emotionVisible": "<emoción o 'ninguna'>",
     "emotionIntensity": <1-10>,
-    "verdict": "<una línea>"
+    "verdict": "<una línea evaluando el impacto del primer frame>"
   },
   "hookDNA": {
     "strength": <0-100>,
@@ -627,8 +630,8 @@ RESPONDE ÚNICAMENTE CON ESTE JSON EXACTO, nada antes ni después:
     "public": <1-10>,
     "practicalValue": <1-10>,
     "stories": <1-10>,
-    "dominantFactor": "<cuál es el punto más fuerte>",
-    "weakestFactor": "<cuál es el punto más débil>",
+    "dominantFactor": "<punto más fuerte>",
+    "weakestFactor": "<punto más débil>",
     "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
   },
   "commentTrigger": {
@@ -645,11 +648,11 @@ RESPONDE ÚNICAMENTE CON ESTE JSON EXACTO, nada antes ni después:
   "firstHourStrategy": {
     "optimalPostTime": "<horario recomendado>",
     "firstActionAfterPost": "<qué hacer en los primeros 5 min>",
-    "commentSeed": "<comentario ancla para poner vos mismo>",
-    "engagementBoost": "<táctica para la primera hora>"
+    "commentSeed": "<comentario ancla>",
+    "engagementBoost": "<táctica primera hora>"
   },
   "performanceScenario": "<Bajo rendimiento|Rendimiento normal|Alto rendimiento|Potencial viral>",
-  "honestVerdict": "<1 línea directa. Lo más importante que tiene que saber este creador>",
+  "honestVerdict": "<1 línea directa al grano con el núcleo del análisis>",
   "roadmap": [
     { "impacto": "ALTO",  "problema": "<problema concreto>", "solucion": "<solución específica>", "resultado": "<qué mejora>" },
     { "impacto": "MEDIO", "problema": "<problema concreto>", "solucion": "<solución específica>", "resultado": "<qué mejora>" },
@@ -721,210 +724,6 @@ const ShinyCard = ({ children, className = '', tilt }) => {
 
 
 
-const applyDeterministicScoring = (parsed, flags, nicho = '') => {
-
-  // ── OVERRIDES POR NICHO — aplicar ANTES de cualquier penalización ──
-  if (nicho === 'restaurante_comida') {
-    flags = {
-      ...flags,
-      pain_missing: false,
-      pain_late: false,
-      no_urgency: false,
-      trust_gap: false,
-      hook_is_direct_info: false,
-      hook_type: flags.hook_type === 'apertura_informativa' ? 'debil' : flags.hook_type,
-    };
-  } else if (nicho === 'inmobiliaria') {
-    flags = {
-      ...flags,
-      pain_missing: false,
-      pain_late: false,
-      no_urgency: false,
-      trust_gap: false,
-      hook_is_direct_info: false,
-      hook_type: flags.hook_type === 'apertura_informativa' ? 'debil' : flags.hook_type,
-    };
-  }
-  
-  const cap = (v, max) => Math.min(v, max);
-  const sub = (v, n)   => Math.max(0, v - n);
-
-  let viral = parsed.viralScore?.score  ?? 50;
-  let sales = parsed.salesScore?.score  ?? 50;
-  const cats = JSON.parse(JSON.stringify(parsed.categorias ?? {}));
-  const c = (key) => cats[key]; // acceso rápido
-
-  // ── BLOQUE 0: Filtro de anuncio ──  //platform_select
-  if (flags.ad_filter_triggered) {
-    viral = cap(viral, 30); sales = cap(sales, 40);
-    if (c('hook')) c('hook').puntaje = cap(c('hook').puntaje, 25);
-  }
-
-  // ── BLOQUE 1: Audio ──
-  if (flags.no_audio_from_s0) {
-    viral = sub(viral, 15);
-    if (c('retencion_ritmo')) c('retencion_ritmo').puntaje = cap(c('retencion_ritmo').puntaje, 30);
-  }
-
-  // ── BLOQUE 2: Hook ──
-  if (flags.hook_type === 'muerto') {
-    viral = cap(viral, 35);
-    if (c('hook')) c('hook').puntaje = cap(c('hook').puntaje, 25);
-  }
-  if (flags.hook_type === 'debil') {
-    viral = cap(viral, 60);
-    if (c('hook')) c('hook').puntaje = cap(c('hook').puntaje, 50);
-  }
-  if (flags.hook_type === 'apertura_informativa') {
-    viral = cap(viral, 40);
-    if (c('hook')) c('hook').puntaje = cap(c('hook').puntaje, 38);
-  }
-  if (flags.bait_disconnect) {
-    viral = cap(viral, 55); sales = cap(sales, 45);
-  }
-  if (flags.hook_is_direct_info && !flags.bait_disconnect && flags.hook_type !== 'explosivo') {
-    if (c('hook')) c('hook').puntaje = sub(c('hook').puntaje, 10);
-  }
-
-  // ── BLOQUE 3: Formato ──
-  if (flags.is_static_slideshow) {
-    viral = cap(viral, 28);
-    if (c('retencion_ritmo'))    c('retencion_ritmo').puntaje    = cap(c('retencion_ritmo').puntaje, 25);
-    if (c('emocion_deseo'))      c('emocion_deseo').puntaje      = cap(c('emocion_deseo').puntaje, 35);
-    if (c('produccion_estetica'))c('produccion_estetica').puntaje= cap(c('produccion_estetica').puntaje, 38);
-  }
-  if (flags.no_music_and_static) {
-    viral = cap(viral, 20);
-    if (c('produccion_estetica'))c('produccion_estetica').puntaje= cap(c('produccion_estetica').puntaje, 28);
-  }
-  if (flags.slow_cuts_no_music) {
-    viral = cap(viral, 30);
-    if (c('retencion_ritmo')) c('retencion_ritmo').puntaje = cap(c('retencion_ritmo').puntaje, 28);
-  }
-  if (flags.format_incompatible) {
-    ['claridad_producto','confianza_credibilidad','propuesta_valor'].forEach(k => {
-      if (c(k)) c(k).puntaje = sub(c(k).puntaje, 25);
-    });
-  }
-  if (flags.format_weak && !flags.format_incompatible) {
-    ['claridad_producto','confianza_credibilidad','propuesta_valor'].forEach(k => {
-      if (c(k)) c(k).puntaje = sub(c(k).puntaje, 12);
-    });
-    if (c('retencion_ritmo')) c('retencion_ritmo').puntaje = cap(c('retencion_ritmo').puntaje, 50);
-  }
-
-  // ── BLOQUE 4: Capas de compra ──
-  if (flags.pain_missing) {
-    sales = cap(sales, 48);
-    if (c('propuesta_valor')) c('propuesta_valor').puntaje = cap(c('propuesta_valor').puntaje, 42);
-    if (c('emocion_deseo'))   c('emocion_deseo').puntaje   = cap(c('emocion_deseo').puntaje, 40);
-  }
-  if (flags.pain_late && !flags.pain_missing) {
-    sales = sub(sales, 12);
-    if (c('propuesta_valor')) c('propuesta_valor').puntaje = sub(c('propuesta_valor').puntaje, 10);
-  }
-  if (flags.trust_gap) {
-    sales = sub(sales, 15);
-    if (c('confianza_credibilidad')) c('confianza_credibilidad').puntaje = cap(c('confianza_credibilidad').puntaje, 45);
-  }
-  if (flags.no_urgency) {
-    sales = sub(sales, 10);
-    if (c('call_to_action')) c('call_to_action').puntaje = sub(c('call_to_action').puntaje, 12);
-  }
-  if (flags.high_friction) {
-    sales = sub(sales, 8);
-    if (c('call_to_action')) c('call_to_action').puntaje = cap(c('call_to_action').puntaje, 40);
-  }
-
-  // ── BLOQUE 5: Presentación del producto ──
-  if (flags.product_shown_late) {
-    sales = sub(sales, 12);
-    if (c('claridad_producto')) c('claridad_producto').puntaje = sub(c('claridad_producto').puntaje, 15);
-  }
-  if (flags.product_shown_sideways) {
-    if (c('claridad_producto')) c('claridad_producto').puntaje = sub(c('claridad_producto').puntaje, 12);
-    if (c('emocion_deseo'))     c('emocion_deseo').puntaje     = sub(c('emocion_deseo').puntaje, 10);
-  }
-  if (flags.product_presentation_interrupted) {
-    if (c('retencion_ritmo'))    c('retencion_ritmo').puntaje    = sub(c('retencion_ritmo').puntaje, 10);
-    if (c('produccion_estetica'))c('produccion_estetica').puntaje= sub(c('produccion_estetica').puntaje, 8);
-  }
-
-  // ── BLOQUE 6: Valor enterrado ──
-  if (flags.value_trap)            { sales = cap(sales, 50); }
-  if (flags.value_behind_scroll_wall) { sales = sub(sales, 20); viral = sub(viral, 20); }
-  if (flags.recompensa_tardia) {
-    sales = sub(sales, 12);
-    if (c('emocion_deseo')) c('emocion_deseo').puntaje = sub(c('emocion_deseo').puntaje, 18);
-  }
-  if (flags.buried_result) { sales = cap(sales, 45); }
-
-  // ── BLOQUE 7: Ritmo y energía ──
-  if (flags.boring_full_video) {
-    if (c('emocion_deseo'))   c('emocion_deseo').puntaje   = cap(c('emocion_deseo').puntaje, 33);
-    if (c('retencion_ritmo')) c('retencion_ritmo').puntaje = cap(c('retencion_ritmo').puntaje, 35);
-  }
-  if (flags.flat_energy && !flags.boring_full_video) {
-    if (c('emocion_deseo'))   c('emocion_deseo').puntaje   = sub(c('emocion_deseo').puntaje, 15);
-    if (c('retencion_ritmo')) c('retencion_ritmo').puntaje = sub(c('retencion_ritmo').puntaje, 12);
-  }
-  if (flags.no_retention_engines) {
-    viral = sub(viral, 10);
-    if (c('retencion_ritmo')) c('retencion_ritmo').puntaje = cap(c('retencion_ritmo').puntaje, 38);
-  }
-  if (flags.no_share_trigger) { viral = sub(viral, 8); }
-
-  // ── BLOQUE 8: Rechazo visual ──
-  if (flags.first_frame_repulsion) {
-    if (c('hook')) c('hook').puntaje = cap(c('hook').puntaje, 30);
-  }
-  if (flags.visual_repulsion) {
-    const sev = flags.visual_repulsion_severity || 'moderada';
-    if (sev === 'fuerte') {
-      if (c('produccion_estetica'))    c('produccion_estetica').puntaje    = cap(c('produccion_estetica').puntaje, 40);
-      if (c('confianza_credibilidad')) c('confianza_credibilidad').puntaje = cap(c('confianza_credibilidad').puntaje, 38);
-    } else if (sev === 'moderada') {
-      if (c('produccion_estetica'))    c('produccion_estetica').puntaje    = sub(c('produccion_estetica').puntaje, 20);
-      if (c('confianza_credibilidad')) c('confianza_credibilidad').puntaje = sub(c('confianza_credibilidad').puntaje, 15);
-    } else if (sev === 'leve') {
-      if (c('produccion_estetica')) c('produccion_estetica').puntaje = sub(c('produccion_estetica').puntaje, 10);
-    }
-  }
-  if (flags.product_damage) {
-    sales = cap(sales, 53);
-    if (c('confianza_credibilidad')) c('confianza_credibilidad').puntaje = cap(c('confianza_credibilidad').puntaje, 43);
-  }
-  if (flags.audio_issue) {
-    if (c('produccion_estetica'))    c('produccion_estetica').puntaje    = sub(c('produccion_estetica').puntaje, 15);
-    if (c('confianza_credibilidad')) c('confianza_credibilidad').puntaje = sub(c('confianza_credibilidad').puntaje, 10);
-  }
-
-  // ── BLOQUE 9: Producto ──
-  if (flags.product_unclear) {
-    sales = cap(sales, 50);
-    if (c('claridad_producto')) c('claridad_producto').puntaje = cap(c('claridad_producto').puntaje, 45);
-    if (c('propuesta_valor'))   c('propuesta_valor').puntaje   = cap(c('propuesta_valor').puntaje, 45);
-  }
-  if (flags.product_difficult_to_sell) { sales = cap(sales, 53); }
-
-  // ── Clamp final ──
-  viral = Math.max(0, Math.min(100, Math.round(viral)));
-  sales = Math.max(0, Math.min(100, Math.round(sales)));
-  Object.keys(cats).forEach(k => {
-    if (cats[k]?.puntaje !== undefined)
-      cats[k].puntaje = Math.max(0, Math.min(100, Math.round(cats[k].puntaje)));
-  });
-
-  const potential = Math.round(viral * 0.45 + sales * 0.55);
-
-  return {
-    ...parsed,
-    viralScore:     { ...parsed.viralScore,  score: viral },
-    salesScore:     { ...parsed.salesScore,  score: sales },
-    potentialScore: potential,
-    categorias:     cats,
-  };
-};
 
 const App = () => {
   const [step, setStep] = useState('upload');
