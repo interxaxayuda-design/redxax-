@@ -232,16 +232,22 @@ const buildPreClassifierPrompt = () => {
 Instrucciones cruciales para evitar respuestas genéricas:
 
 1. INDUSTRIA / NICHO (Prohibido usar palabras macro como "Servicio", "Producto", "Curso"):
-   Debes detectar el MICRO-NICHO ultra-específico analizando visualmente lo que se muestra y lo que se dice. Si ves unas zapatillas y se habla de envíos, es "E-commerce de Calzado Urbano". Si ves un software de gestión, es "SaaS B2B para Productividad". Si es un infoproducto de trading, es "Educación Financiera y Day Trading". Sé jodidamente específico. Tienes un catálogo infinito en tu conocimiento, úsalo.
+   Debes detectar el MICRO-NICHO ultra-específico analizando visualmente lo que se muestra y lo que se dice. Si ves unas zapatillas y se habla de envíos, es "E-commerce de Calzado Urbano". Si ves un software de gestión, es "SaaS B2B para Productividad". Si es un infoproducto de trading, es "Educación Financiera y Day Trading". Tienes un catálogo infinito en tu conocimiento, sé específico.
 
-2. PALANCA PSICOLÓGICA DOMINANTE (Prohibido responder "Curiosidad" o "Retención"):
-   Todo video busca retener, eso no es una palanca de marketing. Debes identificar el gatillo psicológico humano real que activa el deseo de compra o atención. Elige o define la más exacta según este marco de copywriting:
-   - "Alivio de Frustración Crónica" (Muestra un dolor de cabeza diario y cómo resolverlo)
-   - "Deseo de Estatus / Elevación de Identidad" (Apela a verse mejor, pertenecer a una élite o presumir)
-   - "Ganancia Rápida / Atajo de Tiempo" (Promete un resultado deseado sin el esfuerzo habitual)
-   - "FOMO / Miedo a Quedarse Atrás" (Alerta sobre una oportunidad única o tendencia que se están perdiendo)
-   - "Prueba de Incompetencia" (Le demuestra al espectador que está cometiendo un error grave sin saberlo)
-   - "Placer Hedonista / Antojo Inmediato" (Estética visual pura, comida chorreando, ASMR de producto)
+2. PALANCA PSICOLÓGICA DOMINANTE (Prohibido responder "Curiosidad", "Retención" o "Interés"):
+   Todo video busca retener, eso no es un gatillo de marketing. Debes identificar la emoción primaria, el deseo subconsciente o el dolor humano real que activa la atención o la compra en este video exacto. 
+   
+   NO te limites a una lista cerrada. Tienes total libertad para definir cualquier palanca psicológica real (miedos, dolores físicos/emocionales, sesgos cognitivos o placeres). Redáctala en formato de etiqueta corta (máximo 4 o 5 palabras).
+   
+   Ejemplos del nivel de profundidad analítica que busco (puedes usar uno de estos si encaja perfecto, o mapear cualquier otro dolor/deseo humano real):
+   - "Alivio de Frustración Crónica" (Dolor cotidiano molesto que el espectador quiere solucionar ya)
+   - "Deseo de Estatus y Elevación" (Apela a pertenecer a un grupo selecto, verse premium o reconocimiento)
+   - "Ganancia Rápida / Atajo de Tiempo" (Promesa de conseguir un resultado deseado saltándose el esfuerzo aburrido)
+   - "FOMO / Miedo a Quedarse Atrás" (Alerta de una oportunidad única o tendencia que expira)
+   - "Prueba de Incompetencia" (Demuestra un error grave que el espectador comete sin darse cuenta)
+   - "Placer Hedonista / Antojo Inmediato" (Estética visual pura, estimulación de sentidos, ASMR, deseo visual)
+   - "Protección y Reducción de Riesgo" (Miedo a perder dinero, salud, seguridad o estabilidad)
+   - "Sentido de Pertenencia / Comunidad" (Conectar con los valores compartidos de una tribu o identidad)
 
 Devuelve ESTRICTAMENTE un objeto JSON válido con la siguiente estructura, sin texto antes ni después:
 {
