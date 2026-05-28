@@ -536,6 +536,127 @@ RESPUESTA: JSON exacto, nada antes ni después.
 }
 `;
 };
+
+const buildScoringBrainPrompt = (strategyAnalysis, platform, objetivo, perception, flags, penalties) => {
+  const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform] || platform;
+  const nichoStr = typeof perception === 'object' ? perception.industria : perception;
+  const palancaStr = typeof perception === 'object' ? perception.palanca_psicologica : '';
+
+  return `SCORING BRAIN — ${pName} | ${objetivo} | ${nichoStr}
+
+CONTEXTO:
+- Industria: ${nichoStr}
+- Motor psicológico: ${palancaStr || 'No especificado'}
+- Objetivo: ${objetivo}
+
+FLAGS DETECTADOS:
+${JSON.stringify(flags, null, 2)}
+
+PENALIZACIONES YA CALCULADAS (Úsalas como límite estricto para no inflar notas):
+- Techo viral: ${penalties?.viral_ceiling_from_hook ?? 'sin techo'}
+- Penalización viral: ${penalties?.viral_penalty ?? 0}
+- Techo ventas: ${penalties?.sales_ceiling ?? 'sin techo'}
+- Penalización ventas: ${penalties?.sales_penalty ?? 0}
+
+ANÁLISIS ESTRATÉGICO PREVIO:
+${strategyAnalysis}
+
+---
+
+REGLAS DE ORO PARA LA CALIBRACIÓN (CRUCIAL PARA PRECISIÓN):
+1. CONSISTENCIA DE RETENCIÓN: El array "retentionCurve" DEBE ser descendente y matemáticamente coherente con "retentionData". El valor en el índice 3 (30%) debe alinearse con "at3s" y el del índice 10 (100%) con "final".
+2. CORRELACIÓN STEPPS: El "viralScore" y el "viralCoefficient" de STEPPS deben hablarse. Si los factores de STEPPS (emoción, disparadores, valor práctico) son bajos (1-4), el score viral NO puede superar los 40 puntos.
+3. RESPETO A LOS TECHOS: Si el Techo Viral o de Ventas es un número (ej. 35), el score correspondiente NO puede superar ese valor bajo ninguna circunstancia.
+4. HONESTIDAD AUDITORA: Sé crudo. Un score de >75 significa que el video está listo para volverse masivo o vender miles de dólares hoy mismo. Si le falta edición, ritmo o un hook potente, calibra entre 15 y 55.
+
+TAREA: Con base en el análisis estratégico, las reglas de calibración y los flags, generá los scores y el veredicto.
+RESPONDE ÚNICAMENTE CON ESTE JSON EXACTO, nada antes ni después:
+
+{
+  "vision": {
+    "niche": "<micro-nicho específico>",
+    "type": "<formato del video>",
+    "audience": "<audiencia objetivo>",
+    "promise": "<promesa implícita del video>"
+  },
+  "viralScore": {
+    "score": <0-100>,
+    "titulo": "Potencial Viral",
+    "verdict": "<una línea: por qué este número>",
+    "razon_principal": "<explicación con momento concreto del video>",
+    "accion_clave": "<qué cambiar para subirlo>"
+  },
+  "salesScore": {
+    "score": <0-100>,
+    "titulo": "Potencial de Ventas",
+    "verdict": "<una línea>",
+    "razon_principal": "<explicación concreta>",
+    "accion_clave": "<acción específica>"
+  },
+  "scrollStopScore": {
+    "score": <0-100>,
+    "faceDetected": <true|false>,
+    "textOnScreen": <true|false>,
+    "contrastLevel": "<alto|medio|bajo>",
+    "emotionVisible": "<emoción o 'ninguna'>",
+    "emotionIntensity": <1-10>,
+    "verdict": "<una línea>"
+  },
+  "hookDNA": {
+    "strength": <0-100>,
+    "pattern": "<patrón de hook detectado>",
+    "missingElement": "<qué le falta al hook>",
+    "optimizedHook": "<versión mejorada del hook en 1 oración>"
+  },
+  "retentionData": {
+    "at3s": "<% estimado, ej: 65%>",
+    "at10s": "<% estimado, ej: 35%>",
+    "final": "<% estimado, ej: 12%>"
+  },
+  "retentionCurve": [100, <valor 10%>, <valor 20%>, <valor 30%>, <valor 40%>, <valor 50%>, <valor 60%>, <valor 70%>, <valor 80%>, <valor 90%>, <valor 100%>],
+  "platformScores": {
+    "tiktok":  { "score": <0-100>, "verdict": "<una línea>", "topTip": "<consejo específico>" },
+    "reels":   { "score": <0-100>, "verdict": "<una línea>", "topTip": "<consejo específico>" },
+    "shorts":  { "score": <0-100>, "verdict": "<una línea>", "topTip": "<consejo específico>" }
+  },
+  "steppsScore": {
+    "viralCoefficient": <0.0-10.0>,
+    "socialCurrency": <1-10>,
+    "triggers": <1-10>,
+    "emotion": <1-10>,
+    "public": <1-10>,
+    "practicalValue": <1-10>,
+    "stories": <1-10>,
+    "dominantFactor": "<cuál es el punto más fuerte>",
+    "weakestFactor": "<cuál es el punto más débil>",
+    "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
+  },
+  "commentTrigger": {
+    "probability": <0-100>,
+    "triggerType": "<controversia|pregunta|nostalgia|humor|sorpresa|ninguno>",
+    "suggestedCTA": "<llamada a acción para comentarios>"
+  },
+  "viewsPrediction": {
+    "scenario_low": "<rango sin viralidad, ej: 500 – 2K>",
+    "scenario_mid": "<rango viralidad moderada>",
+    "scenario_high": "<rango viral real>",
+    "probability_viral": "<% probabilidad de viral>"
+  },
+  "firstHourStrategy": {
+    "optimalPostTime": "<horario recomendado>",
+    "firstActionAfterPost": "<qué hacer en los primeros 5 min>",
+    "commentSeed": "<comentario ancla para poner vos mismo>",
+    "engagementBoost": "<táctica para la primera hora>"
+  },
+  "performanceScenario": "<Bajo rendimiento|Rendimiento normal|Alto rendimiento|Potencial viral>",
+  "honestVerdict": "<1 línea directa. Lo más importante que tiene que saber este creador>",
+  "roadmap": [
+    { "impacto": "ALTO",  "problema": "<problema concreto>", "solucion": "<solución específica>", "resultado": "<qué mejora>" },
+    { "impacto": "MEDIO", "problema": "<problema concreto>", "solucion": "<solución específica>", "resultado": "<qué mejora>" },
+    { "impacto": "BAJO",  "problema": "<problema concreto>", "solucion": "<solución específica>", "resultado": "<qué mejora>" }
+  ]
+}`;
+};
  
 // ============================================================
 // DERIVACIÓN DEL HOOK TYPE
