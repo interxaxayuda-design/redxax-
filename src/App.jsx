@@ -1041,6 +1041,109 @@ const extractFlags = (strategyText) => {
 const stripFlags = (strategyText) =>
   strategyText.replace(/---FLAGS---[\s\S]*?---END---/, '').trim();
 
+const calculatePenalties = (flags, nicho = '') => {
+  let viralCeiling = null;
+  let viralPenalty = 0;
+  let salesCeiling = null;
+  let salesPenalty = 0;
+
+  // Overrides por nicho
+  const isNichoSuave = ['restaurante_comida', 'inmobiliaria'].includes(nicho);
+
+  // Bloque 0: Filtro de anuncio
+  if (flags.ad_filter_triggered) {
+    viralCeiling = viralCeiling ? Math.min(viralCeiling, 30) : 30;
+    salesCeiling = salesCeiling ? Math.min(salesCeiling, 40) : 40;
+  }
+
+  // Bloque 1: Audio
+  if (flags.no_audio_from_s0) {
+    viralPenalty -= 15;
+  }
+
+  // Bloque 2: Hook
+  if (flags.hook_type === 'muerto') {
+    viralCeiling = viralCeiling ? Math.min(viralCeiling, 35) : 35;
+  } else if (flags.hook_type === 'debil') {
+    viralCeiling = viralCeiling ? Math.min(viralCeiling, 60) : 60;
+  } else if (flags.hook_type === 'apertura_informativa') {
+    viralCeiling = viralCeiling ? Math.min(viralCeiling, 40) : 40;
+  }
+
+  if (flags.bait_disconnect) {
+    viralCeiling = viralCeiling ? Math.min(viralCeiling, 55) : 55;
+    salesCeiling = salesCeiling ? Math.min(salesCeiling, 45) : 45;
+  }
+
+  // Bloque 3: Formato
+  if (flags.is_static_slideshow) {
+    viralCeiling = viralCeiling ? Math.min(viralCeiling, 28) : 28;
+  }
+  if (flags.no_music_and_static) {
+    viralCeiling = viralCeiling ? Math.min(viralCeiling, 20) : 20;
+  }
+  if (flags.slow_cuts_no_music) {
+    viralCeiling = viralCeiling ? Math.min(viralCeiling, 30) : 30;
+  }
+
+  // Bloque 4: Capas de compra
+  if (flags.pain_missing && !isNichoSuave) {
+    salesCeiling = salesCeiling ? Math.min(salesCeiling, 48) : 48;
+  }
+  if (flags.pain_late && !flags.pain_missing && !isNichoSuave) {
+    salesPenalty -= 12;
+  }
+  if (flags.trust_gap) {
+    salesPenalty -= 15;
+  }
+  if (flags.no_urgency && !isNichoSuave) {
+    salesPenalty -= 10;
+  }
+  if (flags.high_friction) {
+    salesPenalty -= 8;
+  }
+
+  // Bloque 5: Presentación del producto
+  if (flags.product_shown_late) {
+    salesPenalty -= 12;
+  }
+
+  // Bloque 6: Valor enterrado
+  if (flags.value_trap) {
+    salesCeiling = salesCeiling ? Math.min(salesCeiling, 50) : 50;
+  }
+  if (flags.value_behind_scroll_wall) {
+    salesPenalty -= 20;
+    viralPenalty -= 20;
+  }
+  if (flags.buried_result) {
+    salesCeiling = salesCeiling ? Math.min(salesCeiling, 45) : 45;
+  }
+
+  // Bloque 7: Ritmo
+  if (flags.no_retention_engines) {
+    viralPenalty -= 10;
+  }
+  if (flags.no_share_trigger) {
+    viralPenalty -= 8;
+  }
+
+  // Bloque 9: Producto
+  if (flags.product_unclear) {
+    salesCeiling = salesCeiling ? Math.min(salesCeiling, 50) : 50;
+  }
+  if (flags.product_difficult_to_sell) {
+    salesCeiling = salesCeiling ? Math.min(salesCeiling, 53) : 53;
+  }
+
+  return {
+    viral_ceiling_from_hook: viralCeiling,
+    viral_penalty: viralPenalty,
+    sales_ceiling: salesCeiling,
+    sales_penalty: salesPenalty,
+  };
+};
+
 // ============================================================
 // DETERMINISTIC SCORING — Aplica penalties y techos
 // ============================================================
