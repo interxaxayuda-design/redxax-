@@ -329,26 +329,24 @@ RESPONDE ÚNICAMENTE CON JSON EXACTO:
 `;
 };
  
+
 // ============================================================
-// CALL 3 — SCORING BRAIN (Con la directiva de Override Nativo)
+// CALL 3 — SCORING BRAIN (Autónomo y Calibrado por IA)
 // ============================================================
 export const buildScoringBrainPrompt = (videoRawData, strategyAnalysis, platform, objetivo, perception, flags) => {
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform] || platform;
  
   return `SCORING BRAIN — ${pName} | ${objetivo} | ${perception.industria}
 
-🔴 DIRECTIVA SUPREMA DE EVALUACIÓN (OVERRIDE NATIVO):
-Eres un algoritmo nativo de TikTok/Reels. Tienes total libertad para usar tu conocimiento interno sobre formatos virales (ASMR, demos de producto, POV, satisfying videos, etc.). 
-Si detectas que el video pertenece a un formato orgánico donde la ausencia de rostro o la falta de un presentador es normal y efectiva (ejemplo: mostrar el funcionamiento satisfactorio de un producto físico, unboxing, limpieza), TIENES PERMITIDO Y DEBES ignorar cualquier penalización estándar por "falta de rostro" o "falta de hook tradicional". Adapta tu evaluación y puntajes al formato real que estás viendo.
+🔴 DIRECTIVA SUPREMA DE EVALUACIÓN (AUTONOMÍA TOTAL):
+Actúa como un Media Buyer y Estratega de Contenido Senior para Short-Form Videos. 
+Tu tarea es asignar los puntajes finales (0-100) utilizando tu conocimiento nativo sobre algoritmos de retención y conversión. Tienes total libertad para evaluar el video de forma holística. 
+NO apliques reglas genéricas si no corresponden al nicho. Si el video es un formato orgánico ganador (ej. demostración satisfactoria de producto, ASMR, unboxing), evalúalo bajo el estándar de éxito de E-COMMERCE (donde la estrella es el producto y su beneficio visual, no un presentador o un precio en pantalla).
 
-SISTEMA OPERATIVO DE EVALUACIÓN (REGLAS ESTRICTAS):
-Actúa como un algoritmo matemático. Debes asignar puntajes basándote ESTRICTAMENTE en estos techos máximos según el 'hook_type' detectado (${flags.hook_type}):
-
-TECHOS DE PUNTAJE (NO PUEDES SUPERAR ESTOS NÚMEROS):
-${JSON.stringify(HOOK_CEILINGS, null, 2)}
-
-PENALIZACIONES DE RETENCIÓN (Si ocurren, resta puntos):
-${JSON.stringify(SCROLL_THRESHOLDS, null, 2)}
+MATRIZ DE CALIBRACIÓN DE LA INDUSTRIA (Úsala solo como referencia para alinear tus criterios):
+- Formatos con ganchos nulos/aburridos corporativos: Suelen rondar los ~35-40 puntos.
+- Formatos informativos estándar o UGCs promedio: Suelen rondar los ~55-60 puntos.
+- Formatos de alto impacto visual, demostraciones instantáneas o ganchos disruptivos: Suelen alcanzar más de ~85-90 puntos.
 
 DATOS DEL VIDEO ORIGINAL PARA CONTEXTO FINAL:
 ---
@@ -358,35 +356,35 @@ ${videoRawData}
 ANÁLISIS ESTRATÉGICO PREVIO:
 ${strategyAnalysis}
 
-TAREA: Generá los scores finales. El puntaje 'scrollStopScore' NO DEBE superar el valor máximo indicado en HOOK_CEILINGS para la categoría '${flags.hook_type}', SALVO que se active la "Directiva Suprema" mencionada arriba.
+TAREA: Generá los scores finales (0-100) aplicando tu propio criterio experto sobre qué funciona y qué no en el feed actual de ${pName}.
 RESPONDE ÚNICAMENTE CON ESTE JSON EXACTO:
 {
   "viralScore": {
-    "score": <0-100>,
-    "verdict": "<una línea: justificación algorítmica>",
-    "accion_clave": "<qué cambiar para subirlo>"
+    "score": <number 0-100>,
+    "verdict": "<una línea: justificación algorítmica de por qué elegiste este puntaje>",
+    "accion_clave": "<qué cambio específico harías para subir el puntaje en el feed>"
   },
   "salesScore": {
-    "score": <0-100>,
-    "verdict": "<una línea aclarando conversión>",
-    "accion_clave": "<acción específica>"
+    "score": <number 0-100>,
+    "verdict": "<una línea aclarando el potencial de conversión real>",
+    "accion_clave": "<acción específica para aumentar las ventas generadas por el video>"
   },
   "scrollStopScore": {
-    "score": <0-100>,
-    "verdict": "<una línea evaluando el impacto del primer frame>"
+    "score": <number 0-100>,
+    "verdict": "<una línea evaluando el impacto e imán visual de los primeros 2 segundos>"
   },
   "hookDNA": {
-    "pattern": "<patrón de hook detectado>",
-    "optimizedHook": "<versión mejorada del hook en 1 oración>"
+    "pattern": "<patrón o tipo de hook detectado, ej: Demo Visual Satisfactoria, POV, Pregunta de Dolor, etc.>",
+    "optimizedHook": "<propuesta de una versión superadora del inicio en 1 sola oración>"
   },
   "steppsScore": {
-    "dominantFactor": "<punto más fuerte>",
-    "weakestFactor": "<punto más débil>",
+    "dominantFactor": "<punto fuerte del video según el modelo STEPPS>",
+    "weakestFactor": "<punto débil del video según el modelo STEPPS>",
     "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
   },
-  "honestVerdict": "<1 línea directa al grano con el núcleo del análisis>",
+  "honestVerdict": "<El veredicto más honesto y directo, sin rodeos, sobre la calidad del video>",
   "roadmap": [
-    { "impacto": "ALTO",  "problema": "<problema>", "solucion": "<solución>", "resultado": "<mejora>" }
+    { "impacto": "ALTO",  "problema": "<problema detectado>", "solucion": "<solución práctica>", "resultado": "<métrica que mejoraría>" }
   ]
 }`;
 };
@@ -692,108 +690,7 @@ const extractFlags = (strategyText) => {
 const stripFlags = (strategyText) =>
   strategyText.replace(/---FLAGS---[\s\S]*?---END---/, '').trim();
 
-const calculatePenalties = (flags, nicho = '') => {
-  let viralCeiling = null;
-  let viralPenalty = 0;
-  let salesCeiling = null;
-  let salesPenalty = 0;
 
-  // Overrides por nicho
-  const isNichoSuave = ['restaurante_comida', 'inmobiliaria'].includes(nicho);
-
-  // Bloque 0: Filtro de anuncio
-  if (flags.ad_filter_triggered) {
-    viralCeiling = viralCeiling ? Math.min(viralCeiling, 30) : 30;
-    salesCeiling = salesCeiling ? Math.min(salesCeiling, 40) : 40;
-  }
-
-  // Bloque 1: Audio
-  if (flags.no_audio_from_s0) {
-    viralPenalty -= 15;
-  }
-
-  // Bloque 2: Hook
-  if (flags.hook_type === 'muerto') {
-    viralCeiling = viralCeiling ? Math.min(viralCeiling, 35) : 35;
-  } else if (flags.hook_type === 'debil') {
-    viralCeiling = viralCeiling ? Math.min(viralCeiling, 60) : 60;
-  } else if (flags.hook_type === 'apertura_informativa') {
-    viralCeiling = viralCeiling ? Math.min(viralCeiling, 40) : 40;
-  }
-
-  if (flags.bait_disconnect) {
-    viralCeiling = viralCeiling ? Math.min(viralCeiling, 55) : 55;
-    salesCeiling = salesCeiling ? Math.min(salesCeiling, 45) : 45;
-  }
-
-  // Bloque 3: Formato
-  if (flags.is_static_slideshow) {
-    viralCeiling = viralCeiling ? Math.min(viralCeiling, 28) : 28;
-  }
-  if (flags.no_music_and_static) {
-    viralCeiling = viralCeiling ? Math.min(viralCeiling, 20) : 20;
-  }
-  if (flags.slow_cuts_no_music) {
-    viralCeiling = viralCeiling ? Math.min(viralCeiling, 30) : 30;
-  }
-
-  // Bloque 4: Capas de compra
-  if (flags.pain_missing && !isNichoSuave) {
-    salesCeiling = salesCeiling ? Math.min(salesCeiling, 48) : 48;
-  }
-  if (flags.pain_late && !flags.pain_missing && !isNichoSuave) {
-    salesPenalty -= 12;
-  }
-  if (flags.trust_gap) {
-    salesPenalty -= 15;
-  }
-  if (flags.no_urgency && !isNichoSuave) {
-    salesPenalty -= 10;
-  }
-  if (flags.high_friction) {
-    salesPenalty -= 8;
-  }
-
-  // Bloque 5: Presentación del producto
-  if (flags.product_shown_late) {
-    salesPenalty -= 12;
-  }
-
-  // Bloque 6: Valor enterrado
-  if (flags.value_trap) {
-    salesCeiling = salesCeiling ? Math.min(salesCeiling, 50) : 50;
-  }
-  if (flags.value_behind_scroll_wall) {
-    salesPenalty -= 20;
-    viralPenalty -= 20;
-  }
-  if (flags.buried_result) {
-    salesCeiling = salesCeiling ? Math.min(salesCeiling, 45) : 45;
-  }
-
-  // Bloque 7: Ritmo
-  if (flags.no_retention_engines) {
-    viralPenalty -= 10;
-  }
-  if (flags.no_share_trigger) {
-    viralPenalty -= 8;
-  }
-
-  // Bloque 9: Producto
-  if (flags.product_unclear) {
-    salesCeiling = salesCeiling ? Math.min(salesCeiling, 50) : 50;
-  }
-  if (flags.product_difficult_to_sell) {
-    salesCeiling = salesCeiling ? Math.min(salesCeiling, 53) : 53;
-  }
-
-  return {
-    viral_ceiling_from_hook: viralCeiling,
-    viral_penalty: viralPenalty,
-    sales_ceiling: salesCeiling,
-    sales_penalty: salesPenalty,
-  };
-};
 
 // ============================================================
 // DETERMINISTIC SCORING — Aplica penalties y techos
