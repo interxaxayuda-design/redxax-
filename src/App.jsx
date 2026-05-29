@@ -169,21 +169,7 @@ export const NICHE_MOTORS = {
   "educacion":          { motor: "curiosidad -> valor -> confianza",         urgency: false, trust_signal: "autoridad",         cta_type: "implicito" }
 };
  
-export const SCROLL_THRESHOLDS = {
-  "no_audio_s0":  2.0,
-  "static_only":  3.0,
-  "weak_hook":    4.5,
-  "normal":       5.0
-};
- 
-export const HOOK_CEILINGS = {
-  "muerto":               35,
-  "debil":                60,
-  "apertura_informativa": 40,
-  "bait_desconectado":    55,
-  "bait_con_puente":      85,
-  "explosivo":            90
-};
+
 
 // ============================================================
 // CALL 0A — PERCEPTION BRAIN
@@ -735,62 +721,41 @@ const stripFlags = (strategyText) =>
 
 
 // ============================================================
-// DETERMINISTIC SCORING — Aplica penalties y techos
+// DETERMINISTIC SCORING — Aplica penalties y techos           //const penalties = calculatePenalties(flagsDeterministic, perception.industria);
 // ============================================================
 const applyDeterministicScoring = (parsed, flags, nicho) => {
-  // ← VALIDACIÓN: si parsed es undefined o null, crear estructura base
-  if (!parsed || typeof parsed !== 'object') {
-    parsed = {};
-  }
+  if (!parsed || typeof parsed !== 'object') parsed = {};
 
-  const penalties = calculatePenalties(flags, nicho);
-  const hookCeiling = HOOK_CEILINGS[flags.hook_type] || 70;
+  const hookCeiling = HOOK_CEILINGS[flags?.hook_type] ?? 70;
 
-  let viralScore = parsed.viralScore?.score ?? 60;
-  if (penalties.viral_ceiling_from_hook) {
-    viralScore = Math.min(viralScore, penalties.viral_ceiling_from_hook);
-  }
-  if (penalties.viral_penalty) {
-    viralScore = Math.max(0, viralScore + penalties.viral_penalty);
-  }
-
+  let viralScore = Math.min(parsed.viralScore?.score ?? 60, hookCeiling);
   let salesScore = parsed.salesScore?.score ?? 60;
-  if (penalties.sales_ceiling) {
-    salesScore = Math.min(salesScore, penalties.sales_ceiling);
-  }
-  if (penalties.sales_penalty) {
-    salesScore = Math.max(0, salesScore + penalties.sales_penalty);
+
+  if (flags?.ad_filter_triggered) {
+    viralScore = Math.min(viralScore, 40);
+    salesScore = Math.min(salesScore, 55);
   }
 
   const potentialScore = Math.round(viralScore * 0.6 + salesScore * 0.4);
 
-  // ← ASEGURAR estructura completa
   return {
     vision: parsed.vision || { niche: nicho, type: 'video', audience: '', promise: '' },
     viralScore: {
       score: Math.round(viralScore),
-      razon_principal: parsed.viralScore?.razon_principal || 'Análisis completado',
+      verdict: parsed.viralScore?.verdict || 'Análisis completado',
       accion_clave: parsed.viralScore?.accion_clave || 'Revisar video'
     },
     salesScore: {
       score: Math.round(salesScore),
-      razon_principal: parsed.salesScore?.razon_principal || 'Análisis completado',
+      verdict: parsed.salesScore?.verdict || 'Análisis completado',
       accion_clave: parsed.salesScore?.accion_clave || 'Revisar video'
     },
     potentialScore,
     scrollStopScore: parsed.scrollStopScore ?? 50,
-    completionRate: parsed.completionRate ?? 50,
-    shareMotivation: parsed.shareMotivation ?? 50,
-    conversionClarity: parsed.conversionClarity ?? 50,
-    trustSignal: parsed.trustSignal ?? 50,
-    retentionRhythm: parsed.retentionRhythm ?? 50,
+    hookDNA: parsed.hookDNA ?? null,
+    steppsScore: parsed.steppsScore ?? null,
     honestVerdict: parsed.honestVerdict || 'Video con potencial medio',
-    roadmap: parsed.roadmap || [
-      { impacto: 'ALTO', problema: 'Sin datos', solucion: 'Revisar análisis', resultado: 'Aplicar mejoras' },
-      { impacto: 'MEDIO', problema: 'Sin datos', solucion: 'Revisar análisis', resultado: 'Aplicar mejoras' },
-      { impacto: 'BAJO', problema: 'Sin datos', solucion: 'Revisar análisis', resultado: 'Aplicar mejoras' }
-    ],
-    _appliedPenalties: penalties
+    roadmap: parsed.roadmap || [],
   };
 };
 
@@ -1007,7 +972,7 @@ let strategyAnalysis = strategyRaw;
 try {
   const strategyParsed = safeParseJSON(strategyRaw, 'strategy-flags');
   flagsFromStrategy = strategyParsed?.flags_binarios ?? {};
-  // Guardamos el texto completo igual para el contexto del scoring brain
+  // Guardamos el texto completo igual para el contexto del scoring brain      //_penalties: penalties,
   strategyAnalysis = JSON.stringify(strategyParsed?.analisis_cualitativo ?? strategyParsed, null, 2);
 } catch (e) {
   console.warn('[Strategy] No se pudo parsear como JSON, usando texto plano:', e.message);
@@ -1037,22 +1002,19 @@ try {
 
     // ============================================================
     // CALL 3 — Scoring Brain
-    // ============================================================
+    // ============================================================   //text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, perception.industria, flagsDeterministic, penalties),
     setAnalysisProgress(80);
     setStatusText("Calculando matriz de viralidad...");
-
-    const penalties = calculatePenalties(flagsDeterministic, perception.industria);
     
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, perception.industria, flagsDeterministic, penalties),
         expectsJson: true,
         maxOutputTokens: 8192,
       }
     });
     if (call3Error) throw call3Error;
 
-    const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
+    const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');  //text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, perception.industria, flagsDeterministic),
     
     setAnalysisProgress(90);
     setStatusText("Estructurando reporte completo...");
@@ -1073,7 +1035,6 @@ try {
       ...parsedFinal,
       objetivo: selectedObjetivo,
       _flags: flagsDeterministic,
-      _penalties: penalties,
       _strategy_text: strategyAnalysis,
       _viewer_text: viewerAnalysis,
       _research_data: researchData,
