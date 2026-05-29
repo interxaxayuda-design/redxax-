@@ -330,12 +330,16 @@ RESPONDE ÚNICAMENTE CON JSON EXACTO:
 };
  
 // ============================================================
-// CALL 3 — SCORING BRAIN (Donde ocurría la alucinación)
+// CALL 3 — SCORING BRAIN (Con la directiva de Override Nativo)
 // ============================================================
 export const buildScoringBrainPrompt = (videoRawData, strategyAnalysis, platform, objetivo, perception, flags) => {
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform] || platform;
  
   return `SCORING BRAIN — ${pName} | ${objetivo} | ${perception.industria}
+
+🔴 DIRECTIVA SUPREMA DE EVALUACIÓN (OVERRIDE NATIVO):
+Eres un algoritmo nativo de TikTok/Reels. Tienes total libertad para usar tu conocimiento interno sobre formatos virales (ASMR, demos de producto, POV, satisfying videos, etc.). 
+Si detectas que el video pertenece a un formato orgánico donde la ausencia de rostro o la falta de un presentador es normal y efectiva (ejemplo: mostrar el funcionamiento satisfactorio de un producto físico, unboxing, limpieza), TIENES PERMITIDO Y DEBES ignorar cualquier penalización estándar por "falta de rostro" o "falta de hook tradicional". Adapta tu evaluación y puntajes al formato real que estás viendo.
 
 SISTEMA OPERATIVO DE EVALUACIÓN (REGLAS ESTRICTAS):
 Actúa como un algoritmo matemático. Debes asignar puntajes basándote ESTRICTAMENTE en estos techos máximos según el 'hook_type' detectado (${flags.hook_type}):
@@ -354,7 +358,7 @@ ${videoRawData}
 ANÁLISIS ESTRATÉGICO PREVIO:
 ${strategyAnalysis}
 
-TAREA: Generá los scores finales. El puntaje 'scrollStopScore' NO DEBE superar el valor máximo indicado en HOOK_CEILINGS para la categoría '${flags.hook_type}'.
+TAREA: Generá los scores finales. El puntaje 'scrollStopScore' NO DEBE superar el valor máximo indicado en HOOK_CEILINGS para la categoría '${flags.hook_type}', SALVO que se active la "Directiva Suprema" mencionada arriba.
 RESPONDE ÚNICAMENTE CON ESTE JSON EXACTO:
 {
   "viralScore": {
@@ -369,7 +373,7 @@ RESPONDE ÚNICAMENTE CON ESTE JSON EXACTO:
   },
   "scrollStopScore": {
     "score": <0-100>,
-    "verdict": "<una línea evaluando el impacto del primer frame, respetando el HOOK_CEILING>"
+    "verdict": "<una línea evaluando el impacto del primer frame>"
   },
   "hookDNA": {
     "pattern": "<patrón de hook detectado>",
