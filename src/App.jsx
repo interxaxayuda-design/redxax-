@@ -228,13 +228,42 @@ Devuelve ESTRICTAMENTE este JSON válido:
 `;
 
 // ============================================================
-// CALL 1 — VIEWER BRAIN 
+// CALL 1 — VIEWER BRAIN (REESCRITO)
 // ============================================================
 export const buildViewerBrainPrompt = (videoRawData, platform, perception) => {
-  const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
-  
-  return `TAREA: Simula el comportamiento de UN ESPECTADOR REAL mirando este video en ${pName}.
-  
+  const pName = {
+    tiktok: 'TikTok',
+    reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts',
+    all: 'TikTok/Reels/Shorts'
+  }[platform];
+
+  return `IDENTIDAD: No eres un analista. Eres el reflejo cognitivo de un espectador real en ${pName}.
+
+Tu única función: determinar si este video detiene el scroll o desaparece en 800ms.
+
+═══════════════════════════════════════════
+REALIDAD PSICOLÓGICA — esto NO es opcional, es tu marco de referencia base:
+═══════════════════════════════════════════
+El espectador que va a ver este video:
+- Lleva 35-50 minutos en scroll continuo. Sus receptores dopaminérgicos están saturados.
+- En la última hora vio: 3 videos de creadores virales top, 4 UGC ads con +8% CTR, hooks de Performance Marketers elite.
+- Su decisión ocurre en menos de 800ms. No es consciente. El pulgar ya se movió antes de que el cerebro procese el audio.
+- Tiene un filtro automático de "esto es un anuncio" que activa el scroll instantáneamente.
+- Solo detiene el scroll ante: peligro percibido, deseo intenso, rareza cognitiva, o una pregunta que el cerebro no puede ignorar.
+- No tolera aburrimiento. No tolera lentitud. No da segunda oportunidad.
+
+CONTRA QUIÉN COMPITE ESTE VIDEO:
+- Los mejores videos del mundo en este nicho están en el mismo feed.
+- No compite contra contenido promedio. Compite contra los top 0.1%.
+
+═══════════════════════════════════════════
+TU MISIÓN: BUSCAR ACTIVAMENTE LOS PUNTOS DE FALLA
+═══════════════════════════════════════════
+No intentes justificar el video. No busques equilibrio.
+Tu trabajo es encontrar EXACTAMENTE dónde y por qué este espectador scrollearía.
+Si no hay punto de falla obvio, eso también es información — dilo.
+
 CONTEXTO DEL VIDEO:
 - Industria: ${perception.industria}
 - Motor psicológico: ${perception.palanca_psicologica}
@@ -243,29 +272,27 @@ VIDEO A ANALIZAR:
 ---
 ${videoRawData}
 ---
-  
-REGLAS ESTRICTAS: NO evalúes calidad técnica. Responde ÚNICAMENTE en JSON estricto:
+
+Responde ÚNICAMENTE en JSON estricto. Sin markdown. Sin texto extra:
 {
   "reaccion_primer_frame": {
-    "que_ve_literalmente": "<descripción breve>",
+    "que_ve_literalmente": "<descripción objetiva y concisa de qué hay visible en frame 0>",
     "emocion_generada": "<curiosidad|tension|aburrimiento|desconfianza|deseo|neutro>",
-    "accion_espectador": "<se_queda|scr
-    
-    ollea_inmediato>",
-    "por_que": "<razón psicológica breve>"
+    "accion_espectador": "<se_queda|scrollea_inmediato>",
+    "por_que": "<razón psicológica concreta — sin suavizar, sin eufemismos>"
   },
   "sistema_hook_y_retencion": {
-    "pregunta_abierta_generada": "<cuál es la duda que lo hace quedarse o 'ninguna'>",
+    "pregunta_abierta_generada": "<qué pregunta instala en la mente que lo hace quedarse — o 'ninguna' si no hay>",
     "sensacion_de_dinamismo": "<frenetico|dinamico|lento|muerto>",
     "rehook_detectado": "<revelacion|nueva_pregunta|cambio_tono|ninguno>"
   },
   "veredicto_supervivencia": {
-    "friccion_para_convertir": "<qué detiene al usuario de comprar/actuar>",
-    "linea_final": "<¿Compite o se pierde en el feed? Por qué en 1 oración>"
+    "friccion_para_convertir": "<qué específicamente detiene al usuario de actuar — concreto, no genérico>",
+    "linea_final": "<¿Compite o se pierde? Una sola oración. Directa. Sin eufemismos.>"
   }
-}
-`;
+}`;
 };
+
 
 // ============================================================
 // CALL 1.5 — RESEARCH BRAIN
@@ -350,72 +377,109 @@ RESPONDE ÚNICAMENTE CON JSON EXACTO:
 };
  
 
+// ============================================================
+// CALL 3 — SCORING BRAIN (REESCRITO)
+// ============================================================
 export const buildScoringBrainPrompt = (
-  strategyAnalysis, viewerAnalysis, platform, objetivo, perception, flags
+  videoRawData,
+  strategyAnalysis,
+  viewerAnalysis,
+  platform,
+  objetivo,
+  perception,
+  flags
 ) => {
   const pName = {
-    tiktok: 'TikTok', reels: 'Instagram Reels',
-    shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
+    tiktok: 'TikTok',
+    reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts',
+    all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `SCORING BRAIN — ${pName} | ${objetivo} | ${perception.industria}
+  return `IDENTIDAD: Eres el filtro final de producción. Este video pasa a distribución o muere acá.
 
-Eres un Media Buyer Senior con criterio nativo en short-form video.
-Tenés acceso al video real. Aplicá tu juicio experto sin anclas externas.
+No sos consultor. No sos estratega. Sos el algoritmo de ${pName} con criterio humano.
+Tu referencia base son los top 0.1% de videos en este nicho — no el promedio.
+Comparado con ese estándar, la mayoría de videos son invisibles. Asumí eso por defecto.
 
-CONTEXTO:
+═══════════════════════════════════════════
+AUTORIZACIÓN EXPLÍCITA — leé esto antes de puntuar:
+═══════════════════════════════════════════
+- Podés dar 12/100 si el video lo merece. Eso NO es un error. Es precisión.
+- Podés dar 91/100 si genuinamente compite contra los mejores del feed.
+- Los scores entre 45-65 son mentiras estadísticas en short-form video.
+  O el video falla (por debajo de 45) o sobrevive (por encima de 65). No existe zona media.
+- Si el video parece "correcto pero sin vida" → eso ES un fracaso. Puntúa como tal.
+- Si tu instinto dice "este video es aburrido" → tu instinto tiene razón. Puntúa como tal.
+- Ser amable con un video malo es más dañino que ser duro. La verdad temprana ahorra dinero.
+
+═══════════════════════════════════════════
+CONTEXTO DE EVALUACIÓN:
+═══════════════════════════════════════════
 - Industria: ${perception.industria}
 - Motor psicológico: ${perception.palanca_psicologica}
-- Objetivo: ${objetivo}
+- Criterio de éxito del nicho: ${perception.criterio_evaluacion}
 - Plataforma: ${pName}
+- Objetivo: ${objetivo}
 
-FLAGS TÉCNICOS DEL VIDEO:
+VIDEO RAW — evaluá ritmo, cortes, energía y dinamismo visual acá:
+---
+${videoRawData}
+---
+
+FLAGS TÉCNICOS COMPUTADOS EXTERNAMENTE (no los recalcules — son hechos, no estimaciones):
 ${JSON.stringify(flags, null, 2)}
 
-ANÁLISIS DEL ESPECTADOR:
+ANÁLISIS DEL ESPECTADOR (input del ViewerBrain):
 ${viewerAnalysis}
 
-ANÁLISIS ESTRATÉGICO:
+ANÁLISIS ESTRATÉGICO (input del StrategyBrain):
 ${strategyAnalysis}
 
-REGLAS INVIOLABLES DE SCORING:
-1. viralScore y salesScore NUNCA pueden ser idénticos salvo que lo justifiques en el verdict.
-2. Un video sin hook funcional en los primeros 3 segundos no puede superar 45 en viralScore.
-3. Un video sin CTA o sin fricción resuelta no puede superar 50 en salesScore.
-4. No existe un score "neutro por defecto". Cada número debe reflejar evidencia real del video.
+═══════════════════════════════════════════
+ANCLAS DE SCORING INAMOVIBLES:
+═══════════════════════════════════════════
+Estas no son sugerencias. Son topes computados externamente que reflejan realidad estadística:
+- flags.metricas_tecnicas.es_slideshow_imagenes === true  →  viralScore techo absoluto: 35
+- flags.flags_narrativos.dolor_antes_s5 === false         →  viralScore techo absoluto: 45
+- flags.flags_binarios.ad_filter_triggered === true       →  salesScore penalización: -15 sobre el score calculado
+- viralScore y salesScore DEBEN diferir mínimo 10 puntos
+  (excepción única: performance ads donde ambos objetivos coinciden — justificalo en el verdict)
 
-RESPONDE ÚNICAMENTE CON ESTE JSON (sin markdown, sin texto adicional):
+═══════════════════════════════════════════
+RESPONDE SOLO EN JSON. Sin markdown. Sin texto antes o después:
+═══════════════════════════════════════════
 {
   "viralScore": {
     "score": <number 0-100>,
-    "verdict": "<por qué este video tiene o no tiene potencial viral en el feed actual de ${pName}>",
-    "accion_clave": "<cambio específico y accionable para subir el score>"
+    "verdict": "<por qué exactamente gana o muere en el algoritmo de ${pName} — sin eufemismos>",
+    "accion_clave": "<el único cambio que más movería este score — específico y ejecutable>"
   },
   "salesScore": {
     "score": <number 0-100>,
-    "verdict": "<potencial real de conversión basado en el embudo y el CTA del video>",
-    "accion_clave": "<acción concreta para aumentar conversiones>"
+    "verdict": "<potencial de conversión real — no potencial teórico ni intencional>",
+    "accion_clave": "<acción concreta y medible, no consejo genérico>"
   },
   "scrollStopScore": {
     "score": <number 0-100>,
-    "verdict": "<evaluación del impacto visual en los primeros 2 segundos>"
+    "verdict": "<qué ocurre exactamente en los primeros 2 segundos desde la perspectiva del espectador>"
   },
   "hookDNA": {
-    "pattern": "<tipo de hook: Demo Visual, POV, Pregunta de Dolor, Afirmación Contradictoria, etc.>",
-    "optimizedHook": "<versión superadora del inicio del video en 1 sola oración concreta>"
+    "pattern": "<Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Otro>",
+    "optimizedHook": "<versión mejorada del hook en 1 oración — implementable directamente, no teórica>"
   },
   "steppsScore": {
-    "dominantFactor": "<punto más fuerte del video según el modelo STEPPS>",
-    "weakestFactor": "<punto más débil según STEPPS>",
+    "dominantFactor": "<factor STEPPS más fuerte — si hay alguno>",
+    "weakestFactor": "<factor STEPPS más débil — el que más daña>",
     "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
   },
-  "honestVerdict": "<veredicto brutal y directo sobre la calidad real del video, sin eufemismos>",
+  "honestVerdict": "<veredicto sin filtro en máximo 2 oraciones — si es aburrido, decilo; si es competitivo, reconocelo; si es un desastre, nombralo>",
   "roadmap": [
     {
       "impacto": "<ALTO|MEDIO|BAJO>",
-      "problema": "<problema concreto detectado>",
-      "solucion": "<solución accionable>",
-      "resultado": "<métrica que mejoraría>"
+      "problema": "<qué falla específicamente — concreto, no genérico>",
+      "solucion": "<cómo se arregla exactamente>",
+      "resultado": "<qué métrica mejora y estimativamente cuánto>"
     }
   ]
 }`;
