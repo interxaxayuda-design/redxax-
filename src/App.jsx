@@ -720,38 +720,31 @@ const stripFlags = (strategyText) =>
 
 
 
+
 // ============================================================
-// DETERMINISTIC SCORING — Aplica penalties y techos           //const penalties = calculatePenalties(flagsDeterministic, perception.industria);
+// PASS-THROUGH — La IA decide todos los scores
 // ============================================================
 const applyDeterministicScoring = (parsed, flags, nicho) => {
   if (!parsed || typeof parsed !== 'object') parsed = {};
 
-  
-
-  let viralScore = Math.min(parsed.viralScore?.score ?? 60, hookCeiling);
-  let salesScore = parsed.salesScore?.score ?? 60;
-
-  if (flags?.ad_filter_triggered) {
-    viralScore = Math.min(viralScore, 40);
-    salesScore = Math.min(salesScore, 55);
-  }
-
+  const viralScore = parsed.viralScore?.score ?? 60;
+  const salesScore = parsed.salesScore?.score ?? 60;
   const potentialScore = Math.round(viralScore * 0.6 + salesScore * 0.4);
 
   return {
     vision: parsed.vision || { niche: nicho, type: 'video', audience: '', promise: '' },
     viralScore: {
-      score: Math.round(viralScore),
+      score: viralScore,
       verdict: parsed.viralScore?.verdict || 'Análisis completado',
       accion_clave: parsed.viralScore?.accion_clave || 'Revisar video'
     },
     salesScore: {
-      score: Math.round(salesScore),
+      score: salesScore,
       verdict: parsed.salesScore?.verdict || 'Análisis completado',
       accion_clave: parsed.salesScore?.accion_clave || 'Revisar video'
     },
     potentialScore,
-    scrollStopScore: parsed.scrollStopScore ?? 50,
+    scrollStopScore: parsed.scrollStopScore ?? null,
     hookDNA: parsed.hookDNA ?? null,
     steppsScore: parsed.steppsScore ?? null,
     honestVerdict: parsed.honestVerdict || 'Video con potencial medio',
