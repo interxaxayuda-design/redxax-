@@ -158,7 +158,7 @@ const safeParseJSON = (rawText, context = '') => {
 };
 
 // ============================================================
-// CONSTANTES DE NEGOCIO (Ahora sí se las vamos a pasar a Gemini)
+// CONSTANTES DE NEGOCIO (Ahora sí se las vamos a pasar a Gemini)  //text: buildViewerBrainPrompt(platform, perception.industria),
 // ============================================================
 export const NICHE_MOTORS = {
   "producto_fisico":    { motor: "dolor -> solucion",                        urgency: true,  trust_signal: "demostracion",      cta_type: "directo"   },
@@ -992,7 +992,7 @@ const runDeepAnalysis = async () => {
 
     const res = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildViewerBrainPrompt(platform, perception.industria), // ← Cambiado selectedNicho por perception.industria
+        text: buildViewerBrainPrompt(JSON.stringify(preFacts), platform, perception),
         storagePath,
         videoMimeType: mimeType,
         duration: Math.round(duration),
