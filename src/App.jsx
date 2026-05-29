@@ -726,7 +726,7 @@ const stripFlags = (strategyText) =>
 const applyDeterministicScoring = (parsed, flags, nicho) => {
   if (!parsed || typeof parsed !== 'object') parsed = {};
 
-  const hookCeiling = HOOK_CEILINGS[flags?.hook_type] ?? 70;
+  
 
   let viralScore = Math.min(parsed.viralScore?.score ?? 60, hookCeiling);
   let salesScore = parsed.salesScore?.score ?? 60;
