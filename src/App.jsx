@@ -723,8 +723,8 @@ const stripFlags = (strategyText) =>
 
 
 
+// ✅ VERSIÓN CORREGIDA — vision restaurado con fallback:
 const applyDeterministicScoring = (parsed, flags, nicho) => {
-  // Si el parse falló, que explote con dignidad
   if (!parsed?.viralScore?.score || !parsed?.salesScore?.score) {
     throw new Error('ScoringBrain devolvió output inválido. Revisar prompt o response de Gemini.');
   }
@@ -734,6 +734,7 @@ const applyDeterministicScoring = (parsed, flags, nicho) => {
   const potentialScore = Math.round(viralScore * 0.6 + salesScore * 0.4);
 
   return {
+    vision:          parsed.vision || { niche: nicho, type: 'video', audience: '', promise: '' },
     viralScore:      parsed.viralScore,
     salesScore:      parsed.salesScore,
     potentialScore,
