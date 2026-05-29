@@ -194,23 +194,15 @@ Responde SOLO con este JSON. Usa los motores proporcionados si encajan, o define
 }
 `;
  
-// ============================================================
-// CALL 0B — PRE-CLASSIFIER
-// ============================================================
-export const buildPreClassifierPrompt = (videoRawData) => `
-Eres un auditor de videos de alto rendimiento. Tu objetivo es desglosar de forma quirúrgica los primeros segundos de este video:
----
-${videoRawData}
----
+export const buildPreClassifierPrompt = (meta = '') => `
+Eres un auditor forense de video. Analiza el video y extrae SOLO hechos observables binarios.
+NO evalúes calidad. NO interpretes. Solo registra lo que ves y escuchas.
+${meta ? `\nMETADATA: ${meta}` : ''}
 
-Instrucciones cruciales:
-1. INDUSTRIA: Micro-nicho ultra-específico.
-2. PALANCA PSICOLÓGICA DOMINANTE: Emoción primaria real (ej. "Alivio de Frustración Crónica", "FOMO", "Sentido de Pertenencia").
-
-Devuelve ESTRICTAMENTE un objeto JSON válido con la siguiente estructura:
+Devuelve ESTRICTAMENTE este JSON válido:
 {
-  "industria": "<Micro-nicho específico>",
-  "palanca_psicologica": "<Gatillo psicológico>",
+  "industria": "<micro-nicho ultra-específico del producto/servicio>",
+  "palanca_psicologica": "<emoción primaria real: Alivio de Frustración, FOMO, Pertenencia, etc.>",
   "flags_visuales": {
     "logo_en_s0": <boolean>,
     "imagen_alto_impacto": <boolean>,
@@ -228,7 +220,7 @@ Devuelve ESTRICTAMENTE un objeto JSON válido con la siguiente estructura:
   "metricas_tecnicas": {
     "duracion_estimada_segundos": <number>,
     "es_slideshow_imagenes": <boolean>,
-    "porcentaje_video_real": <number>,
+    "porcentaje_video_real": <number 0-100>,
     "tipo_edicion": "<cinematica|dinamica|UGC|infomercial|estetica>",
     "ritmo_visual": "<rapido|normal|lento>"
   }
@@ -358,65 +350,76 @@ RESPONDE ÚNICAMENTE CON JSON EXACTO:
 };
  
 
-// ============================================================
-// CALL 3 — SCORING BRAIN (Autónomo y Calibrado por IA)
-// ============================================================
-export const buildScoringBrainPrompt = (videoRawData, strategyAnalysis, platform, objetivo, perception, flags) => {
-  const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform] || platform;
- 
+export const buildScoringBrainPrompt = (
+  strategyAnalysis, viewerAnalysis, platform, objetivo, perception, flags
+) => {
+  const pName = {
+    tiktok: 'TikTok', reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
+  }[platform] || platform;
+
   return `SCORING BRAIN — ${pName} | ${objetivo} | ${perception.industria}
 
-🔴 DIRECTIVA SUPREMA DE EVALUACIÓN (AUTONOMÍA TOTAL):
-Actúa como un Media Buyer y Estratega de Contenido Senior para Short-Form Videos. 
-Tu tarea es asignar los puntajes finales (0-100) utilizando tu conocimiento nativo sobre algoritmos de retención y conversión. Tienes total libertad para evaluar el video de forma holística. 
-NO apliques reglas genéricas si no corresponden al nicho. Si el video es un formato orgánico ganador (ej. demostración satisfactoria de producto, ASMR, unboxing), evalúalo bajo el estándar de éxito de E-COMMERCE (donde la estrella es el producto y su beneficio visual, no un presentador o un precio en pantalla).
+Eres un Media Buyer Senior con criterio nativo en short-form video.
+Tenés acceso al video real. Aplicá tu juicio experto sin anclas externas.
 
-MATRIZ DE CALIBRACIÓN DE LA INDUSTRIA (Úsala solo como referencia para alinear tus criterios):
-- Formatos con ganchos nulos/aburridos corporativos: Suelen rondar los ~35-40 puntos.
-- Formatos informativos estándar o UGCs promedio: Suelen rondar los ~55-60 puntos.
-- Formatos de alto impacto visual, demostraciones instantáneas o ganchos disruptivos: Suelen alcanzar más de ~85-90 puntos.
+CONTEXTO:
+- Industria: ${perception.industria}
+- Motor psicológico: ${perception.palanca_psicologica}
+- Objetivo: ${objetivo}
+- Plataforma: ${pName}
 
-DATOS DEL VIDEO ORIGINAL PARA CONTEXTO FINAL:
----
-${videoRawData}
----
+FLAGS TÉCNICOS DEL VIDEO:
+${JSON.stringify(flags, null, 2)}
 
-ANÁLISIS ESTRATÉGICO PREVIO:
+ANÁLISIS DEL ESPECTADOR:
+${viewerAnalysis}
+
+ANÁLISIS ESTRATÉGICO:
 ${strategyAnalysis}
 
-TAREA: Generá los scores finales (0-100) aplicando tu propio criterio experto sobre qué funciona y qué no en el feed actual de ${pName}.
-RESPONDE ÚNICAMENTE CON ESTE JSON EXACTO:
+REGLAS INVIOLABLES DE SCORING:
+1. viralScore y salesScore NUNCA pueden ser idénticos salvo que lo justifiques en el verdict.
+2. Un video sin hook funcional en los primeros 3 segundos no puede superar 45 en viralScore.
+3. Un video sin CTA o sin fricción resuelta no puede superar 50 en salesScore.
+4. No existe un score "neutro por defecto". Cada número debe reflejar evidencia real del video.
+
+RESPONDE ÚNICAMENTE CON ESTE JSON (sin markdown, sin texto adicional):
 {
   "viralScore": {
     "score": <number 0-100>,
-    "verdict": "<una línea: justificación algorítmica de por qué elegiste este puntaje>",
-    "accion_clave": "<qué cambio específico harías para subir el puntaje en el feed>"
+    "verdict": "<por qué este video tiene o no tiene potencial viral en el feed actual de ${pName}>",
+    "accion_clave": "<cambio específico y accionable para subir el score>"
   },
   "salesScore": {
     "score": <number 0-100>,
-    "verdict": "<una línea aclarando el potencial de conversión real>",
-    "accion_clave": "<acción específica para aumentar las ventas generadas por el video>"
+    "verdict": "<potencial real de conversión basado en el embudo y el CTA del video>",
+    "accion_clave": "<acción concreta para aumentar conversiones>"
   },
   "scrollStopScore": {
     "score": <number 0-100>,
-    "verdict": "<una línea evaluando el impacto e imán visual de los primeros 2 segundos>"
+    "verdict": "<evaluación del impacto visual en los primeros 2 segundos>"
   },
   "hookDNA": {
-    "pattern": "<patrón o tipo de hook detectado, ej: Demo Visual Satisfactoria, POV, Pregunta de Dolor, etc.>",
-    "optimizedHook": "<propuesta de una versión superadora del inicio en 1 sola oración>"
+    "pattern": "<tipo de hook: Demo Visual, POV, Pregunta de Dolor, Afirmación Contradictoria, etc.>",
+    "optimizedHook": "<versión superadora del inicio del video en 1 sola oración concreta>"
   },
   "steppsScore": {
-    "dominantFactor": "<punto fuerte del video según el modelo STEPPS>",
-    "weakestFactor": "<punto débil del video según el modelo STEPPS>",
+    "dominantFactor": "<punto más fuerte del video según el modelo STEPPS>",
+    "weakestFactor": "<punto más débil según STEPPS>",
     "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
   },
-  "honestVerdict": "<El veredicto más honesto y directo, sin rodeos, sobre la calidad del video>",
+  "honestVerdict": "<veredicto brutal y directo sobre la calidad real del video, sin eufemismos>",
   "roadmap": [
-    { "impacto": "ALTO",  "problema": "<problema detectado>", "solucion": "<solución práctica>", "resultado": "<métrica que mejoraría>" }
+    {
+      "impacto": "<ALTO|MEDIO|BAJO>",
+      "problema": "<problema concreto detectado>",
+      "solucion": "<solución accionable>",
+      "resultado": "<métrica que mejoraría>"
+    }
   ]
 }`;
 };
-
 
 // ============================================================
 // DERIVACIÓN DEL HOOK TYPE
@@ -720,35 +723,25 @@ const stripFlags = (strategyText) =>
 
 
 
-
-// ============================================================
-// PASS-THROUGH — La IA decide todos los scores
-// ============================================================
 const applyDeterministicScoring = (parsed, flags, nicho) => {
-  if (!parsed || typeof parsed !== 'object') parsed = {};
+  // Si el parse falló, que explote con dignidad
+  if (!parsed?.viralScore?.score || !parsed?.salesScore?.score) {
+    throw new Error('ScoringBrain devolvió output inválido. Revisar prompt o response de Gemini.');
+  }
 
-  const viralScore = parsed.viralScore?.score ?? 60;
-  const salesScore = parsed.salesScore?.score ?? 60;
+  const viralScore  = parsed.viralScore.score;
+  const salesScore  = parsed.salesScore.score;
   const potentialScore = Math.round(viralScore * 0.6 + salesScore * 0.4);
 
   return {
-    vision: parsed.vision || { niche: nicho, type: 'video', audience: '', promise: '' },
-    viralScore: {
-      score: viralScore,
-      verdict: parsed.viralScore?.verdict || 'Análisis completado',
-      accion_clave: parsed.viralScore?.accion_clave || 'Revisar video'
-    },
-    salesScore: {
-      score: salesScore,
-      verdict: parsed.salesScore?.verdict || 'Análisis completado',
-      accion_clave: parsed.salesScore?.accion_clave || 'Revisar video'
-    },
+    viralScore:      parsed.viralScore,
+    salesScore:      parsed.salesScore,
     potentialScore,
-    scrollStopScore: parsed.scrollStopScore ?? null,
-    hookDNA: parsed.hookDNA ?? null,
-    steppsScore: parsed.steppsScore ?? null,
-    honestVerdict: parsed.honestVerdict || 'Video con potencial medio',
-    roadmap: parsed.roadmap || [],
+    scrollStopScore: parsed.scrollStopScore  ?? null,
+    hookDNA:         parsed.hookDNA          ?? null,
+    steppsScore:     parsed.steppsScore      ?? null,
+    honestVerdict:   parsed.honestVerdict    ?? '',
+    roadmap:         parsed.roadmap          ?? [],
   };
 };
 
@@ -806,16 +799,17 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     let preFacts = {};
     let preHookType = 'debil';
 
-    const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildPreClassifierPrompt(),
-        storagePath,
-        videoMimeType: mimeType,
-        duration: Math.round(duration),
-        maxOutputTokens: 2048,
-        expectsJson: true
-      }
-    });
+// ✅ CÓDIGO NUEVO — pegarlo en el mismo lugar:
+const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    text: buildPreClassifierPrompt(`Duración: ${Math.round(duration)}s`),  // ← con argumento
+    storagePath,
+    videoMimeType: mimeType,
+    duration: Math.round(duration),
+    maxOutputTokens: 2048,
+    expectsJson: true,
+  }
+});
 
     if (call0Error) {
       const status = call0Error.context?.status ?? 0;
@@ -999,13 +993,25 @@ try {
     setAnalysisProgress(80);
     setStatusText("Calculando matriz de viralidad...");
     
-    const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        expectsJson: true,
-        maxOutputTokens: 8192,
-      }
-    });
-    if (call3Error) throw call3Error;
+    // ✅ CÓDIGO NUEVO — pegarlo en el mismo lugar:
+const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    text: buildScoringBrainPrompt(
+      strategyAnalysis,
+      viewerAnalysis,
+      platform,
+      selectedObjetivo,
+      perception,
+      flagsDeterministic
+    ),
+    storagePath,
+    videoMimeType: mimeType,
+    duration: Math.round(duration),
+    expectsJson: true,
+    maxOutputTokens: 8192,
+  }
+});
+if (call3Error) throw call3Error;
 
     const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');  //text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, perception.industria, flagsDeterministic),
     
