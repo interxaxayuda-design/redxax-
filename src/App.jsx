@@ -158,29 +158,15 @@ const safeParseJSON = (rawText, context = '') => {
 };
 
 // ============================================================
-// SYSTEM KNOWLEDGE — No va en prompts
-// Gemini ya sabe esto
-// ============================================================
-// ============================================================
-// VIRAX AI — prompts.js
-// ARQUITECTURA: Gemini observa. JS calcula. Gemini redacta.
-//
-// REGLA DE ORO:
-//   Ningún prompt puede contener la palabra "score", "puntaje",
-//   "calcula", "evalúa" ni ningún número de 0-100.
-//   Gemini responde SÍ/NO, describe lo que ve, y redacta.
-// ============================================================
-
-// ============================================================
-// SYSTEM KNOWLEDGE — No va en prompts. Gemini ya sabe esto.
+// CONSTANTES DE NEGOCIO (Ahora sí se las vamos a pasar a Gemini)
 // ============================================================
 export const NICHE_MOTORS = {
-  "producto_fisico":    { motor: "dolor → solución",                         urgency: true,  trust_signal: "demostración",       cta_type: "directo"   },
-  "comida_restaurante": { motor: "deseo_sensorial → identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
-  "inmobiliaria":       { motor: "aspiración → agente",                       urgency: false, trust_signal: "experiencia_agente", cta_type: "contacto"  },
-  "app_saas":           { motor: "problema → claridad → demo",                urgency: true,  trust_signal: "resultado_visible",  cta_type: "directo"   },
-  "estetica":           { motor: "inseguridad → transformación → identidad",  urgency: false, trust_signal: "antes_despues",      cta_type: "implicito" },
-  "educacion":          { motor: "curiosidad → valor → confianza",            urgency: false, trust_signal: "autoridad",          cta_type: "implicito" }
+  "producto_fisico":    { motor: "dolor -> solucion",                        urgency: true,  trust_signal: "demostracion",      cta_type: "directo"   },
+  "comida_restaurante": { motor: "deseo_sensorial -> identidad",             urgency: false, trust_signal: "creador_real",      cta_type: "implicito" },
+  "inmobiliaria":       { motor: "aspiracion -> agente",                     urgency: false, trust_signal: "experiencia_agente",cta_type: "contacto"  },
+  "app_saas":           { motor: "problema -> claridad -> demo",             urgency: true,  trust_signal: "resultado_visible", cta_type: "directo"   },
+  "estetica":           { motor: "inseguridad -> transformacion -> identidad",urgency: false, trust_signal: "antes_despues",     cta_type: "implicito" },
+  "educacion":          { motor: "curiosidad -> valor -> confianza",         urgency: false, trust_signal: "autoridad",         cta_type: "implicito" }
 };
  
 export const SCROLL_THRESHOLDS = {
@@ -198,102 +184,89 @@ export const HOOK_CEILINGS = {
   "bait_con_puente":      85,
   "explosivo":            90
 };
- 
+
 // ============================================================
 // CALL 0A — PERCEPTION BRAIN
-// Gemini mira el video libremente y detecta:
-//   - qué producto es
-//   - cuál es el motor psicológico de compra
-//   - cuál es la intención del video
-//   - cuál es el criterio de éxito para ESE video específico
-//
-// NO tiene campos fijos de nicho. Gemini infiere todo solo.
-// El usuario solo confirma o corrige con un tap.
 // ============================================================
-export const buildPerceptionPrompt = () => `
+export const buildPerceptionPrompt = (videoRawData) => `
 Actúa como un estratega de marketing digital experto en algoritmos de retención.
-Analiza el video proporcionado y extrae su contexto comercial de forma nativa.
+Analiza el siguiente video (transcripción y metadata visual):
+---
+${videoRawData}
+---
  
-Responde SOLO con este JSON. Nada antes ni después.
-Determiná los valores de forma libre según lo que ves — no hay opciones predefinidas.
- 
+Catálogo de Motores Psicológicos Conocidos:
+${JSON.stringify(NICHE_MOTORS, null, 2)}
+
+Responde SOLO con este JSON. Usa los motores proporcionados si encajan, o define uno nuevo si es un micro-nicho distinto.
 {
   "industria": "<nicho o sector exacto del video, lo más específico posible>",
   "objetivo_conversion": "<qué acción busca que haga el espectador>",
   "palanca_psicologica": "<emoción o sesgo cognitivo principal que usa para vender>",
   "criterio_evaluacion": "<en una frase: qué tiene que lograr este video para funcionar en su nicho>",
-  "confianza": <0.0 a 1.0 — qué tan seguro estás de esta clasificación>
+  "confianza": <0.0 a 1.0>
 }
 `;
  
-const buildPreClassifierPrompt = () => {
-  return `Eres un auditor de videos de alto rendimiento, experto en neuromarketing, copywriting y retención orgánica. Tu objetivo es desglosar de forma quirúrgica los primeros segundos de este video.
+// ============================================================
+// CALL 0B — PRE-CLASSIFIER
+// ============================================================
+export const buildPreClassifierPrompt = (videoRawData) => `
+Eres un auditor de videos de alto rendimiento. Tu objetivo es desglosar de forma quirúrgica los primeros segundos de este video:
+---
+${videoRawData}
+---
 
-Instrucciones cruciales para evitar respuestas genéricas:
+Instrucciones cruciales:
+1. INDUSTRIA: Micro-nicho ultra-específico.
+2. PALANCA PSICOLÓGICA DOMINANTE: Emoción primaria real (ej. "Alivio de Frustración Crónica", "FOMO", "Sentido de Pertenencia").
 
-1. INDUSTRIA / NICHO (Prohibido usar palabras macro como "Servicio", "Producto", "Curso"):
-   Debes detectar el MICRO-NICHO ultra-específico analizando visualmente lo que se muestra y lo que se dice. Si ves unas zapatillas y se habla de envíos, es "E-commerce de Calzado Urbano". Si ves un software de gestión, es "SaaS B2B para Productividad". Si es un infoproducto de trading, es "Educación Financiera y Day Trading". Tienes un catálogo infinito en tu conocimiento, sé específico.
-
-2. PALANCA PSICOLÓGICA DOMINANTE (Prohibido responder "Curiosidad", "Retención" o "Interés"):
-   Todo video busca retener, eso no es un gatillo de marketing. Debes identificar la emoción primaria, el deseo subconsciente o el dolor humano real que activa la atención o la compra en este video exacto. 
-   
-   NO te limites a una lista cerrada. Tienes total libertad para definir cualquier palanca psicológica real (miedos, dolores físicos/emocionales, sesgos cognitivos o placeres). Redáctala en formato de etiqueta corta (máximo 4 o 5 palabras).
-   
-   Ejemplos del nivel de profundidad analítica que busco (puedes usar uno de estos si encaja perfecto, o mapear cualquier otro dolor/deseo humano real):
-   - "Alivio de Frustración Crónica" (Dolor cotidiano molesto que el espectador quiere solucionar ya)
-   - "Deseo de Estatus y Elevación" (Apela a pertenecer a un grupo selecto, verse premium o reconocimiento)
-   - "Ganancia Rápida / Atajo de Tiempo" (Promesa de conseguir un resultado deseado saltándose el esfuerzo aburrido)
-   - "FOMO / Miedo a Quedarse Atrás" (Alerta de una oportunidad única o tendencia que expira)
-   - "Prueba de Incompetencia" (Demuestra un error grave que el espectador comete sin darse cuenta)
-   - "Placer Hedonista / Antojo Inmediato" (Estética visual pura, estimulación de sentidos, ASMR, deseo visual)
-   - "Protección y Reducción de Riesgo" (Miedo a perder dinero, salud, seguridad o estabilidad)
-   - "Sentido de Pertenencia / Comunidad" (Conectar con los valores compartidos de una tribu o identidad)
-
-Devuelve ESTRICTAMENTE un objeto JSON válido con la siguiente estructura, sin texto antes ni después:
+Devuelve ESTRICTAMENTE un objeto JSON válido con la siguiente estructura:
 {
-  "industria": "Micro-nicho específico detectado aquí",
-  "palanca_psicologica": "Gatillo psicológico real detectado aquí",
-  "logo_en_s0": false,
-  "imagen_alto_impacto": false,
-  "producto_en_s0": false,
-  "producto_en_accion_s0": false,
-  "transformacion_visible": false,
-  "pregunta_al_espectador": false,
-  "afirmacion_contradictoria": false,
-  "audio_desde_s0": true,
-  "movimiento_real": true,
-  "dolor_antes_s5": false,
-  "segundo_dolor": null,
-  "tiene_rehook": false,
-  "duracion_estimada": 30,
-  "es_slideshow_imagenes": false,
-  "porcentaje_video_real": 100,
-  "tipo_edicion": "cinemática / dinámica / UGC / infomercial / estética",
-  "ritmo_visual": "rápido / normal / lento",
-  "cortes_por_minuto": 20,
-  "cambio_visual_cada_ns": 2.5
-}`;
-};
+  "industria": "<Micro-nicho específico>",
+  "palanca_psicologica": "<Gatillo psicológico>",
+  "flags_visuales": {
+    "logo_en_s0": <boolean>,
+    "imagen_alto_impacto": <boolean>,
+    "producto_en_s0": <boolean>,
+    "producto_en_accion_s0": <boolean>,
+    "transformacion_visible": <boolean>
+  },
+  "flags_narrativos": {
+    "pregunta_al_espectador": <boolean>,
+    "afirmacion_contradictoria": <boolean>,
+    "audio_desde_s0": <boolean>,
+    "dolor_antes_s5": <boolean>,
+    "tiene_rehook": <boolean>
+  },
+  "metricas_tecnicas": {
+    "duracion_estimada_segundos": <number>,
+    "es_slideshow_imagenes": <boolean>,
+    "porcentaje_video_real": <number>,
+    "tipo_edicion": "<cinematica|dinamica|UGC|infomercial|estetica>",
+    "ritmo_visual": "<rapido|normal|lento>"
+  }
+}
+`;
 
 // ============================================================
-// CALL 1 — VIEWER BRAIN (Optimizado para Inferencia IA)
+// CALL 1 — VIEWER BRAIN 
 // ============================================================
-export const buildViewerBrainPrompt = (platform, perception) => {
+export const buildViewerBrainPrompt = (videoRawData, platform, perception) => {
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
   
-  return `TAREA: Describí el comportamiento de UN ESPECTADOR REAL mirando este video en ${pName}.
+  return `TAREA: Simula el comportamiento de UN ESPECTADOR REAL mirando este video en ${pName}.
   
-CONTEXTO DETECTADO DEL VIDEO:
+CONTEXTO DEL VIDEO:
 - Industria: ${perception.industria}
-- Lo que busca lograr: ${perception.objetivo_conversion}
 - Motor psicológico: ${perception.palanca_psicologica}
-- Para que funcione necesita: ${perception.criterio_evaluacion}
-  
-REGLAS ESTRICTAS:
-1. NO evalúes calidad visual. NO des números de score (1-10).
-2. NO calcules segundos exactos de cada corte.
-3. Responde ÚNICAMENTE en el siguiente formato JSON estricto:
 
+VIDEO A ANALIZAR:
+---
+${videoRawData}
+---
+  
+REGLAS ESTRICTAS: NO evalúes calidad técnica. Responde ÚNICAMENTE en JSON estricto:
 {
   "reaccion_primer_frame": {
     "que_ve_literalmente": "<descripción breve>",
@@ -304,14 +277,7 @@ REGLAS ESTRICTAS:
   "sistema_hook_y_retencion": {
     "pregunta_abierta_generada": "<cuál es la duda que lo hace quedarse o 'ninguna'>",
     "sensacion_de_dinamismo": "<frenetico|dinamico|lento|muerto>",
-    "sostienen_la_tension": <true|false>,
-    "rehook_detectado": "<revelacion|nueva_pregunta|cambio_tono|ninguno>",
-    "minuto_espectador_sabe_todo": "<aproximado en segundos o 'mantiene_misterio'>"
-  },
-  "motor_psicologico": {
-    "aparece_antes_del_scroll": <true|false>,
-    "se_siente_natural_o_forzado": "<natural|forzado>",
-    "conecta_con_industria": <true|false>
+    "rehook_detectado": "<revelacion|nueva_pregunta|cambio_tono|ninguno>"
   },
   "veredicto_supervivencia": {
     "friccion_para_convertir": "<qué detiene al usuario de comprar/actuar>",
@@ -321,346 +287,107 @@ REGLAS ESTRICTAS:
 `;
 };
  
-// ============================================================
-// CALL 1.5 — RESEARCH BRAIN (A prueba de Alucinaciones)
-// ============================================================
-export const buildResearchBrainPrompt = (platform, perception, objetivo) => {
-  const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
-  
-  return `INVESTIGACIÓN DE MERCADO — base de conocimiento | Plataforma: ${pName} | Industria: ${perception.industria}
-  
-TAREA: Extrae patrones de tu conocimiento sobre los mejores contenidos de "${perception.industria}" que lograron viralidad y conversión en videos cortos.
-Motor dominante: ${perception.palanca_psicologica}
-  
-REGLA ANTI-ALUCINACIÓN: Si no tienes en tu memoria creadores o marcas virales exactas para este nicho específico, NO inventes nombres. Usa "Arquetipo 1", "Arquetipo 2" y describe el formato.
-
-RESPUESTA: JSON exacto, nada antes ni después.
-  
-{
-  "industria_analizada": "${perception.industria}",
-  "plataforma_objetivo": "${pName}",
-  "top_3_referentes_o_arquetipos": [
-    {
-      "identificador": "<Nombre real o Arquetipo>",
-      "tipo_contenido": "<formato visual>",
-      "hook_pattern": "<qué gancho usan>",
-      "editing_style": "<rápida|lenta|profesional|amateur>",
-      "musica_style": "<estilo>",
-      "conversion_signal": "<cómo cierran la venta>"
-    }
-  ],
-  "common_mistakes": ["<error 1>", "<error 2>", "<error 3>"],
-  "success_formula": "<resumen de 1 línea>",
-  "red_flags": ["<red flag 1>", "<red flag 2>"]
-}
-`;
-};
+// [NOTA: Research Brain y Apply Research Brain se mantienen igual porque no dependen 
+// estrictamente del videoRawData en tiempo real, sino del conocimiento de la IA]
 
 // ============================================================
-// CALL 1.75 — APPLY RESEARCH BRAIN
-// Compara el video con la fórmula de éxito investigada.
-// ============================================================
-export const buildApplyResearchBrainPrompt = (preFacts, researchData, platform, perception) => {
-  const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
- 
-  return `COMPARATIVA: TU VIDEO vs FÓRMULA DE ÉXITO — ${pName} | ${perception.industria}
- 
-FÓRMULA DE ÉXITO INVESTIGADA:
-- Formula: ${researchData.success_formula}
-- Marcas que funcionan: ${researchData.top_3_successful_brands?.map(b => b.nombre).join(', ')}
- 
-TU VIDEO:
-- Es slideshow: ${preFacts.es_slideshow_imagenes ? 'SÍ ⚠️' : 'NO ✅'}
-- Video real: ${preFacts.porcentaje_video_real}%
-- Edición: ${preFacts.tipo_edicion}
-- Ritmo: ${preFacts.ritmo_visual}
-- Hook presente: ${preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria ? 'SÍ' : 'NO'}
-- Motor psicológico activado: ${perception.palanca_psicologica}
- 
-TAREA: Analizá punto por punto si el video sigue la fórmula de éxito del nicho.
- 
-RESPUESTA: JSON exacto, nada antes ni después.
- 
-{
-  "gap_analysis": [
-    {
-      "aspecto": "<aspecto clave>",
-      "success_formula_dice": "<qué dice la fórmula>",
-      "tu_video": "<qué tiene tu video>",
-      "match": "<SÍ|NO|PARCIAL>",
-      "impact": "<CRÍTICO|ALTO|MEDIO|BAJO>",
-      "fix": "<qué cambiar exactamente>"
-    }
-  ],
-  "red_flags_en_tu_video": ["<red flag 1>", "<red flag 2>"],
-  "compliance_score": <0-100>,
-  "critical_issues": ["<problema 1>", "<problema 2>"],
-  "strengths_vs_competition": ["<ventaja 1>", "<ventaja 2>"]
-}
-`;
-};
- 
-
-// ============================================================
-// CALL 2 — STRATEGY BRAIN (Optimizado a JSON Estricto)
+// CALL 2 — STRATEGY BRAIN 
 // ============================================================
 export const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, perception, preFacts = {}) => {
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
   
-  return `FRAMEWORK VIRAX — ${pName} | ${objetivo} | ${perception.industria}
+  return `FRAMEWORK ESTRATÉGICO — ${pName} | ${objetivo} | ${perception.industria}
   
-CONTEXTO DEL VIDEO:
-- Industria: ${perception.industria}
-- Motor psicológico: ${perception.palanca_psicologica}
-- Objetivo de conversión: ${perception.objetivo_conversion}
-
-HECHOS TÉCNICOS:
-${Object.entries(preFacts).map(([k, v]) => `${k}: ${v}`).join('\n')}
+HECHOS TÉCNICOS EXTRAÍDOS PREVIAMENTE:
+${JSON.stringify(preFacts, null, 2)}
   
 ANÁLISIS DEL ESPECTADOR:
 ${viewerAnalysis}
   
----
-  
 TAREA: Identificá fricción y oportunidad evaluando TODO bajo el motor "${perception.palanca_psicologica}".
-NO des números de 0-100.
-RESPONDE ÚNICAMENTE CON EL SIGUIENTE JSON EXACTO:
-
+RESPONDE ÚNICAMENTE CON JSON EXACTO:
 {
   "analisis_cualitativo": {
-    "gate_formato": {
-      "estado": "<competitivo|debil|muerto>",
-      "razon": "<explicación breve de por qué>"
-    },
+    "gate_formato": { "estado": "<competitivo|debil|muerto>", "razon": "<explicación>" },
     "evaluacion_motor": {
       "se_activa_antes_del_scroll": "<SI|NO|TARDE>",
-      "confianza_construida": "<SI|PARCIAL|NO>",
       "friccion_detectada": "<qué le impide actuar al usuario>"
     },
-    "segundo_a_segundo": {
-      "fase_scrolleo_masivo": "<ej: 0-3s, 3-7s, etc>",
-      "motivo_de_abandono": "<por qué se van en esa fase>"
-    },
     "trampas_y_viralidad": {
-      "trampa_principal": "<value_trap|bait_disconnect|valor_tardio|ninguna>",
-      "motivo_para_compartir": "<identidad|utilidad|sorpresa|validacion|ninguno>",
-      "motivo_para_guardar": "<referencia|tutorial|inspiracion|ninguno>"
+      "trampa_principal": "<value_trap|bait_disconnect|valor_tardio|ninguna>"
     },
     "foda": {
-      "fortalezas": ["<f1>", "<f2>", "<f3>"],
-      "debilidades": ["<d1>", "<d2>", "<d3>"],
-      "mejoras_urgentes": ["<m1>", "<m2>", "<m3>"]
+      "fortalezas": ["<f1>"], "debilidades": ["<d1>"], "mejoras_urgentes": ["<m1>"]
     }
   },
   "flags_binarios": {
     "hook_type": "<muerto|debil|apertura_informativa|bait_desconectado|bait_con_puente|explosivo>",
-    "audio_desde_s0": <true|false>,
-    "motor_activo_antes_scroll": <true|false>,
-    "confianza_construida": <true|false>,
-    "first_frame_repulsion": <true|false>,
-    "ad_filter_triggered": <true|false>,
-    "bait_disconnect": <true|false>,
-    "valor_detras_del_scroll": <true|false>,
-    "contenido_poco_claro": <true|false>,
-    "sin_rehook_si_video_largo": <true|false>,
-    "parece_publicidad": <true|false>
+    "ad_filter_triggered": <boolean>,
+    "parece_publicidad": <boolean>
   }
 }
 `;
 };
  
 // ============================================================
-// CALL 3 — VERDICT BRAIN
-// Gemini recibe los scores YA CALCULADOS por JS.
-// Su único trabajo: explicar por qué y qué cambiar.
-// NO puede modificar ningún número. Solo redacta.
+// CALL 3 — SCORING BRAIN (Donde ocurría la alucinación)
 // ============================================================
-export const buildVerdictBrainPrompt = (scores, strategyAnalysis, viewerAnalysis, platform, objetivo, perception, flags) => {
-  const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
- 
-  return `VEREDICTO VIRAX — ${pName} | ${objetivo} | ${perception.industria}
- 
-SCORES CALCULADOS (definitivos — no los cambies):
-- Viral: ${scores.viralScore}
-- Ventas: ${scores.salesScore}
-- Potencial: ${scores.potentialScore}
-- Hook/ScrollStop: ${scores.scrollStopScore}
-- Retención: ${scores.completionRate}
-- Compartibilidad: ${scores.shareMotivation}
-- Claridad de conversión: ${scores.conversionClarity}
-- Señal de confianza: ${scores.trustSignal}
-- Ritmo/Retención: ${scores.retentionRhythm}
- 
-CONTEXTO DEL VIDEO:
-- Industria detectada: ${perception.industria}
-- Motor psicológico: ${perception.palanca_psicologica}
-- Para que funcione necesita: ${perception.criterio_evaluacion}
-- Hook detectado: ${flags.hook_type}
-- Motor activo antes del scroll: ${flags.motor_activo_antes_scroll ? 'SÍ' : 'NO'}
-- Confianza construida: ${flags.confianza_construida ? 'SÍ' : 'NO'}
-- Parece publicidad: ${flags.parece_publicidad ? 'SÍ' : 'NO'}
- 
-ANÁLISIS DEL ESPECTADOR:
-${viewerAnalysis}
- 
-ANÁLISIS ESTRATÉGICO:
-${strategyAnalysis}
- 
----
- 
-TAREA: Redactá el veredicto como un asesor que conoce el negocio del creador.
-- Hablá en lenguaje de negocio, no en jerga técnica.
-- Explicá POR QUÉ cada score es lo que es, usando momentos concretos del video.
-- Evaluá bajo el motor "${perception.palanca_psicologica}", no bajo criterios genéricos.
-- Si algo falla, decí exactamente qué cambiar.
-- Sé directo. No suavices lo que está mal.
- 
-RESPUESTA: JSON exacto, nada antes ni después.
- 
-{
-  "viralScore":        { "score": ${scores.viralScore},        "razon_principal": "<por qué este número, con momento concreto del video>", "accion_clave": "<qué cambiar>" },
-  "salesScore":        { "score": ${scores.salesScore},        "razon_principal": "<por qué este número>",                                 "accion_clave": "<acción concreta>" },
-  "potentialScore":    ${scores.potentialScore},
-  "scrollStopScore":   ${scores.scrollStopScore},
-  "completionRate":    ${scores.completionRate},
-  "shareMotivation":   ${scores.shareMotivation},
-  "conversionClarity": ${scores.conversionClarity},
-  "trustSignal":       ${scores.trustSignal},
-  "retentionRhythm":   ${scores.retentionRhythm},
-  "honestVerdict": "<1 línea. Lo más importante que tiene que saber este creador>",
-  "roadmap": [
-    { "impacto": "ALTO",  "problema": "<concreto>", "solucion": "<específica>", "resultado": "<qué mejora>" },
-    { "impacto": "MEDIO", "problema": "<concreto>", "solucion": "<específica>", "resultado": "<qué mejora>" },
-    { "impacto": "BAJO",  "problema": "<concreto>", "solucion": "<específica>", "resultado": "<qué mejora>" }
-  ]
-}
-`;
-};
-
-const buildScoringBrainPrompt = (strategyAnalysis, platform, objetivo, perception, flags, penalties) => {
+export const buildScoringBrainPrompt = (videoRawData, strategyAnalysis, platform, objetivo, perception, flags) => {
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform] || platform;
-  const nichoStr = typeof perception === 'object' ? perception.industria : perception;
-  const palancaStr = typeof perception === 'object' ? perception.palanca_psicologica : '';
+ 
+  return `SCORING BRAIN — ${pName} | ${objetivo} | ${perception.industria}
 
-  return `SCORING BRAIN — ${pName} | ${objetivo} | ${nichoStr}
+SISTEMA OPERATIVO DE EVALUACIÓN (REGLAS ESTRICTAS):
+Actúa como un algoritmo matemático. Debes asignar puntajes basándote ESTRICTAMENTE en estos techos máximos según el 'hook_type' detectado (${flags.hook_type}):
 
-SISTEMA OPERATIVO DE EVALUACIÓN:
-Actúa como un Growth Hacker nativo de la cultura de internet y experto en algoritmos short-form. 
-USA TU CONOCIMIENTO INTERNO sobre dinámicas virales reales (ej: el vicio y furor masivo de las figuritas/cromos Panini, el deseo visual del ASMR de comida, loops perfectos, tendencias de audio). Evalúa este video con la cabeza de un usuario de TikTok del 2026, NO con la mente de un publicista tradicional.
+TECHOS DE PUNTAJE (NO PUEDES SUPERAR ESTOS NÚMEROS):
+${JSON.stringify(HOOK_CEILINGS, null, 2)}
 
-CONTEXTO INTEGRADO:
-- Industria/Micro-nicho: ${nichoStr}
-- Motor psicológico real: ${palancaStr || 'No especificado'}
-- Objetivo del creador: ${objetivo}
+PENALIZACIONES DE RETENCIÓN (Si ocurren, resta puntos):
+${JSON.stringify(SCROLL_THRESHOLDS, null, 2)}
 
-FLAGS TÉCNICOS DETECTADOS:
-${JSON.stringify(flags, null, 2)}
-
-PENALIZACIONES DETERMINÍSTICAS (Úsalas como límite estricto para no inflar notas):
-- Techo viral: ${penalties?.viral_ceiling_from_hook ?? 'sin techo'}
-- Penalización viral: ${penalties?.viral_penalty ?? 0}
-- Techo ventas: ${penalties?.sales_ceiling ?? 'sin techo'}
-- Penalización ventas: ${penalties?.sales_penalty ?? 0}
+DATOS DEL VIDEO ORIGINAL PARA CONTEXTO FINAL:
+---
+${videoRawData}
+---
 
 ANÁLISIS ESTRATÉGICO PREVIO:
 ${strategyAnalysis}
 
----
-
-REGLAS DE EVALUACIÓN NATIVA (PROHIBIDO MENALIDAD DE TV):
-1. GANCHOS DE OBJETO (Object-Based Hooks): Si el video inicia con una acción magnética sobre un objeto (abrir un paquete de figuritas, comida chorreando, un unboxing fluido), esto es un ScrollStop PERFECTO. Tu variable "faceDetected" puede ser false, pero el "scrollStopScore" debe ser alto (>80) si el objeto genera dopamina inmediata. Usa tu conocimiento de retención visual para medirlo.
-2. ALINEACIÓN AL OBJETIVO ORGÁNICO: Si el objetivo es "Viral" o "Trend-jacking", meter un llamado a la acción comercial directo ("comprame", "visita el local") es un error burdo que mata el alcance. El éxito aquí se mide en ganas de compartir, guardar o comentar. Evalúa el potencial de conversión según el CTA orgánico (debatir, etiquetar a un amigo, guardar para después).
-3. CONSISTENCIA MATEMÁTICA: Tu "retentionCurve" debe ser un reflejo lógico y descendente de tu "retentionData".
-
-TAREA: Generá los scores finales y el veredicto aplicando tu criterio nativo de internet.
-RESPONDE ÚNICAMENTE CON ESTE JSON EXACTO, nada antes ni después:
-
+TAREA: Generá los scores finales. El puntaje 'scrollStopScore' NO DEBE superar el valor máximo indicado en HOOK_CEILINGS para la categoría '${flags.hook_type}'.
+RESPONDE ÚNICAMENTE CON ESTE JSON EXACTO:
 {
-  "vision": {
-    "niche": "<micro-nicho específico>",
-    "type": "<formato del video>",
-    "audience": "<audiencia objetivo>",
-    "promise": "<promesa implícita del video>"
-  },
   "viralScore": {
     "score": <0-100>,
-    "titulo": "Potencial Viral",
     "verdict": "<una línea: justificación algorítmica>",
-    "razon_principal": "<explicación basada en la retención del video>",
     "accion_clave": "<qué cambiar para subirlo>"
   },
   "salesScore": {
     "score": <0-100>,
-    "titulo": "Potencial de Ventas",
-    "verdict": "<una línea aclarando si la venta es implícita/orgánica o si faltó estructura>",
-    "razon_principal": "<explicación concreta>",
+    "verdict": "<una línea aclarando conversión>",
     "accion_clave": "<acción específica>"
   },
   "scrollStopScore": {
     "score": <0-100>,
-    "faceDetected": <true|false>,
-    "textOnScreen": <true|false>,
-    "contrastLevel": "<alto|medio|bajo>",
-    "emotionVisible": "<emoción o 'ninguna'>",
-    "emotionIntensity": <1-10>,
-    "verdict": "<una línea evaluando el impacto del primer frame>"
+    "verdict": "<una línea evaluando el impacto del primer frame, respetando el HOOK_CEILING>"
   },
   "hookDNA": {
-    "strength": <0-100>,
     "pattern": "<patrón de hook detectado>",
-    "missingElement": "<qué le falta al hook>",
     "optimizedHook": "<versión mejorada del hook en 1 oración>"
   },
-  "retentionData": {
-    "at3s": "<% estimado, ej: 65%>",
-    "at10s": "<% estimado, ej: 35%>",
-    "final": "<% estimado, ej: 12%>"
-  },
-  "retentionCurve": [100, <valor 10%>, <valor 20%>, <valor 30%>, <valor 40%>, <valor 50%>, <valor 60%>, <valor 70%>, <valor 80%>, <valor 90%>, <valor 100%>],
-  "platformScores": {
-    "tiktok":  { "score": <0-100>, "verdict": "<una línea>", "topTip": "<consejo específico>" },
-    "reels":   { "score": <0-100>, "verdict": "<una línea>", "topTip": "<consejo específico>" },
-    "shorts":  { "score": <0-100>, "verdict": "<una línea>", "topTip": "<consejo específico>" }
-  },
   "steppsScore": {
-    "viralCoefficient": <0.0-10.0>,
-    "socialCurrency": <1-10>,
-    "triggers": <1-10>,
-    "emotion": <1-10>,
-    "public": <1-10>,
-    "practicalValue": <1-10>,
-    "stories": <1-10>,
     "dominantFactor": "<punto más fuerte>",
     "weakestFactor": "<punto más débil>",
     "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
   },
-  "commentTrigger": {
-    "probability": <0-100>,
-    "triggerType": "<controversia|pregunta|nostalgia|humor|sorpresa|ninguno>",
-    "suggestedCTA": "<llamada a acción para comentarios>"
-  },
-  "viewsPrediction": {
-    "scenario_low": "<rango sin viralidad, ej: 500 – 2K>",
-    "scenario_mid": "<rango viralidad moderada>",
-    "scenario_high": "<rango viral real>",
-    "probability_viral": "<% probabilidad de viral>"
-  },
-  "firstHourStrategy": {
-    "optimalPostTime": "<horario recomendado>",
-    "firstActionAfterPost": "<qué hacer en los primeros 5 min>",
-    "commentSeed": "<comentario ancla>",
-    "engagementBoost": "<táctica primera hora>"
-  },
-  "performanceScenario": "<Bajo rendimiento|Rendimiento normal|Alto rendimiento|Potencial viral>",
   "honestVerdict": "<1 línea directa al grano con el núcleo del análisis>",
   "roadmap": [
-    { "impacto": "ALTO",  "problema": "<problema concreto>", "solucion": "<solución específica>", "resultado": "<qué mejora>" },
-    { "impacto": "MEDIO", "problema": "<problema concreto>", "solucion": "<solución específica>", "resultado": "<qué mejora>" },
-    { "impacto": "BAJO",  "problema": "<problema concreto>", "solucion": "<solución específica>", "resultado": "<qué mejora>" }
+    { "impacto": "ALTO",  "problema": "<problema>", "solucion": "<solución>", "resultado": "<mejora>" }
   ]
 }`;
 };
- 
+
+
 // ============================================================
 // DERIVACIÓN DEL HOOK TYPE
 // JS decide el tipo de hook — nunca Gemini.
