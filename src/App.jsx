@@ -15,7 +15,7 @@ import {
   Target,
   TrendingUp,
   Upload,
-  Users //finalResult  //{/* HOJA DE RUTA */}
+  Users //finalResult  //{/* HOJA DE RUTA */} //buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, perception.industria, preFacts, preHookType)
   ,
   X,
   Zap
@@ -271,7 +271,9 @@ REGLAS ESTRICTAS: NO evalúes calidad técnica. Responde ÚNICAMENTE en JSON est
   "reaccion_primer_frame": {
     "que_ve_literalmente": "<descripción breve>",
     "emocion_generada": "<curiosidad|tension|aburrimiento|desconfianza|deseo|neutro>",
-    "accion_espectador": "<se_queda|scrollea_inmediato>",
+    "accion_espectador": "<se_queda|scr
+    
+    ollea_inmediato>",
     "por_que": "<razón psicológica breve>"
   },
   "sistema_hook_y_retencion": {
@@ -285,6 +287,46 @@ REGLAS ESTRICTAS: NO evalúes calidad técnica. Responde ÚNICAMENTE en JSON est
   }
 }
 `;
+};
+
+// ============================================================
+// CALL 1.5 — RESEARCH BRAIN
+// ============================================================
+export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
+  const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform] || platform;
+  
+  return `Eres un investigador de mercado especializado en short-form video.
+Tu tarea: analizar el panorama competitivo para el nicho "${industria}" en ${pName} con objetivo "${objetivo}".
+
+Responde SOLO con este JSON:
+{
+  "top_formatos_ganadores": ["<formato1>", "<formato2>", "<formato3>"],
+  "patrones_hook_exitosos": ["<patron1>", "<patron2>"],
+  "errores_comunes_del_nicho": ["<error1>", "<error2>"],
+  "benchmark_viral_score": <número 0-100, promedio del nicho>,
+  "oportunidad_detectada": "<gap o ángulo sin explotar en este nicho>"
+}`;
+};
+
+// ============================================================
+// CALL 1.75 — APPLY RESEARCH BRAIN
+// ============================================================
+export const buildApplyResearchBrainPrompt = (preFacts, researchData, platform, industria) => {
+  return `Eres un auditor competitivo. Compará este video contra el benchmark del nicho.
+
+HECHOS DEL VIDEO:
+${JSON.stringify(preFacts, null, 2)}
+
+BENCHMARK DEL NICHO "${industria}":
+${JSON.stringify(researchData, null, 2)}
+
+Responde SOLO con este JSON:
+{
+  "compliance_score": <número 0-100, qué tan alineado está el video con los formatos ganadores>,
+  "ventajas_vs_competencia": ["<ventaja1>", "<ventaja2>"],
+  "red_flags_en_tu_video": ["<flag1>", "<flag2>"],
+  "resumen_brecha": "<una oración: dónde está la mayor diferencia vs el top del nicho>"
+}`;
 };
  
 // [NOTA: Research Brain y Apply Research Brain se mantienen igual porque no dependen 
@@ -952,7 +994,7 @@ const runDeepAnalysis = async () => {
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, perception.industria, preFacts, preHookType),
+        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, perception, preFacts),
         maxOutputTokens: 8192,
       }
     });
