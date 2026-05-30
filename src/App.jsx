@@ -577,13 +577,14 @@ const PHRASES = [
   'Evaluando parámetros',
 ];
 
+// Reemplazá el TypingIndicator completo por este:
 function TypingIndicator({ logo }) {
-  const [displayed, setDisplayed] = React.useState('');
-  const [phraseIdx, setPhraseIdx] = React.useState(0);
-  const [charIdx, setCharIdx] = React.useState(0);
-  const timerRef = React.useRef(null);
+  const [displayed, setDisplayed] = useState('');
+  const [phraseIdx, setPhraseIdx] = useState(0);
+  const [charIdx, setCharIdx] = useState(0);
+  const timerRef = useRef(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const phrase = PHRASES[phraseIdx % PHRASES.length];
     if (charIdx < phrase.length) {
       timerRef.current = setTimeout(() => setCharIdx(i => i + 1), 55);
@@ -628,10 +629,10 @@ const App = () => {
   const [analysisMode, setAnalysisMode] = useState('video');
   const [selectedPlatform, setSelectedPlatform] = useState(null);
   const [selectedFollowerRange, setSelectedFollowerRange] = useState(null);
-  const [selectedObjetivo, setSelectedObjetivo] = useState('ventas'); // ← agregá esto
+  const [selectedObjetivo, setSelectedObjetivo] = useState('ventas'); // ← agregá esto //saveAnalysisToHistory
   const [selectedNicho, setSelectedNicho] = useState('producto_fisico');  //const deriveFlags
   const [pendingVideoFile, setPendingVideoFile] = useState(null);
-  const [pendingVideoUrl, setPendingVideoUrl] = useState(null);        //mimeType 
+  const [pendingVideoUrl, setPendingVideoUrl] = useState(null);        //mimeType //const saveChatToHistory = async (messages) => {
   const [perception, setPerception] = useState(null);
   const [videoMeta, setVideoMeta] = useState(null); // Guarda storagePath, mimeType, duration, preFacts y preHookType
   const [scriptText, setScriptText] = useState('');
@@ -805,6 +806,14 @@ const deductGems = async (amount, reason) => {
     alert('Error inesperado al procesar las gemas. Intentá de nuevo.');
     return false;
   }
+};
+
+const saveChatToHistory = async (messages) => {
+  if (!currentHistoryId) return;
+  await supabase
+    .from('analysis_history')
+    .update({ chat_messages: messages })
+    .eq('id', currentHistoryId);
 };
 
   const saveAnalysisToHistory = async (result, mode) => {
