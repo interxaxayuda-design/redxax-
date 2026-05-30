@@ -1443,7 +1443,6 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
         </>
       )} 
 
-
 <header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
   <style>{`
     @keyframes viraxShimmer {
@@ -1481,22 +1480,6 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
       src={logo}
       alt="Virax logo"
       className="w-10 h-10 rounded-full object-contain shadow-lg"
-    />
-    <div className="flex flex-col leading-tight">
-      <h1 className="virax-text text-2xl font-black tracking-tighter italic uppercase">
-        VIRAX
-      </h1>
-      <span className="subtag-pulse text-[10px] italic text-slate-500 font-medium tracking-wide">
-        Hecha por InterXAX
-      </span>
-    </div>
-  </div>
-
-  <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
-    <img
-      src={logo}
-      alt="Virax logo"
-      className="logo-pulse w-10 h-10 rounded-xl object-contain shadow-lg"
     />
     <div className="flex flex-col leading-tight">
       <h1 className="virax-text text-2xl font-black tracking-tighter italic uppercase">
