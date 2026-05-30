@@ -1446,14 +1446,6 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
 
 <header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
   <style>{`
-    @keyframes logoPulse {
-      0%   { transform: scale(1);             filter: drop-shadow(0 0 0px transparent); }
-      5%   { transform: scale(1.06) rotate(-1deg); filter: drop-shadow(0 0 8px #ef4444aa); }
-      11%  { transform: scale(1.11) rotate(0deg);  filter: drop-shadow(0 0 18px #ef4444dd); }
-      17%  { transform: scale(0.96);          filter: drop-shadow(0 0 4px #ef444433); }
-      23%  { transform: scale(1);             filter: drop-shadow(0 0 0px transparent); }
-      100% { transform: scale(1);             filter: drop-shadow(0 0 0px transparent); }
-    }
     @keyframes viraxShimmer {
       0%   { background-position: 200% center;  letter-spacing: -0.05em; }
       14%  { background-position: -200% center; letter-spacing: -0.04em; }
@@ -1465,9 +1457,6 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
       12%  { opacity: 0.9; transform: translateX(3px); }
       20%  { opacity: 0.4; transform: translateX(0px); }
       100% { opacity: 0.4; transform: translateX(0px); }
-    }
-    .logo-pulse {
-      animation: logoPulse 5s cubic-bezier(0.22, 1, 0.36, 1) 2s infinite;
     }
     .virax-text {
       background: linear-gradient(90deg,
@@ -1486,6 +1475,22 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
       animation: subtagPulse 5s cubic-bezier(0.22, 1, 0.36, 1) 2.2s infinite;
     }
   `}</style>
+
+  <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
+    <img
+      src={logo}
+      alt="Virax logo"
+      className="w-10 h-10 rounded-full object-contain shadow-lg"
+    />
+    <div className="flex flex-col leading-tight">
+      <h1 className="virax-text text-2xl font-black tracking-tighter italic uppercase">
+        VIRAX
+      </h1>
+      <span className="subtag-pulse text-[10px] italic text-slate-500 font-medium tracking-wide">
+        Hecha por InterXAX
+      </span>
+    </div>
+  </div>
 
   <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
     <img
@@ -2650,87 +2655,34 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
             <button onClick={() => setShowChat(false)} className="hover:bg-white/10 p-2 rounded-full transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
           </div>
           <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-            {/* Por esto: */}
-{chatMessages.map((msg, i) => (
-  <div
-    key={i}
-    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-    style={{
-      animation: 'msgAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both',
-      animationDelay: '0ms'
-    }}
-  >
-    <style>{`
-      @keyframes msgAppear {
-        from {
-          opacity: 0;
-          transform: translateY(12px) scale(0.95);
-          filter: blur(4px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0px) scale(1);
-          filter: blur(0px);
-        }
-      }
-      @keyframes botBorderPulse {
-        0%, 100% { border-color: rgba(168, 85, 247, 0.15); }
-        50%       { border-color: rgba(168, 85, 247, 0.35); }
-      }
-      .bot-bubble {
-        animation: botBorderPulse 3s ease-in-out 1;
-      }
-    `}</style>
-
-    {msg.role === 'bot' && (
-      <img
-        src={logo}
-        alt="VIRAX"
-        className="w-7 h-7 rounded-lg object-contain self-end mb-1 mr-2 shrink-0 opacity-70"
-      />
-    )}
-
-    <div className={`max-w-[80%] p-5 rounded-[2rem] ${
-      msg.role === 'user'
-        ? 'bg-white text-black rounded-br-none'
-        : 'bot-bubble bg-white/[0.04] border border-purple-500/20 text-slate-300 rounded-bl-none'
-    }`}>
-      <p className="text-sm font-bold italic leading-relaxed">{msg.text}</p>
-    </div>
-  </div>
-))}
-
-            {/* Por esto: */}
-{isTyping && (
+            {isTyping && (
   <>
     <style>{`
+      @keyframes calibratingShimmer {
+        0%   { background-position: 200% center; }
+        100% { background-position: -200% center; }
+      }
+      .calibrating-shimmer {
+        background: linear-gradient(90deg,
+          #a855f7 0%, #a855f7 20%,
+          #e879f9 40%, #ffffff 50%, #e879f9 60%,
+          #a855f7 80%, #a855f7 100%
+        );
+        background-size: 250% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: calibratingShimmer 2s linear infinite;
+      }
       @keyframes viraxBounce {
-        0%, 100% { transform: translateY(0px) scale(1);    filter: drop-shadow(0 0 0px transparent); }
+        0%, 100% { transform: translateY(0px) scale(1);      filter: drop-shadow(0 0 0px transparent); }
         20%       { transform: translateY(-10px) scale(1.08); filter: drop-shadow(0 0 12px rgba(168,85,247,0.6)); }
         40%       { transform: translateY(-4px) scale(0.97);  filter: drop-shadow(0 0 6px rgba(168,85,247,0.3)); }
         60%       { transform: translateY(-7px) scale(1.04);  filter: drop-shadow(0 0 10px rgba(168,85,247,0.5)); }
         80%       { transform: translateY(-2px) scale(0.99);  filter: drop-shadow(0 0 4px rgba(168,85,247,0.2)); }
       }
-      @keyframes calibratingDots {
-        0%   { content: ''; }
-        25%  { content: '.'; }
-        50%  { content: '..'; }
-        75%  { content: '...'; }
-        100% { content: ''; }
-      }
-      @keyframes calibratingPulse {
-        0%, 100% { opacity: 0.4; }
-        50%       { opacity: 1; }
-      }
       .virax-bounce {
         animation: viraxBounce 1.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
-      }
-      .calibrating-text::after {
-        content: '';
-        animation: calibratingDots 1.2s steps(1) infinite;
-      }
-      .calibrating-glow {
-        animation: calibratingPulse 1.4s ease-in-out infinite;
       }
     `}</style>
     <div className="flex justify-start">
@@ -2738,25 +2690,11 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
         <img
           src={logo}
           alt="VIRAX"
-          className="virax-bounce w-8 h-8 rounded-lg object-contain"
+          className="virax-bounce w-8 h-8 rounded-full object-contain"
         />
-        <div className="flex flex-col">
-          <span className="calibrating-glow text-[10px] font-black uppercase tracking-[0.3em] text-purple-400 calibrating-text">
-            Calibrando mensaje
-          </span>
-          <div className="flex gap-1 mt-1.5">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="w-1 h-1 rounded-full bg-purple-500/60"
-                style={{
-                  animation: `calibratingPulse 1s ease-in-out infinite`,
-                  animationDelay: `${i * 0.2}s`
-                }}
-              />
-            ))}
-          </div>
-        </div>
+        <span className="calibrating-shimmer text-[10px] font-black uppercase tracking-[0.3em]">
+          Calibrando mensaje
+        </span>
       </div>
     </div>
   </>
