@@ -665,7 +665,7 @@ const App = () => {
   const [gemError, setGemError] = useState(null);
 
   // ← DESPUÉS de todos los useState
-  const CHAT_MESSAGE_LIMIT = 20;
+  const CHAT_MESSAGE_LIMIT = 2;
   const chatLimitReached = chatMessages.length >= CHAT_MESSAGE_LIMIT;
 
   const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
