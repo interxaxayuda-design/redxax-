@@ -640,18 +640,16 @@ const App = () => {
   const [analysisMode, setAnalysisMode] = useState('video');
   const [selectedPlatform, setSelectedPlatform] = useState(null);
   const [selectedFollowerRange, setSelectedFollowerRange] = useState(null);
-  const [selectedObjetivo, setSelectedObjetivo] = useState('ventas'); // ← agregá esto //saveAnalysisToHistory
-  const [selectedNicho, setSelectedNicho] = useState('producto_fisico');  //const deriveFlags
+  const [selectedObjetivo, setSelectedObjetivo] = useState('ventas');
+  const [selectedNicho, setSelectedNicho] = useState('producto_fisico');
   const [pendingVideoFile, setPendingVideoFile] = useState(null);
-  const [pendingVideoUrl, setPendingVideoUrl] = useState(null);        //mimeType //const saveChatToHistory = async (messages) => {
+  const [pendingVideoUrl, setPendingVideoUrl] = useState(null);
   const [perception, setPerception] = useState(null);
-  const [videoMeta, setVideoMeta] = useState(null); // Guarda storagePath, mimeType, duration, preFacts y preHookType
+  const [videoMeta, setVideoMeta] = useState(null);
   const [scriptText, setScriptText] = useState('');
   const [completedSteps, setCompletedSteps] = useState([]);
   const [currentHistoryId, setCurrentHistoryId] = useState(null);
   const [history, setHistory] = useState([]);
-  const CHAT_MESSAGE_LIMIT = 20;
-  const chatLimitReached = chatMessages.length >= CHAT_MESSAGE_LIMIT;
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [aiResult, setAiResult] = useState(null);
@@ -665,13 +663,19 @@ const App = () => {
   const [gems, setGems] = useState(null);
   const [showGemStore, setShowGemStore] = useState(false);
   const [gemError, setGemError] = useState(null);
+
+  // ← DESPUÉS de todos los useState
+  const CHAT_MESSAGE_LIMIT = 20;
+  const chatLimitReached = chatMessages.length >= CHAT_MESSAGE_LIMIT;
+
   const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
   const CHAT_WORD_LIMIT = 1000;
   const toggleStep = (index) => {
-  setCompletedSteps(prev =>
-    prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
-  );
-};
+    setCompletedSteps(prev =>
+      prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+    );
+  };
+  
   const [tilt, setTilt] = useState({ x: 0, y: 0 });
 useEffect(() => {
   const handleOrientation = (e) => {
