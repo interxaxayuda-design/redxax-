@@ -21,7 +21,7 @@ import {
   Zap
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react'; //const buildPreClassifierPrompt = () => `  //import { FFmpeg } from '@ffmpeg/ffmpeg';
-import logo from './assets/logo.png';
+import logo from './logo.png';
 
 import { createClient } from '@supabase/supabase-js'; //phaseScores  //toggleStep  //const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
 
