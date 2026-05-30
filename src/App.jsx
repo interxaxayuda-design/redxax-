@@ -378,7 +378,7 @@ RESPONDE ÚNICAMENTE CON JSON EXACTO:
  
 
 // ============================================================
-// CALL 3 — SCORING BRAIN (REESCRITO)
+// CALL 3 — SCORING BRAIN
 // ============================================================
 export const buildScoringBrainPrompt = (
   videoRawData,
@@ -447,6 +447,28 @@ Estas no son sugerencias. Son topes computados externamente que reflejan realida
   (excepción única: performance ads donde ambos objetivos coinciden — justificalo en el verdict)
 
 ═══════════════════════════════════════════
+RESTRICCIÓN ABSOLUTA DEL ROADMAP:
+═══════════════════════════════════════════
+Cada ítem del roadmap DEBE cumplir estas tres condiciones simultáneamente.
+Si no cumple las tres → no lo incluyas. Un roadmap de 2 ítems sólidos
+vale más que uno de 5 ítems vagos.
+
+1. PROBLEMA OBSERVABLE
+   Debe corresponder a un flag negativo ya detectado en los FLAGS TÉCNICOS
+   o en el ANÁLISIS DEL ESPECTADOR o ESTRATÉGICO provistos arriba.
+   Si no fue detectado como problema en esos inputs → no existe como problema.
+
+2. SOLUCIÓN ESPECÍFICA
+   Debe ser ejecutable con instrucciones concretas, no genéricas.
+   MAL → "mejorar el hook"
+   BIEN → "reemplazar frame 0 por plano cerrado del producto en uso, eliminar logo del inicio"
+
+3. RESULTADO MEDIBLE
+   Debe nombrar una métrica específica del video, no un objetivo de negocio abstracto.
+   MAL → "aumentar engagement"
+   BIEN → "reducir scroll-off estimado en primeros 3 segundos"
+
+═══════════════════════════════════════════
 RESPONDE SOLO EN JSON. Sin markdown. Sin texto antes o después:
 ═══════════════════════════════════════════
 {
@@ -477,9 +499,9 @@ RESPONDE SOLO EN JSON. Sin markdown. Sin texto antes o después:
   "roadmap": [
     {
       "impacto": "<ALTO|MEDIO|BAJO>",
-      "problema": "<qué falla específicamente — concreto, no genérico>",
-      "solucion": "<cómo se arregla exactamente>",
-      "resultado": "<qué métrica mejora y estimativamente cuánto>"
+      "problema": "<problema concreto derivado de los flags o análisis previos — no inventado>",
+      "solucion": "<instrucción ejecutable y específica — no consejo genérico>",
+      "resultado": "<métrica específica del video que mejora>"
     }
   ]
 }`;
