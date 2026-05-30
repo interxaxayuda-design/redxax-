@@ -250,9 +250,8 @@ export const buildViewerBrainPrompt = (videoRawData, platform, perception) => {
 
 Tu única función: determinar si este video detiene el scroll o desaparece en 800ms.
 
-═══════════════════════════════════════════
 REALIDAD PSICOLÓGICA — esto NO es opcional, es tu marco de referencia base:
-═══════════════════════════════════════════
+
 El espectador que va a ver este video:
 - Lleva 35-50 minutos en scroll continuo. Sus receptores dopaminérgicos están saturados.
 - En la última hora vio: 3 videos de creadores virales top, 4 UGC ads con +8% CTR, hooks de Performance Marketers elite.
@@ -265,9 +264,9 @@ CONTRA QUIÉN COMPITE ESTE VIDEO:
 - Los mejores videos del mundo en este nicho están en el mismo feed.
 - No compite contra contenido promedio. Compite contra los top 0.1%.
 
-═══════════════════════════════════════════
+
 TU MISIÓN: BUSCAR ACTIVAMENTE LOS PUNTOS DE FALLA
-═══════════════════════════════════════════
+
 No intentes justificar el video. No busques equilibrio.
 Tu trabajo es encontrar EXACTAMENTE dónde y por qué este espectador scrollearía.
 Si no hay punto de falla obvio, eso también es información — dilo.
@@ -405,7 +404,8 @@ export const buildScoringBrainPrompt = (
   objetivo,
   perception,
   flags,
-  nicheConfig = null   // configuración del nicho desde NICHE_MOTORS, o null si es micro-nicho nuevo
+  nicheConfig = null,   // configuración del nicho desde NICHE_MOTORS, o null si es micro-nicho nuevo
+  benchmarkData = null    // ← parámetro nuevo
 ) => {
   const pName = {
     tiktok: 'TikTok',
@@ -434,15 +434,38 @@ export const buildScoringBrainPrompt = (
 - CTA esperado:         "${nicheConfig.cta_type}"${nicheConfig.limitacion ? `\n- Limitación del nicho: "${nicheConfig.limitacion}"` : ''}`
     : '';
 
+// ← ACÁ va el bloque, después de nicheContext
+  const benchmarkBlock = benchmarkData ? `
+═══════════════════════════════════════════
+EVIDENCIA REAL DEL NICHO — ÚNICA FUENTE VÁLIDA PARA EL ROADMAP:
+═══════════════════════════════════════════
+Estos son los formatos y patrones que REALMENTE funcionan en "${perception.industria}":
+
+Formatos ganadores verificados:
+${benchmarkData.top_formatos_ganadores?.map((f, i) => `${i+1}. ${f}`).join('\n') ?? 'No disponible'}
+
+Patrones de hook con resultado probado:
+${benchmarkData.patrones_hook_exitosos?.map((p, i) => `${i+1}. ${p}`).join('\n') ?? 'No disponible'}
+
+Errores comunes del nicho (documentados):
+${benchmarkData.errores_comunes_del_nicho?.map((e, i) => `${i+1}. ${e}`).join('\n') ?? 'No disponible'}
+
+Brecha detectada vs competencia:
+${benchmarkData.resumen_brecha ?? 'No disponible'}
+
+Oportunidad sin explotar en el nicho:
+${benchmarkData.oportunidad_detectada ?? 'No disponible'}
+` : '';
+
   return `IDENTIDAD: Eres el filtro final de producción. Este video pasa a distribución o muere acá.
 
 No sos consultor. No sos estratega. Sos el algoritmo de ${pName} con criterio humano.
 Tu referencia base son los top 0.1% de videos en este nicho — no el promedio.
 Comparado con ese estándar, la mayoría de videos son invisibles. Asumí eso por defecto.
 
-═══════════════════════════════════════════
+
 AUTORIZACIÓN EXPLÍCITA — leé esto antes de puntuar:
-═══════════════════════════════════════════
+
 - Podés dar 12/100 si el video lo merece. Eso NO es un error. Es precisión.
 - Podés dar 91/100 si genuinamente compite contra los mejores del feed.
 - Los scores entre 45-65 son mentiras estadísticas en short-form video.
@@ -451,9 +474,9 @@ AUTORIZACIÓN EXPLÍCITA — leé esto antes de puntuar:
 - Si tu instinto dice "este video es aburrido" → tu instinto tiene razón. Puntúa como tal.
 - Ser amable con un video malo es más dañino que ser duro. La verdad temprana ahorra dinero.
 
-═══════════════════════════════════════════
+
 CONTEXTO DE EVALUACIÓN:
-═══════════════════════════════════════════
+
 - Industria: ${perception.industria}
 - Motor psicológico: ${perception.palanca_psicologica}
 - Criterio de éxito del nicho: ${perception.criterio_evaluacion}
@@ -474,16 +497,17 @@ ${viewerAnalysis}
 
 ANÁLISIS ESTRATÉGICO (input del StrategyBrain):
 ${strategyAnalysis}
+${benchmarkBlock}
 
-═══════════════════════════════════════════
+
 ANCLAS DE SCORING INAMOVIBLES:
-═══════════════════════════════════════════
+
 Estas no son sugerencias. Son topes computados externamente que reflejan realidad estadística:
 ${scoringAnchors}
 
-═══════════════════════════════════════════
+
 RESTRICCIÓN ABSOLUTA DEL ROADMAP:
-═══════════════════════════════════════════
+
 Cada ítem del roadmap DEBE cumplir estas tres condiciones simultáneamente.
 Si no cumple las tres → no lo incluyas. Un roadmap de 2 ítems sólidos
 vale más que uno de 5 ítems vagos.
@@ -493,8 +517,10 @@ vale más que uno de 5 ítems vagos.
    o en el ANÁLISIS DEL ESPECTADOR o ESTRATÉGICO provistos arriba.
    Si no fue detectado como problema en esos inputs → no existe como problema.
 
-2. SOLUCIÓN ESPECÍFICA
-   Debe ser ejecutable con instrucciones concretas, no genéricas.
+2. SOLUCIÓN ESPECÍFICA — ANCLADA EN EVIDENCIA
+   Debe basarse en un formato ganador o patrón de hook de la sección
+   EVIDENCIA REAL DEL NICHO (si está disponible arriba).
+   Si no hay evidencia que la respalde → no la incluyas.
    MAL → "mejorar el hook"
    BIEN → "reemplazar frame 0 por plano cerrado del artista en performance, eliminar logo del inicio"
 
@@ -503,9 +529,9 @@ vale más que uno de 5 ítems vagos.
    MAL → "aumentar engagement"
    BIEN → "reducir scroll-off estimado en primeros 3 segundos"
 
-═══════════════════════════════════════════
+
 RESPONDE SOLO EN JSON. Sin markdown. Sin texto antes o después:
-═══════════════════════════════════════════
+
 {
   "viralScore": {
     "score":       <number 0-100>,
@@ -1205,7 +1231,8 @@ const { data: call3Data, error: call3Error } = await supabase.functions.invoke('
       selectedObjetivo,
       perception,
       flagsDeterministic,
-      nicheConfig          // ← esto es lo único que se agrega
+      nicheConfig,
+      benchmarkData = null   // ← nuevo          // ← esto es lo único que se agrega
     ),
     storagePath,
     videoMimeType: mimeType,
