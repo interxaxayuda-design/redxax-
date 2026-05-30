@@ -167,7 +167,10 @@ export const NICHE_MOTORS = {
   "inmobiliaria":       { motor: "aspiracion -> agente",                     urgency: false, trust_signal: "experiencia_agente",cta_type: "contacto"  },
   "app_saas":           { motor: "problema -> claridad -> demo",             urgency: true,  trust_signal: "resultado_visible", cta_type: "directo"   },
   "estetica":           { motor: "inseguridad -> transformacion -> identidad",urgency: false, trust_signal: "antes_despues",     cta_type: "implicito" },
-  "educacion":          { motor: "curiosidad -> valor -> confianza",         urgency: false, trust_signal: "autoridad",         cta_type: "implicito" }
+  "educacion":          { motor: "curiosidad -> valor -> confianza",         urgency: false, trust_signal: "autoridad",         cta_type: "implicito" },
+  "musica_artista":     { motor: "identidad_tribal -> emocion -> resonancia", urgency: false, trust_signal: "autenticidad_raw",   cta_type: "ninguno",
+                          score_cap: { viralScore: 55, salesScore: 35 },
+                          limitacion: "audio_no_evaluable" }
 };
  
 
