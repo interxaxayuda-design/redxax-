@@ -1222,6 +1222,12 @@ try {
     // ✅ CÓDIGO NUEVO — pegarlo en el mismo lugar:
 const nicheConfig = perception.motor_key ? NICHE_MOTORS[perception.motor_key] : null;
 
+const benchmarkData = Object.keys(researchData).length ? {
+  ...researchData,
+  resumen_brecha: gapAnalysis.resumen_brecha ?? null,
+  red_flags_en_tu_video: gapAnalysis.red_flags_en_tu_video ?? []
+} : null;
+
 const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
   body: {
     text: buildScoringBrainPrompt(
@@ -1232,7 +1238,7 @@ const { data: call3Data, error: call3Error } = await supabase.functions.invoke('
       perception,
       flagsDeterministic,
       nicheConfig,
-      benchmarkData = null   // ← nuevo          // ← esto es lo único que se agrega
+      benchmarkData
     ),
     storagePath,
     videoMimeType: mimeType,
@@ -1241,6 +1247,7 @@ const { data: call3Data, error: call3Error } = await supabase.functions.invoke('
     maxOutputTokens: 8192,
   }
 });
+
 if (call3Error) throw call3Error;
 
     const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');  //text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, perception.industria, flagsDeterministic),
