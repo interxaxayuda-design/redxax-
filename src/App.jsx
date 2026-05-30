@@ -695,6 +695,40 @@ function TypingIndicator({ logo }) {
   );
 }
 
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="self-start flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-600 hover:text-slate-300 hover:bg-white/5 transition-all duration-200"
+    >
+      {copied ? (
+        <>
+          <svg className="w-3 h-3 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          <span className="text-green-400">Copiado</span>
+        </>
+      ) : (
+        <>
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          <span>Copiar</span>
+        </>
+      )}
+    </button>
+  );
+}
+
 const App = () => {
   const [step, setStep] = useState('upload');
   const [analysisMode, setAnalysisMode] = useState('video');
@@ -2804,30 +2838,37 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
 <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
 
   {chatMessages.map((msg, i) => (
-  <div key={i} className={`flex items-start gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+    <div key={i} className={`flex items-start gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
 
-    {msg.role === 'bot' && (
-      <div className="w-7 h-7 rounded-full bg-[#0f0f18] border border-white/[0.08] flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden">
-        <img src={logo} alt="VIRAX" className="w-5 h-5 object-contain" />
-      </div>
-    )}
-    {msg.role === 'user' && (
-      <div className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/25 flex items-center justify-center flex-shrink-0 mt-0.5">
-        <span className="text-[9px] font-black text-purple-300">TÚ</span>
-      </div>
-    )}
+      {msg.role === 'bot' && (
+        <div className="w-7 h-7 rounded-full bg-[#0f0f18] border border-white/[0.08] flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden">
+          <img src={logo} alt="VIRAX" className="w-5 h-5 object-contain" />
+        </div>
+      )}
+      {msg.role === 'user' && (
+        <div className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/25 flex items-center justify-center flex-shrink-0 mt-0.5">
+          <span className="text-[9px] font-black text-purple-300">TÚ</span>
+        </div>
+      )}
 
-    {/* ← ACÁ es donde va el cambio */}
-    <div className={`max-w-[78%] px-4 py-3 text-sm leading-relaxed font-medium ${
-      msg.role === 'user'
-        ? 'bg-purple-600/15 border border-purple-500/20 rounded-sm rounded-tl-2xl rounded-bl-2xl rounded-br-2xl text-purple-100/90'
-        : 'bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-white/80'
-    }`}>
-      {msg.role === 'bot' ? renderBotText(msg.text) : msg.text}
+      {/* Bubble + botón copiar agrupados */}
+      <div className="flex flex-col gap-1 max-w-[78%]">
+        <div className={`px-4 py-3 text-sm leading-relaxed font-medium ${
+          msg.role === 'user'
+            ? 'bg-purple-600/15 border border-purple-500/20 rounded-sm rounded-tl-2xl rounded-bl-2xl rounded-br-2xl text-purple-100/90'
+            : 'bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-white/80'
+        }`}>
+          {msg.role === 'bot' ? renderBotText(msg.text) : msg.text}
+        </div>
+
+        {/* Botón copiar — solo en mensajes del bot */}
+        {msg.role === 'bot' && (
+          <CopyButton text={msg.text} />
+        )}
+      </div>
+
     </div>
-
-  </div>
-))}
+  ))}
 
   {isTyping && <TypingIndicator logo={logo} />}
 
