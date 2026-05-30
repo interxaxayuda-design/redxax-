@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  Bot,
   BrainCircuit,
   CheckCircle,
   CheckSquare,
@@ -17,6 +16,7 @@ import {
   Upload,
   Users //finalResult  //{/* HOJA DE RUTA */} //buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, perception.industria, preFacts, preHookType)
   ,
+
 
   X,
   Zap
@@ -570,7 +570,58 @@ const ShinyCard = ({ children, className = '', tilt }) => {
 
 
 
+const PHRASES = [
+  'Analizando consulta',
+  'Procesando solicitud',
+  'Iniciando análisis',
+  'Evaluando parámetros',
+];
 
+function TypingIndicator({ logo }) {
+  const [displayed, setDisplayed] = React.useState('');
+  const [phraseIdx, setPhraseIdx] = React.useState(0);
+  const [charIdx, setCharIdx] = React.useState(0);
+  const timerRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const phrase = PHRASES[phraseIdx % PHRASES.length];
+    if (charIdx < phrase.length) {
+      timerRef.current = setTimeout(() => setCharIdx(i => i + 1), 55);
+    } else {
+      timerRef.current = setTimeout(() => {
+        setCharIdx(0);
+        setPhraseIdx(i => i + 1);
+      }, 900);
+    }
+    setDisplayed(phrase.substring(0, charIdx));
+    return () => clearTimeout(timerRef.current);
+  }, [charIdx, phraseIdx]);
+
+  return (
+    <div className="flex items-start gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <div className="w-7 h-7 rounded-full bg-[#0f0f18] border border-white/[0.08] flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden">
+        <img src={logo} alt="VIRAX" className="w-5 h-5 object-contain" />
+      </div>
+      <div className="bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl px-4 py-3 flex items-center gap-3">
+        <div className="flex items-end gap-[3px] h-4">
+          {[
+            { h: 5,  delay: '0s'    },
+            { h: 9,  delay: '0.15s' },
+            { h: 14, delay: '0.3s'  },
+            { h: 9,  delay: '0.45s' },
+            { h: 5,  delay: '0.6s'  },
+          ].map(({ h, delay }, i) => (
+            <span key={i} className="virax-bar" style={{ height: h, animationDelay: delay }} />
+          ))}
+        </div>
+        <span className="font-mono text-[9.5px] tracking-[0.12em] uppercase text-white/30">
+          {displayed}
+          <span className="virax-cursor" />
+        </span>
+      </div>
+    </div>
+  );
+}
 
 const App = () => {
   const [step, setStep] = useState('upload');
@@ -2625,128 +2676,133 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
 </ShinyCard>
 
       {/* CHAT */}
-      {!showChat ? (
-        <button onClick={() => setShowChat(true)} className="w-full flex items-center justify-center gap-3 p-8 bg-zinc-600/10 hover:bg-zinc-600/20 border border-white/10 rounded-[3rem] text-slate-400 font-black italic uppercase tracking-tighter transition-all">
-          <MessageSquare className="w-5 h-5" /> Consultoría Técnica de Visión
-        </button>
-      ) : (
-        <div className="bg-[#0a0a0c] border border-white/10 rounded-[3.5rem] overflow-hidden flex flex-col h-[550px] shadow-2xl animate-in slide-in-from-bottom-10">
-          <div className="p-6 border-b border-white/10 flex justify-between items-center bg-zinc-900/50">
-            <div className="flex items-center gap-3">
-              <div className="bg-zinc-800 p-2 rounded-xl border border-white/10"><Bot className="w-4 h-4 text-white" /></div>
-              <h3 className="font-black italic uppercase tracking-tighter text-sm text-zinc-400">Analista Vision REDxax</h3>
-            </div>
-            <button onClick={() => setShowChat(false)} className="hover:bg-white/10 p-2 rounded-full transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
+{!showChat ? (
+  <button onClick={() => setShowChat(true)} className="w-full flex items-center justify-center gap-3 p-8 bg-zinc-600/10 hover:bg-zinc-600/20 border border-white/10 rounded-[3rem] text-slate-400 font-black italic uppercase tracking-tighter transition-all">
+    <MessageSquare className="w-5 h-5" /> Consultoría Técnica de Visión
+  </button>
+) : (
+  <div className="bg-[#050507] border border-white/[0.07] rounded-[3.5rem] overflow-hidden flex flex-col h-[550px] shadow-2xl animate-in slide-in-from-bottom-10">
+
+    {/* HEADER */}
+    <div className="px-6 py-4 border-b border-white/[0.06] flex justify-between items-center bg-[#0a0a0f]">
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-full bg-[#0f0f18] border border-white/10 flex items-center justify-center overflow-hidden">
+          <img src={logo} alt="VIRAX" className="w-6 h-6 object-contain" />
+        </div>
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <h3 className="font-black uppercase tracking-widest text-xs text-white/90">VIRAX</h3>
           </div>
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-            {isTyping && (
-  <>
-    <style>{`
-      @keyframes calibratingShimmer {
-        0%   { background-position: 200% center; }
-        100% { background-position: -200% center; }
-      }
-      .calibrating-shimmer {
-        background: linear-gradient(90deg,
-          #a855f7 0%, #a855f7 20%,
-          #e879f9 40%, #ffffff 50%, #e879f9 60%,
-          #a855f7 80%, #a855f7 100%
-        );
-        background-size: 250% auto;
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: calibratingShimmer 2s linear infinite;
-      }
-      @keyframes viraxBounce {
-        0%, 100% { transform: translateY(0px) scale(1);      filter: drop-shadow(0 0 0px transparent); }
-        20%       { transform: translateY(-10px) scale(1.08); filter: drop-shadow(0 0 12px rgba(168,85,247,0.6)); }
-        40%       { transform: translateY(-4px) scale(0.97);  filter: drop-shadow(0 0 6px rgba(168,85,247,0.3)); }
-        60%       { transform: translateY(-7px) scale(1.04);  filter: drop-shadow(0 0 10px rgba(168,85,247,0.5)); }
-        80%       { transform: translateY(-2px) scale(0.99);  filter: drop-shadow(0 0 4px rgba(168,85,247,0.2)); }
-      }
-      .virax-bounce {
-        animation: viraxBounce 1.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
-      }
-    `}</style>
-    <div className="flex justify-start">
-      <div className="flex items-center gap-3 bg-white/[0.03] border border-purple-500/20 rounded-[2rem] px-5 py-4">
-        <img
-          src={logo}
-          alt="VIRAX"
-          className="virax-bounce w-8 h-8 rounded-full object-contain"
+          <p className="text-[10px] text-white/30 tracking-widest uppercase">Analista Vision REDxax</p>
+        </div>
+      </div>
+      <button onClick={() => setShowChat(false)} className="w-8 h-8 rounded-full bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] flex items-center justify-center transition-colors">
+        <X className="w-3.5 h-3.5 text-white/40" />
+      </button>
+    </div>
+
+    {/* MESSAGES */}
+    <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
+
+      {isTyping && <TypingIndicator logo={logo} />}
+
+      <div ref={chatEndRef} />
+    </div>
+
+    {/* INPUT */}
+    <div className="p-6 bg-black/50 border-t border-white/10">
+      <div className="bg-white/5 rounded-full p-2 flex items-center gap-2 px-6">
+        <input
+          type="text"
+          value={userInput}
+          onChange={(e) => setUserInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+          placeholder="Escribe tu consulta..."
+          className="bg-transparent border-none outline-none flex-1 text-sm text-white py-2 italic"
         />
-        <span className="calibrating-shimmer text-[10px] font-black uppercase tracking-[0.3em]">
-          Calibrando mensaje
-        </span>
+        <button onClick={sendMessage} className="bg-zinc-700 hover:bg-zinc-600 p-3 rounded-full transition-all active:scale-90">
+          <Send className="w-4 h-4" />
+        </button>
       </div>
     </div>
-  </>
+
+  </div>
 )}
-            <div ref={chatEndRef} />
-          </div>
-          <div className="p-6 bg-black/50 border-t border-white/10">
-            <div className="bg-white/5 rounded-full p-2 flex items-center gap-2 px-6">
-              <input type="text" value={userInput} onChange={(e) => setUserInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-                placeholder="Escribe tu consulta..."
-                className="bg-transparent border-none outline-none flex-1 text-sm text-white py-2 italic" />
-              <button onClick={sendMessage} className="bg-zinc-700 hover:bg-zinc-600 p-3 rounded-full transition-all active:scale-90"><Send className="w-4 h-4" /></button>
-            </div>
-          </div>
-        </div>
-      )}
+</div>
+</div>
+)}
+
+{/* HISTORIAL */}
+{history.length > 0 && step === 'upload' && (
+  <div className="mt-20 max-w-5xl mx-auto px-4">
+    <div className="flex items-center gap-3 mb-6">
+      <div className="h-px flex-1 bg-white/5" />
+      <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-600">Análisis anteriores</p>
+      <div className="h-px flex-1 bg-white/5" />
+    </div>
+    <div className="flex flex-wrap gap-3">
+      {history.map((item) => (
+        <button key={item.id}
+          onClick={() => {
+            setAiResult(item.analysis_data);
+            setCurrentHistoryId(item.id);
+            setAnalysisMode(item.mode);
+            setCompletedSteps([]);
+            setChatMessages(
+              item.chat_messages?.length > 0
+                ? item.chat_messages
+                : [{ role: 'bot', text: `Análisis cargado: ${item.analysis_data.vision?.niche || 'contenido'}. Potencial: ${item.analysis_data.potentialScore}%.` }]
+            );
+            setStep('results');
+          }}
+          className="group flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-purple-500/30 px-5 py-3 rounded-full transition-all"
+        >
+          <div className={`w-2 h-2 rounded-full ${item.mode === 'video' ? 'bg-purple-500' : 'bg-indigo-500'}`} />
+          <span className="text-sm font-bold italic text-slate-300 group-hover:text-white transition-colors">{item.title}</span>
+          <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">
+            {new Date(item.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+          </span>
+        </button>
+      ))}
     </div>
   </div>
 )}
+</main>
 
-        {/* HISTORIAL */}
-        {history.length > 0 && step === 'upload' && (
-          <div className="mt-20 max-w-5xl mx-auto px-4">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-px flex-1 bg-white/5" />
-              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-600">Análisis anteriores</p>
-              <div className="h-px flex-1 bg-white/5" />
-            </div>
-            <div className="flex flex-wrap gap-3">
-              {history.map((item) => (
-                <button key={item.id}
-                  onClick={() => {
-                    setAiResult(item.analysis_data);
-                    setCurrentHistoryId(item.id);
-                    setAnalysisMode(item.mode);
-                    setCompletedSteps([]);
-                    setChatMessages(
-                      item.chat_messages?.length > 0
-                        ? item.chat_messages
-                        : [{ role: 'bot', text: `Análisis cargado: ${item.analysis_data.vision?.niche || 'contenido'}. Potencial: ${item.analysis_data.potentialScore}%.` }]
-                    );
-                    setStep('results');
-                  }}
-                  className="group flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-purple-500/30 px-5 py-3 rounded-full transition-all"
-                >
-                  <div className={`w-2 h-2 rounded-full ${item.mode === 'video' ? 'bg-purple-500' : 'bg-indigo-500'}`} />
-                  <span className="text-sm font-bold italic text-slate-300 group-hover:text-white transition-colors">{item.title}</span>
-                  <span className="text-[10px] text-slate-600 font-bold uppercase tracking-wider">
-                    {new Date(item.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
-                  </span>
-                </button>  //{/* ── UPLOAD ── */}
-              ))}
-            </div>
-          </div>
-        )}
-      </main>
-
-    <style>{`
+<style>{`
   .custom-scrollbar::-webkit-scrollbar { width: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
   @keyframes shimmer-text {
     0%   { background-position: 200% center; }
     100% { background-position: -200% center; }
   }
+  @keyframes virax-bar {
+    0%, 100% { transform: scaleY(0.35); opacity: 0.35; }
+    50%       { transform: scaleY(1);    opacity: 1;    }
+  }
+  @keyframes virax-cursor {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0; }
+  }
+  .virax-bar {
+    width: 2.5px;
+    border-radius: 2px;
+    background: rgba(168, 85, 247, 0.5);
+    animation: virax-bar 1.1s ease-in-out infinite;
+  }
+  .virax-cursor {
+    display: inline-block;
+    width: 1.5px;
+    height: 9px;
+    background: rgba(192, 132, 252, 0.6);
+    vertical-align: middle;
+    margin-left: 1px;
+    animation: virax-cursor 0.9s step-end infinite;
+  }
 `}</style>
-    </div>
-  );
+</div>
+);
 };
 
 export default App;
