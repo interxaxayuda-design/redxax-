@@ -650,6 +650,8 @@ const App = () => {
   const [completedSteps, setCompletedSteps] = useState([]);
   const [currentHistoryId, setCurrentHistoryId] = useState(null);
   const [history, setHistory] = useState([]);
+  const CHAT_MESSAGE_LIMIT = 20;
+  const chatLimitReached = chatMessages.length >= CHAT_MESSAGE_LIMIT;
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [aiResult, setAiResult] = useState(null);
@@ -2757,20 +2759,33 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
 </div>
 
 {/* INPUT */}
-<div className="p-6 bg-black/50 border-t border-white/10">
-  <div className="bg-white/5 rounded-full p-2 flex items-center gap-2 px-6">
-    <input
-      type="text"
-      value={userInput}
-      onChange={(e) => setUserInput(e.target.value)}
-      onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
-      placeholder="Escribe tu consulta..."
-      className="bg-transparent border-none outline-none flex-1 text-sm text-white py-2 italic"
-    />
-    <button onClick={sendMessage} className="bg-zinc-700 hover:bg-zinc-600 p-3 rounded-full transition-all active:scale-90">
-      <Send className="w-4 h-4" />
-    </button>
-  </div>
+<div className="p-4 bg-black/50 border-t border-white/10">
+  {chatLimitReached ? (
+    <div className="flex items-center justify-center gap-2 py-3 px-5 bg-white/[0.03] border border-white/[0.07] rounded-2xl">
+      <span className="text-lg">🔒</span>
+      <p className="text-[11px] font-black uppercase tracking-widest text-white/30">
+        Límite de consultas alcanzado
+      </p>
+    </div>
+  ) : (
+    <div className="bg-white/5 rounded-full p-2 flex items-center gap-2 px-6">
+      <input
+        type="text"
+        value={userInput}
+        onChange={(e) => setUserInput(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && !chatLimitReached && sendMessage()}
+        placeholder="Escribe tu consulta..."
+        className="bg-transparent border-none outline-none flex-1 text-sm text-white py-2 italic"
+      />
+      <button
+        onClick={sendMessage}
+        disabled={isTyping || !userInput.trim()}
+        className="bg-zinc-700 hover:bg-zinc-600 disabled:opacity-40 p-3 rounded-full transition-all active:scale-90"
+      >
+        <Send className="w-4 h-4" />
+      </button>
+    </div>
+  )}
 </div>
 
 </div>
