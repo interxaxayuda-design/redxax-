@@ -338,8 +338,7 @@ Responde SOLO con este JSON:
 // estrictamente del videoRawData en tiempo real, sino del conocimiento de la IA]
 
 // ============================================================
-// CALL 2 — STRATEGY BRAIN  //{chatMessages.map((msg, i) => (
-
+// CALL 2 — STRATEGY BRAIN 
 // ============================================================
 export const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, perception, preFacts = {}) => {
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
@@ -788,7 +787,7 @@ const trackPrediction = async (result) => {
 };  //const scores = buildPenalties(flagsDeterministic)  //catch (err)  //const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic)
 
 // ============================================================
-// UTILITY FUNCTIONS — Parsing y extracción
+// UTILITY FUNCTIONS — Parsing y extracción //{isTyping && <div className="text-[10px] text-zinc-500 animate-pulse font-black uppercase ml-2 italic tracking-widest">Calculando respuesta técnica...</div>}
 // ============================================================
 
 const extractFlags = (strategyText) => {
