@@ -568,7 +568,18 @@ const ShinyCard = ({ children, className = '', tilt }) => {
   );
 };
 
-
+function renderBotText(text) {
+  if (!text) return null;
+  return text.split('\n').map((line, lineIdx) => (
+    <p key={lineIdx} className={lineIdx > 0 ? 'mt-2' : ''}>
+      {line.split(/(\*\*[^*]+\*\*)/).map((part, partIdx) =>
+        part.startsWith('**') && part.endsWith('**')
+          ? <strong key={partIdx} className="text-white font-black">{part.slice(2, -2)}</strong>
+          : part
+      )}
+    </p>
+  ));
+}
 
 const PHRASES = [
   'Analizando consulta',
@@ -2715,29 +2726,30 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
 <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
 
   {chatMessages.map((msg, i) => (
-    <div key={i} className={`flex items-start gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+  <div key={i} className={`flex items-start gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
 
-      {msg.role === 'bot' && (
-        <div className="w-7 h-7 rounded-full bg-[#0f0f18] border border-white/[0.08] flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden">
-          <img src={logo} alt="VIRAX" className="w-5 h-5 object-contain" />
-        </div>
-      )}
-      {msg.role === 'user' && (
-        <div className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/25 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <span className="text-[9px] font-black text-purple-300">TÚ</span>
-        </div>
-      )}
-
-      <div className={`max-w-[78%] px-4 py-3 text-sm leading-relaxed font-medium ${
-        msg.role === 'user'
-          ? 'bg-purple-600/15 border border-purple-500/20 rounded-sm rounded-tl-2xl rounded-bl-2xl rounded-br-2xl text-purple-100/90'
-          : 'bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-white/80'
-      }`}>
-        {msg.text}
+    {msg.role === 'bot' && (
+      <div className="w-7 h-7 rounded-full bg-[#0f0f18] border border-white/[0.08] flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden">
+        <img src={logo} alt="VIRAX" className="w-5 h-5 object-contain" />
       </div>
+    )}
+    {msg.role === 'user' && (
+      <div className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/25 flex items-center justify-center flex-shrink-0 mt-0.5">
+        <span className="text-[9px] font-black text-purple-300">TÚ</span>
+      </div>
+    )}
 
+    {/* ← ACÁ es donde va el cambio */}
+    <div className={`max-w-[78%] px-4 py-3 text-sm leading-relaxed font-medium ${
+      msg.role === 'user'
+        ? 'bg-purple-600/15 border border-purple-500/20 rounded-sm rounded-tl-2xl rounded-bl-2xl rounded-br-2xl text-purple-100/90'
+        : 'bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-white/80'
+    }`}>
+      {msg.role === 'bot' ? renderBotText(msg.text) : msg.text}
     </div>
-  ))}
+
+  </div>
+))}
 
   {isTyping && <TypingIndicator logo={logo} />}
 
