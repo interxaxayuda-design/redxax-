@@ -17,6 +17,7 @@ import {
   Upload,
   Users //finalResult  //{/* HOJA DE RUTA */} //buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, perception.industria, preFacts, preHookType)
   ,
+
   X,
   Zap
 } from 'lucide-react';
