@@ -1476,11 +1476,11 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
   `}</style>
 
   <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
-    <img
-      src={logo}
-      alt="Virax logo"
-      className="w-10 h-10 rounded-full object-contain shadow-lg"
-    />
+<img
+  src={logo}
+  alt="Virax logo"
+  className="w-14 h-14 rounded-full object-contain shadow-lg"
+/>
     <div className="flex flex-col leading-tight">
       <h1 className="virax-text text-2xl font-black tracking-tighter italic uppercase">
         VIRAX
