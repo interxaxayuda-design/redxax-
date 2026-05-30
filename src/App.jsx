@@ -338,7 +338,8 @@ Responde SOLO con este JSON:
 // estrictamente del videoRawData en tiempo real, sino del conocimiento de la IA]
 
 // ============================================================
-// CALL 2 — STRATEGY BRAIN 
+// CALL 2 — STRATEGY BRAIN  //{chatMessages.map((msg, i) => (
+
 // ============================================================
 export const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, perception, preFacts = {}) => {
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform];
@@ -1074,7 +1075,7 @@ try {
       has_red_flags: (gapAnalysis.red_flags_en_tu_video?.length ?? 0) > 0,
     };
 
-    // ============================================================
+    // ============================================================  //{isTyping && <div className="text-[10px] text-zinc-500 animate-pulse font-black uppercase ml-2 italic tracking-widest">Calculando respuesta técnica...</div>}
     // CALL 3 — Scoring Brain
     // ============================================================   //text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, perception.industria, flagsDeterministic, penalties),
     setAnalysisProgress(80);
@@ -2650,14 +2651,117 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
             <button onClick={() => setShowChat(false)} className="hover:bg-white/10 p-2 rounded-full transition-colors"><X className="w-5 h-5 text-slate-500" /></button>
           </div>
           <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-            {chatMessages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-5 rounded-[2rem] ${msg.role === 'user' ? 'bg-white text-black rounded-br-none' : 'bg-white/5 border border-white/10 text-slate-300 rounded-bl-none'}`}>
-                  <p className="text-sm font-bold italic leading-relaxed">{msg.text}</p>
-                </div>
-              </div>
+            {/* Por esto: */}
+{chatMessages.map((msg, i) => (
+  <div
+    key={i}
+    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+    style={{
+      animation: 'msgAppear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both',
+      animationDelay: '0ms'
+    }}
+  >
+    <style>{`
+      @keyframes msgAppear {
+        from {
+          opacity: 0;
+          transform: translateY(12px) scale(0.95);
+          filter: blur(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0px) scale(1);
+          filter: blur(0px);
+        }
+      }
+      @keyframes botBorderPulse {
+        0%, 100% { border-color: rgba(168, 85, 247, 0.15); }
+        50%       { border-color: rgba(168, 85, 247, 0.35); }
+      }
+      .bot-bubble {
+        animation: botBorderPulse 3s ease-in-out 1;
+      }
+    `}</style>
+
+    {msg.role === 'bot' && (
+      <img
+        src={logo}
+        alt="VIRAX"
+        className="w-7 h-7 rounded-lg object-contain self-end mb-1 mr-2 shrink-0 opacity-70"
+      />
+    )}
+
+    <div className={`max-w-[80%] p-5 rounded-[2rem] ${
+      msg.role === 'user'
+        ? 'bg-white text-black rounded-br-none'
+        : 'bot-bubble bg-white/[0.04] border border-purple-500/20 text-slate-300 rounded-bl-none'
+    }`}>
+      <p className="text-sm font-bold italic leading-relaxed">{msg.text}</p>
+    </div>
+  </div>
+))}
+
+            {/* Por esto: */}
+{isTyping && (
+  <>
+    <style>{`
+      @keyframes viraxBounce {
+        0%, 100% { transform: translateY(0px) scale(1);    filter: drop-shadow(0 0 0px transparent); }
+        20%       { transform: translateY(-10px) scale(1.08); filter: drop-shadow(0 0 12px rgba(168,85,247,0.6)); }
+        40%       { transform: translateY(-4px) scale(0.97);  filter: drop-shadow(0 0 6px rgba(168,85,247,0.3)); }
+        60%       { transform: translateY(-7px) scale(1.04);  filter: drop-shadow(0 0 10px rgba(168,85,247,0.5)); }
+        80%       { transform: translateY(-2px) scale(0.99);  filter: drop-shadow(0 0 4px rgba(168,85,247,0.2)); }
+      }
+      @keyframes calibratingDots {
+        0%   { content: ''; }
+        25%  { content: '.'; }
+        50%  { content: '..'; }
+        75%  { content: '...'; }
+        100% { content: ''; }
+      }
+      @keyframes calibratingPulse {
+        0%, 100% { opacity: 0.4; }
+        50%       { opacity: 1; }
+      }
+      .virax-bounce {
+        animation: viraxBounce 1.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) infinite;
+      }
+      .calibrating-text::after {
+        content: '';
+        animation: calibratingDots 1.2s steps(1) infinite;
+      }
+      .calibrating-glow {
+        animation: calibratingPulse 1.4s ease-in-out infinite;
+      }
+    `}</style>
+    <div className="flex justify-start">
+      <div className="flex items-center gap-3 bg-white/[0.03] border border-purple-500/20 rounded-[2rem] px-5 py-4">
+        <img
+          src={logo}
+          alt="VIRAX"
+          className="virax-bounce w-8 h-8 rounded-lg object-contain"
+        />
+        <div className="flex flex-col">
+          <span className="calibrating-glow text-[10px] font-black uppercase tracking-[0.3em] text-purple-400 calibrating-text">
+            Calibrando mensaje
+          </span>
+          <div className="flex gap-1 mt-1.5">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-1 h-1 rounded-full bg-purple-500/60"
+                style={{
+                  animation: `calibratingPulse 1s ease-in-out infinite`,
+                  animationDelay: `${i * 0.2}s`
+                }}
+              />
             ))}
-            {isTyping && <div className="text-[10px] text-zinc-500 animate-pulse font-black uppercase ml-2 italic tracking-widest">Calculando respuesta técnica...</div>}
+          </div>
+        </div>
+      </div>
+    </div>
+  </>
+)}
             <div ref={chatEndRef} />
           </div>
           <div className="p-6 bg-black/50 border-t border-white/10">
