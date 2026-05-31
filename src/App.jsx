@@ -1213,25 +1213,33 @@ const runDeepAnalysis = async () => {
     const viewerAnalysis = extractGeminiText(res.data);
 
     // ============================================================
-    // CALL 1.5 — Research Brain
-    // ============================================================
-    setAnalysisProgress(40);
-    setStatusText("Investigando casos de éxito...");
+// CALL 1.5 — Research Brain
+// ============================================================
+setAnalysisProgress(40);
+setStatusText("Investigando casos de éxito...");
 
-    let researchData = {};
-    try {
-      const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: buildResearchBrainPrompt(platform, perception.industria, selectedObjetivo),
-          useSearch: true,       // ← esto es todo lo que agregás
-          expectsJson: true,
-          maxOutputTokens: 2048,
-        }
-      });
-      if (!call1_5Error) researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
-    } catch (e) {
-      console.warn('[CALL 1.5] Fallback research:', e.message);
+let researchData = {};
+try {
+  const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
+    body: {
+      text: buildResearchBrainPrompt(platform, perception.industria, selectedObjetivo),
+      useSearch: true,
+      expectsJson: true,
+      maxOutputTokens: 2048,
+      temperature: 0,
     }
+  });
+
+  // ← TEMPORAL: verificar si grounding está activo
+  console.log('[RESEARCH] groundingMetadata:',
+    JSON.stringify(call1_5Data?.candidates?.[0]?.groundingMetadata, null, 2)
+  );
+  console.log('[RESEARCH] raw output:', extractGeminiText(call1_5Data));
+
+  if (!call1_5Error) researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
+} catch (e) {
+  console.warn('[CALL 1.5] Fallback research:', e.message);
+}
 
     // ============================================================
     // CALL 1.75 — Apply Research
