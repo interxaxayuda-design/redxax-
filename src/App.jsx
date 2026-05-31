@@ -309,30 +309,28 @@ export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
     all:    'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Eres un analista de contenido viral especializado en ${pName}.
+  return `Eres un investigador de contenido viral con acceso a búsqueda web en tiempo real.
 
-Tenés acceso a información actualizada de la web sobre tendencias actuales.
+TAREA: Buscá en internet información ACTUAL sobre el nicho "${industria}" en ${pName} para objetivo "${objetivo}".
 
-Usando esa información, analizá el nicho "${industria}" en ${pName} para el objetivo "${objetivo}" HOY.
-
-Identificá específicamente:
-- Qué formatos de video están generando más retención AHORA en este nicho
-- Qué patrones de hook están funcionando con ejemplos concretos y recientes
-- Qué errores comunes están cometiendo los creadores de este nicho actualmente
+Buscá específicamente:
+- Qué formatos de video están funcionando AHORA en este nicho en ${pName}
+- Patrones de hook exitosos con ejemplos concretos y recientes
+- Errores frecuentes que cometen creadores de este nicho
 - Qué está priorizando el algoritmo de ${pName} para este tipo de contenido hoy
 
-IMPORTANTE:
-- Usá SOLO información reciente y verificable
-- Si no tenés datos concretos de algo, escribí "Sin datos verificables" en ese campo
-- No inventes ejemplos ni estadísticas
+REGLAS:
+- Basá TODAS tus respuestas en lo que encontrás en la búsqueda, no en conocimiento genérico
+- Si no encontrás algo específico, decilo en ese campo
+- No inventes datos ni ejemplos
 
-Respondé SOLO con este JSON válido, sin markdown ni texto extra:
+Respondé SOLO con este JSON válido, sin markdown:
 {
   "top_formatos_ganadores":    ["<formato real y reciente>", "<formato2>", "<formato3>"],
-  "patrones_hook_exitosos":    ["<patron concreto con ejemplo verificable>", "<patron2>"],
+  "patrones_hook_exitosos":    ["<patron concreto con ejemplo>", "<patron2>"],
   "errores_comunes_del_nicho": ["<error documentado>", "<error2>"],
-  "benchmark_viral_score":     <número 0-100 basado en los datos encontrados>,
-  "oportunidad_detectada":     "<gap real detectado en los datos>"
+  "benchmark_viral_score":     <número 0-100>,
+  "oportunidad_detectada":     "<gap real sin explotar basado en lo que encontraste>"
 }`;
 };
 
@@ -544,12 +542,11 @@ Evaluá el video como ese sistema de medición, no como un crítico.
 CONTEXTO DE EVALUACIÓN:
 ═══════════════════════════════════════════
 - Industria: ${perception.industria}
-// DESPUÉS:
 - Motor detectado en el video: ${perception.palanca_detectada ?? perception.palanca_psicologica}
 - Motor objetivo del creador: ${perception.palanca_psicologica}
 - Brecha estratégica: ${
-  perception.palanca_detectada !== perception.palanca_psicologica
-    ? `El video activa "${perception.palanca_detectada}" pero el creador quiere activar "${perception.palanca_psicologica}". Penalizá coherencia pero no el video en sí.`
+  perception.palanca_detectada && perception.palanca_detectada !== perception.palanca_psicologica
+    ? `El video activa "${perception.palanca_detectada}" pero el creador quiere activar "${perception.palanca_psicologica}". Evaluá la coherencia.`
     : 'Alineados.'
 }
 - Criterio de éxito: ${perception.criterio_evaluacion}
