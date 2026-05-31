@@ -541,17 +541,7 @@ Evaluá el video como ese sistema de medición, no como un crítico.
 ═══════════════════════════════════════════
 CONTEXTO DE EVALUACIÓN:
 ═══════════════════════════════════════════
-- Industria: ${perception.industria}
-- Motor detectado en el video: ${perception.palanca_detectada ?? perception.palanca_psicologica}
-- Motor objetivo del creador: ${perception.palanca_psicologica}
-- Brecha estratégica: ${
-  perception.palanca_detectada && perception.palanca_detectada !== perception.palanca_psicologica
-    ? `El video activa "${perception.palanca_detectada}" pero el creador quiere activar "${perception.palanca_psicologica}". Evaluá la coherencia.`
-    : 'Alineados.'
-}
-- Criterio de éxito: ${perception.criterio_evaluacion}
-- Plataforma: ${pName}
-- Objetivo: ${objetivo}
+
 ${nicheContext}
 
 VIDEO RAW — evaluá ritmo, cortes, energía y dinamismo visual acá:
@@ -1461,7 +1451,11 @@ GUION A ANALIZAR:
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, selectedNicho),
+        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, {
+        industria: selectedNicho,
+        palanca_psicologica: 'Curiosidad / Retención',
+        criterio_evaluacion: '',
+        }, {}),
         maxOutputTokens: 6144
       }
     });
@@ -1477,7 +1471,22 @@ GUION A ANALIZAR:
 
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, selectedNicho, flags),
+        text: buildScoringBrainPrompt(
+  '',
+  strategyAnalysis,
+  viewerAnalysis,
+  platform,
+  selectedObjetivo,
+  {
+    industria: selectedNicho,
+    palanca_psicologica: 'Curiosidad / Retención',
+    palanca_detectada: 'Curiosidad / Retención',
+    criterio_evaluacion: '',
+  },
+  flags,
+  null,
+  null
+),
         expectsJson: true,
         maxOutputTokens: 8192
       }
