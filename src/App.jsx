@@ -47,7 +47,7 @@ const FOLLOWER_RANGES = [
   { id: 'mega',  label: 'Mega cuenta',     range: '500K+',       emoji: '👑' },
 ];
 
-function extractGeminiText(data) {
+function extractGeminiText(data) { //const flagsDeterministic = {
   if (data?.error) {
     throw new Error(`Edge Function error: ${data.error} — ${data.message ?? data.raw ?? ''}`);
   }
@@ -202,14 +202,14 @@ Si el nicho encaja exactamente con una clave del catálogo, devolvé esa clave e
 // CALL 0B — PRE-CLASSIFIER BRAIN
 // ============================================================
 export const buildPreClassifierPrompt = (meta = '') => `
-Eres un auditor forense de video. Analiza el video y extrae SOLO hechos observables binarios.
-NO evalúes calidad. NO interpretes. Solo registra lo que ves y escuchas.
+Eres un auditor forense de video. Analiza el video y extrae hechos observables.
+NO evalúes calidad. NO interpretes intención. Solo registra lo que ves y escuchas.
 ${meta ? `\nMETADATA: ${meta}` : ''}
 
 Devuelve ESTRICTAMENTE este JSON válido:
 {
-  "industria": "<micro-nicho ultra-específico del producto/servicio>",
-  "palanca_psicologica": "<emoción primaria real: Alivio de Frustración, FOMO, Pertenencia, etc.>",
+  "industria": "<micro-nicho ultra-específico>",
+  "palanca_psicologica": "<emoción primaria real>",
   "flags_visuales": {
     "logo_en_s0":             <boolean>,
     "imagen_alto_impacto":    <boolean>,
@@ -230,7 +230,8 @@ Devuelve ESTRICTAMENTE este JSON válido:
     "porcentaje_video_real":      <number 0-100>,
     "tipo_edicion":               "<cinematica|dinamica|UGC|infomercial|estetica>",
     "ritmo_visual":               "<rapido|normal|lento>"
-  }
+  },
+  "hook_libre": "<descripción concisa en 1-2 oraciones de la técnica de enganche usada — nombrá el mecanismo psicológico exacto, el elemento visual específico y el segundo en que ocurre. Si no hay hook claro, escribí 'ninguno detectado'.>"
 }
 `;
 
@@ -1288,27 +1289,27 @@ try {
   console.warn('[Strategy] No se pudo parsear como JSON, usando texto plano:', e.message);
 }
 
-    // FUSIONAR FLAGS
     const flagsDeterministic = {
-      ...flagsFromStrategy,
-      hook_type: preHookType,
-      ad_filter_triggered: !!preFacts.logo_en_s0,
-      no_audio_from_s0: (preFacts.audio_desde_s0 === false) || flagsFromStrategy.no_audio_from_s0,
-      is_static_slideshow: (preFacts.movimiento_real === false) || flagsFromStrategy.is_static_slideshow,
-      pain_missing: (preFacts.dolor_antes_s5 === false) || flagsFromStrategy.pain_missing,
-      pain_late: (Number(preFacts.segundo_dolor) > 5) || flagsFromStrategy.pain_late,
-      no_rehook: (!preFacts.tiene_rehook && (preFacts.duracion_estimada ?? 0) > 20) || !!flagsFromStrategy.no_rehook,
-      short_video_advantage: (preFacts.duracion_estimada ?? 999) < 15 || !!flagsFromStrategy.short_video_advantage,
-      duration_kills_completion: ((preFacts.duracion_estimada ?? 0) > 60 && !preFacts.tiene_rehook) || !!flagsFromStrategy.duration_kills_completion,
-      es_slideshow_imagenes: preFacts.es_slideshow_imagenes,
-      porcentaje_video_real: preFacts.porcentaje_video_real ?? 100,
-      tipo_edicion: preFacts.tipo_edicion || 'desconocido',
-      ritmo_visual: preFacts.ritmo_visual || 'normal',
-      cortes_por_minuto: preFacts.cortes_por_minuto ?? 0,
-      cambio_visual_cada_ns: preFacts.cambio_visual_cada_ns ?? 3,
-      compliance_score: gapAnalysis.compliance_score ?? 50,
-      has_red_flags: (gapAnalysis.red_flags_en_tu_video?.length ?? 0) > 0,
-    };
+  ...flagsFromStrategy,
+  hook_type: preHookType,
+  ad_filter_triggered: !!preFacts.logo_en_s0,
+  no_audio_from_s0: (preFacts.audio_desde_s0 === false) || flagsFromStrategy.no_audio_from_s0,
+  is_static_slideshow: (preFacts.movimiento_real === false) || flagsFromStrategy.is_static_slideshow,
+  pain_missing: (preFacts.dolor_antes_s5 === false) || flagsFromStrategy.pain_missing,
+  pain_late: (Number(preFacts.segundo_dolor) > 5) || flagsFromStrategy.pain_late,
+  no_rehook: (!preFacts.tiene_rehook && (preFacts.duracion_estimada ?? 0) > 20) || !!flagsFromStrategy.no_rehook,
+  short_video_advantage: (preFacts.duracion_estimada ?? 999) < 15 || !!flagsFromStrategy.short_video_advantage,
+  duration_kills_completion: ((preFacts.duracion_estimada ?? 0) > 60 && !preFacts.tiene_rehook) || !!flagsFromStrategy.duration_kills_completion,
+  es_slideshow_imagenes: preFacts.es_slideshow_imagenes,
+  porcentaje_video_real: preFacts.porcentaje_video_real ?? 100,
+  tipo_edicion: preFacts.tipo_edicion || 'desconocido',
+  ritmo_visual: preFacts.ritmo_visual || 'normal',
+  cortes_por_minuto: preFacts.cortes_por_minuto ?? 0,
+  cambio_visual_cada_ns: preFacts.cambio_visual_cada_ns ?? 3,
+  compliance_score: gapAnalysis.compliance_score ?? 50,
+  has_red_flags: (gapAnalysis.red_flags_en_tu_video?.length ?? 0) > 0,
+  hook_descripcion_libre: preFacts.hook_libre ?? null, // ← esto agregás
+};
 
     // ============================================================  //{isTyping && <div className="text-[10px] text-zinc-500 animate-pulse font-black uppercase ml-2 italic tracking-widest">Calculando respuesta técnica...</div>}
     // CALL 3 — Scoring Brain
