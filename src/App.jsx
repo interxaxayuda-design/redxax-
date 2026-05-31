@@ -14,9 +14,8 @@ import {
   Target,
   TrendingUp,
   Upload,
-  Users //finalResult  //{/* HOJA DE RUTA */} //buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, perception.industria, preFacts, preHookType)
-  ,
-
+  Users //<label className="text-[10px] font-black uppercase tracking-wider text-slate-500 group-hover:text-purple-400 transition-colors">
+  , //
   X,
   Zap
 } from 'lucide-react';
@@ -113,11 +112,12 @@ const safeParseJSON = (rawText, context = '') => {
     return result;
   };
 
-  // Intento 1: limpieza con lookahead
+  // Intento 1: limpieza con lookahead //setVideoMeta({
   try { return JSON.parse(aggressiveClean(rawText)); }
   catch (err1) { console.warn(`[${context}] Intento 1 falló:`, err1.message); }
 
-  // Intento 2: nuclear — quitar control characters
+  // Intento 2: nuclear — quitar control characters //<label>Palanca Psicológica Dominante</label>
+
   try {
     const nuclear = rawText.replace(/```json|```/g, '').replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ').trim();
     const start = nuclear.indexOf('{');
@@ -542,7 +542,14 @@ Evaluá el video como ese sistema de medición, no como un crítico.
 CONTEXTO DE EVALUACIÓN:
 ═══════════════════════════════════════════
 - Industria: ${perception.industria}
-- Motor psicológico: ${perception.palanca_psicologica}
+// DESPUÉS:
+- Motor detectado en el video: ${perception.palanca_detectada ?? perception.palanca_psicologica}
+- Motor objetivo del creador: ${perception.palanca_psicologica}
+- Brecha estratégica: ${
+  perception.palanca_detectada !== perception.palanca_psicologica
+    ? `El video activa "${perception.palanca_detectada}" pero el creador quiere activar "${perception.palanca_psicologica}". Penalizá coherencia pero no el video en sí.`
+    : 'Alineados.'
+}
 - Criterio de éxito: ${perception.criterio_evaluacion}
 - Plataforma: ${pName}
 - Objetivo: ${objetivo}
@@ -917,7 +924,7 @@ useEffect(() => {
   };
 
   // ── FIX: deductGems ──────────────────────────────────────────
-// El cambio está en el bloque if (error): ahora lee el body real
+// El cambio está en el bloque if (error): ahora lee el body real 
 // de la respuesta para que puedas ver qué está tirando la función.
 
 // ── FIX: deductGems ──────────────────────────────────────────
@@ -1159,7 +1166,8 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
       preFacts,
       preHookType,
       platform,
-      followerRange
+      followerRange,
+      palanca_detectada: preFacts.palanca_psicologica || 'Curiosidad / Retención',
     });
 
     setAnalysisProgress(100);
@@ -1182,8 +1190,15 @@ const runDeepAnalysis = async () => {
     return;
   }
 
-  const { storagePath, mimeType, duration, preFacts, preHookType, platform } = videoMeta;
-  
+  const { storagePath, mimeType, duration, preFacts, preHookType, platform, palanca_detectada } = videoMeta;
+
+  // Palanca frozen (lo que el video realmente hace)
+  // perception.palanca_psicologica = lo que el usuario quiere lograr (objetivo)
+  const perceptionParaScoring = {
+    ...perception,
+    palanca_detectada: palanca_detectada || perception.palanca_psicologica,
+  };
+
   // 1. Cobramos las gemas acá en el paso definitivo
   const cost = 100;
   const approved = await deductGems(cost, `video:${Math.ceil(duration / 60)}`);
@@ -1195,52 +1210,55 @@ const runDeepAnalysis = async () => {
 
   try {
     // ============================================================
-    // CALL 1 — Viewer Brain (Usando la industria validada por el usuario)
+    // CALL 1 — Viewer Brain
+    // Usa palanca_detectada — evalúa el video tal como es
     // ============================================================
     setAnalysisProgress(30);
     setStatusText("Analizando comportamiento humano...");
 
     const res = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildViewerBrainPrompt(JSON.stringify(preFacts), platform, perception),
+        text: buildViewerBrainPrompt(JSON.stringify(preFacts), platform, {
+          ...perception,
+          palanca_psicologica: palanca_detectada || perception.palanca_psicologica,
+        }),
         storagePath,
         videoMimeType: mimeType,
         duration: Math.round(duration),
         maxOutputTokens: 8192,
       }
     });
-    
+
     if (res.error) throw new Error(`CALL 1 falló: ${res.error.message}`);
     const viewerAnalysis = extractGeminiText(res.data);
 
     // ============================================================
-// CALL 1.5 — Research Brain
-// ============================================================
-setAnalysisProgress(40);
-setStatusText("Investigando casos de éxito...");
+    // CALL 1.5 — Research Brain
+    // ============================================================
+    setAnalysisProgress(40);
+    setStatusText("Investigando casos de éxito...");
 
-let researchData = {};
-try {
-  const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
-    body: {
-      text: buildResearchBrainPrompt(platform, perception.industria, selectedObjetivo),
-      useSearch: true,
-      expectsJson: true,
-      maxOutputTokens: 2048,
-      temperature: 0,
+    let researchData = {};
+    try {
+      const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildResearchBrainPrompt(platform, perception.industria, selectedObjetivo),
+          useSearch: true,
+          expectsJson: true,
+          maxOutputTokens: 2048,
+          temperature: 0,
+        }
+      });
+
+      console.log('[RESEARCH] groundingMetadata:',
+        JSON.stringify(call1_5Data?.candidates?.[0]?.groundingMetadata, null, 2)
+      );
+      console.log('[RESEARCH] raw output:', extractGeminiText(call1_5Data));
+
+      if (!call1_5Error) researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
+    } catch (e) {
+      console.warn('[CALL 1.5] Fallback research:', e.message);
     }
-  });
-
-  // ← TEMPORAL: verificar si grounding está activo
-  console.log('[RESEARCH] groundingMetadata:',
-    JSON.stringify(call1_5Data?.candidates?.[0]?.groundingMetadata, null, 2)
-  );
-  console.log('[RESEARCH] raw output:', extractGeminiText(call1_5Data));
-
-  if (!call1_5Error) researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
-} catch (e) {
-  console.warn('[CALL 1.5] Fallback research:', e.message);
-}
 
     // ============================================================
     // CALL 1.75 — Apply Research
@@ -1263,99 +1281,104 @@ try {
     }
 
     // ============================================================
-    // CALL 2 — Strategy Brain (Se le puede inyectar la palanca psicológica validada si tu prompt lo requiere)
+    // CALL 2 — Strategy Brain
+    // Usa palanca_detectada — evalúa lo que el video realmente hace
     // ============================================================
     setAnalysisProgress(65);
     setStatusText("Evaluando ganchos y persuasión...");
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, perception, preFacts),
+        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, {
+          ...perception,
+          palanca_psicologica: palanca_detectada || perception.palanca_psicologica,
+        }, preFacts),
         maxOutputTokens: 8192,
       }
     });
     if (call2Error) throw call2Error;
 
-const strategyRaw = extractGeminiText(call2Data);
-let flagsFromStrategy = {};
-let strategyAnalysis = strategyRaw;
+    const strategyRaw = extractGeminiText(call2Data);
+    let flagsFromStrategy = {};
+    let strategyAnalysis = strategyRaw;
 
-try {
-  const strategyParsed = safeParseJSON(strategyRaw, 'strategy-flags');
-  flagsFromStrategy = strategyParsed?.flags_binarios ?? {};
-  // Guardamos el texto completo igual para el contexto del scoring brain      //_penalties: penalties,
-  strategyAnalysis = JSON.stringify(strategyParsed?.analisis_cualitativo ?? strategyParsed, null, 2);
-} catch (e) {
-  console.warn('[Strategy] No se pudo parsear como JSON, usando texto plano:', e.message);
-}
+    try {
+      const strategyParsed = safeParseJSON(strategyRaw, 'strategy-flags');
+      flagsFromStrategy = strategyParsed?.flags_binarios ?? {};
+      strategyAnalysis = JSON.stringify(strategyParsed?.analisis_cualitativo ?? strategyParsed, null, 2);
+    } catch (e) {
+      console.warn('[Strategy] No se pudo parsear como JSON, usando texto plano:', e.message);
+    }
 
     const flagsDeterministic = {
-  ...flagsFromStrategy,
-  hook_type: preHookType,
-  ad_filter_triggered: !!preFacts.logo_en_s0,
-  no_audio_from_s0: (preFacts.audio_desde_s0 === false) || flagsFromStrategy.no_audio_from_s0,
-  is_static_slideshow: (preFacts.movimiento_real === false) || flagsFromStrategy.is_static_slideshow,
-  pain_missing: (preFacts.dolor_antes_s5 === false) || flagsFromStrategy.pain_missing,
-  pain_late: (Number(preFacts.segundo_dolor) > 5) || flagsFromStrategy.pain_late,
-  no_rehook: (!preFacts.tiene_rehook && (preFacts.duracion_estimada ?? 0) > 20) || !!flagsFromStrategy.no_rehook,
-  short_video_advantage: (preFacts.duracion_estimada ?? 999) < 15 || !!flagsFromStrategy.short_video_advantage,
-  duration_kills_completion: ((preFacts.duracion_estimada ?? 0) > 60 && !preFacts.tiene_rehook) || !!flagsFromStrategy.duration_kills_completion,
-  es_slideshow_imagenes: preFacts.es_slideshow_imagenes,
-  porcentaje_video_real: preFacts.porcentaje_video_real ?? 100,
-  tipo_edicion: preFacts.tipo_edicion || 'desconocido',
-  ritmo_visual: preFacts.ritmo_visual || 'normal',
-  cortes_por_minuto: preFacts.cortes_por_minuto ?? 0,
-  cambio_visual_cada_ns: preFacts.cambio_visual_cada_ns ?? 3,
-  compliance_score: gapAnalysis.compliance_score ?? 50,
-  has_red_flags: (gapAnalysis.red_flags_en_tu_video?.length ?? 0) > 0,
-  hook_descripcion_libre: preFacts.hook_libre ?? null, // ← esto agregás
-};
+      ...flagsFromStrategy,
+      hook_type: preHookType,
+      ad_filter_triggered: !!preFacts.logo_en_s0,
+      no_audio_from_s0: (preFacts.audio_desde_s0 === false) || flagsFromStrategy.no_audio_from_s0,
+      is_static_slideshow: (preFacts.movimiento_real === false) || flagsFromStrategy.is_static_slideshow,
+      pain_missing: (preFacts.dolor_antes_s5 === false) || flagsFromStrategy.pain_missing,
+      pain_late: (Number(preFacts.segundo_dolor) > 5) || flagsFromStrategy.pain_late,
+      no_rehook: (!preFacts.tiene_rehook && (preFacts.duracion_estimada ?? 0) > 20) || !!flagsFromStrategy.no_rehook,
+      short_video_advantage: (preFacts.duracion_estimada ?? 999) < 15 || !!flagsFromStrategy.short_video_advantage,
+      duration_kills_completion: ((preFacts.duracion_estimada ?? 0) > 60 && !preFacts.tiene_rehook) || !!flagsFromStrategy.duration_kills_completion,
+      es_slideshow_imagenes: preFacts.es_slideshow_imagenes,
+      porcentaje_video_real: preFacts.porcentaje_video_real ?? 100,
+      tipo_edicion: preFacts.tipo_edicion || 'desconocido',
+      ritmo_visual: preFacts.ritmo_visual || 'normal',
+      cortes_por_minuto: preFacts.cortes_por_minuto ?? 0,
+      cambio_visual_cada_ns: preFacts.cambio_visual_cada_ns ?? 3,
+      compliance_score: gapAnalysis.compliance_score ?? 50,
+      has_red_flags: (gapAnalysis.red_flags_en_tu_video?.length ?? 0) > 0,
+      hook_descripcion_libre: preFacts.hook_libre ?? null,
+    };
 
-    // ============================================================  //{isTyping && <div className="text-[10px] text-zinc-500 animate-pulse font-black uppercase ml-2 italic tracking-widest">Calculando respuesta técnica...</div>}
+    // ============================================================
     // CALL 3 — Scoring Brain
-    // ============================================================   //text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, perception.industria, flagsDeterministic, penalties),
+    // Recibe perceptionParaScoring con AMBAS palancas:
+    // .palanca_psicologica = objetivo del usuario
+    // .palanca_detectada   = lo que el video realmente hace
+    // El prompt puede medir el gap entre las dos
+    // ============================================================
     setAnalysisProgress(80);
     setStatusText("Falta poco...");
-    
-    // ✅ CÓDIGO NUEVO — pegarlo en el mismo lugar:
-const nicheConfig = perception.motor_key ? NICHE_MOTORS[perception.motor_key] : null;
 
-const benchmarkData = Object.keys(researchData).length ? {
-  ...researchData,
-  resumen_brecha: gapAnalysis.resumen_brecha ?? null,
-  red_flags_en_tu_video: gapAnalysis.red_flags_en_tu_video ?? []
-} : null;
+    const nicheConfig = perception.motor_key ? NICHE_MOTORS[perception.motor_key] : null;
 
-const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildScoringBrainPrompt(
-      strategyAnalysis,
-      viewerAnalysis,
-      platform,
-      selectedObjetivo,
-      perception,
-      flagsDeterministic,
-      nicheConfig,
-      benchmarkData
-    ),
-    storagePath,
-    videoMimeType: mimeType,
-    duration: Math.round(duration),
-    expectsJson: true,
-    maxOutputTokens: 8192,
-  }
-});
+    const benchmarkData = Object.keys(researchData).length ? {
+      ...researchData,
+      resumen_brecha: gapAnalysis.resumen_brecha ?? null,
+      red_flags_en_tu_video: gapAnalysis.red_flags_en_tu_video ?? []
+    } : null;
 
-if (call3Error) throw call3Error;
+    const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildScoringBrainPrompt(
+          strategyAnalysis,
+          viewerAnalysis,
+          platform,
+          selectedObjetivo,
+          perceptionParaScoring,  // ← tiene ambas palancas
+          flagsDeterministic,
+          nicheConfig,
+          benchmarkData
+        ),
+        storagePath,
+        videoMimeType: mimeType,
+        duration: Math.round(duration),
+        expectsJson: true,
+        maxOutputTokens: 8192,
+      }
+    });
 
-    const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');  //text: buildScoringBrainPrompt(strategyAnalysis, platform, selectedObjetivo, perception.industria, flagsDeterministic),
-    
+    if (call3Error) throw call3Error;
+
+    const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
+
     setAnalysisProgress(90);
     setStatusText("Estructurando reporte completo...");
 
     const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic, perception.industria);
 
-    // Ajustes de umbrales rápidos
     const viralScore = parsedFinal.viralScore?.score ?? 0;
     if (viralScore >= 65) {
       parsedFinal.salesScore = {
@@ -1385,7 +1408,7 @@ if (call3Error) throw call3Error;
     setAnalysisProgress(100);
     await saveAnalysisToHistory(finalResult, 'video');
     await trackPrediction(finalResult);
-    
+
     setTimeout(() => setStep('results'), 500);
 
   } catch (err) {
@@ -1393,7 +1416,6 @@ if (call3Error) throw call3Error;
     alert(`❌ Error al procesar reporte profundo: ${err.message || err}`);
     setStep('upload');
   } finally {
-    // ── LLEGAMOS AL FINAL: Ahora sí removemos de manera segura el archivo de Supabase ──
     await supabase.storage.from('videos').remove([storagePath]);
   }
 };
@@ -2113,15 +2135,25 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
           </div>
 
           {/* Campo: Palanca Psicológica */}
-          <div className="group flex flex-col space-y-3 p-5 rounded-[2rem] border border-white/[0.07] bg-white/[0.02] hover:border-purple-500/20 transition-all duration-300">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 group-hover:text-purple-400 transition-colors">
-                Palanca Psicológica Dominante
-              </label>
-              <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
-                Editable 📝
-              </span>
-            </div>
+<div className="group flex flex-col space-y-3 p-5 rounded-[2rem] border border-white/[0.07] bg-white/[0.02] hover:border-purple-500/20 transition-all duration-300">
+  <div className="flex justify-between items-center">
+    <div className="flex flex-col gap-1">
+      <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 group-hover:text-purple-400 transition-colors">
+        Palanca Objetivo
+      </label>
+      {videoMeta?.palanca_detectada && (
+        <p className="text-[9px] italic text-slate-600">
+          Detectada en el video:{' '}
+          <span className="text-purple-400 font-bold">
+            {videoMeta.palanca_detectada}
+          </span>
+        </p>
+      )}
+    </div>
+    <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
+      Editable 📝
+    </span>
+  </div>
 
             {/* Se cambió a textarea para evitar desbordes y cortes de texto */}
             <textarea 
