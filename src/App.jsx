@@ -17,7 +17,6 @@ import {
   Users //finalResult  //{/* HOJA DE RUTA */} //buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, perception.industria, preFacts, preHookType)
   ,
 
-
   X,
   Zap
 } from 'lucide-react';
@@ -44,7 +43,7 @@ const FOLLOWER_RANGES = [
   { id: 'new',   label: 'Cuenta nueva',    range: '0 – 1K',      emoji: '🌱' },
   { id: 'small', label: 'Cuenta pequeña',  range: '1K – 10K',    emoji: '📈' },
   { id: 'mid',   label: 'Cuenta media',    range: '10K – 100K',  emoji: '🔥' },
-  { id: 'large', label: 'Cuenta grande',   range: '100K – 500K', emoji: '⚡' },
+  { id: 'large', label: 'Cuenta grande',   range: '100K – 500K', emoji: '⚡' }, //const researchResponse = await fetch(`${SUPABASE_URL}/functions/v1/gemini-proxy`, {
   { id: 'mega',  label: 'Mega cuenta',     range: '500K+',       emoji: '👑' },
 ];
 
@@ -300,10 +299,7 @@ Responde ÚNICAMENTE en JSON estricto. Sin markdown. Sin texto extra:
 }`;
 };
 
-
-// ============================================================
-// CALL 1.5 — RESEARCH BRAIN
-// ============================================================
+// CALL 1.5
 export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
   const pName = {
     tiktok: 'TikTok',
@@ -312,16 +308,28 @@ export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
     all:    'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Eres un investigador de mercado especializado en short-form video.
-Tu tarea: analizar el panorama competitivo para el nicho "${industria}" en ${pName} con objetivo "${objetivo}".
+  return `Eres un investigador de contenido viral con acceso a búsqueda web en tiempo real.
 
-Responde SOLO con este JSON:
+TAREA: Buscá en internet información ACTUAL sobre el nicho "${industria}" en ${pName} para objetivo "${objetivo}".
+
+Buscá específicamente:
+- Qué formatos de video están funcionando AHORA en este nicho en ${pName}
+- Patrones de hook exitosos con ejemplos concretos y recientes
+- Errores frecuentes que cometen creadores de este nicho
+- Qué está priorizando el algoritmo de ${pName} para este tipo de contenido hoy
+
+REGLAS:
+- Basá TODAS tus respuestas en lo que encontrás en la búsqueda, no en conocimiento genérico
+- Si no encontrás algo específico, decilo en ese campo
+- No inventes datos ni ejemplos
+
+Respondé SOLO con este JSON válido, sin markdown:
 {
-  "top_formatos_ganadores":  ["<formato1>", "<formato2>", "<formato3>"],
-  "patrones_hook_exitosos":  ["<patron1>", "<patron2>"],
-  "errores_comunes_del_nicho": ["<error1>", "<error2>"],
-  "benchmark_viral_score":   <número 0-100, promedio del nicho>,
-  "oportunidad_detectada":   "<gap o ángulo sin explotar en este nicho>"
+  "top_formatos_ganadores":    ["<formato real y reciente>", "<formato2>", "<formato3>"],
+  "patrones_hook_exitosos":    ["<patron concreto con ejemplo>", "<patron2>"],
+  "errores_comunes_del_nicho": ["<error documentado>", "<error2>"],
+  "benchmark_viral_score":     <número 0-100>,
+  "oportunidad_detectada":     "<gap real sin explotar basado en lo que encontraste>"
 }`;
 };
 
@@ -1169,6 +1177,7 @@ const runDeepAnalysis = async () => {
       const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
         body: {
           text: buildResearchBrainPrompt(platform, perception.industria, selectedObjetivo),
+          useSearch: true,       // ← esto es todo lo que agregás
           expectsJson: true,
           maxOutputTokens: 2048,
         }
