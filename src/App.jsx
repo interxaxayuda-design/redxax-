@@ -309,28 +309,30 @@ export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
     all:    'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Eres un investigador de contenido viral con acceso a búsqueda web en tiempo real.
+  return `Eres un analista de contenido viral especializado en ${pName}.
 
-TAREA: Buscá en internet información ACTUAL sobre el nicho "${industria}" en ${pName} para objetivo "${objetivo}".
+Tenés acceso a información actualizada de la web sobre tendencias actuales.
 
-Buscá específicamente:
-- Qué formatos de video están funcionando AHORA en este nicho en ${pName}
-- Patrones de hook exitosos con ejemplos concretos y recientes
-- Errores frecuentes que cometen creadores de este nicho
+Usando esa información, analizá el nicho "${industria}" en ${pName} para el objetivo "${objetivo}" HOY.
+
+Identificá específicamente:
+- Qué formatos de video están generando más retención AHORA en este nicho
+- Qué patrones de hook están funcionando con ejemplos concretos y recientes
+- Qué errores comunes están cometiendo los creadores de este nicho actualmente
 - Qué está priorizando el algoritmo de ${pName} para este tipo de contenido hoy
 
-REGLAS:
-- Basá TODAS tus respuestas en lo que encontrás en la búsqueda, no en conocimiento genérico
-- Si no encontrás algo específico, decilo en ese campo
-- No inventes datos ni ejemplos
+IMPORTANTE:
+- Usá SOLO información reciente y verificable
+- Si no tenés datos concretos de algo, escribí "Sin datos verificables" en ese campo
+- No inventes ejemplos ni estadísticas
 
-Respondé SOLO con este JSON válido, sin markdown:
+Respondé SOLO con este JSON válido, sin markdown ni texto extra:
 {
   "top_formatos_ganadores":    ["<formato real y reciente>", "<formato2>", "<formato3>"],
-  "patrones_hook_exitosos":    ["<patron concreto con ejemplo>", "<patron2>"],
+  "patrones_hook_exitosos":    ["<patron concreto con ejemplo verificable>", "<patron2>"],
   "errores_comunes_del_nicho": ["<error documentado>", "<error2>"],
-  "benchmark_viral_score":     <número 0-100>,
-  "oportunidad_detectada":     "<gap real sin explotar basado en lo que encontraste>"
+  "benchmark_viral_score":     <número 0-100 basado en los datos encontrados>,
+  "oportunidad_detectada":     "<gap real detectado en los datos>"
 }`;
 };
 
