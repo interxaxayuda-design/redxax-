@@ -401,9 +401,6 @@ RESPONDE ÚNICAMENTE CON JSON EXACTO:
 };
 
 
-// ============================================================
-// CALL 3 — SCORING BRAIN
-// ============================================================
 export const buildScoringBrainPrompt = (
   videoRawData,
   strategyAnalysis,
@@ -412,8 +409,8 @@ export const buildScoringBrainPrompt = (
   objetivo,
   perception,
   flags,
-  nicheConfig = null,   // configuración del nicho desde NICHE_MOTORS, o null si es micro-nicho nuevo
-  benchmarkData = null    // ← parámetro nuevo
+  nicheConfig = null,
+  benchmarkData = null
 ) => {
   const pName = {
     tiktok: 'TikTok',
@@ -422,72 +419,130 @@ export const buildScoringBrainPrompt = (
     all:    'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  // Bloque de anclas: se adapta según si hay score_cap de nicho o anclas genéricas
   const scoringAnchors = nicheConfig?.score_cap
     ? `- flags.metricas_tecnicas.es_slideshow_imagenes === true  →  viralScore techo absoluto: 35
-- Score cap del nicho (PRIORIDAD SOBRE ANCLAS GENÉRICAS)   →  viralScore ≤ ${nicheConfig.score_cap.viralScore} | salesScore ≤ ${nicheConfig.score_cap.salesScore}
-- flags.flags_binarios.ad_filter_triggered === true        →  salesScore penalización: -15 sobre el score calculado
-- viralScore y salesScore DEBEN diferir mínimo 10 puntos
-  (excepción única: performance ads donde ambos objetivos coinciden — justificalo en el verdict)`
+- Score cap del nicho (PRIORIDAD)  →  viralScore ≤ ${nicheConfig.score_cap.viralScore} | salesScore ≤ ${nicheConfig.score_cap.salesScore}
+- flags.flags_binarios.ad_filter_triggered === true  →  salesScore penalización: -15
+- viralScore y salesScore DEBEN diferir mínimo 10 puntos`
     : `- flags.metricas_tecnicas.es_slideshow_imagenes === true  →  viralScore techo absoluto: 35
-- flags.flags_narrativos.dolor_antes_s5 === false          →  viralScore techo absoluto: 45
-- flags.flags_binarios.ad_filter_triggered === true        →  salesScore penalización: -15 sobre el score calculado
-- viralScore y salesScore DEBEN diferir mínimo 10 puntos
-  (excepción única: performance ads donde ambos objetivos coinciden — justificalo en el verdict)`;
+- flags.flags_narrativos.dolor_antes_s5 === false  →  viralScore techo absoluto: 45
+- flags.flags_binarios.ad_filter_triggered === true  →  salesScore penalización: -15
+- viralScore y salesScore DEBEN diferir mínimo 10 puntos`;
 
-  // Bloque de contexto de nicho: agrega las propiedades del nicho cuando están disponibles
   const nicheContext = nicheConfig
-    ? `- Motor del nicho:       "${nicheConfig.motor}"
-- Trust signal válido:  "${nicheConfig.trust_signal}"
-- CTA esperado:         "${nicheConfig.cta_type}"${nicheConfig.limitacion ? `\n- Limitación del nicho: "${nicheConfig.limitacion}"` : ''}`
+    ? `- Motor del nicho:      "${nicheConfig.motor}"
+- Trust signal válido: "${nicheConfig.trust_signal}"
+- CTA esperado:        "${nicheConfig.cta_type}"${nicheConfig.limitacion ? `\n- Limitación:          "${nicheConfig.limitacion}"` : ''}`
     : '';
 
-// ← ACÁ va el bloque, después de nicheContext
   const benchmarkBlock = benchmarkData ? `
 ═══════════════════════════════════════════
-EVIDENCIA REAL DEL NICHO — ÚNICA FUENTE VÁLIDA PARA EL ROADMAP:
+EVIDENCIA REAL DEL NICHO — BASE DEL ROADMAP:
 ═══════════════════════════════════════════
-Estos son los formatos y patrones que REALMENTE funcionan en "${perception.industria}":
-
 Formatos ganadores verificados:
 ${benchmarkData.top_formatos_ganadores?.map((f, i) => `${i+1}. ${f}`).join('\n') ?? 'No disponible'}
 
 Patrones de hook con resultado probado:
 ${benchmarkData.patrones_hook_exitosos?.map((p, i) => `${i+1}. ${p}`).join('\n') ?? 'No disponible'}
 
-Errores comunes del nicho (documentados):
+Errores comunes documentados:
 ${benchmarkData.errores_comunes_del_nicho?.map((e, i) => `${i+1}. ${e}`).join('\n') ?? 'No disponible'}
 
-Brecha detectada vs competencia:
-${benchmarkData.resumen_brecha ?? 'No disponible'}
-
-Oportunidad sin explotar en el nicho:
-${benchmarkData.oportunidad_detectada ?? 'No disponible'}
+Brecha vs competencia: ${benchmarkData.resumen_brecha ?? 'No disponible'}
+Oportunidad sin explotar: ${benchmarkData.oportunidad_detectada ?? 'No disponible'}
 ` : '';
+
+  const eliteOutputExample = `
+═══════════════════════════════════════════
+EJEMPLO DE ANÁLISIS DE ÉLITE — calibrá tu output a este nivel:
+═══════════════════════════════════════════
+Este es el estándar mínimo aceptable. Cada campo debe tener esta densidad de información.
+
+{
+  "viralScore": {
+    "score": 28,
+    "verdict": "Frame 0 muestra logo corporativo centrado sobre fondo blanco — el cerebro del espectador lo clasifica como publicidad institucional en 180ms antes de que procese el audio. Cero tensión, cero pregunta abierta, cero estímulo visual competitivo. El segundo 3 introduce el presentador con plano medio estático: segundo abandono masivo aquí porque no hay cambio de ritmo que justifique quedarse. Ritmo de corte: 1 cada 8 segundos — 6x más lento que el estándar del nicho. El video no compite, desaparece.",
+    "accion_clave": "Eliminar los primeros 4.2 segundos completos. Comenzar directamente en el segundo 11 actual donde aparece el producto en acción. Agregar texto superpuesto en los primeros 0.8s: una pregunta que el espectador del nicho no pueda ignorar."
+  },
+  "salesScore": {
+    "score": 41,
+    "verdict": "El motor dolor→solución existe en el guion pero aparece en el segundo 34 — cuando el 78% del público ya abandonó. La demostración del producto es real y creíble, pero llega demasiado tarde para impactar la conversión. El CTA final es genérico sin urgencia ni fricción reducida.",
+    "accion_clave": "Mover la demostración del producto al segundo 8-12. Reemplazar CTA por fricción mínima: 'Link en bio — envío hoy' activa urgencia sin redirección cognitiva."
+  },
+  "scrollStopScore": {
+    "score": 19,
+    "verdict": "Segundo 0: logo estático. Segundo 1: fade-in lento del título. Segundo 2: música empieza. Triple falla: sin cara humana, sin movimiento de alta energía, sin texto de interrupción. El espectador no tiene ninguna razón neurológica para pausar el scroll. Contraste visual bajo, paleta corporativa que el cerebro asocia automáticamente con contenido institucional no entretenido."
+  },
+  "hookDNA": {
+    "pattern": "Apertura_Informativa",
+    "optimizedHook": "Plano cerrado de manos sosteniendo el producto + texto en pantalla: '¿Por qué el 90% lo compra mal?' — corte directo al segundo 11 donde empieza la demostración real."
+  },
+  "steppsScore": {
+    "dominantFactor": "Practical Value — la información es genuinamente útil pero solo llega a quien tiene paciencia para esperar 34 segundos.",
+    "weakestFactor": "Triggers — no hay elemento que active recuerdo espontáneo ni asociación con contexto cotidiano del espectador. El video no aparece en la mente después de verlo.",
+    "shareMotivation": "ninguno"
+  },
+  "honestVerdict": "Este video existe, pero no compite. Tiene el producto correcto y el mensaje correcto en el orden incorrecto para la plataforma. Con el mismo material reordenado, el viralScore sube 40 puntos.",
+  "roadmap": [
+    {
+      "impacto": "ALTO",
+      "problema": "Segundos 0-4.2: logo estático + fade-in corporativo — el algoritmo detecta scroll-off masivo aquí y frena la distribución en las primeras 2 horas.",
+      "solucion": "Cortar segundos 0-4.2. Comenzar en segundo 11 actual. Agregar zoom-in 1.2x en los primeros 0.6s para activar movimiento desde frame 0.",
+      "resultado": "Scroll-stop rate estimado sube de ~8% a ~28% — suficiente para que el algoritmo continúe distribuyendo."
+    },
+    {
+      "impacto": "ALTO",
+      "problema": "Demostración del producto aparece en segundo 34 — después del punto de abandono masivo del nicho (estimado segundo 12-15 para este formato).",
+      "solucion": "Reorganizar: demo en segundos 8-18, contexto después. El espectador necesita ver qué hace el producto antes de escuchar por qué lo necesita.",
+      "resultado": "Watch-time hasta segundo 20 estimado sube de ~22% a ~55% — umbral mínimo para distribución amplia en TikTok."
+    },
+    {
+      "impacto": "MEDIO",
+      "problema": "CTA final genérico — cada paso de redirección adicional reduce conversión un 40-60% en mobile.",
+      "solucion": "Reemplazar por 'Link en bio — stock limitado hoy' con texto superpuesto en los últimos 2 segundos.",
+      "resultado": "Click-through rate estimado sube de ~1.2% a ~3.8% sobre el total de views."
+    }
+  ]
+}
+
+Tu análisis del video actual debe tener esta misma densidad, especificidad y pensamiento de algoritmo.
+Cada número tiene que estar justificado. Cada observación nombra el segundo exacto y el elemento específico.
+═══════════════════════════════════════════
+`;
 
   return `IDENTIDAD: Eres el filtro final de producción. Este video pasa a distribución o muere acá.
 
 No sos consultor. No sos estratega. Sos el algoritmo de ${pName} con criterio humano.
-Tu referencia base son los top 0.1% de videos en este nicho — no el promedio.
+Tu referencia base son los top 1% de videos en este nicho — no el promedio.
 Comparado con ese estándar, la mayoría de videos son invisibles. Asumí eso por defecto.
 
-
+═══════════════════════════════════════════
 AUTORIZACIÓN EXPLÍCITA — leé esto antes de puntuar:
-
+═══════════════════════════════════════════
 - Podés dar 12/100 si el video lo merece. Eso NO es un error. Es precisión.
 - Podés dar 91/100 si genuinamente compite contra los mejores del feed.
 - Los scores entre 45-65 son mentiras estadísticas en short-form video.
   O el video falla (por debajo de 45) o sobrevive (por encima de 65). No existe zona media.
 - Si el video parece "correcto pero sin vida" → eso ES un fracaso. Puntúa como tal.
-- Si tu instinto dice "este video es aburrido" → tu instinto tiene razón. Puntúa como tal.
 - Ser amable con un video malo es más dañino que ser duro. La verdad temprana ahorra dinero.
 
+═══════════════════════════════════════════
+PENSAMIENTO DE ALGORITMO:
+═══════════════════════════════════════════
+El algoritmo de ${pName} no entiende el video. Mide señales de comportamiento:
+1. ¿El frame 0 genera pausa de pulgar? (scroll-stop rate)
+2. ¿Los primeros 3 segundos generan watch-time suficiente para distribución inicial?
+3. ¿Hay abandono masivo antes del segundo 8? (hook fallido)
+4. ¿El completion rate supera el umbral de distribución amplia del nicho?
+5. ¿Genera comentarios o shares? (contenido conversacional)
+Evaluá el video como ese sistema de medición, no como un crítico.
 
+═══════════════════════════════════════════
 CONTEXTO DE EVALUACIÓN:
-
+═══════════════════════════════════════════
 - Industria: ${perception.industria}
 - Motor psicológico: ${perception.palanca_psicologica}
-- Criterio de éxito del nicho: ${perception.criterio_evaluacion}
+- Criterio de éxito: ${perception.criterio_evaluacion}
 - Plataforma: ${pName}
 - Objetivo: ${objetivo}
 ${nicheContext}
@@ -497,80 +552,71 @@ VIDEO RAW — evaluá ritmo, cortes, energía y dinamismo visual acá:
 ${videoRawData}
 ---
 
-FLAGS TÉCNICOS COMPUTADOS EXTERNAMENTE (no los recalcules — son hechos, no estimaciones):
+FLAGS TÉCNICOS COMPUTADOS EXTERNAMENTE (no los recalcules — son hechos):
 ${JSON.stringify(flags, null, 2)}
 
-ANÁLISIS DEL ESPECTADOR (input del ViewerBrain):
+ANÁLISIS DEL ESPECTADOR:
 ${viewerAnalysis}
 
-ANÁLISIS ESTRATÉGICO (input del StrategyBrain):
+ANÁLISIS ESTRATÉGICO:
 ${strategyAnalysis}
 ${benchmarkBlock}
+${eliteOutputExample}
 
-
+═══════════════════════════════════════════
 ANCLAS DE SCORING INAMOVIBLES:
-
-Estas no son sugerencias. Son topes computados externamente que reflejan realidad estadística:
+═══════════════════════════════════════════
 ${scoringAnchors}
 
+═══════════════════════════════════════════
+RESTRICCIÓN ABSOLUTA DEL ROADMAP — máximo 3 ítems:
+═══════════════════════════════════════════
+1. PROBLEMA: nombrar el segundo exacto y el elemento específico que falla.
+   NO → "el hook es débil"
+   SÍ → "segundo 0-2: fondo negro con texto estático — ausencia total de estímulo visual"
 
-RESTRICCIÓN ABSOLUTA DEL ROADMAP:
+2. SOLUCIÓN: instrucción de edición ejecutable sin ambigüedad.
+   NO → "mejorar el inicio"
+   SÍ → "importar el clip del segundo 14 al segundo 0, agregar zoom-in 1.3x en los primeros 0.8s"
 
-Cada ítem del roadmap DEBE cumplir estas tres condiciones simultáneamente.
-Si no cumple las tres → no lo incluyas. Un roadmap de 2 ítems sólidos
-vale más que uno de 5 ítems vagos.
+3. RESULTADO: métrica de comportamiento específica.
+   NO → "más engagement"
+   SÍ → "scroll-stop rate estimado sube de ~12% a ~35% en distribución inicial"
 
-1. PROBLEMA OBSERVABLE
-   Debe corresponder a un flag negativo ya detectado en los FLAGS TÉCNICOS
-   o en el ANÁLISIS DEL ESPECTADOR o ESTRATÉGICO provistos arriba.
-   Si no fue detectado como problema en esos inputs → no existe como problema.
-
-2. SOLUCIÓN ESPECÍFICA — ANCLADA EN EVIDENCIA
-   Debe basarse en un formato ganador o patrón de hook de la sección
-   EVIDENCIA REAL DEL NICHO (si está disponible arriba).
-   Si no hay evidencia que la respalde → no la incluyas.
-   MAL → "mejorar el hook"
-   BIEN → "reemplazar frame 0 por plano cerrado del artista en performance, eliminar logo del inicio"
-
-3. RESULTADO MEDIBLE
-   Debe nombrar una métrica específica del video, no un objetivo de negocio abstracto.
-   MAL → "aumentar engagement"
-   BIEN → "reducir scroll-off estimado en primeros 3 segundos"
-
-
+═══════════════════════════════════════════
 RESPONDE SOLO EN JSON. Sin markdown. Sin texto antes o después:
-
+═══════════════════════════════════════════
 {
   "viralScore": {
-    "score":       <number 0-100>,
-    "verdict":     "<por qué exactamente gana o muere en el algoritmo de ${pName} — sin eufemismos>",
-    "accion_clave":"<el único cambio que más movería este score — específico y ejecutable>"
+    "score":        <number 0-100>,
+    "verdict":      "<diagnóstico preciso — segundos exactos, elementos visuales específicos, reacciones neurológicas concretas>",
+    "accion_clave": "<instrucción de edición ejecutable — qué cortar, qué agregar, en qué segundo exacto>"
   },
   "salesScore": {
-    "score":       <number 0-100>,
-    "verdict":     "<potencial de conversión real — no potencial teórico ni intencional>",
-    "accion_clave":"<acción concreta y medible, no consejo genérico>"
+    "score":        <number 0-100>,
+    "verdict":      "<qué señal de conversión falla o funciona — específico, no teórico>",
+    "accion_clave": "<acción concreta y medible>"
   },
   "scrollStopScore": {
     "score":   <number 0-100>,
-    "verdict": "<qué ocurre exactamente en los primeros 2 segundos desde la perspectiva del espectador>"
+    "verdict": "<qué ocurre exactamente en los primeros 2 segundos — elemento por elemento>"
   },
   "hookDNA": {
     "pattern":       "<Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Otro>",
-    "optimizedHook": "<versión mejorada del hook en 1 oración — implementable directamente, no teórica>"
+    "optimizedHook": "<hook reescrito listo para implementar — primera oración o instrucción visual del frame 0>"
   },
   "steppsScore": {
-    "dominantFactor":  "<factor STEPPS más fuerte — si hay alguno>",
-    "weakestFactor":   "<factor STEPPS más débil — el que más daña>",
+    "dominantFactor":  "<factor STEPPS más fuerte con explicación de por qué>",
+    "weakestFactor":   "<factor STEPPS más débil con impacto concreto en el video>",
     "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
   },
-  "honestVerdict": "<veredicto sin filtro en máximo 2 oraciones — si es aburrido, decilo; si es competitivo, reconocelo; si es un desastre, nombralo>",
+  "honestVerdict": "<2 oraciones máximo — diagnóstico sin filtro con causa específica>",
   "roadmap": [
     {
       "impacto":   "<ALTO|MEDIO|BAJO>",
-      "problema":  "<problema concreto derivado de los flags o análisis previos — no inventado>",
-      "solucion":  "<instrucción ejecutable y específica — no consejo genérico>",
-      "resultado": "<métrica específica del video que mejora>"
+      "problema":  "<segundo exacto + elemento específico que falla>",
+      "solucion":  "<instrucción de edición ejecutable sin ambigüedad>",
+      "resultado": "<métrica de comportamiento específica que mejora>"
     }
   ]
 }`;
