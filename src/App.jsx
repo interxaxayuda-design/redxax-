@@ -157,62 +157,66 @@ const safeParseJSON = (rawText, context = '') => {
   throw new Error(`JSON malformado. Preview: "${rawText.slice(0, 80)}..."`);
 };
 
-// ============================================================
-// CONSTANTES DE NEGOCIO
-// ============================================================
-// ============================================================
-// CONSTANTES DE NEGOCIO
-// ============================================================
+
 export const NICHE_MOTORS = {
-  "producto_fisico":    { motor: "dolor -> solucion",                         urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
-  "comida_restaurante": { motor: "deseo_sensorial -> identidad",              urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
-  "inmobiliaria":       { motor: "aspiracion -> agente",                      urgency: false, trust_signal: "experiencia_agente", cta_type: "contacto"  },
-  "app_saas":           { motor: "problema -> claridad -> demo",              urgency: true,  trust_signal: "resultado_visible",  cta_type: "directo"   },
-  "estetica":           { motor: "inseguridad -> transformacion -> identidad", urgency: false, trust_signal: "antes_despues",      cta_type: "implicito" },
-  "educacion":          { motor: "curiosidad -> valor -> confianza",          urgency: false, trust_signal: "autoridad",          cta_type: "implicito" },
-  "musica_artista":     { motor: "identidad_tribal -> emocion -> resonancia",  urgency: false, trust_signal: "autenticidad_raw",   cta_type: "ninguno",
+  "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
+  "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
+  "inmobiliaria":       { motor: "aspiracion -> agente",                       urgency: false, trust_signal: "experiencia_agente", cta_type: "contacto"  },
+  "app_saas":           { motor: "problema -> claridad -> demo",               urgency: true,  trust_signal: "resultado_visible",  cta_type: "directo"   },
+  "estetica":           { motor: "inseguridad -> transformacion -> identidad",  urgency: false, trust_signal: "antes_despues",      cta_type: "implicito" },
+  "educacion":          { motor: "curiosidad -> valor -> confianza",           urgency: false, trust_signal: "autoridad",          cta_type: "implicito" },
+  "musica_artista":     { motor: "identidad_tribal -> emocion -> resonancia",   urgency: false, trust_signal: "autenticidad_raw",   cta_type: "ninguno",
                           score_cap: { viralScore: 55, salesScore: 35 },
                           limitacion: "audio_no_evaluable" }
 };
 
-
 // ============================================================
-// CALL 0A — PERCEPTION BRAIN (sin cambios)
+// CALL 0A — PERCEPTION BRAIN
+// Solo detecta el nicho y el motor real del video.
+// Sin interpretación de calidad.
 // ============================================================
 export const buildPerceptionPrompt = (videoRawData) => `
-Actúa como un estratega de marketing digital experto en algoritmos de retención.
-Analiza el siguiente video (transcripción y metadata visual):
+Sos un estratega de contenido digital con conocimiento profundo de todos 
+los nichos del mercado actual.
+
+Analizá este video y detectá con precisión:
+- En qué industria o micro-nicho opera
+- Qué motor psicológico está usando (puede ser cualquiera — no te limitás al catálogo)
+- Qué acción busca generar en el espectador
+
+Catálogo de referencia (usalo si aplica exactamente, ignoralo si el nicho es distinto):
+${JSON.stringify(NICHE_MOTORS, null, 2)}
+
+VIDEO:
 ---
 ${videoRawData}
 ---
 
-Catálogo de Motores Psicológicos Conocidos:
-${JSON.stringify(NICHE_MOTORS, null, 2)}
-
-Responde SOLO con este JSON. Usa los motores proporcionados si encajan, o define uno nuevo si es un micro-nicho distinto.
-Si el nicho encaja exactamente con una clave del catálogo, devolvé esa clave en "motor_key".
+Respondé SOLO con este JSON válido:
 {
-  "industria": "<nicho o sector exacto del video, lo más específico posible>",
-  "motor_key": "<clave exacta del catálogo NICHE_MOTORS si aplica — ej: musica_artista, app_saas — o null si es micro-nicho no catalogado>",
+  "industria": "<nicho ultra-específico — cuanto más preciso mejor>",
+  "motor_key": "<clave del catálogo si aplica exactamente — null si no encaja>",
   "objetivo_conversion": "<qué acción busca que haga el espectador>",
-  "palanca_psicologica": "<emoción o sesgo cognitivo principal que usa para vender>",
-  "criterio_evaluacion": "<en una frase: qué tiene que lograr este video para funcionar en su nicho>",
+  "palanca_psicologica": "<emoción o mecanismo psicológico real que usa el video>",
+  "criterio_evaluacion": "<en una frase: qué tiene que lograr este video para funcionar en su nicho específico>",
   "confianza": <0.0 a 1.0>
 }
 `;
 
 // ============================================================
-// CALL 0B — PRE-CLASSIFIER BRAIN (sin cambios)
+// CALL 0B — PRE-CLASSIFIER BRAIN
+// Extractor forense puro. Solo hechos. Cero interpretación.
 // ============================================================
 export const buildPreClassifierPrompt = (meta = '') => `
-Eres un auditor forense de video. Analiza el video y extrae hechos observables.
-NO evalúes calidad. NO interpretes intención. Solo registra lo que ves y escuchas.
+Sos un extractor forense de datos de video.
+Tu único trabajo: registrar hechos observables. 
+NO interpretés. NO evalués. NO juzgués calidad.
 ${meta ? `\nMETADATA: ${meta}` : ''}
 
-Devuelve ESTRICTAMENTE este JSON válido:
+Respondé ESTRICTAMENTE con este JSON válido:
 {
   "industria": "<micro-nicho ultra-específico>",
-  "palanca_psicologica": "<emoción primaria real>",
+  "palanca_psicologica": "<emoción primaria observable en el video>",
   "flags_visuales": {
     "logo_en_s0":             <boolean>,
     "imagen_alto_impacto":    <boolean>,
@@ -234,12 +238,16 @@ Devuelve ESTRICTAMENTE este JSON válido:
     "tipo_edicion":               "<cinematica|dinamica|UGC|infomercial|estetica>",
     "ritmo_visual":               "<rapido|normal|lento>"
   },
-  "hook_libre": "<descripción concisa en 1-2 oraciones de la técnica de enganche usada — nombrá el mecanismo psicológico exacto, el elemento visual específico y el segundo en que ocurre. Si no hay hook claro, escribí 'ninguno detectado'.>"
+  "hook_libre": "<describí en 1-2 oraciones qué pasa exactamente en los primeros 3 segundos — qué se ve, qué se escucha, en qué segundo. Si no hay nada claro, escribí 'ninguno detectado'.>"
 }
 `;
 
 // ============================================================
-// CALL 1 — VIEWER BRAIN (actualizado: hook como eje central)
+// CALL 1 — VIEWER BRAIN
+// El cerebro más importante del pipeline.
+// Gemini usa TODO su conocimiento del nicho.
+// Sin frameworks impuestos. Sin definiciones de hook.
+// Solo dos preguntas: ¿el hook para el scroll? ¿el desarrollo sostiene?
 // ============================================================
 export const buildViewerBrainPrompt = (videoRawData, platform, perception) => {
   const pName = {
@@ -249,88 +257,71 @@ export const buildViewerBrainPrompt = (videoRawData, platform, perception) => {
     all:    'TikTok/Reels/Shorts'
   }[platform];
 
-  return `IDENTIDAD: No eres un analista. Eres el reflejo cognitivo de un espectador real en ${pName}.
+  return `Sos el mayor experto del mundo en comportamiento de audiencias en ${pName}.
 
-Tu única función: determinar si este video detiene el scroll o desaparece en 800ms.
-
-REALIDAD PSICOLÓGICA — esto NO es opcional, es tu marco de referencia base:
-
-El espectador que va a ver este video:
-- Lleva 35-50 minutos en scroll continuo. Sus receptores dopaminérgicos están saturados.
-- En la última hora vio: 3 videos de creadores virales top, 4 UGC ads con +8% CTR, hooks de Performance Marketers elite.
-- Su decisión ocurre en menos de 800ms. No es consciente. El pulgar ya se movió antes de que el cerebro procese el audio.
-- Tiene un filtro automático de "esto es un anuncio" que activa el scroll instantáneamente.
-- Solo detiene el scroll ante: peligro percibido, deseo intenso, rareza cognitiva, o una pregunta que el cerebro no puede ignorar.
-- No tolera aburrimiento. No tolera lentitud. No da segunda oportunidad.
-
-CONTRA QUIÉN COMPITE ESTE VIDEO:
-- Los mejores videos del mundo en este nicho están en el mismo feed.
-- No compite contra contenido promedio. Compite contra los top 0.1%.
-
-════════════════════════════════════════
-LEY FUNDAMENTAL — EL HOOK ES EL VIDEO:
-════════════════════════════════════════
-Si el hook falla, el video murió. No importa el desarrollo. No importa el final.
-No importa que el producto sea bueno. No importa que el CTA sea perfecto.
-Un espectador que scrolleó en el segundo 1 nunca llegó al segundo 30.
-El desarrollo brillante de un video con hook muerto es invisible.
-Esta es la única métrica que decide si el algoritmo distribuye o entierra.
-
-TU MISIÓN: DISECCIONAR EL HOOK CON PRECISIÓN QUIRÚRGICA
-
-Evaluá PRIMERO y con máxima atención los primeros 3 segundos.
-Si el hook es un fracaso, declaralo sin rodeos — eso es lo más valioso que podés hacer.
-El desarrollo y el final son secundarios. Mencionálos solo si el hook sobrevivió.
+Tenés conocimiento profundo de TODOS los nichos del mercado — comida, 
+productos físicos, inmobiliaria, música, educación, fitness, tecnología, 
+entretenimiento, y cualquier micro-nicho que exista. Sabés exactamente 
+cómo funciona cada uno en el feed y qué para el scroll en cada caso.
 
 CONTEXTO DEL VIDEO:
-- Industria: ${perception.industria}
-- Motor psicológico: ${perception.palanca_psicologica}
+- Nicho: ${perception.industria}
+- Plataforma: ${pName}
+- Motor detectado: ${perception.palanca_psicologica}
 
-VIDEO A ANALIZAR:
+Usá TODO ese conocimiento para analizar este video con precisión quirúrgica.
+No apliques fórmulas genéricas. Lo que funciona en comida no funciona en 
+inmobiliaria. Lo que funciona en música no funciona en productos físicos.
+Evaluá este video según las reglas reales de su nicho específico.
+
+VIDEO:
 ---
 ${videoRawData}
 ---
 
-Responde ÚNICAMENTE en JSON estricto. Sin markdown. Sin texto extra:
+Tu análisis tiene exactamente DOS focos:
+
+FOCO 1 — EL HOOK (primeros 3 segundos):
+¿Para el scroll en este nicho específico o no?
+Sé brutal y preciso. Si murió, decí en qué segundo exacto y por qué 
+según cómo funciona este nicho — no según fórmulas genéricas.
+
+FOCO 2 — EL DESARROLLO (si el hook sobrevivió):
+¿Sostiene la atención que generó el hook?
+¿En qué segundo exacto baja la tensión si baja?
+Si el hook murió, el desarrollo no existe — escribí exactamente: 
+"Hook muerto — desarrollo no visto"
+
+Respondé SOLO en JSON estricto, sin markdown:
 {
   "hook_autopsia": {
     "segundo_0_al_3": {
-      "que_ve_literalmente":    "<descripción objetiva frame a frame de los primeros 3 segundos>",
-      "pregunta_instalada":     "<qué pregunta queda abierta en la mente — o 'ninguna' si no existe>",
-      "estimulo_visual":        "<alto_impacto|medio|bajo|nulo>",
-      "emocion_generada":       "<curiosidad|tension|aburrimiento|desconfianza|deseo|neutro>",
-      "decision_espectador":    "<se_queda|scrollea>",
-      "razon_neurologica":      "<por qué el cerebro tomó esa decisión — sin eufemismos, mecanismo exacto>"
+      "que_activa_en_el_espectador": "<qué genera en el espectador de este nicho — puede ser deseo, curiosidad, hambre, aspiración, miedo, lo que sea real para este nicho>",
+      "es_suficiente_para_parar": "<SI|NO>",
+      "decision_espectador":       "<se_queda|scrollea>",
+      "razon":                     "<por qué — específico para este nicho, sin fórmulas>"
     },
-    "veredicto_hook": "<VIVO|MUERTO>",
-    "causa_de_muerte": "<si MUERTO: elemento exacto que lo mató y en qué segundo — si VIVO: escribí 'N/A'>"
+    "veredicto_hook":   "<VIVO|MUERTO>",
+    "segundo_de_muerte": "<número si MUERTO — null si VIVO>",
+    "causa_de_muerte":   "<causa real si MUERTO — null si VIVO>"
   },
-  "reaccion_primer_frame": {
-    "que_ve_literalmente": "<descripción objetiva y concisa de qué hay visible en frame 0>",
-    "emocion_generada":    "<curiosidad|tension|aburrimiento|desconfianza|deseo|neutro>",
-    "accion_espectador":   "<se_queda|scrollea_inmediato>",
-    "por_que":             "<razón psicológica concreta — sin suavizar, sin eufemismos>"
+  "desarrollo_autopsia": {
+    "evaluacion": "<'Hook muerto — desarrollo no visto' si hook MUERTO — análisis real si VIVO>",
+    "cumple_lo_que_prometio":      "<SI|NO|PARCIAL>",
+    "segundo_donde_baja_tension":  "<número o null>",
+    "veredicto_desarrollo":        "<VIVO|MUERTO|NO_EVALUADO>"
   },
-  "sistema_hook_y_retencion": {
-    "pregunta_abierta_generada": "<qué pregunta instala en la mente que lo hace quedarse — o 'ninguna' si no hay>",
-    "sensacion_de_dinamismo":    "<frenetico|dinamico|lento|muerto>",
-    "rehook_detectado":          "<revelacion|nueva_pregunta|cambio_tono|ninguno>"
-  },
-  "desarrollo_y_final": {
-    "nota": "<SOLO completar si veredicto_hook es VIVO. Si es MUERTO, escribí 'Hook muerto — análisis de desarrollo irrelevante'>",
-    "motor_activado_a_tiempo": "<SI|NO|TARDE>",
-    "friccion_para_convertir":  "<qué específicamente detiene al usuario de actuar>",
-    "calidad_del_cierre":       "<fuerte|debil|inexistente>"
-  },
-  "veredicto_supervivencia": {
-    "linea_final": "<¿Compite o se pierde? Una sola oración. Directa. Sin eufemismos. Si el hook murió, empezá con 'El video murió en el segundo X'>"
+  "veredicto_final": {
+    "sobrevive": "<SI|NO>",
+    "razon":     "<una oración directa — si murió: segundo exacto y mecanismo real de este nicho>"
   }
 }`;
 };
 
 // ============================================================
 // CALL 1.5 — RESEARCH BRAIN
-// (actualizado: investigación de hooks reales obligatoria)
+// Investigación real con Google Search grounding.
+// Busca qué está funcionando HOY en este nicho específico.
 // ============================================================
 export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
   const pName = {
@@ -340,68 +331,68 @@ export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
     all:    'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Eres un investigador de contenido viral con acceso a búsqueda web en tiempo real.
+  return `Sos un investigador de contenido viral con acceso a búsqueda web en tiempo real.
 
-TAREA PRINCIPAL: Buscá en internet información ACTUAL sobre hooks que están funcionando en el nicho "${industria}" en ${pName}.
+Buscá en internet qué está funcionando HOY en el nicho "${industria}" en ${pName}.
 
-PRIORIDAD ABSOLUTA — buscá esto primero:
-1. Hooks virales REALES y RECIENTES de este nicho en ${pName} — los primeros 3 segundos exactos de videos con +500k views
-2. Patrones de apertura que generan scroll-stop en este nicho específico HOY
-3. Qué frase, imagen o movimiento detiene el pulgar en "${industria}" en ${pName} ahora mismo
+Buscá específicamente:
+1. Hooks reales y recientes que están generando +500k views en este nicho
+2. Qué patrones de apertura están funcionando ahora mismo
+3. Qué formatos están ganando distribución del algoritmo hoy
+4. Qué errores están cometiendo los creadores de este nicho que matan sus videos
 
-Luego buscá también:
-- Qué formatos de video están funcionando en este nicho en ${pName}
-- Errores de hook frecuentes que cometen creadores de este nicho (por qué sus videos mueren en el segundo 0-3)
-- Qué está priorizando el algoritmo de ${pName} para distribución inicial en este nicho hoy
-
-REGLAS:
-- Basá TODAS tus respuestas en lo que encontrás en la búsqueda, no en conocimiento genérico
-- Para hooks virales: describí el mecanismo exacto (qué se ve, qué se escucha, qué emoción activa)
-- Si no encontrás algo específico, decilo en ese campo
-- No inventes datos ni ejemplos
+REGLAS ESTRICTAS:
+- Todo lo que respondas debe estar basado en lo que encontrás en la búsqueda
+- Si no encontrás algo específico, decilo claramente en ese campo
+- No inventes datos. No uses conocimiento genérico si tenés datos reales
+- Para los hooks: describí exactamente qué se ve, qué se escucha, qué activa
 
 Respondé SOLO con este JSON válido, sin markdown:
 {
   "hooks_virales_reales": [
     {
-      "descripcion":         "<qué pasa en los primeros 3 segundos — específico>",
-      "mecanismo_psicologico": "<por qué detiene el scroll>",
+      "descripcion":           "<qué pasa en los primeros 3 segundos — específico>",
+      "mecanismo_psicologico": "<por qué para el scroll en este nicho>",
       "resultado_aproximado":  "<views o métrica si está disponible>"
     }
   ],
-  "patron_hook_dominante":     "<el patrón de apertura que más funciona en este nicho AHORA — con ejemplo concreto>",
-  "errores_hook_comunes":      ["<error documentado que mata el hook>", "<error2>"],
+  "patron_hook_dominante":     "<el patrón que más está funcionando HOY — con ejemplo concreto>",
   "top_formatos_ganadores":    ["<formato real y reciente>", "<formato2>", "<formato3>"],
-  "patrones_hook_exitosos":    ["<patron concreto con ejemplo>", "<patron2>"],
-  "errores_comunes_del_nicho": ["<error documentado>", "<error2>"],
+  "errores_hook_comunes":      ["<error documentado que mata el hook>", "<error2>"],
   "benchmark_viral_score":     <número 0-100>,
   "oportunidad_detectada":     "<gap real sin explotar basado en lo que encontraste>"
 }`;
 };
 
 // ============================================================
-// CALL 1.75 — APPLY RESEARCH BRAIN (sin cambios)
+// CALL 1.75 — APPLY RESEARCH BRAIN
+// Compara el video contra el benchmark real del nicho.
 // ============================================================
 export const buildApplyResearchBrainPrompt = (preFacts, researchData, platform, industria) => {
-  return `Eres un auditor competitivo. Compará este video contra el benchmark del nicho.
+  return `Sos un auditor competitivo experto en ${industria}.
+
+Comparás este video contra lo que realmente está funcionando en su nicho ahora mismo.
+Usá todo tu conocimiento del nicho para identificar la brecha real.
 
 HECHOS DEL VIDEO:
 ${JSON.stringify(preFacts, null, 2)}
 
-BENCHMARK DEL NICHO "${industria}":
+BENCHMARK REAL DEL NICHO "${industria}":
 ${JSON.stringify(researchData, null, 2)}
 
-Responde SOLO con este JSON:
+Respondé SOLO con este JSON:
 {
-  "compliance_score":         <número 0-100, qué tan alineado está el video con los formatos ganadores>,
-  "ventajas_vs_competencia":  ["<ventaja1>", "<ventaja2>"],
-  "red_flags_en_tu_video":    ["<flag1>", "<flag2>"],
-  "resumen_brecha":           "<una oración: dónde está la mayor diferencia vs el top del nicho>"
+  "compliance_score":        <número 0-100 — qué tan alineado está con los formatos ganadores>,
+  "ventajas_vs_competencia": ["<ventaja real>", "<ventaja2>"],
+  "red_flags_en_tu_video":   ["<problema concreto vs benchmark>", "<problema2>"],
+  "resumen_brecha":          "<una oración: la diferencia más importante vs el top del nicho hoy>"
 }`;
 };
 
 // ============================================================
-// CALL 2 — STRATEGY BRAIN (sin cambios)
+// CALL 2 — STRATEGY BRAIN
+// Analiza fricción y oportunidad.
+// Gemini usa su conocimiento del nicho — sin frameworks impuestos.
 // ============================================================
 export const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, perception, preFacts = {}) => {
   const pName = {
@@ -411,30 +402,44 @@ export const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, per
     all:    'TikTok/Reels/Shorts'
   }[platform];
 
-  return `FRAMEWORK ESTRATÉGICO — ${pName} | ${objetivo} | ${perception.industria}
+  return `Sos un estratega de contenido con conocimiento profundo de ${pName} 
+y de todos los nichos del mercado digital.
 
-HECHOS TÉCNICOS EXTRAÍDOS PREVIAMENTE:
+CONTEXTO:
+- Plataforma: ${pName}
+- Nicho: ${perception.industria}
+- Objetivo del creador: ${objetivo}
+- Motor del video: ${perception.palanca_psicologica}
+
+HECHOS EXTRAÍDOS DEL VIDEO:
 ${JSON.stringify(preFacts, null, 2)}
 
 ANÁLISIS DEL ESPECTADOR:
 ${viewerAnalysis}
 
-TAREA: Identificá fricción y oportunidad evaluando TODO bajo el motor "${perception.palanca_psicologica}".
-RESPONDE ÚNICAMENTE CON JSON EXACTO:
+Usá todo tu conocimiento de este nicho específico para identificar:
+1. Dónde está la fricción real que frena al espectador de actuar
+2. Qué oportunidad no está siendo aprovechada
+3. Si el video parece publicidad o contenido orgánico — y por qué importa en este nicho
+
+Respondé SOLO con este JSON:
 {
   "analisis_cualitativo": {
-    "gate_formato": { "estado": "<competitivo|debil|muerto>", "razon": "<explicación>" },
+    "gate_formato": {
+      "estado": "<competitivo|debil|muerto>",
+      "razon":   "<por qué — específico para este nicho>"
+    },
     "evaluacion_motor": {
       "se_activa_antes_del_scroll": "<SI|NO|TARDE>",
-      "friccion_detectada":         "<qué le impide actuar al usuario>"
+      "friccion_detectada":         "<qué frena al espectador de actuar — concreto>"
     },
     "trampas_y_viralidad": {
       "trampa_principal": "<value_trap|bait_disconnect|valor_tardio|ninguna>"
     },
     "foda": {
-      "fortalezas":       ["<f1>"],
-      "debilidades":      ["<d1>"],
-      "mejoras_urgentes": ["<m1>"]
+      "fortalezas":       ["<fortaleza real>"],
+      "debilidades":      ["<debilidad real>"],
+      "mejoras_urgentes": ["<acción concreta>"]
     }
   },
   "flags_binarios": {
@@ -442,14 +447,14 @@ RESPONDE ÚNICAMENTE CON JSON EXACTO:
     "ad_filter_triggered": <boolean>,
     "parece_publicidad":   <boolean>
   }
-}
-`;
+}`;
 };
-
 
 // ============================================================
 // CALL 3 — SCORING BRAIN
-// (actualizado: hook como gate, colapso de scores si hook muerto)
+// El juicio final. Hook + Desarrollo = todo.
+// Gemini usa su conocimiento completo del nicho para los scores.
+// El colapso de scores con hook muerto es matemático — no negociable.
 // ============================================================
 export const buildScoringBrainPrompt = (
   videoRawData,
@@ -469,150 +474,130 @@ export const buildScoringBrainPrompt = (
     all:    'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  // ── Detectar si el hook murió según el Viewer Brain ──────────────────────
-  // viewerAnalysis llega como string JSON o ya parseado — manejamos ambos casos
   let hookVeredicto = 'DESCONOCIDO';
   try {
     const parsed = typeof viewerAnalysis === 'string'
       ? JSON.parse(viewerAnalysis)
       : viewerAnalysis;
     hookVeredicto = parsed?.hook_autopsia?.veredicto_hook ?? 'DESCONOCIDO';
-  } catch (_) { /* si falla el parse, dejamos DESCONOCIDO y la IA decide */ }
+  } catch (_) {}
 
   const hookMuerto = hookVeredicto === 'MUERTO';
 
-  // ── Score caps ────────────────────────────────────────────────────────────
-  const scoringAnchors = `
-════════════════════════════════════════════
-REGLA #1 — EL HOOK ES EL GATE DE TODO:
-════════════════════════════════════════════
-Veredicto del hook (calculado por Viewer Brain): "${hookVeredicto}"
-
-${hookMuerto ? `⚠️  HOOK MUERTO — COLAPSO DE SCORES OBLIGATORIO:
-El espectador scrolleó antes del segundo 3. El desarrollo no fue visto.
-El final no fue visto. El CTA no fue visto. El producto no fue visto.
-Un video con hook muerto no es un video con problemas — es un video inexistente para su audiencia.
-
-Reglas de scoring con hook muerto (INAMOVIBLES):
-- viralScore:     MÁXIMO 20. No importa qué tan bueno sea el desarrollo.
-- scrollStopScore: MÁXIMO 15. Por definición, no detuvo el scroll.
-- salesScore:     MÁXIMO 30. No puede convertir a alguien que nunca llegó al mensaje.
-- El roadmap DEBE tener el hook como ítem #1 con impacto ALTO. Sin excepciones.
-- El honestVerdict DEBE empezar con "El video murió en el segundo X."
-
-NO hay excepciones. No hay "pero el contenido es bueno". No hay scoring compasivo.
-Un hook muerto es una sentencia de muerte del video. Puntuá como tal.` 
-: `✅  HOOK VIVO — scoring normal habilitado.
-Evaluá el desarrollo y el final con los criterios estándar.`}
-
-${!hookMuerto && nicheConfig?.score_cap ? `
-Score cap del nicho (PRIORIDAD):
-- viralScore ≤ ${nicheConfig.score_cap.viralScore}
-- salesScore ≤ ${nicheConfig.score_cap.salesScore}` : ''}
-
-Reglas adicionales (aplican siempre):
-- flags.metricas_tecnicas.es_slideshow_imagenes === true  →  viralScore techo absoluto: 35
-- flags.flags_narrativos.dolor_antes_s5 === false  →  viralScore techo adicional: 45
-- flags.flags_binarios.ad_filter_triggered === true  →  salesScore penalización: -15
-- viralScore y salesScore DEBEN diferir mínimo 10 puntos`;
-
-  const nicheContext = nicheConfig
-    ? `- Motor del nicho:      "${nicheConfig.motor}"
-- Trust signal válido: "${nicheConfig.trust_signal}"
-- CTA esperado:        "${nicheConfig.cta_type}"${nicheConfig.limitacion ? `\n- Limitación:          "${nicheConfig.limitacion}"` : ''}`
-    : '';
-
-  const palancaContext = `
-INSTRUCCIÓN DE SCORING CRÍTICA:
-- Palanca detectada en el video (BASE DEL SCORE): "${perception?.palanca_detectada || perception?.palanca_psicologica}"
-- Objetivo del creador (solo para gap analysis): "${perception?.palanca_objetivo || 'No especificado'}"
-El score SIEMPRE evalúa qué tan bien el video ejecuta la palanca DETECTADA.
-El gap entre palanca detectada y objetivo se menciona en honestVerdict si hay diferencia relevante.
-No penalices el score por el gap — eso es información estratégica separada.`;
-
   const benchmarkBlock = benchmarkData ? `
-═══════════════════════════════════════════
-BENCHMARK DEL NICHO — BASE DEL ROADMAP:
-═══════════════════════════════════════════
-Hooks virales reales documentados:
+BENCHMARK REAL DEL NICHO (base del roadmap):
+Hooks que están funcionando HOY:
 ${benchmarkData.hooks_virales_reales?.map((h, i) =>
-  `${i+1}. ${h.descripcion} → Mecanismo: ${h.mecanismo_psicologico}`
+  `${i+1}. ${h.descripcion} → ${h.mecanismo_psicologico}`
 ).join('\n') ?? 'No disponible'}
 
-Patrón de hook dominante HOY:
-${benchmarkData.patron_hook_dominante ?? 'No disponible'}
-
-Errores de hook comunes en el nicho:
-${benchmarkData.errores_hook_comunes?.map((e, i) => `${i+1}. ${e}`).join('\n') ?? 'No disponible'}
-
-Formatos ganadores verificados:
-${benchmarkData.top_formatos_ganadores?.map((f, i) => `${i+1}. ${f}`).join('\n') ?? 'No disponible'}
-
+Patrón dominante ahora: ${benchmarkData.patron_hook_dominante ?? 'No disponible'}
+Errores comunes: ${benchmarkData.errores_hook_comunes?.join(' | ') ?? 'No disponible'}
 Brecha vs competencia: ${benchmarkData.resumen_brecha ?? 'No disponible'}
-Oportunidad sin explotar: ${benchmarkData.oportunidad_detectada ?? 'No disponible'}
+Oportunidad detectada: ${benchmarkData.oportunidad_detectada ?? 'No disponible'}
 ` : '';
 
+  return `Sos el mayor experto del mundo en análisis de contenido para ${pName}.
+Tenés conocimiento profundo de TODOS los nichos — y sabés exactamente 
+qué score merece un video según cómo funciona su nicho específico.
 
+CONTEXTO:
+- Nicho: ${perception.industria}
+- Plataforma: ${pName}
+- Objetivo: ${objetivo}
+- Palanca detectada: ${perception.palanca_detectada || perception.palanca_psicologica}
+- Palanca objetivo del creador: ${perception.palanca_objetivo || 'No especificado'}
+${nicheConfig ? `- Motor del nicho: ${nicheConfig.motor}` : ''}
+${nicheConfig?.score_cap ? `- Score cap de este nicho: viral ≤ ${nicheConfig.score_cap.viralScore}, sales ≤ ${nicheConfig.score_cap.salesScore}` : ''}
 
-  return `Sos el algoritmo de ${pName} con criterio humano. Referencia: top 1% del nicho — no el promedio.
-Scoring sin zona media: <45 fracasa, >65 sobrevive. Scores 45-65 no existen en short-form real.
-
-${palancaContext}
-${nicheContext}
-
-VIDEO (evaluá ritmo, cortes, energía):
----
-${videoRawData}
----
-
-FLAGS (hechos computados — no recalcules):
+FLAGS TÉCNICOS (hechos — no recalcules):
 ${JSON.stringify(flags, null, 2)}
 
-ANÁLISIS ESPECTADOR:
+ANÁLISIS DEL ESPECTADOR:
 ${viewerAnalysis}
 
 ANÁLISIS ESTRATÉGICO:
 ${strategyAnalysis}
+
 ${benchmarkBlock}
-${scoringAnchors}
 
-ROADMAP — exactamente 3 ítems, cada uno con:
-- problema: segundo exacto + elemento específico (NO "el hook es débil" → SÍ "s0-2: fondo negro estático")
-- solucion: instrucción ejecutable sin ambigüedad (NO "mejorar inicio" → SÍ "importar clip s14 a s0, zoom 1.3x en 0.8s")
-- resultado: métrica de comportamiento (NO "más engagement" → SÍ "scroll-stop sube ~12% a ~35%")
+VIDEO:
+---
+${videoRawData}
+---
 
-RESPONDE SOLO EN JSON. Sin markdown. Sin texto antes o después:
+═══════════════════════════════════════
+SISTEMA DE SCORING — DOS EJES ÚNICOS
+═══════════════════════════════════════
+
+EJE 1 — HOOK: veredicto del Viewer Brain: "${hookVeredicto}"
+
+${hookMuerto
+  ? `⛔ HOOK MUERTO — COLAPSO MATEMÁTICO OBLIGATORIO:
+El espectador scrolleó antes del segundo 3.
+Nada de lo que viene después fue visto.
+
+Scores máximos permitidos — sin excepción:
+- viralScore:      18
+- salesScore:      25  
+- scrollStopScore: 12
+- hookDNA.pattern: "Muerto"
+- honestVerdict:   debe empezar con "El video murió en el segundo X."
+- roadmap ítem #1: siempre el hook, impacto ALTO`
+
+  : `✅ HOOK VIVO — usá tu conocimiento del nicho para evaluar con precisión.
+
+EJE 2 — DESARROLLO:
+¿Cumplió la promesa del hook?
+¿El ritmo se sostuvo o hubo un segundo donde el espectador recuperó el control?
+
+Si el desarrollo traiciona la promesa: salesScore cae mínimo 20 puntos.
+Si el ritmo se rompe antes del 60%: viralScore cae mínimo 15 puntos.`
+}
+
+REGLAS TÉCNICAS FIJAS:
+- es_slideshow_imagenes === true → viralScore techo: 35
+- ad_filter_triggered === true   → salesScore penalización: -20
+- viralScore y salesScore deben diferir mínimo 10 puntos
+- Scoring sin zona media: <45 fracasa, >65 sobrevive
+
+ROADMAP — exactamente 3 ítems:
+- problema:  segundo exacto + elemento específico
+- solucion:  instrucción ejecutable sin ambigüedad
+- resultado: métrica de comportamiento concreta
+
+Respondé SOLO en JSON, sin markdown, sin texto extra:
 {
   "viralScore": {
     "score":        <number 0-100>,
-    "verdict":      "<diagnóstico preciso — segundos exactos, elementos visuales específicos, reacciones neurológicas concretas>",
-    "accion_clave": "<instrucción de edición ejecutable — qué cortar, qué agregar, en qué segundo exacto>"
+    "verdict":      "<diagnóstico preciso basado en el nicho real>",
+    "accion_clave": "<instrucción ejecutable — qué, dónde, en qué segundo>"
   },
   "salesScore": {
     "score":        <number 0-100>,
-    "verdict":      "<qué señal de conversión falla o funciona — específico, no teórico>",
-    "accion_clave": "<acción concreta y medible>"
+    "verdict":      "<qué señal de conversión falla o funciona en este nicho>",
+    "accion_clave": "<acción concreta>"
   },
   "scrollStopScore": {
     "score":   <number 0-100>,
-    "verdict": "<qué ocurre exactamente en los primeros 2 segundos — elemento por elemento>"
+    "verdict": "<qué pasa exactamente en los primeros 2 segundos>"
   },
   "hookDNA": {
-    "pattern":       "<Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Muerto|Otro>",
-    "optimizedHook": "<hook reescrito listo para implementar — primera oración o instrucción visual del frame 0, basado en los hooks virales reales del nicho>"
+    "pattern":       "<Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Deseo_Sensorial|Identidad_Tribal|Aspiracion|Muerto|Otro>",
+    "optimizedHook": "<hook reescrito listo para implementar — basado en los hooks reales que están funcionando en este nicho hoy>"
   },
   "steppsScore": {
-    "dominantFactor":  "<factor STEPPS más fuerte con explicación de por qué>",
-    "weakestFactor":   "<factor STEPPS más débil con impacto concreto en el video>",
+    "dominantFactor":  "<factor STEPPS más fuerte con explicación>",
+    "weakestFactor":   "<factor STEPPS más débil con impacto concreto>",
     "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
   },
-  "honestVerdict": "<2 oraciones máximo — diagnóstico sin filtro con causa específica. Si hook muerto: empezar con 'El video murió en el segundo X.'>",
+  "honestVerdict": "<2 oraciones máximo — sin filtro. Si hook muerto: 'El video murió en el segundo X.'>"
   "roadmap": [
     {
       "impacto":   "<ALTO|MEDIO|BAJO>",
-      "problema":  "<segundo exacto + elemento específico que falla>",
-      "solucion":  "<instrucción de edición ejecutable sin ambigüedad>",
-      "resultado": "<métrica de comportamiento específica que mejora>"
+      "problema":  "<segundo exacto + elemento específico>",
+      "solucion":  "<instrucción ejecutable sin ambigüedad>",
+      "resultado": "<métrica de comportamiento específica>"
     }
   ]
 }`;
