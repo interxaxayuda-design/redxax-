@@ -160,6 +160,9 @@ const safeParseJSON = (rawText, context = '') => {
 // ============================================================
 // CONSTANTES DE NEGOCIO
 // ============================================================
+// ============================================================
+// CONSTANTES DE NEGOCIO
+// ============================================================
 export const NICHE_MOTORS = {
   "producto_fisico":    { motor: "dolor -> solucion",                         urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
   "comida_restaurante": { motor: "deseo_sensorial -> identidad",              urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
@@ -199,47 +202,46 @@ Si el nicho encaja exactamente con una clave del catálogo, devolvé esa clave e
 `;
 
 // ============================================================
-// CALL 0B — PRE-CLASSIFIER BRAIN
+// CALL 0B — PRE-CLASSIFIER BRAIN (sin cambios)
 // ============================================================
 export const buildPreClassifierPrompt = (meta = '') => `
-Sos un experto en contenido viral de short-form video con años analizando qué hace que un video funcione o muera en TikTok, Reels y Shorts.
+Eres un auditor forense de video. Analiza el video y extrae hechos observables.
+NO evalúes calidad. NO interpretes intención. Solo registra lo que ves y escuchas.
 ${meta ? `\nMETADATA: ${meta}` : ''}
 
-Mirá este video con tus ojos de experto. Tu tarea tiene DOS partes:
-
-PARTE 1 — Observá los hechos técnicos.
-PARTE 2 — Diagnosticá los primeros 5 segundos con tu conocimiento real.
-
-Para el diagnóstico usá lo que ya sabés: ¿la acción, el dolor o el deseo aparecen antes del segundo 5, o llegan tarde cuando el 80% ya scrolleó? ¿Qué emoción o pregunta instala en la mente? ¿Hay algo que obligue al cerebro a quedarse, o el espectador puede irse sin perder nada?
-
-Devuelve ESTRICTAMENTE este JSON válido, sin markdown:
+Devuelve ESTRICTAMENTE este JSON válido:
 {
   "industria": "<micro-nicho ultra-específico>",
-  "palanca_psicologica": "<emoción primaria real que usa el video>",
-  "observacion_tecnica": {
+  "palanca_psicologica": "<emoción primaria real>",
+  "flags_visuales": {
+    "logo_en_s0":             <boolean>,
+    "imagen_alto_impacto":    <boolean>,
+    "sujeto_ancla_en_s0":     <boolean>,
+    "sujeto_en_accion_s0":    <boolean>,
+    "transformacion_visible": <boolean>
+  },
+  "flags_narrativos": {
+    "pregunta_al_espectador":    <boolean>,
+    "afirmacion_contradictoria": <boolean>,
+    "audio_desde_s0":            <boolean>,
+    "dolor_antes_s5":            <boolean>,
+    "tiene_rehook":              <boolean>
+  },
+  "metricas_tecnicas": {
     "duracion_estimada_segundos": <number>,
     "es_slideshow_imagenes":      <boolean>,
     "porcentaje_video_real":      <number 0-100>,
     "tipo_edicion":               "<cinematica|dinamica|UGC|infomercial|estetica>",
-    "ritmo_visual":               "<rapido|normal|lento>",
-    "audio_desde_s0":             <boolean>,
-    "tiene_rehook":               <boolean>
+    "ritmo_visual":               "<rapido|normal|lento>"
   },
-  "diagnostico_hook": {
-    "que_pasa_en_s0_s3":          "<qué se ve y escucha exactamente en los primeros 3 segundos>",
-    "accion_o_dolor_en_s0_s5":    "<SI — llega antes del segundo 5 | TARDE — llega después | NO — no aparece>",
-    "segundo_exacto_accion":      <number o null — segundo en que aparece la acción/producto/dolor central>,
-    "pregunta_que_instala":       "<qué tensión o pregunta queda abierta en la mente — o 'ninguna'>",
-    "veredicto_hook":             "<VIVO|MUERTO|DEBIL>",
-    "razon_experta":              "<por qué ese hook funciona o falla — usá tu conocimiento, no descripción neutral>"
-  }
+  "hook_libre": "<descripción concisa en 1-2 oraciones de la técnica de enganche usada — nombrá el mecanismo psicológico exacto, el elemento visual específico y el segundo en que ocurre. Si no hay hook claro, escribí 'ninguno detectado'.>"
 }
 `;
 
 // ============================================================
-// CALL 1 — VIEWER BRAIN
+// CALL 1 — VIEWER BRAIN (actualizado: hook como eje central)
 // ============================================================
-export const buildViewerBrainPrompt = (videoRawData, platform, perception, preFacts = null) => {
+export const buildViewerBrainPrompt = (videoRawData, platform, perception) => {
   const pName = {
     tiktok: 'TikTok',
     reels:  'Instagram Reels',
@@ -247,61 +249,81 @@ export const buildViewerBrainPrompt = (videoRawData, platform, perception, preFa
     all:    'TikTok/Reels/Shorts'
   }[platform];
 
-  // Diagnóstico previo del hook — viene de CALL 0B
-  const hookDiagnostico = preFacts?.diagnostico_hook
-    ? `DIAGNÓSTICO PREVIO DEL HOOK (extraído del video en CALL 0B):
-- Qué pasa en s0-s3: ${preFacts.diagnostico_hook.que_pasa_en_s0_s3}
-- Acción/dolor en s0-s5: ${preFacts.diagnostico_hook.accion_o_dolor_en_s0_s5}
-- Segundo exacto de la acción: ${preFacts.diagnostico_hook.segundo_exacto_accion ?? 'no detectado'}
-- Pregunta instalada: ${preFacts.diagnostico_hook.pregunta_que_instala}
-- Veredicto preliminar: ${preFacts.diagnostico_hook.veredicto_hook}
-- Razón experta: ${preFacts.diagnostico_hook.razon_experta}
+  return `IDENTIDAD: No eres un analista. Eres el reflejo cognitivo de un espectador real en ${pName}.
 
-Usá este diagnóstico como base. Confirmá o corregí con lo que ves vos.`
-    : '';
+Tu única función: determinar si este video detiene el scroll o desaparece en 800ms.
 
-  return `Sos un espectador real en ${pName} con el pulgar listo para scrollear.
-Llevás 40 minutos en el feed. Viste los mejores videos del día. Tu umbral de atención está al mínimo.
-Tu única pregunta al ver este video: ¿me quedo o scrolleo?
+REALIDAD PSICOLÓGICA — esto NO es opcional, es tu marco de referencia base:
 
-NICHO: ${perception.industria} | MOTOR: ${perception.palanca_psicologica}
-${hookDiagnostico}
+El espectador que va a ver este video:
+- Lleva 35-50 minutos en scroll continuo. Sus receptores dopaminérgicos están saturados.
+- En la última hora vio: 3 videos de creadores virales top, 4 UGC ads con +8% CTR, hooks de Performance Marketers elite.
+- Su decisión ocurre en menos de 800ms. No es consciente. El pulgar ya se movió antes de que el cerebro procese el audio.
+- Tiene un filtro automático de "esto es un anuncio" que activa el scroll instantáneamente.
+- Solo detiene el scroll ante: peligro percibido, deseo intenso, rareza cognitiva, o una pregunta que el cerebro no puede ignorar.
+- No tolera aburrimiento. No tolera lentitud. No da segunda oportunidad.
 
-VIDEO:
+CONTRA QUIÉN COMPITE ESTE VIDEO:
+- Los mejores videos del mundo en este nicho están en el mismo feed.
+- No compite contra contenido promedio. Compite contra los top 0.1%.
+
+════════════════════════════════════════
+LEY FUNDAMENTAL — EL HOOK ES EL VIDEO:
+════════════════════════════════════════
+Si el hook falla, el video murió. No importa el desarrollo. No importa el final.
+No importa que el producto sea bueno. No importa que el CTA sea perfecto.
+Un espectador que scrolleó en el segundo 1 nunca llegó al segundo 30.
+El desarrollo brillante de un video con hook muerto es invisible.
+Esta es la única métrica que decide si el algoritmo distribuye o entierra.
+
+TU MISIÓN: DISECCIONAR EL HOOK CON PRECISIÓN QUIRÚRGICA
+
+Evaluá PRIMERO y con máxima atención los primeros 3 segundos.
+Si el hook es un fracaso, declaralo sin rodeos — eso es lo más valioso que podés hacer.
+El desarrollo y el final son secundarios. Mencionálos solo si el hook sobrevivió.
+
+CONTEXTO DEL VIDEO:
+- Industria: ${perception.industria}
+- Motor psicológico: ${perception.palanca_psicologica}
+
+VIDEO A ANALIZAR:
 ---
 ${videoRawData}
 ---
-
-Analizá el video en este orden ESTRICTO:
-
-1. ¿Qué pasa exactamente en los primeros 3 segundos? ¿Hay algo que te obligue a quedarte?
-2. ¿La acción central, el dolor o el producto aparecen antes del segundo 5, o llegás a scrollear antes de verlos?
-3. Si el hook sobrevive: ¿el desarrollo mantiene la promesa? ¿El cierre convierte?
-
-Si el hook falla, el análisis termina ahí. El desarrollo no importa porque nunca fue visto.
 
 Responde ÚNICAMENTE en JSON estricto. Sin markdown. Sin texto extra:
 {
   "hook_autopsia": {
     "segundo_0_al_3": {
-      "que_ve_literalmente":  "<qué se ve y escucha frame a frame — específico>",
-      "pregunta_instalada":   "<qué tensión queda abierta en la mente — o 'ninguna'>",
-      "estimulo_visual":      "<alto_impacto|medio|bajo|nulo>",
-      "emocion_generada":     "<curiosidad|tension|aburrimiento|desconfianza|deseo|neutro>",
-      "decision_espectador":  "<se_queda|scrollea>",
-      "razon_neurologica":    "<mecanismo exacto por el que el cerebro tomó esa decisión>"
+      "que_ve_literalmente":    "<descripción objetiva frame a frame de los primeros 3 segundos>",
+      "pregunta_instalada":     "<qué pregunta queda abierta en la mente — o 'ninguna' si no existe>",
+      "estimulo_visual":        "<alto_impacto|medio|bajo|nulo>",
+      "emocion_generada":       "<curiosidad|tension|aburrimiento|desconfianza|deseo|neutro>",
+      "decision_espectador":    "<se_queda|scrollea>",
+      "razon_neurologica":      "<por qué el cerebro tomó esa decisión — sin eufemismos, mecanismo exacto>"
     },
-    "veredicto_hook":  "<VIVO|MUERTO|DEBIL>",
-    "causa_de_muerte": "<si MUERTO o DEBIL: elemento exacto y segundo — si VIVO: 'N/A'>"
+    "veredicto_hook": "<VIVO|MUERTO>",
+    "causa_de_muerte": "<si MUERTO: elemento exacto que lo mató y en qué segundo — si VIVO: escribí 'N/A'>"
+  },
+  "reaccion_primer_frame": {
+    "que_ve_literalmente": "<descripción objetiva y concisa de qué hay visible en frame 0>",
+    "emocion_generada":    "<curiosidad|tension|aburrimiento|desconfianza|deseo|neutro>",
+    "accion_espectador":   "<se_queda|scrollea_inmediato>",
+    "por_que":             "<razón psicológica concreta — sin suavizar, sin eufemismos>"
+  },
+  "sistema_hook_y_retencion": {
+    "pregunta_abierta_generada": "<qué pregunta instala en la mente que lo hace quedarse — o 'ninguna' si no hay>",
+    "sensacion_de_dinamismo":    "<frenetico|dinamico|lento|muerto>",
+    "rehook_detectado":          "<revelacion|nueva_pregunta|cambio_tono|ninguno>"
   },
   "desarrollo_y_final": {
-    "aplica":                  "<SI — hook vivo | NO — hook muerto, nadie llegó hasta acá>",
-    "motor_activado_a_tiempo": "<SI|NO|TARDE — con el segundo exacto>",
-    "friccion_para_convertir": "<qué detiene al usuario de actuar>",
-    "calidad_del_cierre":      "<fuerte|debil|inexistente>"
+    "nota": "<SOLO completar si veredicto_hook es VIVO. Si es MUERTO, escribí 'Hook muerto — análisis de desarrollo irrelevante'>",
+    "motor_activado_a_tiempo": "<SI|NO|TARDE>",
+    "friccion_para_convertir":  "<qué específicamente detiene al usuario de actuar>",
+    "calidad_del_cierre":       "<fuerte|debil|inexistente>"
   },
   "veredicto_supervivencia": {
-    "linea_final": "<una sola oración directa. Si hook muerto: 'El video murió en el segundo X porque [razón exacta]'>"
+    "linea_final": "<¿Compite o se pierde? Una sola oración. Directa. Sin eufemismos. Si el hook murió, empezá con 'El video murió en el segundo X'>"
   }
 }`;
 };
