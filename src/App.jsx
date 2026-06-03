@@ -15,7 +15,7 @@ import {
   TrendingUp,
   Upload,
   Users //<label className="text-[10px] font-black uppercase tracking-wider text-slate-500 group-hover:text-purple-400 transition-colors">
-  , //
+  , //deriveHookType
   X,
   Zap
 } from 'lucide-react';
@@ -170,26 +170,84 @@ export const NICHE_MOTORS = {
                           limitacion: "audio_no_evaluable" }
 };
 
+// ============================================================
+// CALL 0A — PERCEPTION BRAIN
+// Solo detecta el nicho y el motor real del video.
+// Sin interpretación de calidad.
+// ============================================================
+export const buildPerceptionPrompt = (videoRawData) => `
+Sos un estratega de contenido digital con conocimiento profundo de todos 
+los nichos del mercado actual.
 
+Analizá este video y detectá con precisión:
+- En qué industria o micro-nicho opera
+- Qué motor psicológico está usando (puede ser cualquiera — no te limitás al catálogo)
+- Qué acción busca generar en el espectador
+
+Catálogo de referencia (usalo si aplica exactamente, ignoralo si el nicho es distinto):
+${JSON.stringify(NICHE_MOTORS, null, 2)}
+
+VIDEO:
+---
+${videoRawData}
+---
+
+Respondé SOLO con este JSON válido:
+{
+  "industria": "<nicho ultra-específico — cuanto más preciso mejor>",
+  "motor_key": "<clave del catálogo si aplica exactamente — null si no encaja>",
+  "objetivo_conversion": "<qué acción busca que haga el espectador>",
+  "palanca_psicologica": "<emoción o mecanismo psicológico real que usa el video>",
+  "criterio_evaluacion": "<en una frase: qué tiene que lograr este video para funcionar en su nicho específico>",
+  "confianza": <0.0 a 1.0>
+}
+`;
 
 export const buildPreClassifierPrompt = (meta = '') => `
-Sos un extractor técnico de datos de video.
-Tu único trabajo: registrar hechos medibles y observables.
-NO interpretés. NO evalués calidad. NO juzgués si algo "funciona".
+Sos un extractor forense de datos de video.
+Tu único trabajo: registrar hechos observables. 
+NO interpretés. NO evalués. NO juzgués calidad.
 ${meta ? `\nMETADATA: ${meta}` : ''}
 
 Respondé ESTRICTAMENTE con este JSON válido:
 {
   "industria": "<micro-nicho ultra-específico>",
-  "palanca_psicologica": "<emoción primaria observable — describí qué ves/escuchás, no si es buena>",
+  "palanca_psicologica": "<emoción primaria observable en el video>",
+  "flags_visuales": {
+    "logo_en_s0":             <boolean>,
+    "imagen_alto_impacto":    <boolean>,
+    "sujeto_ancla_en_s0":     <boolean>,
+    "sujeto_en_accion_s0":    <boolean>,
+    "transformacion_visible": <boolean>
+  },
+  "flags_narrativos": {
+    "pregunta_al_espectador":    <boolean>,
+    "afirmacion_contradictoria": <boolean>,
+    "audio_desde_s0":            <boolean>,
+    "dolor_antes_s5":            <boolean>,
+    "tiene_rehook":              <boolean>
+  },
   "metricas_tecnicas": {
     "duracion_estimada_segundos": <number>,
     "es_slideshow_imagenes":      <boolean>,
     "porcentaje_video_real":      <number 0-100>,
     "tipo_edicion":               "<cinematica|dinamica|UGC|infomercial|estetica>",
     "ritmo_visual":               "<rapido|normal|lento>"
-  }
+  },
+  "hook_libre": "<describí en 1-2 oraciones qué pasa exactamente en los primeros 3 segundos — qué se ve, qué se escucha, en qué segundo. Si no hay nada claro, escribí 'ninguno detectado'.>",
+  "hook_type_detectado": "<explosivo|bait_con_puente|bait_desconectado|curiosidad_desconexion|apertura_informativa|debil|muerto>",
+  "hook_type_razon": "<una oración: por qué ese tipo — basado en hechos observables, no en calidad>",
+  "hook_confianza": <0.0 a 1.0>
 }
+
+DEFINICIONES PARA hook_type_detectado:
+- explosivo: pregunta directa al espectador O afirmación que contradice una creencia común
+- bait_con_puente: imagen/acción impactante que conecta directamente con el producto o transformación
+- bait_desconectado: imagen impactante pero sin conexión clara con el tema del video
+- curiosidad_desconexion: genera curiosidad o tensión, pero lo que se ve y lo que se escucha apuntan a cosas distintas — el espectador se queda para resolver el gap
+- apertura_informativa: empieza mostrando el producto o servicio directamente, sin tensión previa
+- debil: sin elemento de hook claro en los primeros 3 segundos
+- muerto: logo de marca, pantalla de bienvenida, o fade-in lento como primer frame
 `;
 
 export const buildViewerBrainPrompt = (videoRawData, platform, perception) => {
@@ -265,7 +323,7 @@ Respondé SOLO en JSON estricto, sin markdown:
 
 // ============================================================
 // CALL 1.5 — RESEARCH BRAIN
-// Investigación real con Google Search grounding.
+// Investigación real con Google Search grounding. //deriveHookType
 // Busca qué está funcionando HOY en este nicho específico.
 // ============================================================
 export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
@@ -548,9 +606,25 @@ Respondé SOLO en JSON, sin markdown:
 // ============================================================
 export const deriveHookType = (preFacts) => {
   if (!preFacts || !Object.keys(preFacts).length) return 'debil';
-  if (preFacts.logo_en_s0)                                                    return 'muerto';
-  if (preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria)  return 'explosivo';
-  if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0)                return 'bait_con_puente';
+
+  // ── Casos determinísticos duros — JS siempre gana ──
+  // Son señales inequívocas que no necesitan interpretación
+  if (preFacts.logo_en_s0) return 'muerto';
+
+  // ── Escape hatch para hooks sutiles — IA gana si es confiable ──
+  // Cubre: curiosidad_desconexion y otros que los booleanos no capturan
+  if (
+    preFacts.hook_type_detectado &&
+    preFacts.hook_confianza >= 0.7 &&
+    preFacts.hook_type_detectado !== 'debil' &&
+    preFacts.hook_type_detectado !== 'muerto'
+  ) {
+    return preFacts.hook_type_detectado;
+  }
+
+  // ── Fallback determinístico — booleanos clásicos ──
+  if (preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria) return 'explosivo';
+  if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0)               return 'bait_con_puente';
   if (preFacts.imagen_alto_impacto)                                           return 'bait_desconectado';
   if (preFacts.producto_en_accion_s0 || preFacts.transformacion_visible)      return 'bait_con_puente';
   if (preFacts.producto_en_s0)                                                return 'apertura_informativa';
@@ -839,7 +913,7 @@ useEffect(() => {
 // El cambio está en el bloque if (error): ahora lee el body real 
 // de la respuesta para que puedas ver qué está tirando la función.
 
-// ── FIX: deductGems ──────────────────────────────────────────//setVideoMeta({
+// ── FIX: deductGems ──────────────────────────────────────────
 // El cambio está en el bloque if (error): ahora lee el body real
 // de la respuesta para que puedas ver qué está tirando la función.
 
@@ -979,8 +1053,6 @@ const applyDeterministicScoring = (parsed, flags, nicho) => {
   };
 };
 
-//let preFacts = {};
-
 // ============================================================
 // FASE 1: CALIBRACIÓN (Sube video y ejecuta CALL 0) //const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
 // ============================================================
@@ -996,7 +1068,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     v.onloadedmetadata = () => resolve(v.duration);
   });
 
-  // Pasamos directo a preparar el video sin cobrar gemas todavía //console.log('[VIRAX] Pre-facts:', preFacts, '| Hook:', preHookType);
+  // Pasamos directo a preparar el video sin cobrar gemas todavía
   setStep('analyzing');
   setAnalysisMode('video');
   setStatusText("Preparando video...");
@@ -1027,12 +1099,13 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     await new Promise(r => setTimeout(r, 1500));
 
     // ============================================================
-    // CALL 0 — Pre-clasificador //preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
+    // CALL 0 — Pre-clasificador
     // ============================================================
     setAnalysisProgress(18);
     setStatusText("Pre-clasificando video...");
 
     let preFacts = {};
+    let preHookType = 'debil';
 
 // ✅ CÓDIGO NUEVO — pegarlo en el mismo lugar:
 const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
@@ -1052,20 +1125,18 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
       throw new Error(`HTTP ${status}`);
     }
 
-    const call0Raw = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
-// Extraemos solo los campos técnicos objetivos — sin flags subjetivos
-preFacts = {
-  industria:              call0Raw.industria              || selectedNicho,
-  palanca_psicologica:    call0Raw.palanca_psicologica    || 'Curiosidad / Retención',
-  duracion_estimada_segundos: call0Raw.metricas_tecnicas?.duracion_estimada_segundos ?? Math.round(duration),
-  es_slideshow_imagenes:  call0Raw.metricas_tecnicas?.es_slideshow_imagenes  ?? false,
-  porcentaje_video_real:  call0Raw.metricas_tecnicas?.porcentaje_video_real  ?? 100,
-  tipo_edicion:           call0Raw.metricas_tecnicas?.tipo_edicion           || 'desconocido',
-  ritmo_visual:           call0Raw.metricas_tecnicas?.ritmo_visual           || 'normal',
-};
+    preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
+    preHookType = (() => {
+      if (preFacts.logo_en_s0) return 'muerto';
+      if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0) return 'bait_con_puente';
+      if (preFacts.imagen_alto_impacto) return 'bait_desconectado';
+      if (preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria) return 'explosivo';
+      if (preFacts.producto_en_accion_s0 || preFacts.transformacion_visible) return 'bait_con_puente';
+      if (preFacts.producto_en_s0) return 'apertura_informativa';
+      return 'debil';
+    })();
 
-
-    console.log('[VIRAX] Pre-facts:', preFacts);
+    console.log('[VIRAX] Pre-facts:', preFacts, '| Hook:', preHookType);
 
     // Guardamos los datos de la IA para cargarlos en los selectores de la pantalla de validación
     setPerception({
@@ -1079,11 +1150,12 @@ preFacts = {
       mimeType,
       duration,
       preFacts,
+      preHookType,
       platform,
       followerRange,
       palanca_detectada: preFacts.palanca_psicologica || 'Curiosidad / Retención',
     });
- //const { storagePath, mimeType, duration, preFacts, preHookType, platform, palanca_detectada } = videoMeta;
+
     setAnalysisProgress(100);
     setTimeout(() => setStep('validation'), 500);
 
@@ -1104,7 +1176,7 @@ const runDeepAnalysis = async () => {
     return;
   }
 
-  const { storagePath, mimeType, duration, preFacts, platform, palanca_detectada } = videoMeta;
+  const { storagePath, mimeType, duration, preFacts, preHookType, platform, palanca_detectada } = videoMeta;
 
   // DESPUÉS
 const perceptionParaScoring = {
@@ -1227,17 +1299,26 @@ const perceptionParaScoring = {
     }
 
     const flagsDeterministic = {
-  ...flagsFromStrategy,
-  // Flags técnicos objetivos — vienen de CALL 0 Grupo B
-  es_slideshow_imagenes:       preFacts.es_slideshow_imagenes      ?? false,
-  porcentaje_video_real:       preFacts.porcentaje_video_real      ?? 100,
-  tipo_edicion:                preFacts.tipo_edicion               || 'desconocido',
-  ritmo_visual:                preFacts.ritmo_visual               || 'normal',
-  duracion_estimada_segundos:  preFacts.duracion_estimada_segundos ?? Math.round(videoMeta.duration),
-  // Flags de gap analysis — vienen de CALL 1.75
-  compliance_score:            gapAnalysis.compliance_score        ?? 50,
-  has_red_flags:               (gapAnalysis.red_flags_en_tu_video?.length ?? 0) > 0,
-};
+      ...flagsFromStrategy,
+      hook_type: preHookType,
+      ad_filter_triggered: !!preFacts.logo_en_s0,
+      no_audio_from_s0: (preFacts.audio_desde_s0 === false) || flagsFromStrategy.no_audio_from_s0,
+      is_static_slideshow: (preFacts.movimiento_real === false) || flagsFromStrategy.is_static_slideshow,
+      pain_missing: (preFacts.dolor_antes_s5 === false) || flagsFromStrategy.pain_missing,
+      pain_late: (Number(preFacts.segundo_dolor) > 5) || flagsFromStrategy.pain_late,
+      no_rehook: (!preFacts.tiene_rehook && (preFacts.duracion_estimada ?? 0) > 20) || !!flagsFromStrategy.no_rehook,
+      short_video_advantage: (preFacts.duracion_estimada ?? 999) < 15 || !!flagsFromStrategy.short_video_advantage,
+      duration_kills_completion: ((preFacts.duracion_estimada ?? 0) > 60 && !preFacts.tiene_rehook) || !!flagsFromStrategy.duration_kills_completion,
+      es_slideshow_imagenes: preFacts.es_slideshow_imagenes,
+      porcentaje_video_real: preFacts.porcentaje_video_real ?? 100,
+      tipo_edicion: preFacts.tipo_edicion || 'desconocido',
+      ritmo_visual: preFacts.ritmo_visual || 'normal',
+      cortes_por_minuto: preFacts.cortes_por_minuto ?? 0,
+      cambio_visual_cada_ns: preFacts.cambio_visual_cada_ns ?? 3,
+      compliance_score: gapAnalysis.compliance_score ?? 50,
+      has_red_flags: (gapAnalysis.red_flags_en_tu_video?.length ?? 0) > 0,
+      hook_descripcion_libre: preFacts.hook_libre ?? null,
+    };
 
     // ============================================================
     // CALL 3 — Scoring Brain
