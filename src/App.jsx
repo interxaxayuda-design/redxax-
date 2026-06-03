@@ -996,7 +996,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     v.onloadedmetadata = () => resolve(v.duration);
   });
 
-  // Pasamos directo a preparar el video sin cobrar gemas todavía
+  // Pasamos directo a preparar el video sin cobrar gemas todavía //console.log('[VIRAX] Pre-facts:', preFacts, '| Hook:', preHookType);
   setStep('analyzing');
   setAnalysisMode('video');
   setStatusText("Preparando video...");
@@ -1065,7 +1065,7 @@ preFacts = {
 };
 
 
-    console.log('[VIRAX] Pre-facts:', preFacts, '| Hook:', preHookType);
+    console.log('[VIRAX] Pre-facts:', preFacts);
 
     // Guardamos los datos de la IA para cargarlos en los selectores de la pantalla de validación
     setPerception({
