@@ -171,38 +171,9 @@ export const NICHE_MOTORS = {
 };
 
 // ============================================================
-// CALL 0A — PERCEPTION BRAIN
-// Solo detecta el nicho y el motor real del video.
-// Sin interpretación de calidad.
+// CALL 0 — PRE-CLASSIFIER
+// Extractor forense. Solo hechos observables. Sin evaluación.
 // ============================================================
-export const buildPerceptionPrompt = (videoRawData) => `
-Sos un estratega de contenido digital con conocimiento profundo de todos 
-los nichos del mercado actual.
-
-Analizá este video y detectá con precisión:
-- En qué industria o micro-nicho opera
-- Qué motor psicológico está usando (puede ser cualquiera — no te limitás al catálogo)
-- Qué acción busca generar en el espectador
-
-Catálogo de referencia (usalo si aplica exactamente, ignoralo si el nicho es distinto):
-${JSON.stringify(NICHE_MOTORS, null, 2)}
-
-VIDEO:
----
-${videoRawData}
----
-
-Respondé SOLO con este JSON válido:
-{
-  "industria": "<nicho ultra-específico — cuanto más preciso mejor>",
-  "motor_key": "<clave del catálogo si aplica exactamente — null si no encaja>",
-  "objetivo_conversion": "<qué acción busca que haga el espectador>",
-  "palanca_psicologica": "<emoción o mecanismo psicológico real que usa el video>",
-  "criterio_evaluacion": "<en una frase: qué tiene que lograr este video para funcionar en su nicho específico>",
-  "confianza": <0.0 a 1.0>
-}
-`;
-
 export const buildPreClassifierPrompt = (meta = '') => `
 Sos un extractor forense de datos de video.
 Tu único trabajo: registrar hechos observables. 
@@ -244,12 +215,17 @@ DEFINICIONES PARA hook_type_detectado:
 - explosivo: pregunta directa al espectador O afirmación que contradice una creencia común
 - bait_con_puente: imagen/acción impactante que conecta directamente con el producto o transformación
 - bait_desconectado: imagen impactante pero sin conexión clara con el tema del video
-- curiosidad_desconexion: genera curiosidad o tensión, pero lo que se ve y lo que se escucha apuntan a cosas distintas — el espectador se queda para resolver el gap
+- curiosidad_desconexion: genera curiosidad o tensión, pero lo que se ve y lo que se escucha apuntan a cosas distintas
 - apertura_informativa: empieza mostrando el producto o servicio directamente, sin tensión previa
 - debil: sin elemento de hook claro en los primeros 3 segundos
 - muerto: logo de marca, pantalla de bienvenida, o fade-in lento como primer frame
 `;
 
+// ============================================================
+// CALL 1 — VIEWER BRAIN
+// El algoritmo. Evalúa hook y desarrollo. Devuelve veredictos duros.
+// El video se ve UNA SOLA VEZ acá. Nunca más en el pipeline.
+// ============================================================
 export const buildViewerBrainPrompt = (videoRawData, platform, perception) => {
   const pName = {
     tiktok: 'TikTok',
@@ -320,10 +296,9 @@ Respondé SOLO en JSON estricto, sin markdown:
 }`;
 };
 
-
 // ============================================================
 // CALL 1.5 — RESEARCH BRAIN
-// Investigación real con Google Search grounding. //deriveHookType
+// Investigación real con Google Search grounding.
 // Busca qué está funcionando HOY en este nicho específico.
 // ============================================================
 export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
@@ -394,8 +369,9 @@ Respondé SOLO con este JSON:
 
 // ============================================================
 // CALL 2 — STRATEGY BRAIN
-// Analiza fricción y oportunidad.
-// Gemini usa su conocimiento del nicho — sin frameworks impuestos.
+// FIX CRÍTICO: Ahora devuelve `inputs_para_scoring` con valores
+// numéricos/categóricos duros. ScoringBrain los consume directamente
+// sin re-interpretar texto narrativo — eso eliminaba la inconsistencia.
 // ============================================================
 export const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, perception, preFacts = {}) => {
   const pName = {
@@ -449,18 +425,48 @@ Respondé SOLO con este JSON:
     "hook_type":           "<muerto|debil|apertura_informativa|bait_desconectado|bait_con_puente|explosivo>",
     "ad_filter_triggered": <boolean>,
     "parece_publicidad":   <boolean>
+  },
+  "inputs_para_scoring": {
+    "hook_penalizacion":       <0|-15|-30|-50>,
+    "desarrollo_penalizacion": <0|-10|-20>,
+    "friccion_conversion":     "<baja|media|alta>",
+    "ad_penalty":              <0|-20>,
+    "fortaleza_principal":     "<una palabra — la mayor ventaja del video>"
   }
-}`;
+}
+
+REGLA PARA inputs_para_scoring.hook_penalizacion:
+- hook VIVO y arriba del promedio del nicho → 0
+- hook VIVO pero por debajo del promedio  → -15
+- hook con bait desconectado              → -30
+- hook MUERTO                             → -50
+
+REGLA PARA inputs_para_scoring.desarrollo_penalizacion:
+- desarrollo sostiene tensión sin baja   → 0
+- hay un momento donde baja la tensión   → -10
+- desarrollo pierde al espectador claro  → -20`;
 };
 
+// ============================================================
+// CALL 3 — SCORING BRAIN
+// FIX CRÍTICO #1: No recibe el video. La evaluación visual ya
+// ocurrió en Call 1. Darle el video acá le daba a Gemini una
+// fuente de verdad nueva que contradecía los análisis previos.
+//
+// FIX CRÍTICO #2: Recibe inputs_para_scoring de Call 2 — valores
+// numéricos ya decididos, no texto narrativo que re-interpretar.
+//
+// FIX CRÍTICO #3: La escala no menciona la zona prohibida para
+// no activar razonamiento sobre ella. El rechazo es post-cálculo.
+// ============================================================
 export const buildScoringBrainPrompt = (
-  videoRawData,
-  strategyAnalysis,
+  strategyAnalysis,       // ← sin videoRawData al inicio — firma corregida
   viewerAnalysis,
   platform,
   objetivo,
   perception,
   flags,
+  scoringInputs = {},     // ← nuevo: inputs_para_scoring de Call 2
   nicheConfig = null,
   benchmarkData = null
 ) => {
@@ -490,23 +496,22 @@ Patrón dominante hoy: ${benchmarkData.patron_hook_dominante ?? 'No disponible'}
 Brecha vs competencia: ${benchmarkData.resumen_brecha ?? 'No disponible'}
 ` : '';
 
-  return `Sos el algoritmo de ${pName} con conocimiento profundo de 
-todos los nichos del mercado.
+  // Bloque de inputs pre-calculados — le dice a Gemini los valores
+  // que ya fueron decididos en Call 2, sin darle texto para interpretar
+  const scoringInputsBlock = Object.keys(scoringInputs).length ? `
+INPUTS PRE-CALCULADOS (ya decididos — usá estos valores, no los recalculés):
+- Penalización de hook:        ${scoringInputs.hook_penalizacion ?? 0} puntos
+- Penalización de desarrollo:  ${scoringInputs.desarrollo_penalizacion ?? 0} puntos
+- Fricción de conversión:      ${scoringInputs.friccion_conversion ?? 'media'}
+- Penalización por publicidad: ${scoringInputs.ad_penalty ?? 0} puntos
+- Fortaleza principal:         ${scoringInputs.fortaleza_principal ?? 'no detectada'}
+` : '';
 
-Tu estándar es el top 1% — no el promedio.
-Un video que "no está mal" es un video que fracasa.
-En short-form no existe la zona media: o para el scroll o no existe.
+  return `Sos el motor de scoring de ${pName}.
 
-ESCALA REAL DE SCORING:
-- 0  a 30: video invisible — el algoritmo no lo distribuye
-- 31 a 44: video débil — llega solo a seguidores existentes  
-- 45 a 64: NO EXISTE — en short-form real no hay videos en esta zona
-- 65 a 79: video competitivo — tiene chance de distribución
-- 80 a 100: top 1% — distribución masiva garantizada
-
-Si estás tentado de poner un score entre 45 y 64, 
-reconsiderá — ese rango no existe en la realidad.
-El video o está bajo 45 o está sobre 65. Sin zona media.
+Tu trabajo: calcular los scores finales usando los análisis ya procesados.
+No re-evaluás el video. No re-interpretás el hook. Ya fue decidido.
+Tomás los inputs y calculás. Como una calculadora con criterio de nicho.
 
 CONTEXTO:
 - Nicho: ${perception.industria}
@@ -518,50 +523,51 @@ ${nicheConfig?.score_cap ? `- Score cap del nicho: viral ≤ ${nicheConfig.score
 FLAGS TÉCNICOS:
 ${JSON.stringify(flags, null, 2)}
 
-ANÁLISIS DEL ESPECTADOR:
+${scoringInputsBlock}
+
+ANÁLISIS DEL ESPECTADOR (Call 1):
 ${viewerAnalysis}
 
-ANÁLISIS ESTRATÉGICO:
+ANÁLISIS ESTRATÉGICO (Call 2):
 ${strategyAnalysis}
 
 ${benchmarkBlock}
 
-VIDEO:
----
-${videoRawData}
----
-
 ═══════════════════════════════════════
-HOOK: "${hookVeredicto}"
+VEREDICTO DE HOOK (inamovible): "${hookVeredicto}"
 ═══════════════════════════════════════
 
 ${hookMuerto
-  ? `⛔ HOOK MUERTO — scores máximos permitidos:
-- viralScore:      18
-- salesScore:      25
-- scrollStopScore: 12
-- hookDNA.pattern: "Muerto"
-- honestVerdict:   empieza con "El video murió en el segundo X."
-- roadmap ítem #1: siempre el hook, impacto ALTO
-Inamovible. Sin excepciones.`
+  ? `⛔ HOOK MUERTO — los scores son los siguientes, sin excepción:
+- viralScore máximo:      18
+- salesScore máximo:      25
+- scrollStopScore máximo: 12
+- hookDNA.pattern:        "Muerto"
+- honestVerdict:          primera oración empieza con "El video murió en el segundo X."
+- roadmap ítem #1:        siempre el hook, impacto ALTO
+Estos topes son estructurales. No hay contexto que los cambie.`
 
-  : `✅ HOOK VIVO — scoring con estándar top 1%.
+  : `✅ HOOK VIVO — calculá con estándar top 1% del nicho.
 
-Recordá: un hook que "funciona pero no es extraordinario" 
-es un hook que en la práctica pierde contra el top 1%.
-Puntuá en consecuencia.
-
-Si el desarrollo baja la tensión en algún punto:
-- salesScore cae mínimo 20 puntos
-- viralScore cae mínimo 15 puntos`
+Aplicá las penalizaciones de inputs_para_scoring sobre una base de 100.
+La fricción de conversión afecta salesScore:
+- baja  → sin penalización adicional
+- media → salesScore -10
+- alta  → salesScore -25`
 }
 
-REGLAS TÉCNICAS:
-- es_slideshow_imagenes === true → viralScore techo: 35
-- ad_filter_triggered === true   → salesScore: -20
-- viralScore y salesScore difieren mínimo 10 puntos
+REGLAS TÉCNICAS DE SCORING:
+- es_slideshow_imagenes === true  → viralScore techo absoluto: 35
+- ad_filter_triggered === true    → aplicar ad_penalty de inputs_para_scoring
+- viralScore y salesScore deben diferir mínimo 10 puntos entre sí
 
-ROADMAP — 3 ítems, cada uno con segundo exacto + instrucción ejecutable:
+VERIFICACIÓN FINAL ANTES DE RESPONDER:
+Mirá tus scores calculados. ¿Alguno cayó entre 45 y 64?
+Si sí: ese rango no existe en short-form real. Mové el score
+al valor lógico más cercano — abajo de 44 o arriba de 65 —
+según la evidencia de los análisis. Justificá el ajuste en el verdict.
+
+ROADMAP — exactamente 3 ítems, cada uno con segundo exacto + instrucción ejecutable.
 
 Respondé SOLO en JSON, sin markdown:
 {
@@ -1341,15 +1347,16 @@ const perceptionParaScoring = {
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildScoringBrainPrompt(
-          strategyAnalysis,
-          viewerAnalysis,
-          platform,
-          selectedObjetivo,
-          perceptionParaScoring,  // ← tiene ambas palancas
-          flagsDeterministic,
-          nicheConfig,
-          benchmarkData
-        ),
+  strategyAnalysis,   // ← antes era videoRawData aquí
+  viewerAnalysis,
+  platform,
+  selectedObjetivo,
+  perceptionParaScoring,
+  flagsDeterministic,
+  flagsFromStrategy?.inputs_para_scoring ?? {},  // ← nuevo
+  nicheConfig,
+  benchmarkData
+),
         storagePath,
         videoMimeType: mimeType,
         duration: Math.round(duration),
