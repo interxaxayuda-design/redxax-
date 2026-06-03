@@ -839,7 +839,7 @@ useEffect(() => {
 // El cambio está en el bloque if (error): ahora lee el body real 
 // de la respuesta para que puedas ver qué está tirando la función.
 
-// ── FIX: deductGems ──────────────────────────────────────────
+// ── FIX: deductGems ──────────────────────────────────────────//setVideoMeta({
 // El cambio está en el bloque if (error): ahora lee el body real
 // de la respuesta para que puedas ver qué está tirando la función.
 
@@ -1083,7 +1083,7 @@ preFacts = {
       followerRange,
       palanca_detectada: preFacts.palanca_psicologica || 'Curiosidad / Retención',
     });
-
+ //const { storagePath, mimeType, duration, preFacts, preHookType, platform, palanca_detectada } = videoMeta;
     setAnalysisProgress(100);
     setTimeout(() => setStep('validation'), 500);
 
@@ -1104,7 +1104,7 @@ const runDeepAnalysis = async () => {
     return;
   }
 
-  const { storagePath, mimeType, duration, preFacts, preHookType, platform, palanca_detectada } = videoMeta;
+  const { storagePath, mimeType, duration, preFacts, platform, palanca_detectada } = videoMeta;
 
   // DESPUÉS
 const perceptionParaScoring = {
