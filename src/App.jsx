@@ -222,12 +222,8 @@ DEFINICIONES:
 // ============================================================
 // CALL 1 — VIEWER BRAIN
 // El video se evalúa acá con criterio de algoritmo real.
-// Veredicto de hook: VIVO o MUERTO. Sin matices.
-//
-// FIX: bloque ANTI-CRITERIO antes del juicio del hook.
-// El nicho/palanca se inyecta DESPUÉS de la evaluación del hook
-// para evitar que Gemini aplique relevancia temática como criterio
-// de retención. Un hook de desconexión es válido por definición.
+// El hook se juzga SOLO por su efecto en el espectador.
+// El nicho no es criterio de validez del hook.
 // ============================================================
 export const buildViewerBrainPrompt = (videoRawData, platform, perception) => {
   const pName = {
@@ -245,38 +241,23 @@ VIDEO:
 ${videoRawData}
 ---
 
-═══════════════════════════════════════════════════
-FOCO 1 — HOOK (segundo 0 al 3)
-═══════════════════════════════════════════════════
+FASE 1 — HOOK (segundos 0 a 3):
+Una sola pregunta: ¿el pulgar frenó o scrolleó?
 
-CRITERIO ÚNICO: ¿hubo tensión cognitiva suficiente para frenar el scroll?
+La respuesta correcta es visceral, no intelectual.
+Si tenés que pensar si es bueno o no, scrolleó.
+El hook no necesita relacionarse con el producto. 
+Solo necesita generar una reacción que retenga.
+Un video que empieza con algo intrigante que no tiene nada que ver con el producto es un hook válido si frena el scroll.
+Juzgá únicamente lo que ocurre en pantalla y en el audio en esos primeros 3 segundos.
 
-ANTI-CRITERIO — estos razonamientos son errores de evaluación:
-❌ "la imagen no muestra el producto/nicho → débil o muerto"
-❌ "el audio no menciona el tema del video → score bajo"
-❌ "no tiene relación con comida / el producto / el servicio → malo"
-❌ "el hook no anticipa el contenido → confuso"
-
-CRITERIO CORRECTO:
-✅ ¿La imagen, audio o texto generó tensión cognitiva en el segundo 0?
-✅ ¿Existe un gap sin resolver que obliga a seguir mirando?
-✅ Un hook de desconexión (visual ajeno al nicho + promesa de resolución)
-   ES un hook válido y poderoso — la desconexión IS el mecanismo, no un defecto.
-✅ Un hook de interrupción (algo inesperado antes del anuncio) retiene
-   exactamente porque no tiene relación obvia con el tema.
-
-¿El pulgar frenó en el segundo 0 o scrolleó?
-Si necesitás pensar la respuesta, scrolleó.
-
-═══════════════════════════════════════════════════
-FOCO 2 — DESARROLLO (solo si el hook frenó el pulgar)
-═══════════════════════════════════════════════════
-
+FASE 2 — DESARROLLO (solo si el hook sobrevivió):
 ¿Cada segundo justifica el siguiente?
+¿El video entregó lo que el gancho prometió — o lo abandonó?
 
-CONTEXTO DEL NICHO (solo para evaluar el desarrollo — irrelevante para el hook):
+CONTEXTO DEL VIDEO (para evaluar el desarrollo ÚNICAMENTE — no afecta el veredicto del hook):
 NICHO: ${perception.industria}
-PALANCA DEL VIDEO: ${perception.palanca_psicologica}
+PALANCA DETECTADA: ${perception.palanca_psicologica}
 
 Respondé SOLO en JSON, sin markdown:
 {
@@ -299,7 +280,7 @@ Respondé SOLO en JSON, sin markdown:
   },
   "veredicto_final": {
     "sobrevive": "<SI|NO>",
-    "razon":     "<una oración. Qué pasó exactamente. Sin eufemismos.>"
+    "razon":     "<una oración. Qué pasó exactamente. Sin eufemismos. Sin mencionar si el hook es coherente con el nicho.>"
   }
 }`;
 };
@@ -423,7 +404,18 @@ Respondé SOLO con este JSON:
 }`;
 };
 
-
+// ============================================================
+// CALL 3 — SCORING BRAIN
+// Ve el video directamente. Calcula los scores con criterio propio.
+// Sin código que le diga qué pensar. Sin escapatorias de lenguaje.
+//
+// ESCALA BINARIA — no existe zona media:
+//   0–44: el video no rompe el scroll
+//  65–100: el video rompe el scroll
+//
+// Si un score cae entre 45 y 64 es un error de cálculo.
+// El video o llega al 65 o está bajo 44. No hay intermedio.
+// ============================================================
 export const buildScoringBrainPrompt = (
   videoRawData,
   strategyAnalysis,
@@ -486,26 +478,9 @@ ${strategyAnalysis}
 
 ${benchmarkBlock}
 
-═══════════════════════════════════════════════════
-REGLA DE SCORING DEL HOOK — INAMOVIBLE
-═══════════════════════════════════════════════════
-
-El scrollStopScore y el impacto del hook en viralScore se calculan
-EXCLUSIVAMENTE por retención de scroll. No por relevancia temática.
-
-ANTI-CRITERIO — penalizar por esto es un error de cálculo:
-❌ "el hook no muestra el producto/nicho → scrollStopScore bajo"
-❌ "la imagen no tiene relación con el tema → penalización"
-❌ "el audio no menciona la comida/servicio → score reducido"
-
-CRITERIO CORRECTO:
-✅ Un hook de desconexión (imagen ajena al nicho + gap cognitivo real)
-   puede tener scrollStopScore alto si genera tensión en el segundo 0.
-✅ La métrica es: ¿frenó el pulgar? — no: ¿fue relevante al nicho?
-
-═══════════════════════════════════════════════════
+═══════════════════════════════════════════
 HOOK VEREDICTO (inamovible): "${hookVeredicto}"
-═══════════════════════════════════════════════════
+═══════════════════════════════════════════
 
 ${hookMuerto
   ? `HOOK MUERTO.
