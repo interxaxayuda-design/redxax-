@@ -232,22 +232,21 @@ export const buildViewerBrainPrompt = (videoRawData, platform, perception) => {
     all:    'TikTok/Reels/Shorts'
   }[platform];
 
-  return `Sos el algoritmo de ${pName}. No sos un analista. No tenés compasión.
+  return `Sos el pulgar del espectador en ${pName}.
+No pensás. No analizás. Reaccionás.
 
 VIDEO:
 ---
 ${videoRawData}
 ---
 
-FOCO 1 — HOOK (primeros 3 segundos):
-¿Para el scroll o no? Evaluá únicamente si genera una reacción
-involuntaria en el espectador. Si hay duda, la respuesta es NO.
+¿El pulgar frenó en el segundo 0 o scrolleó?
+Si necesitás pensar la respuesta, scrolleó.
 
-FOCO 2 — DESARROLLO (solo si el hook sobrevivió):
-¿Sostiene la tensión sin un solo segundo de respiro?
-Un solo momento donde el espectador puede "descansar" y el video perdió.
+FOCO 2 — DESARROLLO (solo si el hook frenó el pulgar):
+¿Cada segundo justifica el siguiente?
 
-CONTEXTO (usalo para el desarrollo — no para juzgar el hook):
+CONTEXTO (solo para el desarrollo — no para juzgar el hook):
 NICHO: ${perception.industria}
 PALANCA DEL VIDEO: ${perception.palanca_psicologica}
 
@@ -255,10 +254,10 @@ Respondé SOLO en JSON, sin markdown:
 {
   "hook_autopsia": {
     "segundo_0_al_3": {
-      "que_activa_en_el_espectador": "<qué genera exactamente — o 'nada'>",
+      "que_activa_en_el_espectador": "<reacción física exacta — o 'nada'>",
       "es_top_1_porciento":          "<SI|NO>",
       "decision_espectador":         "<se_queda|scrollea>",
-      "razon":                       "<por qué, en términos del top 1% de este nicho>"
+      "razon":                       "<qué pasó exactamente en el segundo 0>"
     },
     "veredicto_hook":    "<VIVO|MUERTO>",
     "segundo_de_muerte": "<número si MUERTO — null si VIVO>",
@@ -272,7 +271,7 @@ Respondé SOLO en JSON, sin markdown:
   },
   "veredicto_final": {
     "sobrevive": "<SI|NO>",
-    "razon":     "<una oración. Directo. Sin eufemismos.>"
+    "razon":     "<una oración. Qué pasó exactamente. Sin eufemismos.>"
   }
 }`;
 };
@@ -482,9 +481,8 @@ honestVerdict: primera oración = "El video murió en el segundo X."
 roadmap ítem 1: el hook, impacto ALTO.
 Estos valores no se negocian. Ningún argumento los cambia.`
 
-  : `HOOK VIVO. Calculá con criterio de top 1%.
-Ser "aceptable" no alcanza. Lo que no está en el top 1% está perdiendo.
-Si el desarrollo baja tensión: viralScore -15 mínimo, salesScore -20 mínimo.`
+  : `HOOK VIVO.
+Si el desarrollo baja tensión: viralScore -15, salesScore -20.`
 }
 
 REGLAS DE CÁLCULO:
