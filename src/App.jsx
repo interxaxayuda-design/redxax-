@@ -163,9 +163,9 @@ export const NICHE_MOTORS = {
   "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
   "inmobiliaria":       { motor: "aspiracion -> agente",                       urgency: false, trust_signal: "experiencia_agente", cta_type: "contacto"  },
   "app_saas":           { motor: "problema -> claridad -> demo",               urgency: true,  trust_signal: "resultado_visible",  cta_type: "directo"   },
-  "estetica":           { motor: "inseguridad -> transformacion -> identidad",  urgency: false, trust_signal: "antes_despues",      cta_type: "implicito" },
+  "estetica":           { motor: "inseguridad -> transformacion -> identidad", urgency: false, trust_signal: "antes_despues",      cta_type: "implicito" },
   "educacion":          { motor: "curiosidad -> valor -> confianza",           urgency: false, trust_signal: "autoridad",          cta_type: "implicito" },
-  "musica_artista":     { motor: "identidad_tribal -> emocion -> resonancia",   urgency: false, trust_signal: "autenticidad_raw",   cta_type: "ninguno",
+  "musica_artista":     { motor: "identidad_tribal -> emocion -> resonancia",  urgency: false, trust_signal: "autenticidad_raw",   cta_type: "ninguno",
                           score_cap: { viralScore: 55, salesScore: 35 },
                           limitacion: "audio_no_evaluable" }
 };
@@ -214,9 +214,13 @@ export const buildViewerBrainPrompt = (videoRawData, platform) => {
     all:    'TikTok / Reels / Shorts',
   }[platform] || platform;
 
-  return `Sos el pulgar.
+  return `Sos el pulgar de un adicto a la dopamina con déficit de atención severo.
 
 Estás en ${pName}, 11pm, cansado, sin paciencia. Tu dedo ya scrolleó 200 videos hoy.
+Tu estado por defecto es SCROLLEAR. El 99% de los videos te aburren.
+
+Para no scrollear en el segundo 0, el video tiene que PROBAR su valor visual o auditivo de forma violenta o hiper-intrigante.
+Si el texto o el audio dice "Hola a todos", "Hoy les voy a hablar de", o si arranca con un logo estático: SCROLLEAS INMEDIATAMENTE.
 
 VIDEO:
 ---
@@ -325,7 +329,6 @@ export const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, per
     all:    'TikTok/Reels/Shorts',
   }[platform] || platform;
 
-  // El nicho aparece acá, DESPUÉS del veredicto del hook
   return `Sos un estratega de contenido experto en ${pName}.
 
 VEREDICTO DEL ESPECTADOR (inamovible):
@@ -351,7 +354,7 @@ Respondé SOLO con este JSON:
   "analisis_cualitativo": {
     "gate_formato": {
       "estado": "<competitivo|debil|muerto>",
-      "razon":   "<por qué — específico para este video>"
+      "razon":  "<por qué — específico para este video>"
     },
     "evaluacion_motor": {
       "se_activa_antes_del_scroll": "<SI|NO|TARDE>",
@@ -439,7 +442,7 @@ HOOK VEREDICTO (inamovible): "${hookVeredicto}"
 ═══════════════════════════════════════════
 ${hookMuerto
   ? `HOOK MUERTO.
-viralScore: máximo 18.
+viralScore: máximo 15.
 salesScore: máximo 25.
 scrollStopScore: máximo 12.
 hookDNA.pattern: "Muerto".
@@ -451,11 +454,19 @@ Estos valores no se negocian. El nicho no los cambia. Ningún argumento los camb
 El desarrollo baja tensión → viralScore -15, salesScore -20.`
 }
 
-REGLAS DE CÁLCULO:
+REGLAS DE CÁLCULO ESTRICTAS (PUNTAJE BASE = 0):
+- Si el hook es MUERTO, el viralScore no puede superar 15. NUNCA.
+- Para pasar de 20 puntos, el video DEBE tener [imagen_alto_impacto] o [sujeto_ancla_en_s0] = true.
+- Para pasar de 50 puntos, debe tener un "hook_type" = "explosivo" o "curiosidad_desconexion".
+- CUALQUIER video que se sienta "promedio", "educativo pero lento" o "institucional" recibe automáticamente un viralScore entre 10 y 25.
+- Un puntaje de 75+ está reservado ÚNICAMENTE para el top 1% de internet (retención agresiva, ritmo rápido, estímulo constante).
+- Si tenés dudas, CASTIGÁ el score.
 - es_slideshow_imagenes === true → viralScore techo: 35
 - ad_filter_triggered === true   → salesScore -20
 - viralScore y salesScore deben diferir mínimo 10 puntos
-- El nicho NO justifica un hook débil. Un video lento sin cortes es un video lento sin cortes en cualquier nicho.
+
+EL ALGORITMO NO TIENE PIEDAD POR EL NICHO:
+Un video aburrido en el nicho B2B o Inmobiliaria sigue siendo un video aburrido y se lleva un score bajo. No infles el viralScore "por esfuerzo" ni por compasión a la industria. Si no retiene dopamina, el score es bajo.
 
 ESCALA BINARIA — OBLIGATORIA:
   0–44  → el video no rompe el scroll. Esto incluye cualquier score que "casi llega".
@@ -960,7 +971,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   const duration = await new Promise((resolve) => {
     const v = document.createElement('video');
     v.src = url;
-    v.onloadedmetadata = () => resolve(v.duration);
+    v.onloadedmetadata = () => resolve(v.duration); //setStatusText("Subiendo video...");
   });
 
   // Pasamos directo a preparar el video sin cobrar gemas todavía
@@ -982,31 +993,58 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   console.log('[VIRAX] Subiendo para calibración:', fileToUpload.name, fileToUpload.size, 'bytes', mimeType);
 
   try {
-    setStatusText("Subiendo video...");
-    setAnalysisProgress(10);
+    // ── UPLOAD ──
+setStatusText("Subiendo video...");
+setAnalysisProgress(10);
 
-    const { error: uploadError } = await supabase.storage
-      .from('videos')
-      .upload(storagePath, fileToUpload, { upsert: true });
+const { data: uploadData, error: uploadError } = await supabase.functions.invoke('gemini-proxy/upload-video', {
+  body: { storagePath, videoMimeType: mimeType }
+});
+if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
-    if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
+const { fileUri, fileName } = uploadData;
 
-    await new Promise(r => setTimeout(r, 1500));
+// ── POLLING desde el frontend (sin timeout del Edge Function) ──
+setStatusText("Google está procesando el video...");
+setAnalysisProgress(14);
 
-    // ============================================================
-    // CALL 0 — Pre-clasificador
-    // ============================================================
-    setAnalysisProgress(18);
-    setStatusText("Pre-clasificando video...");
+let videoReady = false;
+for (let i = 0; i < 30; i++) {  // máximo 60 segundos (30 × 2s)
+  await new Promise(r => setTimeout(r, 2000));
 
-    let preFacts = {};
-    let preHookType = 'debil';
+  const { data: statusData } = await supabase.functions.invoke('gemini-proxy/check-video-status', {
+    body: { fileName }
+  });
 
-// ✅ CÓDIGO NUEVO — pegarlo en el mismo lugar:
+  console.log(`[VIRAX] Estado video: ${statusData?.state} (intento ${i + 1})`);
+
+  if (statusData?.state === 'ACTIVE') {
+    videoReady = true;
+    break;
+  }
+
+  if (statusData?.state === 'FAILED') {
+    const detail = statusData?.error?.message ?? 'Error desconocido';
+    throw new Error(`Google no pudo procesar el video: ${detail}. Probá con un MP4 H.264.`);
+  }
+
+  // Actualizamos el progress mientras espera
+  setAnalysisProgress(14 + Math.min(i, 4));
+}
+
+if (!videoReady) {
+  throw new Error('El video tardó demasiado en procesarse. Probá con un video más corto.');
+}
+
+setAnalysisProgress(18);
+setStatusText("Pre-clasificando video...");
+
+// ── CALL 0 — Pre-clasificador (ahora usa fileUri directo) ──
 const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
   body: {
-    text: buildPreClassifierPrompt(`Duración: ${Math.round(duration)}s`),  // ← con argumento
-    storagePath,
+    text: buildPreClassifierPrompt(`Duración: ${Math.round(duration)}s`),
+    fileUri,      // ← en vez de storagePath
+    fileName,     // ← para que el Edge Function sepa qué borrar al final
     videoMimeType: mimeType,
     duration: Math.round(duration),
     maxOutputTokens: 2048,
