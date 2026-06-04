@@ -220,10 +220,9 @@ DEFINICIONES:
 `;
 
 // ============================================================
-// CALL 1 — VIEWER BRAIN
-// El video se evalúa acá con criterio de algoritmo real.
-// El hook se juzga SOLO por su efecto en el espectador.
-// El nicho no es criterio de validez del hook.
+// CALL 1 — VIEWER BRAIN v3
+// El pulgar no tiene ego. No le importa el nicho ni el esfuerzo.
+// Solo procesa: ¿esto es más interesante que lo siguiente?
 // ============================================================
 export const buildViewerBrainPrompt = (videoRawData, platform, perception) => {
   const pName = {
@@ -233,29 +232,36 @@ export const buildViewerBrainPrompt = (videoRawData, platform, perception) => {
     all:    'TikTok/Reels/Shorts'
   }[platform];
 
-  return `Sos el pulgar del espectador en ${pName}.
-No pensás. No analizás. Reaccionás.
+  return `Sos el feed de ${pName}.
+No sos el creador. No sos el espectador amable. Sos el algoritmo.
+Tu única función: decidir si este video compite contra los mejores del feed o no.
 
 VIDEO:
 ---
 ${videoRawData}
 ---
 
-FASE 1 — HOOK (segundos 0 a 3):
-Una sola pregunta: ¿el pulgar frenó o scrolleó?
+REGLA ABSOLUTA DEL FEED:
+En este momento hay 10.000 videos compitiendo por el mismo segundo de atención.
+El 97% de los videos que se suben son invisibles. No son malos — son invisibles.
+Un video "correcto", "prolijo" o "informativo" sin un elemento disruptivo en el segundo 0
+es invisible. No importa lo que venga después.
 
-La respuesta correcta es visceral, no intelectual.
-Si tenés que pensar si es bueno o no, scrolleó.
-El hook no necesita relacionarse con el producto. 
-Solo necesita generar una reacción que retenga.
-Un video que empieza con algo intrigante que no tiene nada que ver con el producto es un hook válido si frena el scroll.
-Juzgá únicamente lo que ocurre en pantalla y en el audio en esos primeros 3 segundos.
+FASE 1 — SEGUNDO 0 AL 3:
+El feed procesa una sola señal: ¿hay algo acá que no vi antes?
+No: ¿está bien hecho? No: ¿tiene buena info? Solo: ¿hay algo que no vi antes?
 
-FASE 2 — DESARROLLO (solo si el hook sobrevivió):
-¿Cada segundo justifica el siguiente?
-¿El video entregó lo que el gancho prometió — o lo abandonó?
+Si la respuesta requiere ver más de 1 segundo para formarse, la respuesta es NO.
+Un hook que "necesita contexto" para funcionar no es un hook — es contenido.
 
-CONTEXTO DEL VIDEO (para evaluar el desarrollo ÚNICAMENTE — no afecta el veredicto del hook):
+La presencia del nicho, del producto, o del mensaje correcto en el segundo 0
+NO es un factor positivo. Es neutro. Lo que importa: ¿hay tensión sin resolver?
+
+FASE 2 — DESARROLLO (solo si el segundo 0 generó tensión real):
+¿Cada segundo que pasa aumenta la tensión o la libera antes de tiempo?
+Si la libera antes de tiempo, el video muere ahí aunque el resto sea bueno.
+
+CONTEXTO TÉCNICO (solo para calibrar el desarrollo — irrelevante para el hook):
 NICHO: ${perception.industria}
 PALANCA DETECTADA: ${perception.palanca_psicologica}
 
@@ -263,8 +269,9 @@ Respondé SOLO en JSON, sin markdown:
 {
   "hook_autopsia": {
     "segundo_0_al_3": {
+      "elemento_disruptivo":         "<qué elemento específico no se ve en el 97% del feed — o 'ninguno'>",
       "que_activa_en_el_espectador": "<reacción física exacta — o 'nada'>",
-      "es_top_1_porciento":          "<SI|NO>",
+      "es_top_1_porciento":          "<SI|NO — SI solo si compite con los mejores del nicho HOY>",
       "decision_espectador":         "<se_queda|scrollea>",
       "razon":                       "<qué pasó exactamente en el segundo 0 — sin mencionar el nicho>"
     },
@@ -273,14 +280,14 @@ Respondé SOLO en JSON, sin markdown:
     "causa_de_muerte":   "<causa exacta si MUERTO — null si VIVO>"
   },
   "desarrollo_autopsia": {
-    "evaluacion":                  "<análisis o 'Hook muerto — desarrollo no evaluado'>",
+    "evaluacion":                  "<análisis segundo a segundo o 'Hook muerto — desarrollo no evaluado'>",
     "cumple_lo_que_prometio":      "<SI|NO|PARCIAL>",
-    "segundo_donde_baja_tension":  "<número o null>",
+    "segundo_donde_baja_tension":  "<número exacto o null>",
     "veredicto_desarrollo":        "<VIVO|MUERTO|NO_EVALUADO>"
   },
   "veredicto_final": {
     "sobrevive": "<SI|NO>",
-    "razon":     "<una oración. Qué pasó exactamente. Sin eufemismos. Sin mencionar si el hook es coherente con el nicho.>"
+    "razon":     "<una oración brutal. Qué pasó exactamente. Sin eufemismos. Sin consuelos.>"
   }
 }`;
 };
@@ -405,16 +412,10 @@ Respondé SOLO con este JSON:
 };
 
 // ============================================================
-// CALL 3 — SCORING BRAIN
-// Ve el video directamente. Calcula los scores con criterio propio.
-// Sin código que le diga qué pensar. Sin escapatorias de lenguaje.
-//
-// ESCALA BINARIA — no existe zona media:
-//   0–44: el video no rompe el scroll
-//  65–100: el video rompe el scroll
-//
-// Si un score cae entre 45 y 64 es un error de cálculo.
-// El video o llega al 65 o está bajo 44. No hay intermedio.
+// CALL 3 — SCORING BRAIN v3
+// El score no es una nota. Es una predicción de distribución.
+// 0–44: el algoritmo no lo distribuye. 65–100: sí lo distribuye.
+// No hay zona gris porque el algoritmo tampoco tiene zona gris.
 // ============================================================
 export const buildScoringBrainPrompt = (
   videoRawData,
@@ -453,9 +454,8 @@ Patrón dominante hoy: ${benchmarkData.patron_hook_dominante ?? 'No disponible'}
 Brecha vs competencia: ${benchmarkData.resumen_brecha ?? 'No disponible'}
 ` : '';
 
-  return `Sos el motor de scoring de ${pName}.
-Mirás el video directamente y calculás los scores finales.
-Tu criterio es el top 1% — no el promedio. Un video que "no está mal" es un video muerto.
+  return `Sos el motor de distribución de ${pName}.
+No sos un juez. No sos un coach. Sos el algoritmo que decide si este video existe o no.
 
 VIDEO:
 ---
@@ -465,12 +465,12 @@ ${videoRawData}
 NICHO: ${perception.industria}
 OBJETIVO: ${objetivo}
 PALANCA DETECTADA: ${perception.palanca_detectada || perception.palanca_psicologica}
-${nicheConfig?.score_cap ? `SCORE CAP DEL NICHO: viral ≤ ${nicheConfig.score_cap.viralScore}, sales ≤ ${nicheConfig.score_cap.salesScore}` : ''}
+${nicheConfig?.score_cap ? `SCORE CAP: viral ≤ ${nicheConfig.score_cap.viralScore}, sales ≤ ${nicheConfig.score_cap.salesScore}` : ''}
 
 FLAGS TÉCNICOS:
 ${JSON.stringify(flags, null, 2)}
 
-ANÁLISIS PREVIOS:
+ANÁLISIS DEL FEED:
 ${viewerAnalysis}
 
 ANÁLISIS ESTRATÉGICO:
@@ -483,62 +483,73 @@ HOOK VEREDICTO (inamovible): "${hookVeredicto}"
 ═══════════════════════════════════════════
 
 ${hookMuerto
-  ? `HOOK MUERTO.
+  ? `HOOK MUERTO — el video no existe para el algoritmo.
 viralScore: máximo 18. salesScore: máximo 25. scrollStopScore: máximo 12.
 hookDNA.pattern: "Muerto".
-honestVerdict: primera oración = "El video murió en el segundo X."
+honestVerdict primera oración: "El video murió en el segundo X."
 roadmap ítem 1: el hook, impacto ALTO.
-Estos valores no se negocian. Ningún argumento los cambia.`
-
-  : `HOOK VIVO.
-Si el desarrollo baja tensión: viralScore -15, salesScore -20.`
+Estos caps no se negocian. Ningún argumento los mueve.`
+  : `HOOK VIVO — el video entró al feed.
+Ahora el score depende de qué tan lejos llega.
+Si el desarrollo baja tensión antes del final: viralScore −15, salesScore −20.`
 }
 
-REGLAS DE CÁLCULO:
-- es_slideshow_imagenes === true → viralScore techo: 35
-- ad_filter_triggered === true   → salesScore -20
+REGLAS DE CÁLCULO INAMOVIBLES:
+- es_slideshow_imagenes === true → viralScore techo 35
+- ad_filter_triggered === true   → salesScore −20
 - viralScore y salesScore difieren mínimo 10 puntos
 
-ESCALA:
-  0–44  → no rompe el scroll
-  65–100 → rompe el scroll
-Un score entre 45 y 64 es un error de cálculo. Si te da en ese rango,
-revisá el análisis y mové el score al lado que corresponde según la evidencia.
+CALIBRACIÓN DE ESCALA — CÓMO PENSAR LOS NÚMEROS:
+El score NO es una nota escolar. No existe el 70 "porque está bastante bien".
+El score es una predicción binaria de distribución algorítmica:
 
-ROADMAP: exactamente 3 ítems con segundo exacto e instrucción ejecutable.
+  0–44  → el algoritmo no lo distribuye orgánicamente
+  65–100 → el algoritmo lo distribuye
+
+REFERENCIA OBLIGATORIA ANTES DE ASIGNAR CUALQUIER SCORE:
+Antes de escribir un número, respondé internamente estas 3 preguntas:
+  1. ¿Este video tiene algo que el 97% del feed no tiene? Si no: máximo 44.
+  2. ¿El hook generó tensión sin resolver en los primeros 3 segundos? Si no: máximo 44.
+  3. ¿El desarrollo mantuvo o aumentó esa tensión hasta el final? Si no: viralScore −15.
+
+Un video "correcto" sin elemento disruptivo = score máximo 44.
+Un video con hook fuerte pero desarrollo que libera tensión antes de tiempo = score máximo 55 → redondeá a 44.
+Un score entre 45 y 64 es un error de cálculo — no existe esa zona.
+
+ROADMAP: exactamente 3 ítems. Segundo exacto. Instrucción ejecutable. Sin abstracciones.
 
 Respondé SOLO en JSON, sin markdown:
 {
   "viralScore": {
     "score":        <number>,
-    "verdict":      "<por qué este score vs top 1% del nicho>",
-    "accion_clave": "<qué, dónde, en qué segundo>"
+    "verdict":      "<por qué este score — comparado contra el top 1% del feed HOY, no contra el promedio>",
+    "accion_clave": "<qué, dónde, en qué segundo exacto>"
   },
   "salesScore": {
     "score":        <number>,
-    "verdict":      "<qué señal de conversión falla o funciona>",
-    "accion_clave": "<acción concreta>"
+    "verdict":      "<qué señal de conversión falla o funciona — específico>",
+    "accion_clave": "<acción concreta con segundo exacto>"
   },
   "scrollStopScore": {
     "score":   <number>,
-    "verdict": "<qué pasa en los primeros 2 segundos, elemento por elemento>"
+    "verdict": "<elemento por elemento en los primeros 2 segundos>"
   },
   "hookDNA": {
     "pattern":       "<Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Deseo_Sensorial|Identidad_Tribal|Aspiracion|Muerto|Otro>",
-    "optimizedHook": "<hook reescrito para este nicho específico>"
+    "optimizedHook": "<hook reescrito — específico para este nicho y este producto>"
   },
   "steppsScore": {
     "dominantFactor":  "<factor STEPPS más fuerte>",
     "weakestFactor":   "<factor STEPPS más débil>",
     "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
   },
-  "honestVerdict": "<2 oraciones sin filtro. Si murió: 'El video murió en el segundo X.'>",
+  "honestVerdict": "<2 oraciones sin filtro. Sin consuelos. Si hay algo que rescatar, decilo después del golpe — nunca antes.>",
   "roadmap": [
     {
       "impacto":   "<ALTO|MEDIO|BAJO>",
       "problema":  "<segundo exacto + elemento específico>",
-      "solucion":  "<instrucción ejecutable>",
-      "resultado": "<métrica de comportamiento>"
+      "solucion":  "<instrucción ejecutable — sin abstracciones>",
+      "resultado": "<métrica de comportamiento observable>"
     }
   ]
 }`;
