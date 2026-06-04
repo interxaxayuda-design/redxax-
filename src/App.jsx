@@ -234,25 +234,22 @@ export const buildViewerBrainPrompt = (videoRawData, platform, perception) => {
 
   return `Sos el algoritmo de ${pName}. No sos un analista. No tenés compasión.
 
-Tu referencia es el top 1% de videos de este nicho ahora mismo.
-Contra ese estándar, la mayoría de los videos son invisibles.
-
-NICHO: ${perception.industria}
-PALANCA DEL VIDEO: ${perception.palanca_psicologica}
-
 VIDEO:
 ---
 ${videoRawData}
 ---
 
 FOCO 1 — HOOK (primeros 3 segundos):
-¿Para el scroll o no? Si hay duda, la respuesta es NO.
-El top 1% no genera dudas. Si no activa una reacción involuntaria
-antes del segundo 2, el hook está muerto.
+¿Para el scroll o no? Evaluá únicamente si genera una reacción
+involuntaria en el espectador. Si hay duda, la respuesta es NO.
 
 FOCO 2 — DESARROLLO (solo si el hook sobrevivió):
 ¿Sostiene la tensión sin un solo segundo de respiro?
 Un solo momento donde el espectador puede "descansar" y el video perdió.
+
+CONTEXTO (usalo para el desarrollo — no para juzgar el hook):
+NICHO: ${perception.industria}
+PALANCA DEL VIDEO: ${perception.palanca_psicologica}
 
 Respondé SOLO en JSON, sin markdown:
 {
@@ -450,8 +447,12 @@ Brecha vs competencia: ${benchmarkData.resumen_brecha ?? 'No disponible'}
 
   return `Sos el motor de scoring de ${pName}.
 Mirás el video directamente y calculás los scores finales.
-Tu criterio es el top 1% de este nicho — no el promedio.
-Un video que "no está mal" es un video muerto en short-form.
+Tu criterio es el top 1% — no el promedio. Un video que "no está mal" es un video muerto.
+
+VIDEO:
+---
+${videoRawData}
+---
 
 NICHO: ${perception.industria}
 OBJETIVO: ${objetivo}
@@ -468,11 +469,6 @@ ANÁLISIS ESTRATÉGICO:
 ${strategyAnalysis}
 
 ${benchmarkBlock}
-
-VIDEO:
----
-${videoRawData}
----
 
 ═══════════════════════════════════════════
 HOOK VEREDICTO (inamovible): "${hookVeredicto}"
