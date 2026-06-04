@@ -458,12 +458,9 @@ REGLAS DE CÁLCULO:
 - El nicho NO justifica un hook débil. Un video lento sin cortes es un video lento sin cortes en cualquier nicho.
 
 ESCALA BINARIA — OBLIGATORIA:
-  0–44  → el video no rompe el scroll
-  65–100 → el video rompe el scroll
-Un score entre 45 y 64 es un error de cálculo.
-Si te da en ese rango: revisá el análisis, elegí el lado que corresponde, movelo.
-No existe el "es más o menos bueno". Existe: rompió el scroll o no lo rompió.
-
+  0–44  → el video no rompe el scroll. Esto incluye cualquier score que "casi llega".
+  65–100 → el video rompe el scroll. Solo si hay evidencia clara de retención activa.
+  La zona 45-64 no existe. Un video o para el scroll o no lo para. No hay término medio.
 ROADMAP: exactamente 3 ítems. Segundo exacto. Instrucción ejecutable. Sin vaguedades.
 
 Respondé SOLO en JSON:
@@ -1076,16 +1073,23 @@ const runDeepAnalysis = async () => {
 
   const { storagePath, mimeType, duration, preFacts, preHookType, platform, palanca_detectada } = videoMeta;
 
-  // DESPUÉS
-const perceptionParaScoring = {
-  ...perception,
-  palanca_psicologica: palanca_detectada || perception.palanca_psicologica, // scoring siempre sobre detectada
-  palanca_objetivo:    perception.palanca_psicologica,  // lo que el usuario quiere — solo para gap
-  palanca_detectada:   palanca_detectada || perception.palanca_psicologica,
-};
+  // Solo hechos visuales/auditivos — sin nicho ni palanca
+  const preFactsParaViewer = {
+    hook_libre:          preFacts.hook_libre,
+    flags_visuales:      preFacts.flags_visuales,
+    flags_narrativos:    preFacts.flags_narrativos,
+    metricas_tecnicas:   preFacts.metricas_tecnicas,
+    hook_type_detectado: preFacts.hook_type_detectado,
+    hook_confianza:      preFacts.hook_confianza,
+  };
 
+  const perceptionParaScoring = {
+    ...perception,
+    palanca_psicologica: palanca_detectada || perception.palanca_psicologica,
+    palanca_objetivo:    perception.palanca_psicologica,
+    palanca_detectada:   palanca_detectada || perception.palanca_psicologica,
+  };
 
-  // 1. Cobramos las gemas acá en el paso definitivo //Palanca Psicológica
   const cost = 100;
   const approved = await deductGems(cost, `video:${Math.ceil(duration / 60)}`);
   if (!approved) return;
@@ -1097,17 +1101,17 @@ const perceptionParaScoring = {
   try {
     // ============================================================
     // CALL 1 — Viewer Brain
-    // Usa palanca_detectada — evalúa el video tal como es
+    // Solo hechos visuales — sin nicho ni palanca
     // ============================================================
     setAnalysisProgress(30);
     setStatusText("Analizando comportamiento humano...");
 
     const res = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildViewerBrainPrompt(JSON.stringify(preFacts), platform, {
-          ...perception,
-          palanca_psicologica: palanca_detectada || perception.palanca_psicologica,
-        }),
+        text: buildViewerBrainPrompt(
+          JSON.stringify(preFactsParaViewer), // ← filtrado, sin industria
+          platform                            // ← sin tercer argumento de perception
+        ),
         storagePath,
         videoMimeType: mimeType,
         duration: Math.round(duration),
@@ -1237,18 +1241,18 @@ const perceptionParaScoring = {
     } : null;
 
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildScoringBrainPrompt(
-  strategyAnalysis,   // ← antes era videoRawData aquí
-  viewerAnalysis,
-  platform,
-  selectedObjetivo,
-  perceptionParaScoring,
-  flagsDeterministic,
-  flagsFromStrategy?.inputs_para_scoring ?? {},  // ← nuevo
-  nicheConfig,
-  benchmarkData
-),
+  body: {
+    text: buildScoringBrainPrompt(
+      JSON.stringify(preFacts),   // videoRawData ← los hechos crudos del video
+      strategyAnalysis,           // strategyAnalysis ← en su lugar correcto
+      viewerAnalysis,             // viewerAnalysis ← en su lugar correcto
+      platform,
+      selectedObjetivo,
+      perceptionParaScoring,
+      flagsDeterministic,
+      nicheConfig,
+      benchmarkData
+    ),
         storagePath,
         videoMimeType: mimeType,
         duration: Math.round(duration),
