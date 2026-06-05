@@ -934,6 +934,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
   try {
     // ── UPLOAD al bucket ──
+// ── UPLOAD al bucket ──
 setStatusText("Subiendo video...");
 setAnalysisProgress(10);
 
