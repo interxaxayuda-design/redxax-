@@ -914,7 +914,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     v.onloadedmetadata = () => resolve(v.duration); //setStatusText("Subiendo video...");
   });
 
-  // Pasamos directo a preparar el video sin cobrar gemas todavía
+  // Pasamos directo a preparar el video sin cobrar gemas todavía //preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
   setStep('analyzing');
   setAnalysisMode('video');
   setStatusText("Preparando video...");
@@ -972,8 +972,8 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
       throw new Error(`HTTP ${status}`);
     }
 
-    preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
-    preHookType = (() => {
+   let preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
+   let preHookType = (() => {
       if (preFacts.logo_en_s0) return 'muerto';
       if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0) return 'bait_con_puente';
       if (preFacts.imagen_alto_impacto) return 'bait_desconectado';
