@@ -458,9 +458,9 @@ Respondé SOLO en JSON, respetando este orden exacto de claves:
   "roadmap": [
     {
       "impacto":   "<ALTO|MEDIO|BAJO>",
-      "problema":  "<segundo exacto + elemento específico>",
-      "solucion":  "<instrucción ejecutable para el editor>",
-      "resultado": "<métrica o comportamiento que se busca mejorar>"
+      "problema":  "<segundo exacto + elemento que genera fricción o aburrimiento>",
+      "solucion_editor": "<INSTRUCCIÓN ESTRICTA: PROHIBIDO dar consejos de marketing genéricos. Escribí una instrucción de edición técnica ejecutable. Tenés que usar términos como: corte en J, zoom in (escala), efecto de sonido (SFX), texto dinámico, cambio de plano, B-roll, o silenciar audio. Ej: 'Hacer un punch-in al 115% de escala en el segundo 2.4 y agregar SFX de swoosh'>",
+      "resultado_psicologico": "<qué palanca de retención específica activa o repara esta edición>"
     }
   ]
 }`;
