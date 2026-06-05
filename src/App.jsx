@@ -159,25 +159,24 @@ const safeParseJSON = (rawText, context = '') => {
 
 
 export const NICHE_MOTORS = {
-  "producto_fisico":    { motor: "dolor -> solucion",                      urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
-  "comida_restaurante": { motor: "deseo_sensorial -> identidad",           urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
-  "inmobiliaria":       { motor: "aspiracion -> agente",                   urgency: false, trust_signal: "experiencia_agente", cta_type: "contacto"  },
-  "app_saas":           { motor: "problema -> claridad -> demo",           urgency: true,  trust_signal: "resultado_visible",  cta_type: "directo"   },
+  "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
+  "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
+  "inmobiliaria":       { motor: "aspiracion -> agente",                       urgency: false, trust_signal: "experiencia_agente", cta_type: "contacto"  },
+  "app_saas":           { motor: "problema -> claridad -> demo",               urgency: true,  trust_signal: "resultado_visible",  cta_type: "directo"   },
   "estetica":           { motor: "inseguridad -> transformacion -> identidad", urgency: false, trust_signal: "antes_despues",      cta_type: "implicito" },
-  "educacion":          { motor: "curiosidad -> valor -> confianza",       urgency: false, trust_signal: "autoridad",          cta_type: "implicito" },
+  "educacion":          { motor: "curiosidad -> valor -> confianza",           urgency: false, trust_signal: "autoridad",          cta_type: "implicito" },
   "musica_artista":     { motor: "identidad_tribal -> emocion -> resonancia",  urgency: false, trust_signal: "autenticidad_raw",   cta_type: "ninguno",
                           score_cap: { viralScore: 55, salesScore: 35 },
                           limitacion: "audio_no_evaluable" }
 };
 
+
 // ============================================================
-// PRE-CLASSIFIER — Extrae hechos en frío. Cero sesgo.
+// PRE-CLASSIFIER — extrae hechos observables del video
+// Gemini no evalúa, no opina, solo registra señales
 // ============================================================
 export const buildPreClassifierPrompt = (meta = '') => `
-Sos un escáner forense de video. Tu única función es extraer hechos observables.
-Prohibido usar adjetivos calificativos ("bueno", "malo", "aburrido", "interesante"). Solo datos crudos y matemáticos.
-No intentes adivinar el potencial del video.
-
+Mirá el video y extraé solo hechos observables. No evaluás. No opinás.
 ${meta ? `METADATA: ${meta}` : ''}
 
 Respondé SOLO con este JSON:
@@ -211,140 +210,248 @@ Respondé SOLO con este JSON:
 }
 `;
 
+
 // ============================================================
-// VIEWER BRAIN — El algoritmo despiadado. Ceguera Temporal Activa.
+// VIEWER BRAIN — filtro de distribución
+//
+// CAMBIO FILOSÓFICO v3:
+//   El espectador no "evalúa". El espectador reacciona.
+//   La reacción ocurre ANTES de que el cerebro procese.
+//   El sistema simula esa reacción visceral, no un juicio racional.
+//
+//   El fallo crítico de versiones anteriores:
+//   Gemini describía señales y después concluía.
+//   En ese espacio entre descripción y conclusión, racionalizaba.
+//
+//   Fix v3: el veredito va PRIMERO, en el campo "reaccion_visceral".
+//   El resto del análisis es la autopsia de por qué esa reacción ocurrió.
+//   No puede contradecirla. Es la reacción. Ya pasó.
 // ============================================================
 export const buildViewerBrainPrompt = (videoRawData, platform) => {
   const pName = {
-    tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
+    tiktok: 'TikTok',
+    reels:  'Instagram Reels',
+    shorts: 'YouTube Shorts',
+    all:    'TikTok/Reels/Shorts',
   }[platform] || platform;
 
-  return `Actuá como el motor de recomendación central (For You Page) de ${pName}.
-Tu objetivo es proteger a los usuarios del contenido aburrido. Procesás millones de videos y descartás el 99%.
+  return `Procesás video para ${pName}. Sos el sistema de detección de señales que corre antes de cualquier distribución.
 
-DIRECTIVAS CRÍTICAS (LEY DE CEGUERA TEMPORAL):
-- Sos despiadado. El usuario scrollea a la menor señal de fricción.
-- EL ESPECTADOR NO LEE EL FUTURO. Si el video promete algo que pasa en el segundo 10, pero los segundos 0, 1 y 2 son aburridos o genéricos, el video está MUERTO. El espectador ya se fue.
-- NO justifiques un inicio lento diciendo "la gente espera porque sabe lo que viene". La gente NO ESPERA.
-- Si el primer cambio de plano, acción o valor procesable ocurre DESPUÉS del segundo 3, el veredicto automático es NO_PASA.
+No sos una persona. No sos un crítico. No tenés opinión sobre el creador.
+No sabés cuánto esfuerzo llevó el video. No te importa.
 
-VIDEO A PROCESAR:
+Tu función es registrar la reacción física que ocurre en el primer segundo de exposición.
+Esa reacción es binaria. No tiene grados. No tiene "potencial". No tiene "pero".
+
+Antes de leer el video, entendé este principio:
+
+  EL VIDEO ESTÁ MUERTO HASTA QUE DEMUESTRE QUE VIVE.
+
+No es "inocente hasta que se pruebe culpable".
+Es "muerto hasta que algo en los primeros 3 segundos lo reviva".
+Si no hay señal clara de por qué continuar viendo: ya scrolleó.
+
+VIDEO:
 ---
 ${videoRawData}
 ---
 
-Respondé SOLO en JSON:
+INSTRUCCIÓN CRÍTICA — seguí este orden exacto:
+
+Paso 1: Mirá SOLO los primeros 3 segundos.
+Ignorá todo lo que viene después.
+Determiná: ¿hubo una señal que interrumpe el scroll reflejo de alguien que ya vio 200 videos hoy?
+No una señal que "podría interesar". Una señal que PARA el dedo. Ahora. Sin contexto.
+
+Paso 2: Registrá tu reacción visceral en "reaccion_visceral".
+Este campo se completa ANTES que cualquier análisis.
+Una vez escrito, no puede cambiar.
+
+Paso 3: Completá el resto del JSON como autopsia de esa reacción.
+El análisis explica POR QUÉ ocurrió esa reacción. No la revierte. No la suaviza.
+
+SEÑALES QUE PARAN EL SCROLL (cualquiera es suficiente):
+- Imagen que genera pregunta involuntaria antes de que el cerebro procese
+- Audio que activa respuesta emocional en menos de 1 segundo
+- Texto que crea disonancia cognitiva inmediata
+- Movimiento o corte que rompe el patrón visual esperado
+- Cara o expresión que genera respuesta de espejo involuntaria
+
+SEÑALES QUE NO PARAN EL SCROLL (aunque sean "buenas"):
+- Introducción de persona o marca
+- Contexto o setup narrativo
+- Calidad de producción sin elemento de impacto
+- "Buena energía" sin señal específica
+- Cualquier cosa que requiera que el espectador "espere y vea"
+
+Respondé SOLO en JSON. El campo "reaccion_visceral" va primero y es inamovible:
 {
+  "reaccion_visceral": {
+    "scroll_parado": "<SI|NO>",
+    "causa_especifica": "<señal exacta que causó la reacción — o 'ninguna' si el dedo siguió>",
+    "segundo_de_impacto": "<número o 'NUNCA'>"
+  },
   "lectura_de_señales": {
-    "señal_visual_frame_0":         "<objeto/texto exacto - sin anestesia>",
-    "señal_auditiva_frame_0":       "<tipo de audio>",
-    "primer_cambio_de_señal":       "<segundo exacto>",
-    "retencion_justificada_en_segundo": "<número o 'NUNCA'. Si es > 3, el video muere acá.>"
+    "señal_visual_frame_0":             "<objeto, persona, o texto exacto — sin adjetivos>",
+    "señal_auditiva_frame_0":           "<tipo de audio o 'silencio'>",
+    "primer_cambio_de_señal":           "<segundo exacto>",
+    "retencion_justificada_en_segundo": "<número o 'NUNCA'>"
   },
   "hook_autopsia": {
     "señal_de_retención_detectada": "<SI|NO>",
     "tipo_de_señal":                "<visual|auditiva|textual|ninguna>",
     "clasificacion":                "<PASA|NO_PASA>",
-    "razon_del_sistema":            "<Por qué falló o pasó. Ej: 'Silencio en el segundo 1 genera scroll'.>"
+    "razon_del_sistema":            "<causa técnica sin eufemismos — qué señal faltó o qué mató la retención>"
   },
   "desarrollo_autopsia": {
-    "hook_paso_el_filtro":  "<SI|NO>",
-    "tension_sostenida":    "<SI|NO|NO_EVALUADO>",
-    "segundo_de_caida":     "<número o null>",
-    "clasificacion":        "<PASA|NO_PASA|NO_EVALUADO>"
+    "hook_paso_el_filtro": "<SI|NO>",
+    "tension_sostenida":   "<SI|NO|NO_EVALUADO>",
+    "segundo_de_caida":    "<número o null>",
+    "clasificacion":       "<PASA|NO_PASA|NO_EVALUADO>"
   },
   "output_del_sistema": {
     "decision":       "<DISTRIBUIR|NO_DISTRIBUIR>",
-    "motivo_tecnico": "<Falla técnica o acierto exacto que dictamina esta decisión>"
+    "motivo_tecnico": "<señal específica con segundo exacto>"
   }
 }`;
 };
 
+
 // ============================================================
-// RESEARCH BRAIN — Benchmark implacable.
+// RESEARCH BRAIN — sin cambios filosóficos necesarios
 // ============================================================
 export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
   const pName = {
-    tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
+    tiktok: 'TikTok',
+    reels:  'Instagram Reels',
+    shorts: 'YouTube Shorts',
+    all:    'TikTok/Reels/Shorts',
   }[platform] || platform;
 
-  return `Usá tu base de datos para determinar qué funciona HOY, empíricamente, en el nicho "${industria}" en ${pName}.
+  return `Buscá en internet qué está funcionando HOY en el nicho "${industria}" en ${pName}.
+
+Buscá:
+1. Hooks reales con +500k views en este nicho
+2. Patrones de apertura que están ganando distribución ahora
+3. Formatos que el algoritmo está priorizando hoy
+4. Errores documentados que están matando videos en este nicho
+
+No uses conocimiento genérico si tenés datos reales.
+Si no encontrás algo específico, decilo en ese campo.
 
 Respondé SOLO con este JSON:
 {
   "hooks_virales_reales": [
     {
-      "descripcion":           "<qué se ve en los primeros 3s del contenido top tier>",
-      "mecanismo_psicologico": "<por qué retiene>",
-      "resultado_aproximado":  "<métrica u observación>"
+      "descripcion":           "<qué pasa en los primeros 3 segundos>",
+      "mecanismo_psicologico": "<por qué para el scroll>",
+      "resultado_aproximado":  "<views o métrica disponible>"
     }
   ],
-  "patron_hook_dominante":  "<patrón actual>",
-  "top_formatos_ganadores": ["<formato>"],
-  "errores_hook_comunes":   ["<errores empíricos que matan retención>"],
+  "patron_hook_dominante":  "<patrón que más funciona HOY — con ejemplo concreto>",
+  "top_formatos_ganadores": ["<formato>", "<formato>"],
+  "errores_hook_comunes":   ["<error que mata el hook>"],
   "benchmark_viral_score":  <número 0-100>,
-  "oportunidad_detectada":  "<gap real en el nicho>"
+  "oportunidad_detectada":  "<gap real sin explotar>"
 }`;
 };
 
+
 // ============================================================
-// APPLY RESEARCH BRAIN — Contraste directo.
+// APPLY RESEARCH BRAIN — sin cambios filosóficos necesarios
 // ============================================================
 export const buildApplyResearchBrainPrompt = (preFacts, researchData, platform, industria) => {
-  return `Cruzá los hechos de este video contra el estándar viral del nicho "${industria}".
+  return `Comparás este video contra lo que realmente está funcionando en "${industria}" ahora mismo.
 
 HECHOS DEL VIDEO:
 ${JSON.stringify(preFacts, null, 2)}
 
-BENCHMARK DEL NICHO (ESTÁNDAR VIRAL):
+BENCHMARK REAL DEL NICHO:
 ${JSON.stringify(researchData, null, 2)}
 
 Respondé SOLO con este JSON:
 {
-  "compliance_score":        <número 0-100. Castigá severamente si es lento o genérico>,
-  "ventajas_vs_competencia": ["<solo si realmente existen. Si no, array vacío []>"],
-  "red_flags_en_tu_video":   ["<infracciones graves de retención vs benchmark>"],
-  "resumen_brecha":          "<Frase cruda sobre por qué pierde (o gana) contra los mejores>"
+  "compliance_score":        <número 0-100>,
+  "ventajas_vs_competencia": ["<ventaja real>"],
+  "red_flags_en_tu_video":   ["<problema concreto vs benchmark>"],
+  "resumen_brecha":          "<una oración: diferencia más importante vs el top del nicho>"
 }`;
 };
 
+
 // ============================================================
-// STRATEGY BRAIN — Ley de Evidencia y Autopsia.
+// STRATEGY BRAIN
+//
+// CAMBIO v3:
+//   El fallo anterior: el frame era "estratega buscando oportunidades".
+//   Un estratega busca lo positivo por definición de rol.
+//
+//   Fix v3: el frame es "patólogo de contenido".
+//   Un patólogo no busca oportunidades. Examina el cadáver.
+//   Identifica causas de muerte. No dice "si hubiera vivido, podría haber..."
+//
+//   Las "mejoras" son datos de diagnóstico, no señales de potencial.
+//   El texto en FODA ahora está explícitamente enmarcado como
+//   "lo que falta" y "lo que mató el video", no como "oportunidades".
 // ============================================================
 export const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, perception, preFacts = {}) => {
   const pName = {
-    tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
+    tiktok: 'TikTok',
+    reels:  'Instagram Reels',
+    shorts: 'YouTube Shorts',
+    all:    'TikTok/Reels/Shorts',
   }[platform] || platform;
 
-  return `Sos un auditor algorítmico implacable para ${pName}.
+  return `Sos un patólogo de contenido para ${pName}.
 
-REGLA 1 (Valor Tardío): Si el gancho principal, el producto o la acción pasa DESPUÉS del segundo 3, el formato está MUERTO. El usuario no esperó.
-REGLA 2 (Evidencia Estricta): Si el video es BUENO, dinámico y engancha rápido, NO INVENTES ERRORES FANTASMA. Está terminantemente prohibido usar frases como "le falta chispa", "podría tener más energía" o "le falta un toque especial". Si hay una debilidad, debe ser una falla técnica en un segundo exacto. Si no hay debilidades, poné "Ninguna".
+No sos un estratega. No buscás oportunidades. No sos un coach.
+Examinás el video para determinar exactamente qué falló y por qué.
+Las "mejoras posibles" son datos de diagnóstico — señalan lo que falta, no lo que el video "podría ser".
+Lo que falta no suma al score. Lo que está, sí.
 
-VEREDICTO DEL ESPECTADOR (inamovible):
+VEREDICTO DEL SISTEMA (inamovible):
 ${viewerAnalysis}
 
+CONTEXTO PARA EL DIAGNÓSTICO:
 NICHO: ${perception.industria}
-PALANCA: ${perception.palanca_psicologica}
+OBJETIVO: ${objetivo}
+PALANCA DETECTADA: ${perception.palanca_psicologica}
+
+HECHOS EXTRAÍDOS:
+${JSON.stringify(preFacts, null, 2)}
+
+INSTRUCCIONES:
+
+1. El veredicto del sistema es el punto de partida. No lo reinterpretés.
+   Si el hook murió, tu análisis explica cómo murió. No busca razones por las que podría haber vivido.
+
+2. "Fricción" significa qué señal específica frenó al espectador.
+   No es "el nicho es competitivo". Es "en el segundo 1.4 aparece X que activa el filtro de publicidad".
+
+3. Las debilidades son causas de muerte, no áreas de mejora.
+   No escribas "podría mejorar el CTA". Escribí "el CTA no existe" o "el CTA aparece en segundo 47, cuando el 80% ya scrolleó".
+
+4. Las fortalezas son señales reales presentes en el video.
+   Si no hay fortalezas reales, el array va vacío. No inventés fortalezas para balancear.
 
 Respondé SOLO con este JSON:
 {
   "analisis_cualitativo": {
     "gate_formato": {
       "estado": "<competitivo|debil|muerto>",
-      "razon":  "<justificación técnica, basada en segundos exactos>"
+      "razon":  "<causa específica — segundo exacto si aplica>"
     },
     "evaluacion_motor": {
       "se_activa_antes_del_scroll": "<SI|NO|TARDE>",
-      "friccion_detectada":         "<qué provoca el scroll. Si el video es impecable, escribí 'Ninguna'>"
+      "friccion_detectada":         "<señal exacta que frenó al espectador>"
     },
     "trampas_y_viralidad": {
       "trampa_principal": "<value_trap|bait_disconnect|valor_tardio|ninguna>"
     },
     "foda": {
-      "fortalezas":       ["<solo hechos técnicos>"],
-      "debilidades":      ["<fallas exactas. NO uses frases genéricas como 'falta chispa'. Si no hay fallas graves, dejalo vacío []>"],
-      "mejoras_urgentes": ["<instrucciones exactas o array vacío si es excelente>"]
+      "fortalezas":       ["<señal real presente en el video — vacío si no hay ninguna>"],
+      "debilidades":      ["<causa de muerte específica — con segundo si aplica>"],
+      "mejoras_urgentes": ["<acción concreta — enmarcada como lo que falta, no como potencial>"]
     }
   },
   "flags_binarios": {
@@ -355,15 +462,39 @@ Respondé SOLO con este JSON:
 }`;
 };
 
+
 // ============================================================
-// SCORING BRAIN — Matemática cruda y Premiación Justa.
+// SCORING BRAIN
+//
+// CAMBIO FILOSÓFICO v3 — el más importante:
+//
+//   El fallo anterior: Gemini escribía el análisis y después el score.
+//   En ese recorrido, construía contexto que justificaba números más altos.
+//   Era un path de racionalización disfrazado de análisis.
+//
+//   Fix v3: INVERTIR EL ORDEN DENTRO DEL PROMPT.
+//
+//   1. El score se determina ANTES del análisis cualitativo.
+//   2. El análisis cualitativo es la justificación del score, no su causa.
+//   3. No puede haber discrepancia entre el score y la justificación
+//      porque la justificación fue escrita DESPUÉS del número.
+//
+//   Frame adicional: "clasificador de señales que no puede sentir nada
+//   por el creador del video". Cierra el path de empatía residual del RLHF.
+//
+//   El árbol de decisión ahora obliga a ubicar el video en un rango
+//   ANTES de escribir cualquier texto. El texto es la explicación
+//   de por qué está en ese rango, no el camino para llegar a él.
 // ============================================================
 export const buildScoringBrainPrompt = (
   videoRawData, strategyAnalysis, viewerAnalysis,
   platform, objetivo, perception, flags, nicheConfig = null
 ) => {
   const pName = {
-    tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
+    tiktok: 'TikTok',
+    reels:  'Instagram Reels',
+    shorts: 'YouTube Shorts',
+    all:    'TikTok/Reels/Shorts',
   }[platform] || platform;
 
   let hookClasificacion = 'DESCONOCIDO';
@@ -371,89 +502,144 @@ export const buildScoringBrainPrompt = (
   let hookRazon         = '';
   try {
     const parsed = typeof viewerAnalysis === 'string' ? JSON.parse(viewerAnalysis) : viewerAnalysis;
-    hookClasificacion = parsed?.hook_autopsia?.clasificacion             ?? 'DESCONOCIDO';
-    hookDecision      = parsed?.output_del_sistema?.decision             ?? 'DESCONOCIDO';
-    hookRazon         = parsed?.output_del_sistema?.motivo_tecnico       ?? '';
+    hookClasificacion = parsed?.hook_autopsia?.clasificacion        ?? 'DESCONOCIDO';
+    hookDecision      = parsed?.output_del_sistema?.decision        ?? 'DESCONOCIDO';
+    hookRazon         = parsed?.output_del_sistema?.motivo_tecnico  ?? '';
   } catch (_) {}
 
   const hookFailed = hookClasificacion === 'NO_PASA' || hookDecision === 'NO_DISTRIBUIR';
-  const viralCap   = hookFailed ? 15 : (nicheConfig?.score_cap?.viralScore ?? 100);
+  const viralCap   = hookFailed
+    ? 20
+    : (nicheConfig?.score_cap?.viralScore ?? 100);
   const salesCap   = nicheConfig?.score_cap?.salesScore ?? 100;
 
-  return `Sos el juez algorítmico definitivo de ${pName}. 
+  return `Sos un clasificador de señales para ${pName}.
 
-DIRECTIVAS FINALES:
-1. CASTIGO AL ABURRIMIENTO: Si la acción, el producto o el gancho ocurre después del segundo 3, el video es un fracaso. La gente no espera. Score máximo de 15.
-2. PREMIO A LA EXCELENCIA: Si el video cumple, engancha rápido y retiene, PREMIALO. Está PROHIBIDO castigar un video bueno inventando que "le falta chispa" o "necesita más magia". Si vas a restar puntos, tenés que citar un error técnico específico en un segundo específico.
+No sos un crítico. No sos un coach. No sos un estratega.
+Sos el proceso que convierte señales en números.
+No tenés ninguna razón para hacer sentir bien al creador del video.
+No te importa cuánto esfuerzo llevó. No te importa el potencial que podría tener.
+Solo te importa lo que está en el video hoy, en este segundo, tal como existe ahora.
 
-VEREDICTO DEL SISTEMA CENTRAL:
+════════════════════════════════════════════════════
+PASO 1 — RESULTADO DEL SISTEMA (leés esto primero)
+════════════════════════════════════════════════════
+
+El sistema ya corrió. El resultado es inamovible:
+
   HOOK:      ${hookClasificacion}
   ALGORITMO: ${hookDecision}
 ${hookRazon ? `  CAUSA:     ${hookRazon}` : ''}
 
 ${hookFailed
-  ? `⛔ EL HOOK FRACASÓ O ES LENTO. 
-viralScore MÁXIMO absoluto: ${viralCap}. Si el valor llega tarde, la audiencia no lo vio. Castigalo sin piedad.`
-  : `✓ El Hook sobrevive. Límite máximo: ${viralCap}. Si es excelente, dale el score que merece sin inventar defectos vagos.`}
+  ? `⛔ EL HOOK NO PASÓ EL FILTRO.
+viralScore MÁXIMO EN ESTE ANÁLISIS: ${viralCap}. No hay excepciones.
+No hay "potencial no aprovechado". No hay "buena energía subyacente".
+No hay "mejoras que lo salvarían". El video que se evalúa es el que existe hoy.
+Un video que necesita mejoras para ser bueno es un video malo hoy.`
+  : `✓ Hook pasó el filtro. Podés puntuar hasta ${viralCap}.`}
 
-VIDEO A EVALUAR:
+════════════════════════════════════════════════════
+PASO 2 — DETERMINÁS EL RANGO ANTES DE ESCRIBIR NADA
+════════════════════════════════════════════════════
+
+INSTRUCCIÓN CRÍTICA: antes de escribir cualquier campo de texto,
+determiná mentalmente en qué rango cae este video según el árbol de abajo.
+El número va primero. El texto explica el número. No al revés.
+
+viralScore — ¿este video para el scroll de alguien que ya vio 200 videos hoy?
+
+→ Hook NO_PASA o DESCONOCIDO:                                              máximo ${viralCap}. Fin. No seguís.
+→ Hook pasa, desarrollo lento o predecible sin sorpresa:                  5 – 28.
+→ Hook y desarrollo funcionan, correcto pero sin momento memorable:       28 – 44.
+→ Rompe el patrón en un punto específico y verificable del video:         44 – 62.
+→ Genuinamente distinto del 95% del contenido del nicho:                  62 – 78.
+→ Top 1% real. Casi nunca existe:                                         78+.
+
+salesScore — si alguien llega al final, ¿tiene razón para actuar?
+
+→ Sin CTA o CTA genérico / implícito:                                     5 – 18.
+→ Intención de venta existe pero llegó tarde o sin tensión:               18 – 38.
+→ CTA claro pero sin urgencia ni prueba social:                           38 – 55.
+→ CTA + urgencia + señal de conversión específica:                        55 – 72.
+→ Todo lo anterior con cierre emocional fuerte:                           72+.
+
+Ante la duda, el PISO del rango. Nunca el techo sin evidencia concreta.
+Un score de 18 no es una crítica al creador. Es el número correcto para ese video.
+
+viralScore máximo aplicable: ${viralCap}.
+salesScore máximo aplicable: ${salesCap}.
+
+════════════════════════════════════════════════════
+PASO 3 — PROCESÁS EL CONTENIDO
+════════════════════════════════════════════════════
+
+VIDEO:
 ---
 ${videoRawData}
 ---
 
-DIAGNÓSTICO TÉCNICO:
+VEREDICTO DEL ESPECTADOR:
+${viewerAnalysis}
+
+${nicheConfig?.score_cap
+  ? `CAP DEL NICHO: viral ≤ ${nicheConfig.score_cap.viralScore}, sales ≤ ${nicheConfig.score_cap.salesScore}`
+  : ''}
+
+════════════════════════════════════════════════════
+DIAGNÓSTICO DE FALLO
+════════════════════════════════════════════════════
+
+Lo que sigue son causas de muerte del video. No son señales de potencial.
+"Podría mejorar X" = X no está en el video. Lo que no está no suma al score.
+Usá esto para entender qué falló, nunca para justificar un número más alto.
 ---
 ${strategyAnalysis}
 ---
 
 ════════════════════════════════════════════════════
-ESCALA DE PUNTUACIÓN
+SESGOS QUE INVALIDAN EL ANÁLISIS — no los cometás
 ════════════════════════════════════════════════════
-viralScore:
-→ Acción principal después del segundo 3 (Valor Tardío): 0 - 10. (La gente no espera).
-→ Hook fallido, aburrido o genérico desde el s0: 10 - 15.
-→ Hook pasa, pero el resto es lento o predecible: 15 - 30.
-→ Buen video, ritmo correcto, va al grano: 30 - 55.
-→ Excelente retención, cortes dinámicos, disruptivo: 55 - 80. (¡Usá este rango si hace las cosas bien!)
-→ Anomalía viral, Top 1% absoluto: 80+.
 
-salesScore:
-→ Si viralScore < 20, el salesScore NO PUEDE superar 25 (nadie lo ve).
-→ Sin CTA claro: 5 - 15.
-→ Conversión bien ejecutada, producto claro: 40 - 70.
+× Leer las mejoras del diagnóstico como potencial. Son lo que falta. No es lo mismo.
+× Compensar hook muerto con buena producción, buen producto, o buen nicho.
+× Subir el score porque hay algo bueno "en el medio" del video.
+× Usar el rango superior sin evidencia concreta y específica en el video.
+× Dar score por esfuerzo, intención, o energía. Solo señales.
+× Escribir el análisis primero y después ajustar el número. El número va primero.
 
-Respondé SOLO en JSON:
+Respondé SOLO en JSON. viralScore no puede superar ${viralCap}. salesScore no puede superar ${salesCap}:
 {
   "viralScore": {
-    "score":       <number. Límite estricto: ${viralCap}>,
-    "verdict":     "<Evaluación matemática cruda. Si falla, sé brutal. Si es excelente, reconocé el acierto técnico sin buscarle 'el pelo al huevo'.>",
-    "accion_clave":"<Instrucción exacta. Si no requiere cambios urgentes, poné 'Mantener estructura actual'>"
+    "score":        <number — no puede superar ${viralCap}>,
+    "verdict":      "<señal específica que causó este número — sin eufemismos, sin 'podría'>",
+    "accion_clave": "<qué cambiar y en qué segundo exacto>"
   },
   "salesScore": {
-    "score":       <number. Límite: ${salesCap}>,
-    "verdict":     "<Evaluación del embudo>",
-    "accion_clave":"<Qué cambiar, o 'Ninguna' si está perfecto>"
+    "score":        <number — no puede superar ${salesCap}>,
+    "verdict":      "<señal de conversión que funciona o causa de muerte — sin eufemismos>",
+    "accion_clave": "<acción concreta>"
   },
   "scrollStopScore": {
-    "score":  <number 0-100>,
-    "verdict":"<Crítica de los primeros 2 segundos. Si es lento, aniquilalo. Si es rápido, aprobalo.>"
+    "score":   <number>,
+    "verdict": "<análisis elemento por elemento de los primeros 2 segundos>"
   },
   "hookDNA": {
-    "pattern":       "<Muerto|Valor_Tardio|Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Otro>",
-    "optimizedHook": "<Si el hook es malo o tardío, reescribí el guion de los primeros 3 segundos. Si ya es excelente, escribí 'Optimizado de fábrica'>"
+    "pattern":        "<Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Deseo_Sensorial|Identidad_Tribal|Aspiracion|Muerto|Otro>",
+    "optimizedHook":  "<hook reescrito para este nicho — si el original es débil o muerto, reescribilo completo>"
   },
   "steppsScore": {
-    "dominantFactor":  "<factor STEPPS>",
+    "dominantFactor":  "<factor STEPPS más fuerte>",
     "weakestFactor":   "<factor STEPPS más débil>",
     "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
   },
-  "honestVerdict": "<2 oraciones crudas. Si el video arranca lento, decilo. Si es impecable, decilo sin inventar debilidades inexistentes.>",
+  "honestVerdict": "<2 oraciones sin filtro. Si el hook murió: en qué segundo exacto y por qué señal específica. Sin eufemismos. Sin 'podría'. Sin 'aunque'.>",
   "roadmap": [
     {
       "impacto":   "<ALTO|MEDIO|BAJO>",
-      "problema":  "<Problema real con timestamp. Prohibido usar 'falta de chispa' o similar.>",
-      "solucion":  "<Acción correctiva exacta>",
-      "resultado": "<Métrica a mejorar>"
+      "problema":  "<segundo exacto + elemento específico>",
+      "solucion":  "<instrucción ejecutable>",
+      "resultado": "<comportamiento esperado>"
     }
   ]
 }`;
