@@ -207,51 +207,78 @@ Respondé SOLO con este JSON:
 
 
 export const buildViewerBrainPrompt = (videoRawData, platform) => {
-  const pName = { tiktok:'TikTok', reels:'Instagram Reels', shorts:'YouTube Shorts', all:'TikTok/Reels/Shorts' }[platform] || platform;
+  const pName = {
+    tiktok: 'TikTok',
+    reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts',
+    all: 'TikTok/Reels/Shorts',
+  }[platform] || platform;
 
-  return `Sos el algoritmo de retención de ${pName}.
-No tenés compasión. No tenés contexto. No sabés qué vende el video ni para qué nicho es.
-Solo sabés una cosa: ¿este video retiene o no?
+  return `Sos el sistema de clasificación de contenido de ${pName}.
 
-VIDEO:
+No sos una persona. No sos un crítico. No tenés opinión.
+Sos el proceso automático que decide, en menos de 2 segundos por video, si el contenido recibe distribución o no.
+
+No sabés quién hizo el video. No sabés cuánto esfuerzo llevó. No sabés el nicho. No te importa.
+Solo procesás señales:
+- ¿El frame 0 activa retención? → seguís procesando.
+- ¿No activa? → el video no existe. No recibe distribución. Fin.
+
+No hay "potencial". No hay "pero si el espectador espera un poco". 
+El espectador no espera. Vos tampoco.
+
+Procesás millones de videos por día. Este es uno más.
+
+VIDEO A PROCESAR:
 ---
 ${videoRawData}
 ---
 
-Miralo. Reaccioná. No analices, reaccioná.
+FASE 1 — LECTURA DE SEÑALES. SIN INTERPRETACIÓN.
 
-Si el primer frame — visual, audio, o texto — no activa algo físico en quien lo ve, el hook está muerto.
-Si el desarrollo baja la tensión antes de que termine, el video está muerto.
-No hay término medio. No hay "pero el nicho es difícil". No hay "está bien para ser educativo".
+Describí las señales exactas del video como lo haría un sistema de detección, no una persona.
+No uses palabras como "interesante", "curioso", "efectivo", "potencial". Solo señales observables.
 
-Un video aburrido es un video muerto, sin importar el esfuerzo detrás.
+- Señal visual frame 0: ¿qué objeto, persona, o texto ocupa el frame?
+- Señal auditiva frame 0: ¿hay audio? ¿qué tipo?
+- Primer cambio de señal: ¿en qué segundo cambia algo?
+- Primer elemento de valor procesable: ¿en qué segundo aparece algo que justifica retención? Si no aparece antes del segundo 4, registrá: "RETENCIÓN_JUSTIFICADA: NUNCA"
+
+FASE 2 — CLASIFICACIÓN.
+
+Con las señales que leíste: ¿este video pasa el filtro o no?
+
+No hay grados. No hay "casi". El sistema clasifica en dos estados: PASA o NO_PASA.
+Un video que necesita contexto para ser entendido: NO_PASA.
+Un video que "tiene buena energía": NO_PASA.
+Un video lento que "mejora después": NO_PASA. El algoritmo ya lo enterró.
 
 Respondé SOLO en JSON:
 {
+  "lectura_de_señales": {
+    "señal_visual_frame_0": "<objeto, persona, o texto exacto — sin adjetivos>",
+    "señal_auditiva_frame_0": "<tipo de audio o 'silencio'>",
+    "primer_cambio_de_señal": "<segundo exacto>",
+    "retencion_justificada_en_segundo": "<número o 'NUNCA'>"
+  },
   "hook_autopsia": {
-    "segundo_0_al_3": {
-      "que_activa_en_el_espectador": "<reacción exacta — o 'absolutamente nada'>",
-      "es_top_1_porciento": "<SI|NO>",
-      "decision_espectador": "<se_queda|scrollea>",
-      "razon": "<qué pasó exactamente en ese frame>"
-    },
-    "veredicto_hook": "<VIVO|MUERTO>",
-    "segundo_de_muerte": <número o null>,
-    "causa_de_muerte": "<causa exacta o null>"
+    "señal_de_retención_detectada": "<SI|NO>",
+    "tipo_de_señal": "<visual|auditiva|textual|ninguna>",
+    "clasificacion": "<PASA|NO_PASA>",
+    "razon_del_sistema": "<causa técnica, no opinión — qué señal faltó o qué señal mató la retención>"
   },
   "desarrollo_autopsia": {
-    "evaluacion": "<análisis sin piedad — o 'Hook muerto, desarrollo no evaluado'>",
-    "cumple_lo_que_prometio": "<SI|NO|PARCIAL>",
-    "segundo_donde_baja_tension": <número o null>,
-    "veredicto_desarrollo": "<VIVO|MUERTO|NO_EVALUADO>"
+    "hook_paso_el_filtro": "<SI|NO>",
+    "tension_sostenida": "<SI|NO|NO_EVALUADO>",
+    "segundo_de_caida": "<número o null>",
+    "clasificacion": "<PASA|NO_PASA|NO_EVALUADO>"
   },
-  "veredicto_final": {
-    "sobrevive": "<SI|NO>",
-    "razon": "<una oración. Sin eufemismos.>"
+  "output_del_sistema": {
+    "decision": "<DISTRIBUIR|NO_DISTRIBUIR>",
+    "motivo_tecnico": "<qué señal específica causó esta decisión — con segundo exacto>"
   }
 }`;
 };
-
 
 export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
   const pName = {
@@ -377,8 +404,15 @@ export const buildScoringBrainPrompt = (
     hookVeredicto = parsed?.hook_autopsia?.veredicto_hook ?? 'DESCONOCIDO';
   } catch (_) {}
 
+  // Agregar al inicio de buildScoringBrainPrompt, antes del bloque de reglas:
+`REGLA ANTES DE EMPEZAR: Leé el campo "descripcion_cruda.primer_momento_de_valor" del análisis anterior.
+Si ese campo dice "nunca" o un segundo mayor a 4, el viralScore no puede superar 18, sin excepción.
+No leas el análisis estratégico para justificar un score alto. Úsalo solo para entender por qué falló.`
+
   return `Sos el juez más despiadado del contenido en ${pName}.
 Tu trabajo es uno: decidir si este video compite con el 1% de internet o no.
+
+
 
 VIDEO:
 ---
