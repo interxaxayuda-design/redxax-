@@ -933,58 +933,31 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   console.log('[VIRAX] Subiendo para calibración:', fileToUpload.name, fileToUpload.size, 'bytes', mimeType);
 
   try {
-    // ── UPLOAD ──
+    // ── UPLOAD al bucket ──
 setStatusText("Subiendo video...");
 setAnalysisProgress(10);
 
-const { data: uploadData, error: uploadError } = await supabase.functions.invoke('gemini-proxy/upload-video', {
-  body: { storagePath, videoMimeType: mimeType }
-});
-if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
-
-const { fileUri, fileName } = uploadData;
-
-// ── POLLING desde el frontend (sin timeout del Edge Function) ──
-setStatusText("Google está procesando el video...");
-setAnalysisProgress(14);
-
-let videoReady = false;
-for (let i = 0; i < 30; i++) {  // máximo 60 segundos (30 × 2s)
-  await new Promise(r => setTimeout(r, 2000));
-
-  const { data: statusData } = await supabase.functions.invoke('gemini-proxy/check-video-status', {
-    body: { fileName }
+const { error: uploadError } = await supabase.storage
+  .from('videos')
+  .upload(storagePath, fileToUpload, {
+    contentType: mimeType,
+    upsert: true,
   });
 
-  console.log(`[VIRAX] Estado video: ${statusData?.state} (intento ${i + 1})`);
-
-  if (statusData?.state === 'ACTIVE') {
-    videoReady = true;
-    break;
-  }
-
-  if (statusData?.state === 'FAILED') {
-    const detail = statusData?.error?.message ?? 'Error desconocido';
-    throw new Error(`Google no pudo procesar el video: ${detail}. Probá con un MP4 H.264.`);
-  }
-
-  // Actualizamos el progress mientras espera
-  setAnalysisProgress(14 + Math.min(i, 4));
+if (uploadError) {
+  throw new Error("Error subiendo video al storage: " + uploadError.message);
 }
 
-if (!videoReady) {
-  throw new Error('El video tardó demasiado en procesarse. Probá con un video más corto.');
-}
+console.log('[VIRAX] Video subido al bucket:', storagePath);
 
-setAnalysisProgress(18);
+// ── CALL 0 — Pre-clasificador ──
 setStatusText("Pre-clasificando video...");
+setAnalysisProgress(18);
 
-// ── CALL 0 — Pre-clasificador (ahora usa fileUri directo) ──
 const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
   body: {
     text: buildPreClassifierPrompt(`Duración: ${Math.round(duration)}s`),
-    fileUri,      // ← en vez de storagePath
-    fileName,     // ← para que el Edge Function sepa qué borrar al final
+    storagePath,          // ← la Edge Function descarga desde acá
     videoMimeType: mimeType,
     duration: Math.round(duration),
     maxOutputTokens: 2048,
