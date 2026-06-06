@@ -169,36 +169,35 @@ const safeParseJSON = (rawText, context = '') => {
 // ============================================================
 const limpiarJSON = (str) => {
   if (typeof str !== 'string') return str;
-  return str.replace(/```json/gi, '').replace(/```/gi, '').trim();
+  return str.replace(/```json/gi, '').replace(/
+```/gi, '').trim();
 };
 
-
- 
 export const NICHE_MOTORS = {
-  "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
-  "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
-  "inmobiliaria":       { motor: "aspiracion -> agente",                       urgency: false, trust_signal: "experiencia_agente", cta_type: "contacto"  },
-  "app_saas":           { motor: "problema -> claridad -> demo",               urgency: true,  trust_signal: "resultado_visible",  cta_type: "directo"   },
+  "producto_fisico":    { motor: "dolor -> solucion",                      urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
+  "comida_restaurante": { motor: "deseo_sensorial -> identidad",           urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
+  "inmobiliaria":       { motor: "aspiracion -> agente",                   urgency: false, trust_signal: "experiencia_agente", cta_type: "contacto"  },
+  "app_saas":           { motor: "problema -> claridad -> demo",           urgency: true,  trust_signal: "resultado_visible",  cta_type: "directo"   },
   "estetica":           { motor: "inseguridad -> transformacion -> identidad", urgency: false, trust_signal: "antes_despues",      cta_type: "implicito" },
   "educacion":          { motor: "curiosidad -> valor -> confianza",           urgency: false, trust_signal: "autoridad",          cta_type: "implicito" },
   "musica_artista":     { motor: "identidad_tribal -> emocion -> resonancia",  urgency: false, trust_signal: "autenticidad_raw",   cta_type: "ninguno",
                           score_cap: { viralScore: 55, salesScore: 35 },
                           limitacion: "audio_no_evaluable" }
 };
- 
+
 // ============================================================
-// PRE-CLASSIFIER — observación pura, cero juicio
+// PRE-CLASSIFIER — observación forense, prohibido interpretar
 // ============================================================
 export const buildPreClassifierPrompt = (meta = '') => `
-Sos una cámara con memoria. Registrás lo que existe en el video. No opinás, no evaluás, no inferís intención.
+Sos un software de auditoría forense de video. No tenés emociones. Registrás píxeles y ondas de audio. PROHIBIDO inferir intenciones, PROHIBIDO usar adjetivos positivos ("buen", "interesante", "atractivo"). Si algo es genérico, lo etiquetás como genérico.
 ${meta ? `METADATA: ${meta}` : ''}
  
 Respondé SOLO con este JSON exacto:
 {
   "industria": "<micro-nicho ultra-específico>",
-  "palanca_psicologica": "<emoción primaria observable>",
+  "palanca_psicologica": "<emoción primaria observable o 'nula'>",
   "flags_visuales": {
-    "logo_en_s0":             <boolean>,
+    "logo_en_s0":             <boolean — si es true, es un suicidio de retención>,
     "imagen_alto_impacto":    <boolean>,
     "sujeto_ancla_en_s0":     <boolean>,
     "transformacion_visible": <boolean>
@@ -214,93 +213,91 @@ Respondé SOLO con este JSON exacto:
     "duracion_estimada_segundos": <number>,
     "es_slideshow_imagenes":      <boolean>,
     "porcentaje_video_real":      <number 0-100>,
-    "tipo_edicion":               "<cinematica|dinamica|UGC|infomercial|estatica>",
-    "ritmo_visual":               "<rapido|normal|lento>",
+    "tipo_edicion":               "<cinematica|dinamica|UGC|infomercial|estatica_aburrida>",
+    "ritmo_visual":               "<frenetico|rapido|normal|lento|letargico>",
     "cortes_por_minuto":          <number>
   },
-  "hook_libre": "<transcripción exacta de lo que se ve y escucha en los primeros 3 segundos — sin adjetivos, sin juicio>",
+  "hook_libre": "<transcripción literal y cruda de los primeros 3 segundos. Cero compasión. Si es un tipo diciendo 'hola chicos', ponelo así.>",
   "hook_type_detectado": "<explosivo|bait_con_puente|bait_desconectado|curiosidad_desconexion|apertura_informativa|debil|muerto>",
   "hook_confianza": <0.0 a 1.0>,
   "hook_gate": {
-    "pregunta_activa_en_espectador": "<Completá esta oración exacta o escribí NINGUNA: 'El espectador en el segundo 0 se pregunta: ...' — si no podés completarla con algo específico, concreto e involuntario, escribí NINGUNA>",
-    "elemento_que_retiene": "<Nombrá el elemento exacto que ancla al espectador en los primeros 2 segundos. Si no existe, escribí NINGUNO>",
+    "pregunta_activa_en_espectador": "<Completá la frase: 'El espectador en el segundo 0 se pregunta: ...' — Si la respuesta es 'para qué estoy viendo esto', escribí NINGUNA>",
+    "elemento_que_retiene": "<El estímulo crudo en s0-s2. Si es solo 'una persona hablando', escribí NINGUNO>",
     "veredicto_gate": "<PASA|MUERTO>"
   },
   "espera": {
-    "segundos_hasta_payoff": <number — segundos desde el hook hasta que aparece el resultado o cambio prometido>,
-    "que_ocurre_durante_la_espera": "<descripción literal de lo que se ve y escucha entre el hook y el payoff — sin juicio>",
-    "hay_estimulo_durante_espera": <boolean — ¿hay algo que ocurre visualmente o auditivamente durante esa espera, sea lo que sea?>
+    "segundos_hasta_payoff": <number>,
+    "que_ocurre_durante_la_espera": "<qué pasa visual/auditivamente. Si es 'habla frente a cámara', decilo>",
+    "hay_estimulo_durante_espera": <boolean>
   }
 }
 `;
- 
+
 // ============================================================
-// HOOK GATE — restricción dura en JS, sin intervención del modelo
+// HOOK GATE — restricción dura en JS
 // ============================================================
 export const deriveHookGateStatus = (preFacts) => {
   const gate     = preFacts?.hook_gate;
   const hookType = preFacts?.hook_type_detectado ?? '';
   const espera   = preFacts?.espera;
- 
+
   if (!gate) return { passed: null, reason: 'gate_no_disponible' };
- 
+
   if (hookType === 'muerto') {
     return { passed: false, reason: 'hook_type_clasificado_como_muerto' };
   }
- 
+
   if (gate.veredicto_gate === 'MUERTO') {
     return {
       passed: false,
       reason: `sin_retencion_cognitiva — pregunta: "${gate.pregunta_activa_en_espectador}" / elemento: "${gate.elemento_que_retiene}"`
     };
   }
- 
-  // Espera larga sin ningún estímulo → veto
+
   const segundosEspera = Number(espera?.segundos_hasta_payoff ?? 0);
   const hayEstimulo    = espera?.hay_estimulo_durante_espera ?? true;
- 
+
   if (segundosEspera > 8 && !hayEstimulo) {
     return {
       passed: false,
       reason: `espera_vacia — ${segundosEspera}s sin estímulo: "${espera?.que_ocurre_durante_la_espera}"`
     };
   }
- 
+
   const waitPenalty = (segundosEspera > 4 && !hayEstimulo)
     ? { segundos: segundosEspera, detalle: espera?.que_ocurre_durante_la_espera }
     : null;
- 
+
   return {
     passed: true,
     reason: `retencion_confirmada: ${gate.elemento_que_retiene}`,
     waitPenalty
   };
 };
- 
+
 // ============================================================
 // DERIVAR CAP DE VIRALIDAD — restricción matemática en JS
-// El modelo recibe un número, no una instrucción
 // ============================================================
 export const deriveViralCap = (hookGateStatus, viewerAnalysisRaw, nicheConfig = null) => {
   let cap = nicheConfig?.score_cap?.viralScore ?? 100;
- 
+
   if (hookGateStatus?.passed === false) {
     return { cap: 20, reason: hookGateStatus.reason };
   }
- 
+
   try {
     const viewerAnalysis = limpiarJSON(viewerAnalysisRaw);
     const parsed = typeof viewerAnalysis === 'string' ? JSON.parse(viewerAnalysis) : viewerAnalysis;
- 
+
     const hookClasificacion = parsed?.hook_autopsia?.clasificacion      ?? '';
     const hookDecision      = parsed?.output_del_sistema?.decision      ?? '';
     const segundoCaida      = parsed?.desarrollo_autopsia?.segundo_de_caida ?? null;
     const tensionSostenida  = parsed?.desarrollo_autopsia?.tension_sostenida ?? '';
- 
+
     if (hookClasificacion === 'NO_PASA' || hookDecision === 'NO_DISTRIBUIR') {
       return { cap: Math.min(cap, 20), reason: `viewer_brain_veto: ${hookDecision}` };
     }
- 
+
     if (segundoCaida !== null && segundoCaida !== undefined) {
       const s = Number(segundoCaida);
       if (!isNaN(s)) {
@@ -310,24 +307,24 @@ export const deriveViralCap = (hookGateStatus, viewerAnalysisRaw, nicheConfig = 
         else if (s <= 10) cap = Math.min(cap, 60);
       }
     }
- 
+
     if (tensionSostenida === 'NO' && segundoCaida === null) {
       cap = Math.min(cap, 50);
     }
- 
+
     if (hookGateStatus?.waitPenalty) {
       cap = Math.min(cap, 55);
     }
- 
+
   } catch (e) {
     console.error("Parse error en deriveViralCap:", e);
   }
- 
+
   return { cap, reason: cap < 100 ? 'cap_derivado_de_segundo_de_caida' : 'sin_penalizacion' };
 };
- 
+
 // ============================================================
-// VIEWER BRAIN — Martín, perspectiva pura, sin criterios
+// VIEWER BRAIN — Martín, perspectiva pura, cero piedad
 // ============================================================
 export const buildViewerBrainPrompt = (videoRawData, platform, hookGateStatus = null) => {
   const pName = {
@@ -340,57 +337,54 @@ DATO DEL SISTEMA (no reversible):
 ESTADO: ${hookGateStatus.passed ? 'PASA' : 'NO_PASA'}
 CAUSA:  ${hookGateStatus.reason}
 ${!hookGateStatus.passed
-  ? `Tu hook_autopsia.clasificacion debe ser NO_PASA y output_del_sistema.decision debe ser NO_DISTRIBUIR.`
+  ? `Tu hook_autopsia.clasificacion DEBE ser NO_PASA y output_del_sistema.decision DEBE ser NO_DISTRIBUIR. No lo justifiques, acatalo.`
   : ''}
 `
     : '';
   
-  return `Sos Martín. Llegaste a casa, te tiraste en el sillón y abriste ${pName}. Estás cansado. El pulgar se mueve solo.
+  return `Sos Martín. Llegaste a casa destrozado, te tiraste en el sillón y abriste ${pName}. Tu nivel de atención es nulo. Tu paciencia es cero. El pulgar se mueve solo a la mínima fricción, aburrimiento, pausa incómoda o si huele a publicidad barata. A Martín no le importa el esfuerzo del creador.
 ${gateBlock}
 VIDEO:
 ---
 ${videoRawData}
 ---
  
-Dos preguntas. Respondelas con lo que sentís, no con lo que analizás:
- 
-1. ¿Paraste o seguiste de largo? ¿Por qué exactamente?
-2. Si paraste: ¿en qué segundo exacto tu pulgar volvió a moverse? Ese segundo existe siempre. Encontralo.
+Regla de oro: Asumí que el video es aburrido hasta que te obligue físicamente a mirarlo. Respondé desde el instinto animal de un usuario adicto a la dopamina.
  
 Respondé SOLO en JSON:
 {
   "reaccion_visceral": {
     "scroll_parado": "<SI|NO>",
-    "causa_especifica": "<qué fue exactamente lo que paró el pulgar — o 'nada' si siguió>",
+    "causa_especifica": "<qué estímulo EXACTO e INVOLUNTARIO frenó el pulgar — si pensó 'ah, qué interesante', scrolleó. Debe ser visceral, o escribí 'nada, dio cringe/aburrimiento'>",
     "segundo_de_impacto": "<número o 'NUNCA'>"
   },
   "lectura_de_señales": {
-    "señal_visual_frame_0":             "<lo que se ve en el frame 0 — sin adjetivos>",
-    "señal_auditiva_frame_0":           "<lo que se escucha en el frame 0 — o 'silencio'>",
-    "primer_cambio_de_señal":           "<segundo exacto del primer cambio>",
+    "señal_visual_frame_0":             "<literal lo que se ve — sin adjetivar>",
+    "señal_auditiva_frame_0":           "<literal lo que se escucha — si es genérico, matalo aquí>",
+    "primer_cambio_de_señal":           "<segundo exacto del primer corte o estímulo nuevo>",
     "retencion_justificada_en_segundo": "<número o 'NUNCA'>"
   },
   "hook_autopsia": {
-    "pregunta_activa_detectada": "<La pregunta involuntaria que se hizo Martín — o 'NINGUNA'>",
+    "pregunta_activa_detectada": "<La duda inmediata y egoísta de Martín — o 'NINGUNA, no me importa'>",
     "señal_de_retención_detectada": "<SI|NO>",
     "tipo_de_señal":                "<visual|auditiva|textual|ninguna>",
     "clasificacion":                "<PASA|NO_PASA>",
-    "razon_del_sistema":            "<en una oración: qué pasó o qué no pasó en el segundo 0>"
+    "razon_del_sistema":            "<una oración destructiva y objetiva de por qué falló o por qué sobrevivió el segundo 0>"
   },
   "desarrollo_autopsia": {
     "hook_paso_el_filtro": "<SI|NO>",
-    "tension_sostenida":   "<SI|NO|NO_EVALUADO>",
-    "segundo_de_caida":    "<número — el segundo exacto en que Martín scrolleó. Si el video terminó antes, ponés la duración total>",
-    "causa_de_caida":      "<qué pasó en ese segundo>",
+    "tension_sostenida":   "<SI|NO|NO_EVALUADO — si decae la energía un milisegundo, es NO>",
+    "segundo_de_caida":    "<el segundo exacto donde Martín bostezó, se aburrió o detectó relleno y scrolleó>",
+    "causa_de_caida":      "<qué cagada cometió el video en ese segundo>",
     "clasificacion":       "<PASA|NO_PASA|NO_EVALUADO>"
   },
   "output_del_sistema": {
     "decision":       "<DISTRIBUIR|NO_DISTRIBUIR>",
-    "motivo_tecnico": "<segundo exacto + causa>"
+    "motivo_tecnico": "<segundo exacto + causa fulminante>"
   }
 }`;
 };
- 
+
 // ============================================================
 // RESEARCH BRAIN
 // ============================================================
@@ -398,7 +392,7 @@ export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
   const pName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
   }[platform] || platform;
- 
+
   return `Realizá una extracción de datos sobre los patrones algorítmicos actuales para la industria "${industria}" en ${pName}.
  
 Foco de búsqueda:
@@ -409,7 +403,7 @@ Respondé SOLO con este JSON:
 {
   "hooks_virales_reales": [
     {
-      "descripcion":           "<qué pasa en los primeros 3 segundos>",
+      "descripcion":          "<qué pasa en los primeros 3 segundos>",
       "mecanismo_psicologico": "<por qué para el scroll>",
       "resultado_aproximado":  "<views o métrica disponible>"
     }
@@ -421,7 +415,7 @@ Respondé SOLO con este JSON:
   "oportunidad_detectada":  "<gap real sin explotar>"
 }`;
 };
- 
+
 // ============================================================
 // APPLY RESEARCH BRAIN
 // ============================================================
@@ -442,14 +436,14 @@ Respondé SOLO con este JSON:
   "resumen_brecha":          "<una oración: diferencia técnica más importante vs el top del nicho>"
 }`;
 };
- 
+
 // ============================================================
-// STRATEGY BRAIN — diagnóstico desde los datos, sin criterios
+// STRATEGY BRAIN — diagnóstico clínico, sin filtros
 // ============================================================
 export const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, perception, preFacts = {}) => {
-  return `Sos un editor con 10 años de experiencia en contenido de ${platform}. Miraste miles de videos. Sabés exactamente en qué segundo la gente scrollea y por qué.
+  return `Sos un editor con 10 años de experiencia reteniendo audiencias en ${platform}. Miraste miles de videos. Sabés exactamente en qué segundo la gente scrollea y por qué.
  
-No tenés que explicar teoría. Tenés que leer estos datos y decir qué está roto y qué no.
+No tenés que explicar teoría. Tenés que leer estos datos y decir qué está roto y qué no, de manera objetiva y directa.
  
 VEREDICTO DEL SISTEMA:
 ${viewerAnalysis}
@@ -477,9 +471,9 @@ Respondé SOLO con este JSON:
       "trampa_principal": "<value_trap|bait_disconnect|valor_tardio|ninguna>"
     },
     "foda": {
-      "fortalezas":       ["<qué funciona>"],
+      "fortalezas":       ["<qué funciona realmente>"],
       "debilidades":      ["<qué no funciona y en qué segundo>"],
-      "mejoras_urgentes": ["<qué falta>"]
+      "mejoras_urgentes": ["<qué hay que cortar o cambiar ya>"]
     }
   },
   "flags_binarios": {
@@ -489,9 +483,9 @@ Respondé SOLO con este JSON:
   }
 }`;
 };
- 
+
 // ============================================================
-// SCORING BRAIN — números desde la experiencia, caps desde JS
+// SCORING BRAIN — Juez implacable, caps desde JS mandan
 // ============================================================
 export const buildScoringBrainPrompt = (
   videoRawData, strategyAnalysisRaw, viewerAnalysisRaw,
@@ -519,63 +513,61 @@ export const buildScoringBrainPrompt = (
     console.error("Parse error en buildScoringBrainPrompt:", e);
   }
  
-  return `Sos el sistema de scoring final de ${pName}. Tu trabajo es traducir una experiencia a números. Nada más.
+  return `Sos el sistema de scoring final y despiadado de ${pName}. Tu trabajo es traducir una autopsia a números. 
+IMPORTANTE: Los LLMs suelen regalar puntajes altos por cortesía (70-80). VOS NO. En ${pName}, el nivel de exigencia es brutal. Un video "promedio" merece un 20/100, no un 70. Destruí sin piedad todo lo que no atrape inmediatamente y calculá el score siendo implacable.
  
 LÍMITES CALCULADOS POR EL SISTEMA — INAPELABLES:
-viralScore máximo: ${viralCap} (${viralCapData?.reason ?? 'cap de nicho'})
-salesScore máximo: ${salesCap}
-${segundoCaida !== null ? `Segundo de caída registrado: ${segundoCaida}s — "${causaCaida}"` : ''}
+viralScore máximo permitido: ${viralCap} (${viralCapData?.reason ?? 'cap de nicho'})
+salesScore máximo permitido: ${salesCap}
+${segundoCaida !== null ? `Segundo de muerte súbita registrado: ${segundoCaida}s — "${causaCaida}"` : ''}
  
-Estos números fueron calculados antes de que veas el video. No podés superarlos. Si tu análisis te llevaría a un número mayor, truncalo y explicá la diferencia en el verdict.
+Si tu cálculo riguroso daría un número mayor a los topes permitidos, TRUNCALO al valor del tope sin preguntar y basá tu justificación en las fallas detectadas.
  
-DATOS:
+DATOS CRUDOS:
 VIDEO: ${videoRawData}
 DIAGNÓSTICO: ${strategyAnalysis}
- 
-Antes de poner cualquier número, describí la experiencia de Martín segundo a segundo. Qué siente, cuándo se engancha, cuándo se aburre. Eso es lo que se transforma en score.
  
 Respondé SOLO en JSON, en este orden exacto:
 {
   "analisis_previo_obligatorio": {
-    "experiencia_segundo_a_segundo": "<qué experimenta Martín, segundo a segundo, desde que empieza el video hasta que scrollea>",
-    "justificacion_rango_viral":     "<en base a esa experiencia, qué número refleja lo que pasó — máximo ${viralCap}>",
-    "justificacion_rango_ventas":    "<qué señal de conversión hubo o no hubo — máximo ${salesCap}>"
+    "experiencia_segundo_a_segundo": "<crónica de cómo fracasa o triunfa el video segundo a segundo. Sé duro.>",
+    "justificacion_rango_viral":     "<por qué merece este número patético o excelente — máximo ${viralCap}>",
+    "justificacion_rango_ventas":    "<señales reales de conversión comercial, cero ilusiones — máximo ${salesCap}>"
   },
   "viralScore": {
-    "score":        <number — máximo ${viralCap}>,
-    "verdict":      "<qué pasó exactamente que justifica este número>",
-    "accion_clave": "<qué cambiar y en qué segundo>"
+    "score":        <number — MAX ${viralCap}>,
+    "verdict":      "<el golpe de realidad: por qué tiene este puntaje>",
+    "accion_clave": "<la cirugía de emergencia necesaria en el segundo exacto>"
   },
   "salesScore": {
-    "score":        <number — máximo ${salesCap}>,
-    "verdict":      "<señal de conversión presente o ausente>",
-    "accion_clave": "<acción concreta>"
+    "score":        <number — MAX ${salesCap}>,
+    "verdict":      "<vende, genera deseo o da lástima?>",
+    "accion_clave": "<qué falta para que alguien saque la tarjeta de crédito>"
   },
   "scrollStopScore": {
-    "score":   <number>,
-    "verdict": "<qué tiene o no tiene el segundo 0>"
+    "score":   <number — de 0 a 100. Si no hay gancho fuerte en s0, debe ser bajísimo>,
+    "verdict": "<por qué el dedo no frena o sí frena>"
   },
   "hookDNA": {
     "pattern":       "<Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Deseo_Sensorial|Identidad_Tribal|Aspiracion|Muerto|Otro>",
-    "optimizedHook": "<reescribí el hook para que Martín no pueda no detenerse>"
+    "optimizedHook": "<reescribí el gancho. Sacá la basura, dejá el hueso. Brutal y directo.>"
   },
   "steppsScore": {
     "dominantFactor":  "<factor STEPPS más fuerte>",
-    "weakestFactor":   "<factor STEPPS más débil>",
-    "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
+    "weakestFactor":   "<factor STEPPS más ausente>",
+    "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno_no_lo_comparte_ni_su_madre>"
   },
-  "honestVerdict": "<Dos oraciones. La experiencia real de Martín con este video — no el potencial, lo que pasó.>",
+  "honestVerdict": "<Dos oraciones. Destruí el ego del creador. Qué es lo que realmente armó.>",
   "roadmap": [
     {
       "impacto":   "<ALTO|MEDIO|BAJO>",
-      "problema":  "<segundo exacto + qué>",
-      "solucion":  "<instrucción para el editor>",
-      "resultado": "<qué cambia en la experiencia del espectador>"
+      "problema":  "<segundo exacto + el error fatal>",
+      "solucion":  "<instrucción autoritaria para el editor de video (ej: 'Cortá los primeros 3s')>",
+      "resultado": "<qué salva esto>"
     }
   ]
 }`;
 };
-
 
 
 export const deriveHookType = (preFacts) => {
