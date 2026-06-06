@@ -157,10 +157,6 @@ const safeParseJSON = (rawText, context = '') => {
   throw new Error(`JSON malformado. Preview: "${rawText.slice(0, 80)}..."`);
 };
 
-
-
-
-
 // ============================================================
 // HELPER FUNCION - Limpia el markdown del output de la IA
 // ============================================================
@@ -168,7 +164,6 @@ const limpiarJSON = (str) => {
   if (typeof str !== 'string') return str;
   return str.replace(/```json/gi, '').replace(/```/gi, '').trim();
 };
-
 export const NICHE_MOTORS = {
   "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
   "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
@@ -179,6 +174,19 @@ export const NICHE_MOTORS = {
   "musica_artista":     { motor: "identidad_tribal -> emocion -> resonancia",   urgency: false, trust_signal: "autenticidad_raw",   cta_type: "ninguno",
                           score_cap: { viralScore: 55, salesScore: 35 },
                           limitacion: "audio_no_evaluable" }
+};
+
+// ============================================================
+// CAP TABLE — caps deterministas por intención de hook
+// Independiente de lo que diga la IA
+// ============================================================
+export const HOOK_INTENCION_CAPS = {
+  social:          22,   // "Hola mis papachos", saludos, bienvenidas
+  informativo:     40,   // "Hoy les enseño...", "En este video..."
+  entretenimiento: 45,   // humor, carisma, sin propuesta de negocio
+  valor:          100,   // problema, solución, beneficio concreto
+  tension:        100,   // "Lo que nadie te dice...", "El error que..."
+  demo:           100,   // producto/servicio en acción desde frame 0
 };
 
 // ============================================================
@@ -210,6 +218,13 @@ Respondé SOLO con este JSON exacto:
     "hook_tiene_propuesta_valor": <boolean — true SOLO si el hook contiene señal de problema, solución, beneficio o resultado concreto. Un saludo, frase de carisma, expresión afectiva o apertura social es SIEMPRE false, sin excepción.>,
     "hook_conecta_con_objetivo":  <boolean — true si el hook predice el contenido del video. false si la retención depende de simpatía o entretenimiento desconectados del producto o servicio.>
   },
+  "hook_intencion": "<social|informativo|valor|tension|demo|entretenimiento — elegí UNO según estas definiciones exactas:
+    social          = saludo, bienvenida, expresión afectiva ('Hola mis papachos', '¿Cómo están?', 'Buenas tardes')
+    informativo     = anuncia contenido sin crear urgencia ('Hoy les enseño...', 'En este video vemos...')
+    entretenimiento = humor, carisma, sorpresa visual sin propuesta de negocio
+    valor           = menciona problema concreto, ahorro, resultado o beneficio medible antes del segundo 3
+    tension         = genera pregunta abierta, contradicción o dato disruptivo que obliga a seguir viendo
+    demo            = producto o servicio en uso activo desde el frame 0, sin palabras necesarias>",
   "metricas_tecnicas": {
     "duracion_estimada_segundos": <number>,
     "es_slideshow_imagenes":      <boolean>,
@@ -391,6 +406,42 @@ Respondé SOLO con este JSON:
 };
 
 // ============================================================
+// HELPER — deriva cap determinista por intención de hook
+// Si la IA no devolvió hook_intencion, hace fallback por flags
+// ============================================================
+export const deriveViralCapFromPreFacts = (preFacts, nicheConfig) => {
+  const nicheCapBase = nicheConfig?.score_cap?.viralScore ?? 100;
+
+  // 1. Intención declarada por la IA — path principal
+  const intencion = preFacts?.hook_intencion;
+  if (intencion && HOOK_INTENCION_CAPS[intencion] !== undefined) {
+    return Math.min(HOOK_INTENCION_CAPS[intencion], nicheCapBase);
+  }
+
+  // 2. Fallback determinista si la IA no devolvió hook_intencion
+  //    Derivamos la intención a partir de los flags que SÍ tenemos
+  const tienePropuesta  = preFacts?.flags_de_calidad?.hook_tiene_propuesta_valor;
+  const conectaObjetivo = preFacts?.flags_de_calidad?.hook_conecta_con_objetivo;
+  const hookType        = preFacts?.hook_type_detectado ?? '';
+  const hookLibre       = (preFacts?.hook_libre ?? '').toLowerCase();
+
+  // Señales de hook social/débil — sin necesidad del campo hook_intencion
+  const esSocial = hookType === 'muerto' || hookType === 'debil' ||
+    /^(hola|buenas|bienvenid|qué tal|cómo est|hey |saludos)/.test(hookLibre);
+
+  if (esSocial)                              return Math.min(HOOK_INTENCION_CAPS.social, nicheCapBase);
+  if (tienePropuesta === false)              return Math.min(HOOK_INTENCION_CAPS.entretenimiento, nicheCapBase);
+  if (conectaObjetivo === false)             return Math.min(HOOK_INTENCION_CAPS.informativo, nicheCapBase);
+  if (hookType === 'explosivo')              return nicheCapBase;
+  if (hookType === 'bait_con_puente')        return nicheCapBase;
+  if (hookType === 'curiosidad_desconexion') return Math.min(70, nicheCapBase);
+  if (hookType === 'apertura_informativa')   return Math.min(HOOK_INTENCION_CAPS.informativo, nicheCapBase);
+
+  // 3. Sin información suficiente — cap conservador
+  return Math.min(60, nicheCapBase);
+};
+
+// ============================================================
 // SCORING BRAIN — Puntuación final con Chain of Thought
 // ============================================================
 export const buildScoringBrainPrompt = (
@@ -417,23 +468,21 @@ export const buildScoringBrainPrompt = (
     console.error("Parse error en buildScoringBrainPrompt:", e);
   }
 
-  const hookFailed       = hookClasificacion === 'NO_PASA' || hookDecision === 'NO_DISTRIBUIR';
-  const hookSinPropuesta = preFacts?.flags_de_calidad?.hook_tiene_propuesta_valor === false
-                        || preFacts?.flags_de_calidad?.hook_conecta_con_objetivo  === false;
+  const hookFailed = hookClasificacion === 'NO_PASA' || hookDecision === 'NO_DISTRIBUIR';
 
+  // Cap determinista en cascada — no depende de un solo campo
   const viralCapFinal = hookFailed
     ? 20
-    : hookSinPropuesta
-      ? 38
-      : (nicheConfig?.score_cap?.viralScore ?? 100);
+    : deriveViralCapFromPreFacts(preFacts, nicheConfig);
 
   const salesCap = nicheConfig?.score_cap?.salesScore ?? 100;
 
-  // Mensaje explicativo del cap activo para incluirlo en el prompt
+  // Explicación del cap para el prompt — el modelo entiende por qué existe el límite
+  const intencionDetectada = preFacts?.hook_intencion ?? 'no_declarada';
   const capReason = hookFailed
-    ? `El hook NO pasó el filtro inicial. El score viral no puede superar 20 bajo ninguna circunstancia.`
-    : hookSinPropuesta
-      ? `El hook no contiene propuesta de valor ni conecta con el objetivo del negocio (retención por simpatía/carisma). El score viral no puede superar 38.`
+    ? `El hook NO pasó el filtro del Viewer Brain. Cap duro: 20.`
+    : viralCapFinal < 100
+      ? `Hook de intención "${intencionDetectada}" — retención no calificada para negocio. Cap aplicado: ${viralCapFinal}.`
       : '';
 
   return `Sos el clasificador algorítmico final de ${pName}. Asignás puntuaciones matemáticas precisas a las señales extraídas del video.
@@ -856,7 +905,7 @@ const deductGems = async (amount, reason) => {
   }
 };
 
-const saveChatToHistory = async (messages) => {
+const saveChatToHistory = async (messages) => {  //const state = data?.state;           // undefined
   if (!currentHistoryId) return;
   await supabase
     .from('analysis_history')
