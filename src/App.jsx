@@ -170,13 +170,13 @@ const limpiarJSON = (str) => {
 };
 
 export const NICHE_MOTORS = {
-  "producto_fisico":    { motor: "dolor -> solucion",                      urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
-  "comida_restaurante": { motor: "deseo_sensorial -> identidad",           urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
-  "inmobiliaria":       { motor: "aspiracion -> agente",                   urgency: false, trust_signal: "experiencia_agente", cta_type: "contacto"  },
-  "app_saas":           { motor: "problema -> claridad -> demo",           urgency: true,  trust_signal: "resultado_visible",  cta_type: "directo"   },
-  "estetica":           { motor: "inseguridad -> transformacion -> identidad", urgency: false, trust_signal: "antes_despues",      cta_type: "implicito" },
-  "educacion":          { motor: "curiosidad -> valor -> confianza",           urgency: false, trust_signal: "autoridad",          cta_type: "implicito" },
-  "musica_artista":     { motor: "identidad_tribal -> emocion -> resonancia",  urgency: false, trust_signal: "autenticidad_raw",   cta_type: "ninguno",
+  "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
+  "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
+  "inmobiliaria":       { motor: "aspiracion -> agente",                       urgency: false, trust_signal: "experiencia_agente", cta_type: "contacto"  },
+  "app_saas":           { motor: "problema -> claridad -> demo",               urgency: true,  trust_signal: "resultado_visible",  cta_type: "directo"   },
+  "estetica":           { motor: "inseguridad -> transformacion -> identidad",  urgency: false, trust_signal: "antes_despues",      cta_type: "implicito" },
+  "educacion":          { motor: "curiosidad -> valor -> confianza",            urgency: false, trust_signal: "autoridad",          cta_type: "implicito" },
+  "musica_artista":     { motor: "identidad_tribal -> emocion -> resonancia",   urgency: false, trust_signal: "autenticidad_raw",   cta_type: "ninguno",
                           score_cap: { viralScore: 55, salesScore: 35 },
                           limitacion: "audio_no_evaluable" }
 };
@@ -192,6 +192,7 @@ Respondé SOLO con este JSON exacto:
 {
   "industria": "<micro-nicho ultra-específico>",
   "palanca_psicologica": "<emoción primaria observable>",
+
   "flags_visuales": {
     "logo_en_s0":             <boolean>,
     "imagen_alto_impacto":    <boolean>,
@@ -205,6 +206,10 @@ Respondé SOLO con este JSON exacto:
     "dolor_antes_s5":            <boolean>,
     "tiene_rehook":              <boolean>
   },
+  "flags_de_calidad": {
+    "hook_tiene_propuesta_valor": <boolean — true SOLO si el hook contiene señal de problema, solución, beneficio o resultado concreto. Un saludo, frase de carisma, expresión afectiva o apertura social es SIEMPRE false, sin excepción.>,
+    "hook_conecta_con_objetivo":  <boolean — true si el hook predice el contenido del video. false si la retención depende de simpatía o entretenimiento desconectados del producto o servicio.>
+  },
   "metricas_tecnicas": {
     "duracion_estimada_segundos": <number>,
     "es_slideshow_imagenes":      <boolean>,
@@ -215,8 +220,19 @@ Respondé SOLO con este JSON exacto:
   },
   "hook_libre": "<qué se ve y qué se escucha exactamente en los primeros 3 segundos>",
   "hook_type_detectado": "<explosivo|bait_con_puente|bait_desconectado|curiosidad_desconexion|apertura_informativa|debil|muerto>",
-  "hook_confianza": <0.0 a 1.0>
+  "hook_confianza": <0.0 a 1.0>,
+
+  "observaciones": [
+    {
+      "tipo":        "<error|fortaleza>",
+      "categoria":   "<hook|retencion|conversion|confianza|formato|audio|visual|narrativa|cta|otro>",
+      "severidad":   "<critico|alto|medio|bajo>",
+      "descripcion": "<qué se detectó exactamente, con segundo preciso si aplica. Sin eufemismos.>"
+    }
+  ]
 }
+
+REGLA PARA "observaciones": No hay límite de items. Registrá todo lo que detectes — errores de dirección de mirada, texto ilegible, desincronización audio/video, CTA tardío, falta de prueba social, ritmo roto, identidad de marca ausente, etc. Si no detectás nada relevante, devolvé un array vacío. Nunca omitas un problema real por no tener un campo predefinido para él.
 `;
 
 // ============================================================
@@ -379,32 +395,46 @@ Respondé SOLO con este JSON:
 // ============================================================
 export const buildScoringBrainPrompt = (
   videoRawData, strategyAnalysisRaw, viewerAnalysisRaw,
-  platform, objetivo, perception, flags, nicheConfig = null
+  platform, objetivo, perception, flags, nicheConfig = null, preFacts = {}
 ) => {
   const pName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
   }[platform] || platform;
 
-  // Limpieza vital de los JSON anteriores para evitar fallos de parseo
-  const viewerAnalysis = limpiarJSON(viewerAnalysisRaw);
+  const viewerAnalysis   = limpiarJSON(viewerAnalysisRaw);
   const strategyAnalysis = limpiarJSON(strategyAnalysisRaw);
 
   let hookClasificacion = 'DESCONOCIDO';
   let hookDecision      = 'DESCONOCIDO';
   let hookRazon         = '';
-  
+
   try {
     const parsed = typeof viewerAnalysis === 'string' ? JSON.parse(viewerAnalysis) : viewerAnalysis;
-    hookClasificacion = parsed?.hook_autopsia?.clasificacion      ?? 'DESCONOCIDO';
-    hookDecision      = parsed?.output_del_sistema?.decision      ?? 'DESCONOCIDO';
-    hookRazon         = parsed?.output_del_sistema?.motivo_tecnico  ?? '';
+    hookClasificacion = parsed?.hook_autopsia?.clasificacion       ?? 'DESCONOCIDO';
+    hookDecision      = parsed?.output_del_sistema?.decision       ?? 'DESCONOCIDO';
+    hookRazon         = parsed?.output_del_sistema?.motivo_tecnico ?? '';
   } catch (e) {
     console.error("Parse error en buildScoringBrainPrompt:", e);
   }
 
-  const hookFailed = hookClasificacion === 'NO_PASA' || hookDecision === 'NO_DISTRIBUIR';
-  const viralCap   = hookFailed ? 20 : (nicheConfig?.score_cap?.viralScore ?? 100);
-  const salesCap   = nicheConfig?.score_cap?.salesScore ?? 100;
+  const hookFailed       = hookClasificacion === 'NO_PASA' || hookDecision === 'NO_DISTRIBUIR';
+  const hookSinPropuesta = preFacts?.flags_de_calidad?.hook_tiene_propuesta_valor === false
+                        || preFacts?.flags_de_calidad?.hook_conecta_con_objetivo  === false;
+
+  const viralCapFinal = hookFailed
+    ? 20
+    : hookSinPropuesta
+      ? 38
+      : (nicheConfig?.score_cap?.viralScore ?? 100);
+
+  const salesCap = nicheConfig?.score_cap?.salesScore ?? 100;
+
+  // Mensaje explicativo del cap activo para incluirlo en el prompt
+  const capReason = hookFailed
+    ? `El hook NO pasó el filtro inicial. El score viral no puede superar 20 bajo ninguna circunstancia.`
+    : hookSinPropuesta
+      ? `El hook no contiene propuesta de valor ni conecta con el objetivo del negocio (retención por simpatía/carisma). El score viral no puede superar 38.`
+      : '';
 
   return `Sos el clasificador algorítmico final de ${pName}. Asignás puntuaciones matemáticas precisas a las señales extraídas del video.
 
@@ -414,9 +444,9 @@ ALGORITMO: ${hookDecision}
 ${hookRazon ? `CAUSA:     ${hookRazon}` : ''}
 
 LÍMITES DE PUNTUACIÓN ESTRICTOS:
-- viralScore MÁXIMO PERMITIDO EN ESTE ANÁLISIS: ${viralCap}.
+- viralScore MÁXIMO PERMITIDO EN ESTE ANÁLISIS: ${viralCapFinal}.
 - salesScore MÁXIMO PERMITIDO EN ESTE ANÁLISIS: ${salesCap}.
-${hookFailed ? `El hook NO pasó el filtro inicial. El score viral no puede superar 20 bajo ninguna circunstancia. Se evalúa el video tal cual es, sin especular sobre su potencial si se editara diferente.` : ''}
+${capReason ? `MOTIVO DEL CAP: ${capReason}` : ''}
 
 DATOS PARA PROCESAR:
 VIDEO RAW: ${videoRawData}
@@ -428,11 +458,11 @@ Es vital que completes el campo "analisis_previo_obligatorio" ANTES de asignar l
 Respondé SOLO en JSON, respetando este orden exacto de claves:
 {
   "analisis_previo_obligatorio": {
-    "justificacion_rango_viral": "<Explicá brevemente en qué rango de 0-100 caerá el viralScore basándote en el diagnóstico y por qué respeta el límite máximo de ${viralCap}>",
-    "justificacion_rango_ventas": "<Explicá brevemente en qué rango de 0-100 caerá el salesScore asegurando respetar el límite de ${salesCap}>"
+    "justificacion_rango_viral":  "<Explicá en qué rango caerá el viralScore y por qué respeta el límite de ${viralCapFinal}>",
+    "justificacion_rango_ventas": "<Explicá en qué rango caerá el salesScore asegurando respetar el límite de ${salesCap}>"
   },
   "viralScore": {
-    "score":        <number — LIMITADO estrictamente a ${viralCap}>,
+    "score":        <number — LIMITADO estrictamente a ${viralCapFinal}>,
     "verdict":      "<señal específica que justifica este número>",
     "accion_clave": "<qué cambiar y en qué segundo exacto>"
   },
@@ -454,7 +484,7 @@ Respondé SOLO en JSON, respetando este orden exacto de claves:
     "weakestFactor":   "<factor STEPPS más débil>",
     "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
   },
-  "honestVerdict": "<Veredicto técnico en 2 oraciones. Si el hook falló, indica el segundo exacto y la señal faltante.>",
+  "honestVerdict": "<Veredicto técnico en 2 oraciones. Si el hook falló, indicá el segundo exacto y la señal faltante.>",
   "roadmap": [
     {
       "impacto":   "<ALTO|MEDIO|BAJO>",
@@ -466,12 +496,6 @@ Respondé SOLO en JSON, respetando este orden exacto de claves:
 }`;
 };
 
-
-
-// ============================================================
-// DERIVACIÓN DEL HOOK TYPE
-// JS decide el tipo de hook, nunca Gemini.
-// ============================================================
 export const deriveHookType = (preFacts) => {
   if (!preFacts || !Object.keys(preFacts).length) return 'debil';
   if (preFacts.logo_en_s0) return 'muerto';
