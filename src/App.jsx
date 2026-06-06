@@ -185,34 +185,6 @@ export const NICHE_MOTORS = {
 };
 
 // ============================================================
-// HOOK CALIBRATION SYSTEM
-// Sistema de coordenadas para evaluar cualquier hook
-// sin listas de ejemplos. Tres anclas extremas definen
-// toda la escala — Gemini ubica cualquier caso entre ellas.
-// ============================================================
-const HOOK_CALIBRATION_SYSTEM = `
-SISTEMA DE COORDENADAS — ESCALA DE HOOKS:
-
-ANCLA 0 — MUERTO:
-Condiciones: latencia de señal > 0.5s en audio Y sin elemento visual de alto impacto en frame 0.
-Patrón de falla: el tono es social/saludo, no de contenido. El espectador no recibe ningún estímulo que justifique detener el scroll.
-Resultado algorítmico: scroll inmediato, sin retención.
-
-ANCLA 50 — FUNCIONAL:
-Condiciones: señal presente desde frame 0 (visual O auditiva), pero sin tensión activa ni conflicto.
-Patrón: informa o muestra, pero no genera pregunta abierta ni urgencia psicológica.
-Resultado algorítmico: retención inicial posible, caída antes del segundo 5 si no hay rehook.
-
-ANCLA 100 — EXPLOSIVO:
-Condiciones: conflicto, tensión o sorpresa activos desde frame 0 en al menos dos canales simultáneos (visual + audio, o visual + texto).
-Patrón: crea una pregunta abierta irresuelta que obliga a seguir mirando.
-Resultado algorítmico: retención máxima, distribución orgánica.
-
-REGLA DE POSICIONAMIENTO:
-Evaluá las señales del video y ubicalas en este espectro. No necesitás conocer el hook específico — solo detectar en qué coordenada caen sus señales técnicas.
-`;
-
-// ============================================================
 // PRE-CLASSIFIER — extrae hechos observables del video
 // ============================================================
 export const buildPreClassifierPrompt = (meta = '') => `
@@ -262,11 +234,6 @@ export const buildViewerBrainPrompt = (videoRawData, platform) => {
 
 Regla principal: El espectador promedio desliza (scrollea) por defecto. Solo se detiene si hay un estímulo de alto impacto inmediato.
 
-PENALIZACIÓN DE LATENCIA DE SEÑAL:
-Si en los primeros 0.5 segundos no hay ningún elemento de alto impacto activo (visual O auditivo), el resultado es scroll inmediato. No existe contexto narrativo, nicho, ni calidad de producción que justifique una excepción a esta regla. El algoritmo no espera.
-
-${HOOK_CALIBRATION_SYSTEM}
-
 VIDEO:
 ---
 ${videoRawData}
@@ -274,9 +241,8 @@ ${videoRawData}
 
 INSTRUCCIONES:
 1. Evaluá estrictamente los primeros 3 segundos.
-2. Usá el sistema de coordenadas para ubicar el hook en la escala antes de clasificarlo.
-3. Registrá la "reaccion_visceral" como el primer campo de tu respuesta.
-4. Completá el resto del análisis basándote en hechos técnicos que expliquen esa reacción inicial.
+2. Registrá la "reaccion_visceral" como el primer campo de tu respuesta.
+3. Completá el resto del análisis basándote en hechos técnicos que expliquen esa reacción inicial.
 
 Respondé SOLO en JSON. Mantén esta estructura:
 {
@@ -292,7 +258,6 @@ Respondé SOLO en JSON. Mantén esta estructura:
     "retencion_justificada_en_segundo": "<número o 'NUNCA'>"
   },
   "hook_autopsia": {
-    "coordenada_en_escala":         "<0-100 según el sistema de coordenadas>",
     "señal_de_retención_detectada": "<SI|NO>",
     "tipo_de_señal":                "<visual|auditiva|textual|ninguna>",
     "clasificacion":                "<PASA|NO_PASA>",
@@ -423,20 +388,19 @@ export const buildScoringBrainPrompt = (
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
   }[platform] || platform;
 
-  const viewerAnalysis   = limpiarJSON(viewerAnalysisRaw);
+  // Limpieza vital de los JSON anteriores para evitar fallos de parseo
+  const viewerAnalysis = limpiarJSON(viewerAnalysisRaw);
   const strategyAnalysis = limpiarJSON(strategyAnalysisRaw);
 
-  let hookClasificacion   = 'DESCONOCIDO';
-  let hookDecision        = 'DESCONOCIDO';
-  let hookRazon           = '';
-  let hookCoordenada      = null;
-
+  let hookClasificacion = 'DESCONOCIDO';
+  let hookDecision      = 'DESCONOCIDO';
+  let hookRazon         = '';
+  
   try {
     const parsed = typeof viewerAnalysis === 'string' ? JSON.parse(viewerAnalysis) : viewerAnalysis;
-    hookClasificacion = parsed?.hook_autopsia?.clasificacion       ?? 'DESCONOCIDO';
-    hookDecision      = parsed?.output_del_sistema?.decision       ?? 'DESCONOCIDO';
-    hookRazon         = parsed?.output_del_sistema?.motivo_tecnico ?? '';
-    hookCoordenada    = parsed?.hook_autopsia?.coordenada_en_escala ?? null;
+    hookClasificacion = parsed?.hook_autopsia?.clasificacion      ?? 'DESCONOCIDO';
+    hookDecision      = parsed?.output_del_sistema?.decision      ?? 'DESCONOCIDO';
+    hookRazon         = parsed?.output_del_sistema?.motivo_tecnico  ?? '';
   } catch (e) {
     console.error("Parse error en buildScoringBrainPrompt:", e);
   }
@@ -448,12 +412,9 @@ export const buildScoringBrainPrompt = (
   return `Sos el clasificador algorítmico final de ${pName}. Asignás puntuaciones matemáticas precisas a las señales extraídas del video.
 
 RESULTADO PREVIO DEL SISTEMA:
-HOOK:        ${hookClasificacion}
-ALGORITMO:   ${hookDecision}
-${hookCoordenada !== null ? `COORDENADA:  ${hookCoordenada}/100 en la escala de calibración` : ''}
-${hookRazon ? `CAUSA:       ${hookRazon}` : ''}
-
-${HOOK_CALIBRATION_SYSTEM}
+HOOK:      ${hookClasificacion}
+ALGORITMO: ${hookDecision}
+${hookRazon ? `CAUSA:     ${hookRazon}` : ''}
 
 LÍMITES DE PUNTUACIÓN ESTRICTOS:
 - viralScore MÁXIMO PERMITIDO EN ESTE ANÁLISIS: ${viralCap}.
@@ -461,17 +422,17 @@ LÍMITES DE PUNTUACIÓN ESTRICTOS:
 ${hookFailed ? `El hook NO pasó el filtro inicial. El score viral no puede superar 20 bajo ninguna circunstancia. Se evalúa el video tal cual es, sin especular sobre su potencial si se editara diferente.` : ''}
 
 DATOS PARA PROCESAR:
-VIDEO RAW:   ${videoRawData}
+VIDEO RAW: ${videoRawData}
 DIAGNÓSTICO: ${strategyAnalysis}
 
 INSTRUCCIÓN DE FLUJO DE TRABAJO (CHAIN OF THOUGHT):
-Antes de asignar puntuaciones, ubicá las señales del video en la escala de calibración. El score numérico debe ser coherente con la coordenada que ya calculó el ViewerBrain. Si hay discrepancia, prevalece la coordenada más baja.
+Es vital que completes el campo "analisis_previo_obligatorio" ANTES de asignar las puntuaciones numéricas. Esto garantiza que tus números sean el resultado directo de la evidencia técnica y respeten los límites máximos establecidos.
 
 Respondé SOLO en JSON, respetando este orden exacto de claves:
 {
   "analisis_previo_obligatorio": {
-    "justificacion_rango_viral":  "<Ubicá el video en la escala de calibración (0/50/100) y explicá por qué el viralScore respeta el límite máximo de ${viralCap}>",
-    "justificacion_rango_ventas": "<Explicá brevemente en qué rango caerá el salesScore asegurando respetar el límite de ${salesCap}>"
+    "justificacion_rango_viral": "<Explicá brevemente en qué rango de 0-100 caerá el viralScore basándote en el diagnóstico y por qué respeta el límite máximo de ${viralCap}>",
+    "justificacion_rango_ventas": "<Explicá brevemente en qué rango de 0-100 caerá el salesScore asegurando respetar el límite de ${salesCap}>"
   },
   "viralScore": {
     "score":        <number — LIMITADO estrictamente a ${viralCap}>,
