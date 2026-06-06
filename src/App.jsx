@@ -1046,13 +1046,14 @@ console.log('[VIRAX] Video subido al bucket:', storagePath);
 setStatusText("Pre-clasificando video...");
 setAnalysisProgress(18);
 
+// En runNeuralAnalysis — CALL 0
 const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
   body: {
     text: buildPreClassifierPrompt(`Duración: ${Math.round(duration)}s`),
-    storagePath,          // ← la Edge Function descarga desde acá
+    storagePath,
     videoMimeType: mimeType,
     duration: Math.round(duration),
-    maxOutputTokens: 2048,
+    maxOutputTokens: 8192,  // ← era 2048, subimos a 8192
     expectsJson: true,
   }
 });
