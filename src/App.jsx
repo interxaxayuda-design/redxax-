@@ -164,6 +164,9 @@ const safeParseJSON = (rawText, context = '') => {
 // ============================================================
 // HELPER FUNCION - Limpia el markdown del output de la IA
 // ============================================================
+// ============================================================
+// HELPER FUNCION - Limpia el markdown del output de la IA
+// ============================================================
 const limpiarJSON = (str) => {
   if (typeof str !== 'string') return str;
   return str.replace(/```json/gi, '').replace(/```/gi, '').trim();
@@ -220,7 +223,7 @@ Respondé SOLO con este JSON exacto:
 `;
 
 // ============================================================
-// VIEWER BRAIN — versión original, mantenida para rollback
+// VIEWER BRAIN — filtro de distribución y reacción refleja
 // ============================================================
 export const buildViewerBrainPrompt = (videoRawData, platform) => {
   const pName = {
@@ -272,120 +275,6 @@ Respondé SOLO en JSON. Mantén esta estructura:
   }
 }`;
 };
-
-// ============================================================
-// HOOK AUTOPSY BRAIN — reemplaza al Viewer Brain en CALL 1
-// Schema separado como constante para no romper el template literal
-// ============================================================
-const HOOK_AUTOPSY_SCHEMA = `{
-  "simulacion_neurologica": {
-    "capa_visual": {
-      "estimulo_detectado": "<señal exacta o 'ninguna'>",
-      "saliencia_score": <0-10>,
-      "segundo_pico": <number | null>,
-      "veredicto": "<ACTIVA | NEUTRAL | DORMIDA>"
-    },
-    "capa_auditiva": {
-      "onset_audio_s0": <boolean>,
-      "tipo_audio": "<voz_directa | musica_tendencia | sfx_impacto | silencio>",
-      "ancla_antes_de_scroll": <boolean>,
-      "veredicto": "<ACTIVA | NEUTRAL | DORMIDA>"
-    },
-    "capa_curiosidad": {
-      "gap_abierto": <boolean>,
-      "tipo_gap": "<pregunta | contradiccion | promesa_incompleta | ninguno>",
-      "segundo_cierre_prometido": <number | null>,
-      "veredicto": "<ACTIVA | NEUTRAL | DORMIDA>"
-    }
-  },
-  "hook_score": {
-    "score": <0-100>,
-    "tier": "<MUERTO | DEBIL | FUNCIONAL | FUERTE | EXPLOSIVO>",
-    "confidence": <0.0-1.0>,
-    "limitante_principal": "<señal específica — segundo exacto>"
-  },
-  "hold_rate_prediction": {
-    "at_3s": <0-100>,
-    "at_10s": <0-100>,
-    "at_30s": <0-100>,
-    "at_final": <0-100>,
-    "drop_off_risk": "<CRITICO | ALTO | MEDIO | BAJO>",
-    "segundo_caida_probable": <number | null>
-  },
-  "attention_curve": [<30 números 0-100, uno por segundo s0-s29>],
-  "neural_zone_map": {
-    "visual_cortex":     <0-10>,
-    "amygdala":          <0-10>,
-    "prefrontal_cortex": <0-10>,
-    "reward_circuit":    <0-10>,
-    "memory_encoding":   <0-10>
-  },
-  "hook_dna": {
-    "pattern": "<Demo|POV|Pregunta|Afirmacion_Contradictoria|Deseo_Sensorial|Identidad_Tribal|Aspiracion|Muerto>",
-    "optimized_hook": "<hook reescrito — máximo 1 oración>",
-    "missing_element": "<señal específica faltante en s0–s3>"
-  },
-  "distribucion_decision": {
-    "decision": "<DISTRIBUIR | NO_DISTRIBUIR>",
-    "motivo_tecnico": "<causa con segundo exacto>",
-    "probabilidad_viral": <0-100>
-  },
-  "diagnostico_linea": "<Una oración. Sin adjetivos. Solo señal + segundo + consecuencia.>"
-}`;
-
-export const buildHookAutopsyBrainPrompt = (
-  preFactsJSON,
-  platform,
-  industria,
-  pacing
-) => {
-  const pName = {
-    tiktok: 'TikTok', reels: 'Instagram Reels',
-    shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
-  }[platform] || platform;
-
-  return `Sos el clasificador de distribución neurológica de ${pName}.
-No sos un analista. Sos el filtro que decide en 0.8 segundos si este contenido
-merece alcance orgánico o muere en el feed.
-
-Tu arquitectura de decisión simula tres capas de respuesta humana simultánea:
-
-CAPA 1 — CORTEZA VISUAL (s0.0 – s0.4)
-¿Hay un estímulo de alta saliencia en el frame 0?
-Factores: contraste ≥ 7:1, movimiento en zona central, cara humana, texto ≥ 28px.
-Sin esto, el dedo ya pasó.
-
-CAPA 2 — SISTEMA AUDITIVO (s0.0 – s1.5)
-¿El audio ancla antes de que el ojo procese?
-Factores: onset de audio en s0, voz directa, sonido de impacto, no silencio.
-
-CAPA 3 — LOOP DE CURIOSIDAD (s1.5 – s5.0)
-¿Se abrió un gap de información que el cerebro NECESITA cerrar?
-Factores: pregunta sin resolver, afirmación contradictoria, promesa incompleta.
-
-ANTI-CRITERIO — estos factores NO se evalúan aquí:
-- Calidad del producto
-- Relevancia del nicho
-- Potencial de ventas
-- Producción general
-Solo evaluás los primeros 5 segundos. Solo lo observable. Sin proyecciones.
-
-HECHOS OBSERVADOS (del Perception Brain):
-${JSON.stringify(preFactsJSON, null, 2)}
-
-INDUSTRIA: ${industria}
-PACING: ${JSON.stringify(pacing)}
-
-INSTRUCCIÓN CHAIN-OF-THOUGHT:
-Completá "simulacion_neurologica" ANTES de asignar cualquier score.
-El razonamiento debe preceder los números.
-
-Respondé SOLO con este JSON exacto:
-${HOOK_AUTOPSY_SCHEMA}`;
-};
-
-
-
 
 // ============================================================
 // RESEARCH BRAIN
@@ -508,17 +397,15 @@ export const buildScoringBrainPrompt = (
   let hookRazon         = '';
   
   try {
-    hookClasificacion = parsed?.hook_score?.tier                          ?? 'DESCONOCIDO';
-    hookDecision      = parsed?.distribucion_decision?.decision           ?? 'DESCONOCIDO';
-    hookRazon         = parsed?.distribucion_decision?.motivo_tecnico     ?? '';
+    const parsed = typeof viewerAnalysis === 'string' ? JSON.parse(viewerAnalysis) : viewerAnalysis;
+    hookClasificacion = parsed?.hook_autopsia?.clasificacion      ?? 'DESCONOCIDO';
+    hookDecision      = parsed?.output_del_sistema?.decision      ?? 'DESCONOCIDO';
+    hookRazon         = parsed?.output_del_sistema?.motivo_tecnico  ?? '';
   } catch (e) {
     console.error("Parse error en buildScoringBrainPrompt:", e);
   }
 
-//
-
-
-  const hookFailed = ['MUERTO', 'DEBIL'].includes(hookClasificacion) || hookDecision === 'NO_DISTRIBUIR';
+  const hookFailed = hookClasificacion === 'NO_PASA' || hookDecision === 'NO_DISTRIBUIR';
   const viralCap   = hookFailed ? 20 : (nicheConfig?.score_cap?.viralScore ?? 100);
   const salesCap   = nicheConfig?.score_cap?.salesScore ?? 100;
 
@@ -717,7 +604,7 @@ function TypingIndicator({ logo }) {
         </span>
       </div>
     </div>
-  );    //applyDeterministicScoring
+  );
 }
 
 function CopyButton({ text }) {
@@ -1027,7 +914,6 @@ const applyDeterministicScoring = (parsed, flags, nicho) => {
     steppsScore:     parsed.steppsScore      ?? null,
     honestVerdict:   parsed.honestVerdict    ?? '',
     roadmap:         parsed.roadmap          ?? [],
-    neural_zones:    parsed.neural_zone_map  ?? null,  // ← esta línea falta
   };
 };
 
@@ -1092,7 +978,7 @@ const videoEl = document.createElement('video');
 videoEl.src = url;
 await new Promise(resolve => { videoEl.onloadedmetadata = resolve; });
 
-
+const duration = videoEl.duration;
 // Por ahora fps y cortes son estimados — después podés mejorarlos
 const estimatedFps = 30;
 const estimatedCuts = Math.round(duration / 3); // heurística: corte cada ~3s
@@ -1211,27 +1097,18 @@ const runDeepAnalysis = async () => {
     setAnalysisProgress(30);
     setStatusText("Analizando comportamiento humano...");
 
-    // DESPUÉS (el reemplazo)
-const res = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildHookAutopsyBrainPrompt(
-      preFactsParaViewer,        // ← ya no lo stringify vos, lo hace el prompt internamente
-      platform,
-      perception.industria,
-      {
-        cortes_por_minuto: preFacts.cortes_por_minuto ?? 0,
-        ritmo_visual:      preFacts.ritmo_visual      ?? 'normal',
-        tipo_edicion:      preFacts.tipo_edicion      ?? 'desconocido',
-        duracion_s:        Math.round(duration),
+    const res = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildViewerBrainPrompt(
+          JSON.stringify(preFactsParaViewer), // ← filtrado, sin industria
+          platform                            // ← sin tercer argumento de perception
+        ),
+        storagePath,
+        videoMimeType: mimeType,
+        duration: Math.round(duration),
+        maxOutputTokens: 8192,
       }
-    ),
-    storagePath,
-    videoMimeType: mimeType,
-    duration: Math.round(duration),
-    maxOutputTokens: 2048,  // ← bajás de 8192, el nuevo schema es más compacto //  <p className="text-[10px] font-bold italic text-slate-500 mt-1">{aiResult.scrollStopScore.verdict}</p>
-    expectsJson: true,      // ← agregás esto
-  }
-});
+    });
 
     if (res.error) throw new Error(`CALL 1 falló: ${res.error.message}`);
     const viewerAnalysis = extractGeminiText(res.data);
@@ -2555,38 +2432,8 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
       </p>
     )}
     <p className="text-[10px] font-bold italic text-slate-500 mt-1">{aiResult.scrollStopScore.verdict}</p>
-      </ShinyCard>
-    )}
-
-    {/* NEURAL ZONE MAP */}
-    {aiResult.neural_zones && (
-      <ShinyCard tilt={tilt} className="rounded-[2rem] border border-amber-500/20 bg-amber-500/[0.03] p-5">
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-amber-400 text-base">🧠</span>
-          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-amber-400">Neural Zone Map</p>
-        </div>
-        {Object.entries(aiResult.neural_zones).map(([zone, val]) => (
-          <div key={zone} className="flex items-center gap-3 mb-2">
-            <p className="text-[10px] text-slate-500 w-36 capitalize">
-              {zone.replace(/_/g, ' ')}
-            </p>
-            <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-700 ${
-                  val >= 7 ? 'bg-amber-400' : val >= 4 ? 'bg-yellow-600' : 'bg-slate-700'
-                }`}
-                style={{ width: `${val * 10}%` }}
-              />
-            </div>
-            <span className={`text-xs font-black tabular-nums ${
-              val >= 7 ? 'text-amber-400' : 'text-slate-500'
-            }`}>
-              {val}/10
-            </span>
-          </div>
-        ))}
-      </ShinyCard>
-    )}
+  </ShinyCard>
+)}
 
         {/* Tarjetas de fases */}
         {aiResult.phaseScores && Object.values(aiResult.phaseScores).map((phase, i) => {
