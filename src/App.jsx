@@ -157,6 +157,10 @@ const safeParseJSON = (rawText, context = '') => {
   throw new Error(`JSON malformado. Preview: "${rawText.slice(0, 80)}..."`);
 };
 
+
+
+
+
 // ============================================================
 // HELPER FUNCION - Limpia el markdown del output de la IA
 // ============================================================
@@ -164,6 +168,7 @@ const limpiarJSON = (str) => {
   if (typeof str !== 'string') return str;
   return str.replace(/```json/gi, '').replace(/```/gi, '').trim();
 };
+
 export const NICHE_MOTORS = {
   "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
   "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
@@ -178,19 +183,54 @@ export const NICHE_MOTORS = {
 
 // ============================================================
 // CAP TABLE — caps deterministas por intención de hook
-// Independiente de lo que diga la IA
 // ============================================================
 export const HOOK_INTENCION_CAPS = {
-  social:          22,   // "Hola mis papachos", saludos, bienvenidas
-  informativo:     40,   // "Hoy les enseño...", "En este video..."
-  entretenimiento: 45,   // humor, carisma, sin propuesta de negocio
-  valor:          100,   // problema, solución, beneficio concreto
-  tension:        100,   // "Lo que nadie te dice...", "El error que..."
-  demo:           100,   // producto/servicio en acción desde frame 0
+  social:          22,
+  informativo:     40,
+  entretenimiento: 45,
+  valor:          100,
+  tension:        100,
+  demo:           100,
 };
 
 // ============================================================
-// PRE-CLASSIFIER — extrae hechos observables del video
+// HELPER — deriva cap determinista por intención de hook
+// Cascada de 3 niveles: hook_intencion → flags → conservador
+// ============================================================
+export const deriveViralCapFromPreFacts = (preFacts, nicheConfig) => {
+  const nicheCapBase = nicheConfig?.score_cap?.viralScore ?? 100;
+
+  // Nivel 1: intención declarada por la IA
+  const intencion = preFacts?.hook_intencion;
+  if (intencion && HOOK_INTENCION_CAPS[intencion] !== undefined) {
+    return Math.min(HOOK_INTENCION_CAPS[intencion], nicheCapBase);
+  }
+
+  // Nivel 2: fallback por flags si hook_intencion no vino
+  const tienePropuesta  = preFacts?.flags_de_calidad?.hook_tiene_propuesta_valor;
+  const conectaObjetivo = preFacts?.flags_de_calidad?.hook_conecta_con_objetivo;
+  const hookType        = preFacts?.hook_type_detectado ?? '';
+  const hookLibre       = (preFacts?.hook_libre ?? '').toLowerCase();
+
+  const esSocial = hookType === 'muerto' || hookType === 'debil' ||
+    /^(hola|buenas|bienvenid|qué tal|cómo est|hey |saludos)/.test(hookLibre);
+
+  if (esSocial)                              return Math.min(HOOK_INTENCION_CAPS.social, nicheCapBase);
+  if (tienePropuesta === false)              return Math.min(HOOK_INTENCION_CAPS.entretenimiento, nicheCapBase);
+  if (conectaObjetivo === false)             return Math.min(HOOK_INTENCION_CAPS.informativo, nicheCapBase);
+  if (hookType === 'explosivo')              return nicheCapBase;
+  if (hookType === 'bait_con_puente')        return nicheCapBase;
+  if (hookType === 'curiosidad_desconexion') return Math.min(70, nicheCapBase);
+  if (hookType === 'apertura_informativa')   return Math.min(HOOK_INTENCION_CAPS.informativo, nicheCapBase);
+
+  // Nivel 3: sin datos suficientes — cap conservador
+  return Math.min(60, nicheCapBase);
+};
+
+
+
+// ============================================================
+// PRE-CLASSIFIER — extrae hechos observables + curva de atención
 // ============================================================
 export const buildPreClassifierPrompt = (meta = '') => `
 Sos un extractor de métricas frías. Tu único trabajo es registrar señales observables en el video sin emitir juicios de valor.
@@ -218,9 +258,9 @@ Respondé SOLO con este JSON exacto:
     "hook_tiene_propuesta_valor": <boolean — true SOLO si el hook contiene señal de problema, solución, beneficio o resultado concreto. Un saludo, frase de carisma, expresión afectiva o apertura social es SIEMPRE false, sin excepción.>,
     "hook_conecta_con_objetivo":  <boolean — true si el hook predice el contenido del video. false si la retención depende de simpatía o entretenimiento desconectados del producto o servicio.>
   },
-  "hook_intencion": "<social|informativo|valor|tension|demo|entretenimiento — elegí UNO según estas definiciones exactas:
-    social          = saludo, bienvenida, expresión afectiva ('Hola mis papachos', '¿Cómo están?', 'Buenas tardes')
-    informativo     = anuncia contenido sin crear urgencia ('Hoy les enseño...', 'En este video vemos...')
+  "hook_intencion": "<social|informativo|valor|tension|demo|entretenimiento — elegí UNO:
+    social          = saludo, bienvenida, expresión afectiva ('Hola mis papachos', '¿Cómo están?')
+    informativo     = anuncia contenido sin crear urgencia ('Hoy les enseño...', 'En este video...')
     entretenimiento = humor, carisma, sorpresa visual sin propuesta de negocio
     valor           = menciona problema concreto, ahorro, resultado o beneficio medible antes del segundo 3
     tension         = genera pregunta abierta, contradicción o dato disruptivo que obliga a seguir viendo
@@ -237,6 +277,23 @@ Respondé SOLO con este JSON exacto:
   "hook_type_detectado": "<explosivo|bait_con_puente|bait_desconectado|curiosidad_desconexion|apertura_informativa|debil|muerto>",
   "hook_confianza": <0.0 a 1.0>,
 
+  "neuro_signals": {
+    "estimulo_visual_s0":   "<qué detecta el sistema visual en frame 0 — objeto, persona o texto exacto, sin adjetivos>",
+    "estimulo_auditivo_s0": "<señal de audio exacta o 'silencio'>",
+    "patron_interrupcion":  "<SI|NO — algo inesperado que fuerza atención involuntaria en los primeros 2 segundos>",
+    "activacion_amigdala":  "<amenaza|recompensa|neutral — qué sistema emocional se activa>",
+    "carga_cognitiva":      "<alta|media|baja — esfuerzo mental para procesar el hook>"
+  },
+
+  "attention_curve": [
+    {
+      "segundo":            <number — cada segundo del video, desde 0>,
+      "retencion_estimada": <0-100 — porcentaje de audiencia que sigue viendo en ese segundo>,
+      "evento":             "<qué pasa en ese segundo que sube o baja la retención>",
+      "riesgo_caida":       "<alto|medio|bajo|ninguno>"
+    }
+  ],
+
   "observaciones": [
     {
       "tipo":        "<error|fortaleza>",
@@ -247,36 +304,40 @@ Respondé SOLO con este JSON exacto:
   ]
 }
 
-REGLA PARA "observaciones": No hay límite de items. Registrá todo lo que detectes — errores de dirección de mirada, texto ilegible, desincronización audio/video, CTA tardío, falta de prueba social, ritmo roto, identidad de marca ausente, etc. Si no detectás nada relevante, devolvé un array vacío. Nunca omitas un problema real por no tener un campo predefinido para él.
+REGLAS:
+- "attention_curve": un objeto por cada segundo del video. Si la duración es 30s, devolvés 30 objetos. Empezá siempre desde segundo 0.
+- "observaciones": sin límite de items. Registrá todo — mirada, texto ilegible, audio desincronizado, CTA tardío, marca ausente, etc. Array vacío si no hay nada relevante.
+- Nunca uses adjetivos en campos de observación directa. Solo hechos.
 `;
 
 // ============================================================
-// VIEWER BRAIN — filtro de distribución y reacción refleja
+// VIEWER BRAIN — simulador de audiencia, no analista
 // ============================================================
 export const buildViewerBrainPrompt = (videoRawData, platform) => {
   const pName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
   }[platform] || platform;
 
-  return `Operás como el filtro de distribución inicial de ${pName}. Tu función es simular la reacción visceral del espectador en el primer segundo de exposición.
+  return `Sos un modelo computacional de respuesta de audiencia en ${pName}.
+No analizás el video — lo experimentás como lo haría un espectador en el momento exacto en que aparece en su feed, sin contexto previo.
 
-Regla principal: El espectador promedio desliza (scrollea) por defecto. Solo se detiene si hay un estímulo de alto impacto inmediato.
+Regla de base: el espectador scrollea por defecto. Solo para si recibe un estímulo de alto impacto en el primer segundo. Sin estímulo claro = dedo sigue.
 
-VIDEO:
+DATOS DEL VIDEO:
 ---
 ${videoRawData}
 ---
 
-INSTRUCCIONES:
-1. Evaluá estrictamente los primeros 3 segundos.
-2. Registrá la "reaccion_visceral" como el primer campo de tu respuesta.
-3. Completá el resto del análisis basándote en hechos técnicos que expliquen esa reacción inicial.
+PROTOCOLO:
+1. Registrá "reaccion_visceral" PRIMERO — antes de cualquier análisis.
+2. Completá el resto basándote en hechos técnicos que expliquen esa reacción.
+3. Si el estímulo es insuficiente en algún segundo, reportalo como pérdida de atención. No suavices.
 
-Respondé SOLO en JSON. Mantén esta estructura:
+Respondé SOLO en JSON:
 {
   "reaccion_visceral": {
-    "scroll_parado": "<SI|NO>",
-    "causa_especifica": "<señal exacta que causó la reacción — o 'ninguna' si el dedo siguió>",
+    "scroll_parado":      "<SI|NO>",
+    "causa_especifica":   "<señal exacta que causó la reacción — o 'ninguna' si el dedo siguió>",
     "segundo_de_impacto": "<número o 'NUNCA'>"
   },
   "lectura_de_señales": {
@@ -406,43 +467,7 @@ Respondé SOLO con este JSON:
 };
 
 // ============================================================
-// HELPER — deriva cap determinista por intención de hook
-// Si la IA no devolvió hook_intencion, hace fallback por flags
-// ============================================================
-export const deriveViralCapFromPreFacts = (preFacts, nicheConfig) => {
-  const nicheCapBase = nicheConfig?.score_cap?.viralScore ?? 100;
-
-  // 1. Intención declarada por la IA — path principal
-  const intencion = preFacts?.hook_intencion;
-  if (intencion && HOOK_INTENCION_CAPS[intencion] !== undefined) {
-    return Math.min(HOOK_INTENCION_CAPS[intencion], nicheCapBase);
-  }
-
-  // 2. Fallback determinista si la IA no devolvió hook_intencion
-  //    Derivamos la intención a partir de los flags que SÍ tenemos
-  const tienePropuesta  = preFacts?.flags_de_calidad?.hook_tiene_propuesta_valor;
-  const conectaObjetivo = preFacts?.flags_de_calidad?.hook_conecta_con_objetivo;
-  const hookType        = preFacts?.hook_type_detectado ?? '';
-  const hookLibre       = (preFacts?.hook_libre ?? '').toLowerCase();
-
-  // Señales de hook social/débil — sin necesidad del campo hook_intencion
-  const esSocial = hookType === 'muerto' || hookType === 'debil' ||
-    /^(hola|buenas|bienvenid|qué tal|cómo est|hey |saludos)/.test(hookLibre);
-
-  if (esSocial)                              return Math.min(HOOK_INTENCION_CAPS.social, nicheCapBase);
-  if (tienePropuesta === false)              return Math.min(HOOK_INTENCION_CAPS.entretenimiento, nicheCapBase);
-  if (conectaObjetivo === false)             return Math.min(HOOK_INTENCION_CAPS.informativo, nicheCapBase);
-  if (hookType === 'explosivo')              return nicheCapBase;
-  if (hookType === 'bait_con_puente')        return nicheCapBase;
-  if (hookType === 'curiosidad_desconexion') return Math.min(70, nicheCapBase);
-  if (hookType === 'apertura_informativa')   return Math.min(HOOK_INTENCION_CAPS.informativo, nicheCapBase);
-
-  // 3. Sin información suficiente — cap conservador
-  return Math.min(60, nicheCapBase);
-};
-
-// ============================================================
-// SCORING BRAIN — Puntuación final con Chain of Thought
+// SCORING BRAIN — Clasificador final con métricas estilo Higgsfield
 // ============================================================
 export const buildScoringBrainPrompt = (
   videoRawData, strategyAnalysisRaw, viewerAnalysisRaw,
@@ -468,51 +493,68 @@ export const buildScoringBrainPrompt = (
     console.error("Parse error en buildScoringBrainPrompt:", e);
   }
 
-  const hookFailed = hookClasificacion === 'NO_PASA' || hookDecision === 'NO_DISTRIBUIR';
+  const hookFailed    = hookClasificacion === 'NO_PASA' || hookDecision === 'NO_DISTRIBUIR';
+  const viralCapFinal = hookFailed ? 20 : deriveViralCapFromPreFacts(preFacts, nicheConfig);
+  const salesCap      = nicheConfig?.score_cap?.salesScore ?? 100;
 
-  // Cap determinista en cascada — no depende de un solo campo
-  const viralCapFinal = hookFailed
-    ? 20
-    : deriveViralCapFromPreFacts(preFacts, nicheConfig);
-
-  const salesCap = nicheConfig?.score_cap?.salesScore ?? 100;
-
-  // Explicación del cap para el prompt — el modelo entiende por qué existe el límite
   const intencionDetectada = preFacts?.hook_intencion ?? 'no_declarada';
   const capReason = hookFailed
     ? `El hook NO pasó el filtro del Viewer Brain. Cap duro: 20.`
     : viralCapFinal < 100
-      ? `Hook de intención "${intencionDetectada}" — retención no calificada para negocio. Cap aplicado: ${viralCapFinal}.`
+      ? `Hook de intención "${intencionDetectada}" — retención no calificada para negocio. Cap: ${viralCapFinal}.`
       : '';
 
-  return `Sos el clasificador algorítmico final de ${pName}. Asignás puntuaciones matemáticas precisas a las señales extraídas del video.
+  // Extraer hold_rate de attention_curve del pre-classifier si existe
+  const attentionCurve = preFacts?.attention_curve ?? [];
+  const duracion       = preFacts?.metricas_tecnicas?.duracion_estimada_segundos ?? 0;
+  const s3             = attentionCurve.find(s => s.segundo === 3)?.retencion_estimada ?? null;
+  const sMid           = attentionCurve.find(s => s.segundo === Math.floor(duracion / 2))?.retencion_estimada ?? null;
+  const sFinal         = attentionCurve.find(s => s.segundo === duracion - 1)?.retencion_estimada ?? null;
+
+  const holdRateContext = attentionCurve.length > 0
+    ? `CURVA DE ATENCIÓN DETECTADA: retención s3=${s3 ?? '?'}% | s${Math.floor(duracion/2)}=${sMid ?? '?'}% | final=${sFinal ?? '?'}%`
+    : '';
+
+  return `Sos el clasificador algorítmico final de ${pName}. Producís métricas predictivas de performance basadas en el análisis multimodal del video.
 
 RESULTADO PREVIO DEL SISTEMA:
 HOOK:      ${hookClasificacion}
 ALGORITMO: ${hookDecision}
 ${hookRazon ? `CAUSA:     ${hookRazon}` : ''}
+${holdRateContext}
 
 LÍMITES DE PUNTUACIÓN ESTRICTOS:
-- viralScore MÁXIMO PERMITIDO EN ESTE ANÁLISIS: ${viralCapFinal}.
-- salesScore MÁXIMO PERMITIDO EN ESTE ANÁLISIS: ${salesCap}.
+- viralScore MÁXIMO: ${viralCapFinal}
+- salesScore MÁXIMO: ${salesCap}
 ${capReason ? `MOTIVO DEL CAP: ${capReason}` : ''}
 
 DATOS PARA PROCESAR:
-VIDEO RAW: ${videoRawData}
-DIAGNÓSTICO: ${strategyAnalysis}
+DIAGNÓSTICO ESTRATÉGICO: ${strategyAnalysis}
+SEÑALES NEURO: ${JSON.stringify(preFacts?.neuro_signals ?? {})}
 
-INSTRUCCIÓN DE FLUJO DE TRABAJO (CHAIN OF THOUGHT):
-Es vital que completes el campo "analisis_previo_obligatorio" ANTES de asignar las puntuaciones numéricas. Esto garantiza que tus números sean el resultado directo de la evidencia técnica y respeten los límites máximos establecidos.
+INSTRUCCIÓN DE FLUJO (CHAIN OF THOUGHT):
+Completá "chain_of_thought" ANTES de cualquier número. Los scores son consecuencia del razonamiento.
 
 Respondé SOLO en JSON, respetando este orden exacto de claves:
 {
-  "analisis_previo_obligatorio": {
-    "justificacion_rango_viral":  "<Explicá en qué rango caerá el viralScore y por qué respeta el límite de ${viralCapFinal}>",
-    "justificacion_rango_ventas": "<Explicá en qué rango caerá el salesScore asegurando respetar el límite de ${salesCap}>"
+  "chain_of_thought": "<2 oraciones: qué determinó los scores y por qué respetan los caps>",
+
+  "hook_metrics": {
+    "hook_score":          <0-100 — capacidad del primer segundo de detener el scroll>,
+    "peak_hook_timestamp": <número — segundo exacto de mayor impacto>,
+    "hook_clasificacion":  "<explosivo|fuerte|medio|debil|muerto>"
   },
+
+  "hold_rate": {
+    "prediccion_3s":         <0-100 — % de audiencia que llega al segundo 3>,
+    "prediccion_50pct":      <0-100 — % que llega a la mitad del video>,
+    "prediccion_final":      <0-100 — % que ve el video completo>,
+    "causa_principal_caida": "<segundo exacto + señal que provoca la mayor caída>"
+  },
+
   "viralScore": {
-    "score":        <number — LIMITADO estrictamente a ${viralCapFinal}>,
-    "verdict":      "<señal específica que justifica este número>",
+    "score":        <number — LIMITADO a ${viralCapFinal}>,
+    "verdict":      "<señal específica que justifica el número>",
     "accion_clave": "<qué cambiar y en qué segundo exacto>"
   },
   "salesScore": {
@@ -526,20 +568,20 @@ Respondé SOLO en JSON, respetando este orden exacto de claves:
   },
   "hookDNA": {
     "pattern":       "<Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Deseo_Sensorial|Identidad_Tribal|Aspiracion|Muerto|Otro>",
-    "optimizedHook": "<hook reescrito optimizado para el nicho>"
+    "optimizedHook": "<hook reescrito para el nicho, máximo 12 palabras>"
   },
   "steppsScore": {
     "dominantFactor":  "<factor STEPPS más fuerte>",
     "weakestFactor":   "<factor STEPPS más débil>",
     "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
   },
-  "honestVerdict": "<Veredicto técnico en 2 oraciones. Si el hook falló, indicá el segundo exacto y la señal faltante.>",
+  "honestVerdict": "<diagnóstico en 1 línea — si el hook falló, segundo exacto y señal faltante>",
   "roadmap": [
     {
       "impacto":   "<ALTO|MEDIO|BAJO>",
       "problema":  "<segundo exacto + elemento específico>",
       "solucion":  "<instrucción ejecutable para el editor>",
-      "resultado": "<métrica o comportamiento que se busca mejorar>"
+      "resultado": "<métrica que mejora>"
     }
   ]
 }`;
@@ -905,7 +947,7 @@ const deductGems = async (amount, reason) => {
   }
 };
 
-const saveChatToHistory = async (messages) => {  //const state = data?.state;           // undefined
+const saveChatToHistory = async (messages) => {  //
   if (!currentHistoryId) return;
   await supabase
     .from('analysis_history')
