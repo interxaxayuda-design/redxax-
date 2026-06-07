@@ -34,7 +34,7 @@ const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 const PLATFORMS = [
   { id: 'tiktok',   label: 'TikTok',               emoji: '🎵' }, //text: `${buildSystemInstructions(platform, followerRange, 'script', {}, selectedObjetivo)}\n\nAnaliza este concepto/guion: ${scriptText}`
   { id: 'reels',    label: 'Instagram Reels',        emoji: '📸' },
-  { id: 'shorts',   label: 'YouTube Shorts',         emoji: '▶️' },
+  { id: 'shorts',   label: 'YouTube Shorts',         emoji: '▶️' }, //preHookType
   { id: 'all',      label: 'Todas las plataformas',  emoji: '🌐' },
 ];
 
@@ -157,10 +157,6 @@ const safeParseJSON = (rawText, context = '') => {
   throw new Error(`JSON malformado. Preview: "${rawText.slice(0, 80)}..."`);
 };
 
-
-
-
-
 const limpiarJSON = (str) => {
   if (typeof str !== 'string') return str;
   const backtick = '\x60';
@@ -169,7 +165,10 @@ const limpiarJSON = (str) => {
   return str.replace(fence, '').replace(fenceClose, '').trim();
 };
 
- 
+// ============================================================
+// NICHE CONFIG
+// motor psicológico + multiplicadores de peso por nicho
+// ============================================================
 export const NICHE_MOTORS = {
   "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
   "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
@@ -181,234 +180,339 @@ export const NICHE_MOTORS = {
                           score_cap: { viralScore: 55, salesScore: 35 },
                           limitacion: "audio_no_evaluable" }
 };
- 
+
+// Multiplicadores de peso por nicho
+// Modifican el impacto de cada sistema de fallo sin cambiar la arquitectura
+export const NICHE_WEIGHT_MULTIPLIERS = {
+  "producto_fisico":    { retention: 1.0, tension: 1.1, payoff: 1.4, clarity: 0.9, trust: 1.3 },
+  "comida_restaurante": { retention: 1.2, tension: 0.9, payoff: 1.1, clarity: 0.8, trust: 1.4 },
+  "inmobiliaria":       { retention: 0.9, tension: 1.0, payoff: 1.2, clarity: 1.3, trust: 1.2 },
+  "app_saas":           { retention: 1.0, tension: 1.2, payoff: 1.3, clarity: 1.4, trust: 1.1 },
+  "estetica":           { retention: 1.1, tension: 1.0, payoff: 1.3, clarity: 0.9, trust: 1.0 },
+  "educacion":          { retention: 1.0, tension: 1.5, payoff: 1.0, clarity: 1.4, trust: 0.9 },
+  "musica_artista":     { retention: 1.3, tension: 0.8, payoff: 0.9, clarity: 0.7, trust: 0.8 },
+};
+
 // ============================================================
-// PRE-CLASSIFIER — observación pura, cero juicio
+// PRE-CLASSIFIER — señales atómicas, hechos difíciles de inflar
+// Gemini solo observa. No estima, no juzga, no da números abstractos.
 // ============================================================
 export const buildPreClassifierPrompt = (meta = '') => `
 Sos una cámara con memoria. Registrás lo que existe en el video. No opinás, no evaluás, no inferís intención.
 ${meta ? `METADATA: ${meta}` : ''}
- 
-Respondé SOLO con este JSON exacto:
+
+Respondé SOLO con este JSON exacto. Cada campo es un hecho observable:
 {
   "industria": "<micro-nicho ultra-específico>",
   "palanca_psicologica": "<emoción primaria observable>",
-  "flags_visuales": {
-    "logo_en_s0":             <boolean>,
-    "imagen_alto_impacto":    <boolean>,
-    "sujeto_ancla_en_s0":     <boolean>,
-    "transformacion_visible": <boolean>
+
+  "atomicas": {
+    "human_face_in_frame0":       <boolean>,
+    "audio_in_first_second":      <boolean>,
+    "cuts_per_10s":               <number — cortes cada 10 segundos>,
+    "average_shot_duration_s":    <number — duración promedio de cada plano en segundos>,
+    "silence_duration_s":         <number — segundos totales sin audio o con audio plano>,
+    "motion_intensity":           <number 0.0-1.0 — 0 es plano estático, 1 es movimiento máximo>,
+    "payoff_second":              <number — segundo en que aparece el resultado o cambio prometido>,
+    "rehook_present":             <boolean — hay algo entre segundo 8 y 15 que retenga>,
+    "text_overlay_present":       <boolean>,
+    "duration_total_s":           <number>
   },
-  "flags_narrativos": {
-    "pregunta_al_espectador":    <boolean>,
-    "afirmacion_contradictoria": <boolean>,
-    "audio_desde_s0":            <boolean>,
-    "dolor_antes_s5":            <boolean>,
-    "tiene_rehook":              <boolean>
-  },
-  "metricas_tecnicas": {
-    "duracion_estimada_segundos": <number>,
-    "es_slideshow_imagenes":      <boolean>,
-    "porcentaje_video_real":      <number 0-100>,
-    "tipo_edicion":               "<cinematica|dinamica|UGC|infomercial|estatica>",
-    "ritmo_visual":               "<rapido|normal|lento>",
-    "cortes_por_minuto":          <number>
-  },
-  "hook_libre": "<transcripción exacta de lo que se ve y escucha en los primeros 3 segundos — sin adjetivos, sin juicio>",
-  "hook_type_detectado": "<explosivo|bait_con_puente|bait_desconectado|curiosidad_desconexion|apertura_informativa|debil|muerto>",
-  "hook_confianza": <0.0 a 1.0>,
+
   "hook_gate": {
-    "pregunta_activa_en_espectador": "<Completá esta oración exacta o escribí NINGUNA: 'El espectador en el segundo 0 se pregunta: ...' — si no podés completarla con algo específico, concreto e involuntario, escribí NINGUNA>",
-    "elemento_que_retiene": "<Nombrá el elemento exacto que ancla al espectador en los primeros 2 segundos. Si no existe, escribí NINGUNO>",
-    "veredicto_gate": "<PASA|MUERTO>"
+    "pregunta_activa_en_espectador": "<Completá esta oración o escribí NINGUNA: 'El espectador en el segundo 0 se pregunta: ...' — si no podés completarla con algo específico y concreto, escribí NINGUNA>",
+    "elemento_que_retiene":          "<El elemento exacto que ancla al espectador en los primeros 2 segundos. Si no existe, escribí NINGUNO>",
+    "veredicto_gate":                "<PASA|MUERTO>"
   },
-  "espera": {
-    "segundos_hasta_payoff": <number — segundos desde el hook hasta que aparece el resultado o cambio prometido>,
-    "que_ocurre_durante_la_espera": "<descripción literal de lo que se ve y escucha entre el hook y el payoff — sin juicio>",
-    "hay_estimulo_durante_espera": <boolean — ¿hay algo que ocurre visualmente o auditivamente durante esa espera, sea lo que sea?>
+
+  "hook_libre":         "<transcripción exacta de lo que se ve y escucha en los primeros 3 segundos — sin adjetivos>",
+  "hook_type_detectado": "<explosivo|bait_con_puente|bait_desconectado|curiosidad_desconexion|apertura_informativa|debil|muerto>",
+  "hook_confianza":     <0.0 a 1.0>
+}
+`;
+
+// ============================================================
+// COGNITIVE SCAN — señales que requieren inteligencia contextual
+// Gemini estima. Cada señal devuelve value + confidence.
+// confidence baja = JS reduce el impacto de esa señal.
+// ============================================================
+export const buildCognitiveScanPrompt = (videoRawData, industria) => `
+Sos un sistema de detección de señales psicológicas. Analizás el video y estimás la intensidad de señales que no pueden medirse mecánicamente.
+
+Regla: devolvés números honestos. Si no podés estimar algo con confianza, bajás el confidence. No inflés value para compensar.
+
+INDUSTRIA: ${industria}
+
+VIDEO:
+---
+${videoRawData}
+---
+
+Respondé SOLO con este JSON. Cada señal tiene value (0.0-1.0) y confidence (0.0-1.0):
+{
+  "open_loop_intensity": {
+    "value":      <0.0-1.0 — ¿qué tan fuerte es la pregunta sin responder que arrastra al espectador?>,
+    "confidence": <0.0-1.0>
+  },
+  "first_second_interruption": {
+    "value":      <0.0-1.0 — ¿qué tan probable es que interrumpa el scroll en el primer segundo?>,
+    "confidence": <0.0-1.0>
+  },
+  "narrative_clarity": {
+    "value":      <0.0-1.0 — ¿qué tan claro queda qué está pasando y por qué mirar?>,
+    "confidence": <0.0-1.0>
+  },
+  "cognitive_refresh_rate": {
+    "value":      <0.0-1.0 — ¿con qué frecuencia aparece algo cognitivamente nuevo, no solo un corte?>,
+    "confidence": <0.0-1.0>
+  },
+  "perceived_ad_density": {
+    "value":      <0.0-1.0 — ¿qué tan fuerte es la señal de publicidad o contenido forzado?>,
+    "confidence": <0.0-1.0>
+  },
+  "novelty": {
+    "value":      <0.0-1.0 — ¿qué tan diferente es esto de lo que ya existe en el nicho?>,
+    "confidence": <0.0-1.0>
+  },
+  "identity_signal": {
+    "value":      <0.0-1.0 — ¿activa identidad tribal o pertenencia de grupo?>,
+    "confidence": <0.0-1.0>
+  },
+  "emotional_charge": {
+    "value":      <0.0-1.0 — ¿qué tanta emoción real genera, ignorando estructura?>,
+    "confidence": <0.0-1.0>
   }
 }
 `;
- 
+
 // ============================================================
-// HOOK GATE — restricción dura en JS, sin intervención del modelo
+// HOOK GATE — veto duro en JS antes de cualquier scoring
 // ============================================================
 export const deriveHookGateStatus = (preFacts) => {
   const gate     = preFacts?.hook_gate;
   const hookType = preFacts?.hook_type_detectado ?? '';
-  const espera   = preFacts?.espera;
- 
+  const atomicas = preFacts?.atomicas ?? {};
+
   if (!gate) return { passed: null, reason: 'gate_no_disponible' };
- 
+
   if (hookType === 'muerto') {
     return { passed: false, reason: 'hook_type_clasificado_como_muerto' };
   }
- 
+
   if (gate.veredicto_gate === 'MUERTO') {
     return {
       passed: false,
       reason: `sin_retencion_cognitiva — pregunta: "${gate.pregunta_activa_en_espectador}" / elemento: "${gate.elemento_que_retiene}"`
     };
   }
- 
-  // Espera larga sin ningún estímulo → veto
-  const segundosEspera = Number(espera?.segundos_hasta_payoff ?? 0);
-  const hayEstimulo    = espera?.hay_estimulo_durante_espera ?? true;
- 
-  if (segundosEspera > 8 && !hayEstimulo) {
+
+  // Espera vacía larga: payoff tarde sin nada en el medio
+  const payoffS       = Number(atomicas.payoff_second ?? 0);
+  const silenceS      = Number(atomicas.silence_duration_s ?? 0);
+  const cutsP10       = Number(atomicas.cuts_per_10s ?? 0);
+  const hasRehook     = atomicas.rehook_present ?? false;
+  const motionInt     = Number(atomicas.motion_intensity ?? 0);
+
+  // Sin estímulo real durante la espera → veto
+  const emptywait = payoffS > 8 && cutsP10 < 3 && motionInt < 0.2 && !hasRehook;
+  if (emptywait) {
     return {
       passed: false,
-      reason: `espera_vacia — ${segundosEspera}s sin estímulo: "${espera?.que_ocurre_durante_la_espera}"`
+      reason: `espera_vacia — payoff en ${payoffS}s sin cortes ni movimiento`
     };
   }
- 
-  const waitPenalty = (segundosEspera > 4 && !hayEstimulo)
-    ? { segundos: segundosEspera, detalle: espera?.que_ocurre_durante_la_espera }
+
+  // Penalización registrada si la espera es riesgosa (sin veto total)
+  const waitPenalty = (payoffS > 4 && cutsP10 < 5 && !hasRehook)
+    ? { segundos: payoffS, cuts: cutsP10 }
     : null;
- 
+
   return {
     passed: true,
     reason: `retencion_confirmada: ${gate.elemento_que_retiene}`,
     waitPenalty
   };
 };
- 
+
 // ============================================================
-// DERIVAR CAP DE VIRALIDAD — restricción matemática en JS
-// El modelo recibe un número, no una instrucción
+// DERIVE FAILURE SYSTEMS — JS transforma señales en principios
+// Aquí nacen los 5 sistemas abstractos de fallo (0.0 = sin fallo, 1.0 = fallo total)
 // ============================================================
-export const deriveViralCap = (hookGateStatus, viewerAnalysisRaw, nicheConfig = null) => {
-  let cap = nicheConfig?.score_cap?.viralScore ?? 100;
- 
+export const deriveFailureSystems = (preFacts, cognitiveScan) => {
+  const a = preFacts?.atomicas ?? {};
+  const c = (key) => {
+    const sig = cognitiveScan?.[key];
+    if (!sig) return 0;
+    return (sig.value ?? 0) * (sig.confidence ?? 0.5);
+  };
+
+  // Normalización de atómicas a escala 0-1
+  const cutsNorm    = Math.min((a.cuts_per_10s ?? 0) / 20, 1);        // 20 cortes/10s = máximo
+  const silenceNorm = Math.min((a.silence_duration_s ?? 0) / 10, 1);  // 10s silencio = máximo fallo
+  const motionNorm  = a.motion_intensity ?? 0;
+  const shotDurNorm = Math.min((a.average_shot_duration_s ?? 5) / 8, 1); // >8s por plano = lento
+  const payoffNorm  = Math.min((a.payoff_second ?? 30) / 30, 1);      // >30s = fallo total
+  const rehook      = a.rehook_present ? 0 : 1;                        // sin rehook = fallo
+  const refreshRate = c('cognitive_refresh_rate');
+
+  // ── RETENTION FAILURE (0.40) ──────────────────────────────
+  // ¿El espectador se queda? Combina atómicas de ritmo + cognitivas de refresh
+  const retention_failure =
+    silenceNorm * 0.30 +
+    shotDurNorm * 0.20 +
+    (1 - cutsNorm) * 0.15 +
+    (1 - motionNorm) * 0.10 +
+    rehook * 0.15 +
+    (1 - refreshRate) * 0.10;
+
+  // ── TENSION FAILURE (0.30) ────────────────────────────────
+  // ¿Hay algo pendiente de resolver que jale hacia adelante?
+  const open_loop = c('open_loop_intensity');
+  const interrupt  = c('first_second_interruption');
+  const tension_failure =
+    (1 - open_loop) * 0.50 +
+    (1 - interrupt) * 0.30 +
+    rehook * 0.20;
+
+  // ── PAYOFF FAILURE (0.15) ─────────────────────────────────
+  // ¿Llegó lo prometido y llegó a tiempo?
+  const payoff_failure =
+    payoffNorm * 0.70 +
+    (1 - (a.rehook_present ? 1 : 0)) * 0.30;
+
+  // ── CLARITY FAILURE (0.10) ────────────────────────────────
+  // ¿El cerebro entiende qué está pasando y por qué mirar?
+  const clarity = c('narrative_clarity');
+  const clarity_failure = (1 - clarity);
+
+  // ── TRUST FAILURE (0.05) ──────────────────────────────────
+  // ¿Parece publicidad, fake, o manipulado?
+  const ad_density = c('perceived_ad_density');
+  const trust_failure = ad_density;
+
+  return {
+    retention_failure: Math.max(0, Math.min(1, retention_failure)),
+    tension_failure:   Math.max(0, Math.min(1, tension_failure)),
+    payoff_failure:    Math.max(0, Math.min(1, payoff_failure)),
+    clarity_failure:   Math.max(0, Math.min(1, clarity_failure)),
+    trust_failure:     Math.max(0, Math.min(1, trust_failure)),
+  };
+};
+
+// ============================================================
+// SCORING ENGINE — pesos + calibración por nicho + non-linear
+// Gemini nunca toca este código. El número final sale de aquí.
+// ============================================================
+export const scoringEngine = (failureSystems, cognitiveScan, industria, nicheConfig = null) => {
+  const f = failureSystems;
+
+  // Pesos base (suman 1.0)
+  const BASE_WEIGHTS = {
+    retention: 0.40,
+    tension:   0.30,
+    payoff:    0.15,
+    clarity:   0.10,
+    trust:     0.05,
+  };
+
+  // Multiplicadores por nicho
+  const multipliers = NICHE_WEIGHT_MULTIPLIERS[industria] ?? {
+    retention: 1.0, tension: 1.0, payoff: 1.0, clarity: 1.0, trust: 1.0
+  };
+
+  // Aplicar multiplicadores y renormalizar para que sigan sumando 1.0
+  const rawWeights = {
+    retention: BASE_WEIGHTS.retention * multipliers.retention,
+    tension:   BASE_WEIGHTS.tension   * multipliers.tension,
+    payoff:    BASE_WEIGHTS.payoff    * multipliers.payoff,
+    clarity:   BASE_WEIGHTS.clarity   * multipliers.clarity,
+    trust:     BASE_WEIGHTS.trust     * multipliers.trust,
+  };
+  const weightSum = Object.values(rawWeights).reduce((a, b) => a + b, 0);
+  const W = {};
+  for (const k in rawWeights) W[k] = rawWeights[k] / weightSum;
+
+  // Score base lineal (0-100)
+  let score =
+    (1 - f.retention_failure) * W.retention * 100 +
+    (1 - f.tension_failure)   * W.tension   * 100 +
+    (1 - f.payoff_failure)    * W.payoff    * 100 +
+    (1 - f.clarity_failure)   * W.clarity   * 100 +
+    (1 - f.trust_failure)     * W.trust     * 100;
+
+  // Non-linear: umbral de retención alta → bonus
+  // La diferencia entre 0.8 y 1.0 de retención vale mucho más que entre 0.2 y 0.4
+  const retentionQuality = 1 - f.retention_failure;
+  if (retentionQuality >= 0.85) score += 12;
+  else if (retentionQuality >= 0.75) score += 6;
+
+  // Amplificadores (solo suman, nunca compensan fallos de base)
+  const c = (key) => {
+    const sig = cognitiveScan?.[key];
+    if (!sig) return 0;
+    return (sig.value ?? 0) * (sig.confidence ?? 0.5);
+  };
+
+  const amplifiers =
+    c('novelty')         * 5 +
+    c('identity_signal') * 3 +
+    c('emotional_charge') * 2;
+
+  score += amplifiers;
+
+  // Cap por nicho
+  const nicheCap = nicheConfig?.score_cap?.viralScore ?? 100;
+  score = Math.min(score, nicheCap);
+  score = Math.max(0, score);
+
+  return {
+    viralScore: Math.round(score),
+    breakdown: {
+      retention_contribution: Math.round((1 - f.retention_failure) * W.retention * 100),
+      tension_contribution:   Math.round((1 - f.tension_failure)   * W.tension   * 100),
+      payoff_contribution:    Math.round((1 - f.payoff_failure)    * W.payoff    * 100),
+      clarity_contribution:   Math.round((1 - f.clarity_failure)   * W.clarity   * 100),
+      trust_contribution:     Math.round((1 - f.trust_failure)     * W.trust     * 100),
+      amplifiers_added:       Math.round(amplifiers),
+      nonlinear_bonus:        retentionQuality >= 0.85 ? 12 : retentionQuality >= 0.75 ? 6 : 0,
+    }
+  };
+};
+
+// ============================================================
+// DERIVE VIRAL CAP — gate + caps antes del Scoring Brain
+// ============================================================
+export const deriveViralCap = (hookGateStatus, nicheConfig = null) => {
+  const nicheCap = nicheConfig?.score_cap?.viralScore ?? 100;
+
   if (hookGateStatus?.passed === false) {
     return { cap: 20, reason: hookGateStatus.reason };
   }
- 
-  try {
-    const viewerAnalysis = limpiarJSON(viewerAnalysisRaw);
-    const parsed = typeof viewerAnalysis === 'string' ? JSON.parse(viewerAnalysis) : viewerAnalysis;
- 
-    const hookClasificacion = parsed?.hook_autopsia?.clasificacion      ?? '';
-    const hookDecision      = parsed?.output_del_sistema?.decision      ?? '';
-    const segundoCaida      = parsed?.desarrollo_autopsia?.segundo_de_caida ?? null;
-    const tensionSostenida  = parsed?.desarrollo_autopsia?.tension_sostenida ?? '';
- 
-    if (hookClasificacion === 'NO_PASA' || hookDecision === 'NO_DISTRIBUIR') {
-      return { cap: Math.min(cap, 20), reason: `viewer_brain_veto: ${hookDecision}` };
-    }
- 
-    if (segundoCaida !== null && segundoCaida !== undefined) {
-      const s = Number(segundoCaida);
-      if (!isNaN(s)) {
-        if      (s <= 2)  cap = Math.min(cap, 15);
-        else if (s <= 4)  cap = Math.min(cap, 30);
-        else if (s <= 6)  cap = Math.min(cap, 45);
-        else if (s <= 10) cap = Math.min(cap, 60);
-      }
-    }
- 
-    if (tensionSostenida === 'NO' && segundoCaida === null) {
-      cap = Math.min(cap, 50);
-    }
- 
-    if (hookGateStatus?.waitPenalty) {
-      cap = Math.min(cap, 55);
-    }
- 
-  } catch (e) {
-    console.error("Parse error en deriveViralCap:", e);
+
+  if (hookGateStatus?.waitPenalty) {
+    return { cap: Math.min(nicheCap, 55), reason: 'espera_riesgosa_detectada' };
   }
- 
-  return { cap, reason: cap < 100 ? 'cap_derivado_de_segundo_de_caida' : 'sin_penalizacion' };
+
+  return { cap: nicheCap, reason: 'sin_penalizacion' };
 };
- 
-// ============================================================
-// VIEWER BRAIN — Martín, perspectiva pura, sin criterios
-// ============================================================
-export const buildViewerBrainPrompt = (videoRawData, platform, hookGateStatus = null) => {
-  const pName = {
-    tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
-  }[platform] || platform;
- 
-  const gateBlock = hookGateStatus
-    ? `
-DATO DEL SISTEMA (no reversible):
-ESTADO: ${hookGateStatus.passed ? 'PASA' : 'NO_PASA'}
-CAUSA:  ${hookGateStatus.reason}
-${!hookGateStatus.passed
-  ? `Tu hook_autopsia.clasificacion debe ser NO_PASA y output_del_sistema.decision debe ser NO_DISTRIBUIR.`
-  : ''}
-`
-    : '';
-  
-  return `Sos Martín. Llegaste a casa, te tiraste en el sillón y abriste ${pName}. Estás cansado. El pulgar se mueve solo.
-${gateBlock}
-VIDEO:
----
-${videoRawData}
----
- 
-Dos preguntas. Respondelas con lo que sentís, no con lo que analizás:
- 
-1. ¿Paraste o seguiste de largo? ¿Por qué exactamente?
-2. Si paraste: ¿en qué segundo exacto tu pulgar volvió a moverse? Ese segundo existe siempre. Encontralo.
- 
-Respondé SOLO en JSON:
-{
-  "reaccion_visceral": {
-    "scroll_parado": "<SI|NO>",
-    "causa_especifica": "<qué fue exactamente lo que paró el pulgar — o 'nada' si siguió>",
-    "segundo_de_impacto": "<número o 'NUNCA'>"
-  },
-  "lectura_de_señales": {
-    "señal_visual_frame_0":             "<lo que se ve en el frame 0 — sin adjetivos>",
-    "señal_auditiva_frame_0":           "<lo que se escucha en el frame 0 — o 'silencio'>",
-    "primer_cambio_de_señal":           "<segundo exacto del primer cambio>",
-    "retencion_justificada_en_segundo": "<número o 'NUNCA'>"
-  },
-  "hook_autopsia": {
-    "pregunta_activa_detectada": "<La pregunta involuntaria que se hizo Martín — o 'NINGUNA'>",
-    "señal_de_retención_detectada": "<SI|NO>",
-    "tipo_de_señal":                "<visual|auditiva|textual|ninguna>",
-    "clasificacion":                "<PASA|NO_PASA>",
-    "razon_del_sistema":            "<en una oración: qué pasó o qué no pasó en el segundo 0>"
-  },
-  "desarrollo_autopsia": {
-    "hook_paso_el_filtro": "<SI|NO>",
-    "tension_sostenida":   "<SI|NO|NO_EVALUADO>",
-    "segundo_de_caida":    "<número — el segundo exacto en que Martín scrolleó. Si el video terminó antes, ponés la duración total>",
-    "causa_de_caida":      "<qué pasó en ese segundo>",
-    "clasificacion":       "<PASA|NO_PASA|NO_EVALUADO>"
-  },
-  "output_del_sistema": {
-    "decision":       "<DISTRIBUIR|NO_DISTRIBUIR>",
-    "motivo_tecnico": "<segundo exacto + causa>"
-  }
-}`;
-};
- 
+
 // ============================================================
 // RESEARCH BRAIN
 // ============================================================
 export const buildResearchBrainPrompt = (platform, industria, objetivo, benchmarkData = null) => {
   const pName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
-  }[platform] || platform
+  }[platform] || platform;
 
   const benchmarkBlock = benchmarkData
-    ? `BENCHMARK REAL DEL NICHO (datos de los top 20 videos de "${industria}" en ${pName} AR esta semana):
+    ? `BENCHMARK REAL DEL NICHO (top videos de "${industria}" en ${pName} esta semana):
 ${JSON.stringify(benchmarkData, null, 2)}
+Usá estos datos como referencia concreta. No inventés rangos.`
+    : `No hay benchmark disponible. Usá tu conocimiento general sobre "${industria}" en ${pName}.`;
 
-Usá estos números como referencia concreta. No inventes rangos — los rangos reales están arriba.`
-    : `No hay benchmark disponible para este nicho todavía. Usá tu conocimiento general sobre "${industria}" en ${pName}.`
-
-  return `Realizá una extracción de patrones sobre el nicho "${industria}" en ${pName}.
+  return `Extraé los patrones estructurales del nicho "${industria}" en ${pName}.
 
 ${benchmarkBlock}
-
-Foco:
-1. Ganchos con alta retención comprobada en este nicho HOY.
-2. Errores documentados que reducen la distribución.
 
 Respondé SOLO con este JSON:
 {
@@ -416,30 +520,29 @@ Respondé SOLO con este JSON:
     {
       "descripcion":           "<qué pasa en los primeros 3 segundos>",
       "mecanismo_psicologico": "<por qué para el scroll>",
-      "resultado_aproximado":  "<basado en el benchmark real si está disponible>"
+      "resultado_aproximado":  "<métrica disponible>"
     }
   ],
-  "patron_hook_dominante":  "<patrón que más funciona HOY — con dato concreto del benchmark si existe>",
+  "patron_hook_dominante":  "<patrón que más funciona HOY — con dato concreto>",
   "top_formatos_ganadores": ["<formato>"],
   "errores_hook_comunes":   ["<error que mata el hook>"],
-  "benchmark_viral_score":  <número 0-100 calibrado contra los views reales del benchmark>,
-  "oportunidad_detectada":  "<gap real detectado comparando el patrón del benchmark con lo que no aparece>"
-}`
-}
+  "benchmark_viral_score":  <número 0-100>,
+  "oportunidad_detectada":  "<gap real sin explotar>"
+}`;
+};
 
- 
 // ============================================================
 // APPLY RESEARCH BRAIN
 // ============================================================
 export const buildApplyResearchBrainPrompt = (preFacts, researchData, platform, industria) => {
   return `Contrastá los datos técnicos del video actual contra el benchmark del nicho "${industria}".
- 
+
 HECHOS DEL VIDEO:
 ${JSON.stringify(preFacts, null, 2)}
- 
+
 BENCHMARK REAL DEL NICHO:
 ${JSON.stringify(researchData, null, 2)}
- 
+
 Respondé SOLO con este JSON:
 {
   "compliance_score":        <número 0-100>,
@@ -448,45 +551,43 @@ Respondé SOLO con este JSON:
   "resumen_brecha":          "<una oración: diferencia técnica más importante vs el top del nicho>"
 }`;
 };
- 
+
 // ============================================================
-// STRATEGY BRAIN — diagnóstico desde los datos, sin criterios
+// STRATEGY BRAIN — diagnóstico textual para el roadmap
+// Solo lee datos. No produce números. No evalúa potencial.
 // ============================================================
-export const buildStrategyBrainPrompt = (viewerAnalysis, platform, objetivo, perception, preFacts = {}) => {
-  return `Sos un editor con 10 años de experiencia en contenido de ${platform}. Miraste miles de videos. Sabés exactamente en qué segundo la gente scrollea y por qué.
- 
-No tenés que explicar teoría. Tenés que leer estos datos y decir qué está roto y qué no.
- 
-VEREDICTO DEL SISTEMA:
-${viewerAnalysis}
- 
-CONTEXTO:
-NICHO: ${perception.industria}
+export const buildStrategyBrainPrompt = (preFacts, cognitiveScan, failureSystems, scoringResult, platform, objetivo, industria) => {
+  return `Sos un editor con 10 años en ${platform}. Leés datos y decís qué está roto. Nada más.
+
+No evalúes potencial. No des crédito por intención. No suavices.
+
+SEÑALES ATÓMICAS:
+${JSON.stringify(preFacts?.atomicas ?? {}, null, 2)}
+
+SEÑALES COGNITIVAS:
+${JSON.stringify(cognitiveScan, null, 2)}
+
+SISTEMAS DE FALLO:
+${JSON.stringify(failureSystems, null, 2)}
+
+SCORE CALCULADO: ${scoringResult?.viralScore ?? '?'}/100
+BREAKDOWN: ${JSON.stringify(scoringResult?.breakdown ?? {}, null, 2)}
+
+NICHO: ${industria}
 OBJETIVO: ${objetivo}
-PALANCA DETECTADA: ${perception.palanca_psicologica}
- 
-HECHOS EXTRAÍDOS:
-${JSON.stringify(preFacts, null, 2)}
- 
+
 Respondé SOLO con este JSON:
 {
-  "analisis_cualitativo": {
-    "gate_formato": {
-      "estado": "<competitivo|debil|muerto>",
-      "razon":  "<en una oración — qué lo hace competitivo, débil o muerto>"
-    },
-    "evaluacion_motor": {
-      "se_activa_antes_del_scroll": "<SI|NO|TARDE>",
-      "friccion_detectada":         "<qué frenó al espectador — o 'ninguna'>"
-    },
-    "trampas_y_viralidad": {
-      "trampa_principal": "<value_trap|bait_disconnect|valor_tardio|ninguna>"
-    },
-    "foda": {
-      "fortalezas":       ["<qué funciona>"],
-      "debilidades":      ["<qué no funciona y en qué segundo>"],
-      "mejoras_urgentes": ["<qué falta>"]
-    }
+  "gate_formato": {
+    "estado": "<competitivo|debil|muerto>",
+    "razon":  "<una oración — qué lo hace estar ahí>"
+  },
+  "falla_principal": "<retention|tension|payoff|clarity|trust — el sistema más roto>",
+  "segundo_critico": "<número — el segundo exacto donde el espectador scrollea>",
+  "foda": {
+    "fortalezas":       ["<señal que funciona>"],
+    "debilidades":      ["<qué está roto y en qué segundo>"],
+    "mejoras_urgentes": ["<qué falta — acción concreta>"]
   },
   "flags_binarios": {
     "hook_type":           "<muerto|debil|apertura_informativa|bait_desconectado|bait_con_puente|explosivo>",
@@ -495,95 +596,75 @@ Respondé SOLO con este JSON:
   }
 }`;
 };
- 
+
 // ============================================================
-// SCORING BRAIN — números desde la experiencia, caps desde JS
+// SCORING BRAIN — veredicto textual + roadmap
+// El número ya fue calculado por scoringEngine en JS.
+// Este prompt solo produce lenguaje para el usuario.
 // ============================================================
 export const buildScoringBrainPrompt = (
-  videoRawData, strategyAnalysisRaw, viewerAnalysisRaw,
-  platform, objetivo, perception, flags,
-  nicheConfig = null, hookGateStatus = null, viralCapData = null
+  videoRawData, strategyAnalysisRaw, cognitiveScan,
+  failureSystems, scoringResult, viralCapData,
+  platform, objetivo, industria,
+  nicheConfig = null, hookGateStatus = null
 ) => {
   const pName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
   }[platform] || platform;
- 
+
   const strategyAnalysis = limpiarJSON(strategyAnalysisRaw);
- 
-  const viralCap = viralCapData?.cap ?? 100;
-  const salesCap = nicheConfig?.score_cap?.salesScore ?? 100;
- 
-  let segundoCaida = null;
-  let causaCaida   = '';
- 
-  try {
-    const viewerAnalysis = limpiarJSON(viewerAnalysisRaw);
-    const parsed = typeof viewerAnalysis === 'string' ? JSON.parse(viewerAnalysis) : viewerAnalysis;
-    segundoCaida = parsed?.desarrollo_autopsia?.segundo_de_caida ?? null;
-    causaCaida   = parsed?.desarrollo_autopsia?.causa_de_caida   ?? '';
-  } catch (e) {
-    console.error("Parse error en buildScoringBrainPrompt:", e);
-  }
- 
-  return `Sos el sistema de scoring final de ${pName}. Tu trabajo es traducir una experiencia a números. Nada más.
- 
-LÍMITES CALCULADOS POR EL SISTEMA — INAPELABLES:
-viralScore máximo: ${viralCap} (${viralCapData?.reason ?? 'cap de nicho'})
-salesScore máximo: ${salesCap}
-${segundoCaida !== null ? `Segundo de caída registrado: ${segundoCaida}s — "${causaCaida}"` : ''}
- 
-Estos números fueron calculados antes de que veas el video. No podés superarlos. Si tu análisis te llevaría a un número mayor, truncalo y explicá la diferencia en el verdict.
- 
-DATOS:
-VIDEO: ${videoRawData}
+  const viralScore       = scoringResult?.viralScore ?? 0;
+  const salesCap         = nicheConfig?.score_cap?.salesScore ?? 100;
+
+  return `Sos el sistema de output final de ${pName}. El score viral ya fue calculado matemáticamente: ${viralScore}/100. No podés cambiarlo.
+
+Tu trabajo es exclusivamente:
+1. Calcular el salesScore (0-${salesCap}) basado en señales de conversión del video.
+2. Escribir el honestVerdict describiendo la experiencia real del espectador.
+3. Producir el roadmap con acciones concretas para el editor.
+
+No describas potencial. No especules. Lo que no está en el video, no existe.
+
+SCORE VIRAL (calculado por el sistema): ${viralScore}/100
+SISTEMAS DE FALLO: ${JSON.stringify(failureSystems, null, 2)}
 DIAGNÓSTICO: ${strategyAnalysis}
- 
-Antes de poner cualquier número, describí la experiencia de Martín segundo a segundo. Qué siente, cuándo se engancha, cuándo se aburre. Eso es lo que se transforma en score.
- 
-Respondé SOLO en JSON, en este orden exacto:
+VIDEO: ${videoRawData}
+NICHO: ${industria}
+
+Respondé SOLO en JSON:
 {
-  "analisis_previo_obligatorio": {
-    "experiencia_segundo_a_segundo": "<qué experimenta Martín, segundo a segundo, desde que empieza el video hasta que scrollea>",
-    "justificacion_rango_viral":     "<en base a esa experiencia, qué número refleja lo que pasó — máximo ${viralCap}>",
-    "justificacion_rango_ventas":    "<qué señal de conversión hubo o no hubo — máximo ${salesCap}>"
-  },
-  "viralScore": {
-    "score":        <number — máximo ${viralCap}>,
-    "verdict":      "<qué pasó exactamente que justifica este número>",
-    "accion_clave": "<qué cambiar y en qué segundo>"
-  },
   "salesScore": {
-    "score":        <number — máximo ${salesCap}>,
+    "score":        <number 0-${salesCap}>,
     "verdict":      "<señal de conversión presente o ausente>",
-    "accion_clave": "<acción concreta>"
+    "accion_clave": "<acción concreta para mejorar conversión>"
   },
   "scrollStopScore": {
-    "score":   <number>,
+    "score":   <number 0-100>,
     "verdict": "<qué tiene o no tiene el segundo 0>"
   },
   "hookDNA": {
     "pattern":       "<Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Deseo_Sensorial|Identidad_Tribal|Aspiracion|Muerto|Otro>",
-    "optimizedHook": "<reescribí el hook para que Martín no pueda no detenerse>"
+    "optimizedHook": "<reescribí el hook para que el espectador no pueda no detenerse>"
   },
   "steppsScore": {
     "dominantFactor":  "<factor STEPPS más fuerte>",
     "weakestFactor":   "<factor STEPPS más débil>",
     "shareMotivation": "<identidad|utilidad|sorpresa|validacion|ninguno>"
   },
-  "honestVerdict": "<Dos oraciones. La experiencia real de Martín con este video — no el potencial, lo que pasó.>",
+  "honestVerdict": "<Dos oraciones. La experiencia real del espectador con este video. Si scrolleó, decí en qué segundo y por qué.>",
   "roadmap": [
     {
       "impacto":   "<ALTO|MEDIO|BAJO>",
-      "problema":  "<segundo exacto + qué>",
-      "solucion":  "<instrucción para el editor>",
-      "resultado": "<qué cambia en la experiencia del espectador>"
+      "problema":  "<segundo exacto + qué falla>",
+      "solucion":  "<instrucción ejecutable para el editor>",
+      "resultado": "<qué cambia en el comportamiento del espectador>"
     }
   ]
 }`;
 };
 
 // ============================================================
-// BENCHMARK EXTRACTOR — patrón estructural del nicho (solo texto, sin video)
+// BENCHMARK EXTRACTOR — patrón estructural del nicho
 // ============================================================
 export const buildBenchmarkExtractorPrompt = (industria, videos) => {
   const summary = videos.map((v, i) => ({
@@ -594,34 +675,32 @@ export const buildBenchmarkExtractorPrompt = (industria, videos) => {
     duration_s:  v.duration ?? 0,
     description: (v.desc ?? '').slice(0, 200),
     hashtags:    (v.desc ?? '').match(/#\w+/g) ?? [],
-  }))
+  }));
 
   return `Analizá los ${summary.length} videos más vistos del nicho "${industria}" en TikTok Argentina esta semana.
 
 DATOS:
 ${JSON.stringify(summary, null, 2)}
 
-Encontrá el patrón estructural compartido por los videos con más views. No describas cada uno — extraé lo que tienen en común los que más funcionan.
+Encontrá el patrón estructural compartido por los videos con más views.
 
 Respondé SOLO con JSON:
 {
-  "nicho": "${industria}",
-  "muestra_videos": ${summary.length},
-  "views_minimo_top": <views del último video>,
-  "views_promedio_top": <promedio>,
-  "views_maximo": <views del primero>,
+  "nicho":                    "${industria}",
+  "muestra_videos":           ${summary.length},
+  "views_minimo_top":         <views del último>,
+  "views_promedio_top":       <promedio>,
+  "views_maximo":             <views del primero>,
   "duracion_promedio_segundos": <promedio>,
-  "patron_duracion": "<corto 0-15s|medio 15-30s|largo 30-60s>",
-  "hashtags_dominantes": ["<top 5>"],
+  "patron_duracion":          "<corto 0-15s|medio 15-30s|largo 30-60s>",
+  "hashtags_dominantes":      ["<top 5>"],
   "densidad_hashtags_promedio": <número>,
-  "patron_descripcion": "<qué comparten las descripciones top>",
-  "benchmark_likes_ratio": <likes/views decimal>,
-  "benchmark_shares_ratio": <shares/views decimal>,
-  "señal_viral_minima": "<qué necesita un video de este nicho para entrar al top 20 esta semana — una oración concreta>"
-}`
-}
-
-
+  "patron_descripcion":       "<qué comparten las descripciones top>",
+  "benchmark_likes_ratio":    <likes/views decimal>,
+  "benchmark_shares_ratio":   <shares/views decimal>,
+  "señal_viral_minima":       "<qué necesita un video de este nicho para entrar al top esta semana>"
+}`;
+};
 
 export const deriveHookType = (preFacts) => {
   if (!preFacts || !Object.keys(preFacts).length) return 'debil';
@@ -1045,28 +1124,7 @@ const stripFlags = (strategyText) =>
 
 
 
-// ✅ VERSIÓN CORREGIDA — vision restaurado con fallback:
-const applyDeterministicScoring = (parsed, flags, nicho) => {
-  if (!parsed?.viralScore?.score || !parsed?.salesScore?.score) {
-    throw new Error('ScoringBrain devolvió output inválido. Revisar prompt o response de Gemini.');
-  }
 
-  const viralScore  = parsed.viralScore.score;
-  const salesScore  = parsed.salesScore.score;
-  const potentialScore = Math.round(viralScore * 0.6 + salesScore * 0.4);
-
-  return {
-    vision:          parsed.vision || { niche: nicho, type: 'video', audience: '', promise: '' },
-    viralScore:      parsed.viralScore,
-    salesScore:      parsed.salesScore,
-    potentialScore,
-    scrollStopScore: parsed.scrollStopScore  ?? null,
-    hookDNA:         parsed.hookDNA          ?? null,
-    steppsScore:     parsed.steppsScore      ?? null,
-    honestVerdict:   parsed.honestVerdict    ?? '',
-    roadmap:         parsed.roadmap          ?? [],
-  };
-};
 
 // ============================================================
 // FASE 1: CALIBRACIÓN (Sube video y ejecuta CALL 0) //const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
@@ -1080,10 +1138,9 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   const duration = await new Promise((resolve) => {
     const v = document.createElement('video');
     v.src = url;
-    v.onloadedmetadata = () => resolve(v.duration); //setStatusText("Subiendo video...");
+    v.onloadedmetadata = () => resolve(v.duration);
   });
 
-  // Pasamos directo a preparar el video sin cobrar gemas todavía //preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
   setStep('analyzing');
   setAnalysisMode('video');
   setStatusText("Preparando video...");
@@ -1097,97 +1154,53 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
   const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
   const mimeType = videoFile.type || 'video/mp4';
-  const fileToUpload = videoFile;
 
-  console.log('[VIRAX] Subiendo para calibración:', fileToUpload.name, fileToUpload.size, 'bytes', mimeType);
+  console.log('[VIRAX] Subiendo:', videoFile.name, videoFile.size, 'bytes', mimeType);
 
   try {
-    // ── UPLOAD al bucket ──
-// ── UPLOAD al bucket ──
-setStatusText("Subiendo video...");
-setAnalysisProgress(10);
+    // ── UPLOAD al bucket ──────────────────────────────────────
+    setStatusText("Subiendo video...");
+    setAnalysisProgress(10);
 
-const { error: uploadError } = await supabase.storage
-  .from('videos')
-  .upload(storagePath, fileToUpload, {
-    contentType: mimeType,
-    upsert: true,
-  });
+    const { error: uploadError } = await supabase.storage
+      .from('videos')
+      .upload(storagePath, videoFile, { contentType: mimeType, upsert: true });
 
-if (uploadError) {
-  throw new Error("Error subiendo video al storage: " + uploadError.message);
-}
+    if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
+    console.log('[VIRAX] Video subido:', storagePath);
 
-console.log('[VIRAX] Video subido al bucket:', storagePath);
+    // ── CALL 0 — Pre-Classifier (señales atómicas) ────────────
+    setStatusText("Extrayendo señales del video...");
+    setAnalysisProgress(18);
 
-// ── CALL 0 — Pre-clasificador ──
-setStatusText("Pre-clasificando video...");
-setAnalysisProgress(18);
-
-// Calculás el pacing en JS antes del CALL 0
-const videoEl = document.createElement('video');
-videoEl.src = url;
-await new Promise(resolve => { videoEl.onloadedmetadata = resolve; });
-
-const duration = videoEl.duration;
-// Por ahora fps y cortes son estimados — después podés mejorarlos
-const estimatedFps = 30;
-const estimatedCuts = Math.round(duration / 3); // heurística: corte cada ~3s
-const cutsPerMin = Math.round((estimatedCuts / duration) * 60);
-
-const pacingMeta = `
-PACING_METADATA (calculado externamente):
-- duracion_total_s: ${Math.round(duration)}
-- cortes_estimados: ${estimatedCuts}
-- cortes_por_minuto: ${cutsPerMin}
-- fps_estimado: ${estimatedFps}
-`.trim();
-
-// Luego en el CALL 0:
-const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: `${pacingMeta}\n\n${buildPreClassifierPrompt()}`,
-    storagePath,
-    videoMimeType: mimeType,
-    duration: Math.round(duration),
-    maxOutputTokens: 512,   // ← bajás esto de 2048 a 512
-    expectsJson: true,
-    temperature: 0,         // ← agregás esto si tu proxy lo acepta
-  }
-});
-
-    if (call0Error) {
-      const status = call0Error.context?.status ?? 0;
-      console.warn(`[CALL 0] HTTP ${status} — fallback`);
-      throw new Error(`HTTP ${status}`);
-    }
-
-   let preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
-   let preHookType = (() => {
-      if (preFacts.logo_en_s0) return 'muerto';
-      if (preFacts.imagen_alto_impacto && preFacts.producto_en_s0) return 'bait_con_puente';
-      if (preFacts.imagen_alto_impacto) return 'bait_desconectado';
-      if (preFacts.pregunta_al_espectador || preFacts.afirmacion_contradictoria) return 'explosivo';
-      if (preFacts.producto_en_accion_s0 || preFacts.transformacion_visible) return 'bait_con_puente';
-      if (preFacts.producto_en_s0) return 'apertura_informativa';
-      return 'debil';
-    })();
-
-    console.log('[VIRAX] Pre-facts:', preFacts, '| Hook:', preHookType);
-
-    // Guardamos los datos de la IA para cargarlos en los selectores de la pantalla de validación
-    setPerception({
-      industria: preFacts.industria || selectedNicho, 
-      palanca_psicologica: preFacts.palanca_psicologica || 'Curiosidad / Retención'
+    const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildPreClassifierPrompt(),
+        storagePath,
+        videoMimeType: mimeType,
+        duration: Math.round(duration),
+        maxOutputTokens: 768,
+        expectsJson: true,
+        temperature: 0,
+      }
     });
 
-    // Guardamos toda la metadata necesaria para congelar el estado del video
+    if (call0Error) throw new Error(`CALL 0 falló: ${call0Error.message}`);
+
+    const preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
+    console.log('[VIRAX] Pre-facts:', preFacts);
+
+    // Guardamos industria y palanca para la pantalla de validación
+    setPerception({
+      industria:           preFacts.industria || selectedNicho,
+      palanca_psicologica: preFacts.palanca_psicologica || 'Curiosidad / Retención',
+    });
+
     setVideoMeta({
       storagePath,
       mimeType,
       duration,
       preFacts,
-      preHookType,
       platform,
       followerRange,
       palanca_detectada: preFacts.palanca_psicologica || 'Curiosidad / Retención',
@@ -1197,11 +1210,8 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
     setTimeout(() => setStep('validation'), 500);
 
   } catch (err) {
-    console.error('Error análisis en fase de calibración:', err);
-    const msg = err?.message || String(err);
-    alert(`❌ Error al pre-clasificar: ${msg}`);
-    
-    // Si falla acá, limpiamos el storage porque el flujo se corta
+    console.error('Error en fase de calibración:', err);
+    alert(`❌ Error al pre-clasificar: ${err?.message || String(err)}`);
     await supabase.storage.from('videos').remove([storagePath]);
     setStep('upload');
   }
@@ -1213,24 +1223,9 @@ const runDeepAnalysis = async () => {
     return;
   }
 
-  const { storagePath, mimeType, duration, preFacts, preHookType, platform, palanca_detectada } = videoMeta;
-
-  // Solo hechos visuales/auditivos — sin nicho ni palanca
-  const preFactsParaViewer = {
-    hook_libre:          preFacts.hook_libre,
-    flags_visuales:      preFacts.flags_visuales,
-    flags_narrativos:    preFacts.flags_narrativos,
-    metricas_tecnicas:   preFacts.metricas_tecnicas,
-    hook_type_detectado: preFacts.hook_type_detectado,
-    hook_confianza:      preFacts.hook_confianza,
-  };
-
-  const perceptionParaScoring = {
-    ...perception,
-    palanca_psicologica: palanca_detectada || perception.palanca_psicologica,
-    palanca_objetivo:    perception.palanca_psicologica,
-    palanca_detectada:   palanca_detectada || perception.palanca_psicologica,
-  };
+  const { storagePath, mimeType, duration, preFacts, platform, palanca_detectada } = videoMeta;
+  const industria = perception.industria;
+  const nicheConfig = perception.motor_key ? NICHE_MOTORS[perception.motor_key] : null;
 
   const cost = 100;
   const approved = await deductGems(cost, `video:${Math.ceil(duration / 60)}`);
@@ -1241,50 +1236,57 @@ const runDeepAnalysis = async () => {
   setAnalysisProgress(22);
 
   try {
-    // ============================================================
-    // CALL 1 — Viewer Brain
-    // Solo hechos visuales — sin nicho ni palanca
-    // ============================================================
+    // ── CALL 1 — Cognitive Scan (señales cognitivas con confidence) ──
+    setStatusText("Escaneando señales cognitivas...");
     setAnalysisProgress(30);
-    setStatusText("Analizando comportamiento humano...");
 
-    const res = await supabase.functions.invoke('gemini-proxy', {
+    const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildViewerBrainPrompt(
-          JSON.stringify(preFactsParaViewer), // ← filtrado, sin industria
-          platform                            // ← sin tercer argumento de perception
-        ),
+        text: buildCognitiveScanPrompt(JSON.stringify(preFacts), industria),
         storagePath,
         videoMimeType: mimeType,
         duration: Math.round(duration),
-        maxOutputTokens: 8192,
+        maxOutputTokens: 1024,
+        expectsJson: true,
+        temperature: 0,
       }
     });
 
-    if (res.error) throw new Error(`CALL 1 falló: ${res.error.message}`);
-    const viewerAnalysis = extractGeminiText(res.data);
+    if (call1Error) throw new Error(`CALL 1 falló: ${call1Error.message}`);
+    const cognitiveScan = safeParseJSON(extractGeminiText(call1Data), 'cognitive-scan') || {};
+    console.log('[VIRAX] Cognitive scan:', cognitiveScan);
 
-    // ============================================================
-    // CALL 1.5 — Research Brain
-    // ============================================================
-    setAnalysisProgress(40);
+    // ── JS — Gate + Failure Systems + Scoring (sin llamada a Gemini) ──
+    const hookGate    = deriveHookGateStatus(preFacts);
+    const failures    = deriveFailureSystems(preFacts, cognitiveScan);
+    const scoringRaw  = scoringEngine(failures, cognitiveScan, industria, nicheConfig);
+    const viralCapData = deriveViralCap(hookGate, nicheConfig);
+
+    // Aplicar cap al score calculado
+    scoringRaw.viralScore = Math.min(scoringRaw.viralScore, viralCapData.cap);
+
+    console.log('[VIRAX] Hook gate:', hookGate);
+    console.log('[VIRAX] Failures:', failures);
+    console.log('[VIRAX] Scoring:', scoringRaw);
+
+    // ── CALL 1.5 — Research Brain ─────────────────────────────
     setStatusText("Investigando casos de éxito...");
+    setAnalysisProgress(42);
 
-    // ── Leer benchmark real de Supabase ──────────────────────────
     let nichoBenchmark = null;
     try {
       const { data: benchmarkRow } = await supabase
         .from('niche_benchmarks')
         .select('benchmark_json, updated_at')
-        .eq('industria', perception.industria)
+        .eq('industria', industria)
         .eq('platform', platform)
         .eq('region', 'AR')
         .single();
       nichoBenchmark = benchmarkRow?.benchmark_json ?? null;
       if (nichoBenchmark) {
-        console.log('[BENCHMARK] Cargado para', perception.industria, '— actualizado:', benchmarkRow.updated_at);
+        console.log('[BENCHMARK] Cargado para', industria, '— actualizado:', benchmarkRow.updated_at);
       } else {
-        console.warn('[BENCHMARK] Sin datos para', perception.industria, '— usando conocimiento general');
+        console.warn('[BENCHMARK] Sin datos para', industria, '— usando conocimiento general');
       }
     } catch (e) {
       console.warn('[BENCHMARK] Error al leer:', e.message);
@@ -1294,37 +1296,30 @@ const runDeepAnalysis = async () => {
     try {
       const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
         body: {
-          text: buildResearchBrainPrompt(platform, perception.industria, selectedObjetivo, nichoBenchmark),
+          text: buildResearchBrainPrompt(platform, industria, selectedObjetivo, nichoBenchmark),
           useSearch: true,
           expectsJson: true,
           maxOutputTokens: 2048,
           temperature: 0,
         }
       });
-
-      console.log('[RESEARCH] groundingMetadata:',
-        JSON.stringify(call1_5Data?.candidates?.[0]?.groundingMetadata, null, 2)
-      );
-      console.log('[RESEARCH] raw output:', extractGeminiText(call1_5Data));
-
       if (!call1_5Error) researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
+      console.log('[RESEARCH] data:', researchData);
     } catch (e) {
       console.warn('[CALL 1.5] Fallback research:', e.message);
     }
 
-    // ============================================================
-    // CALL 1.75 — Apply Research
-    // ============================================================
-    setAnalysisProgress(50);
+    // ── CALL 1.75 — Apply Research ────────────────────────────
     setStatusText("Calculando brecha competitiva...");
+    setAnalysisProgress(54);
 
     let gapAnalysis = {};
     try {
       const { data: call1_75Data, error: call1_75Error } = await supabase.functions.invoke('gemini-proxy', {
         body: {
-          text: buildApplyResearchBrainPrompt(preFacts, researchData, platform, perception.industria),
+          text: buildApplyResearchBrainPrompt(preFacts, researchData, platform, industria),
           expectsJson: true,
-          maxOutputTokens: 2048,
+          maxOutputTokens: 1024,
         }
       });
       if (!call1_75Error) gapAnalysis = safeParseJSON(extractGeminiText(call1_75Data), 'gap-analysis') || {};
@@ -1332,130 +1327,104 @@ const runDeepAnalysis = async () => {
       console.warn('[CALL 1.75] Fallback gap:', e.message);
     }
 
-    // ============================================================
-    // CALL 2 — Strategy Brain
-    // Usa palanca_detectada — evalúa lo que el video realmente hace
-    // ============================================================
-    setAnalysisProgress(65);
-    setStatusText("Evaluando ganchos y persuasión...");
+    // ── CALL 2 — Strategy Brain ───────────────────────────────
+    setStatusText("Diagnosticando causas de fricción...");
+    setAnalysisProgress(66);
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildStrategyBrainPrompt(viewerAnalysis, platform, selectedObjetivo, {
-          ...perception,
-          palanca_psicologica: palanca_detectada || perception.palanca_psicologica,
-        }, preFacts),
-        maxOutputTokens: 8192,
+        text: buildStrategyBrainPrompt(
+          preFacts,
+          cognitiveScan,
+          failures,
+          scoringRaw,
+          platform,
+          selectedObjetivo,
+          industria
+        ),
+        expectsJson: true,
+        maxOutputTokens: 2048,
       }
     });
-    if (call2Error) throw call2Error;
 
-    const strategyRaw = extractGeminiText(call2Data);
-    let flagsFromStrategy = {};
-    let strategyAnalysis = strategyRaw;
+    if (call2Error) throw new Error(`CALL 2 falló: ${call2Error.message}`);
+    const strategyRaw    = extractGeminiText(call2Data);
+    const strategyParsed = safeParseJSON(strategyRaw, 'strategy') || {};
+    const strategyAnalysis = JSON.stringify(strategyParsed, null, 2);
+    console.log('[VIRAX] Strategy:', strategyParsed);
 
-    try {
-      const strategyParsed = safeParseJSON(strategyRaw, 'strategy-flags');
-      flagsFromStrategy = strategyParsed?.flags_binarios ?? {};
-      strategyAnalysis = JSON.stringify(strategyParsed?.analisis_cualitativo ?? strategyParsed, null, 2);
-    } catch (e) {
-      console.warn('[Strategy] No se pudo parsear como JSON, usando texto plano:', e.message);
-    }
+    // ── CALL 3 — Scoring Brain (veredicto + roadmap, sin número) ──
+    setStatusText("Falta poco...");
+    setAnalysisProgress(80);
 
-    const flagsDeterministic = {
-      ...flagsFromStrategy,
-      hook_type: preHookType,
-      ad_filter_triggered: !!preFacts.logo_en_s0,
-      no_audio_from_s0: (preFacts.audio_desde_s0 === false) || flagsFromStrategy.no_audio_from_s0,
-      is_static_slideshow: (preFacts.movimiento_real === false) || flagsFromStrategy.is_static_slideshow,
-      pain_missing: (preFacts.dolor_antes_s5 === false) || flagsFromStrategy.pain_missing,
-      pain_late: (Number(preFacts.segundo_dolor) > 5) || flagsFromStrategy.pain_late,
-      no_rehook: (!preFacts.tiene_rehook && (preFacts.duracion_estimada ?? 0) > 20) || !!flagsFromStrategy.no_rehook,
-      short_video_advantage: (preFacts.duracion_estimada ?? 999) < 15 || !!flagsFromStrategy.short_video_advantage,
-      duration_kills_completion: ((preFacts.duracion_estimada ?? 0) > 60 && !preFacts.tiene_rehook) || !!flagsFromStrategy.duration_kills_completion,
-      es_slideshow_imagenes: preFacts.es_slideshow_imagenes,
-      porcentaje_video_real: preFacts.porcentaje_video_real ?? 100,
-      tipo_edicion: preFacts.tipo_edicion || 'desconocido',
-      ritmo_visual: preFacts.ritmo_visual || 'normal',
-      cortes_por_minuto: preFacts.cortes_por_minuto ?? 0,
-      cambio_visual_cada_ns: preFacts.cambio_visual_cada_ns ?? 3,
-      compliance_score: gapAnalysis.compliance_score ?? 50,
-      has_red_flags: (gapAnalysis.red_flags_en_tu_video?.length ?? 0) > 0,
-      hook_descripcion_libre: preFacts.hook_libre ?? null,
+    const perceptionParaScoring = {
+      ...perception,
+      palanca_psicologica: palanca_detectada || perception.palanca_psicologica,
+      palanca_detectada:   palanca_detectada || perception.palanca_psicologica,
     };
 
-    // ============================================================
-    // CALL 3 — Scoring Brain
-    // Recibe perceptionParaScoring con AMBAS palancas:
-    // .palanca_psicologica = objetivo del usuario
-    // .palanca_detectada   = lo que el video realmente hace
-    // El prompt puede medir el gap entre las dos
-    // ============================================================
-    setAnalysisProgress(80);
-    setStatusText("Falta poco...");
-
-    const nicheConfig = perception.motor_key ? NICHE_MOTORS[perception.motor_key] : null;
-
-    const benchmarkData = Object.keys(researchData).length ? {
-      ...researchData,
-      resumen_brecha: gapAnalysis.resumen_brecha ?? null,
-      red_flags_en_tu_video: gapAnalysis.red_flags_en_tu_video ?? []
-    } : null;
-
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildScoringBrainPrompt(
-      JSON.stringify(preFacts),   // videoRawData ← los hechos crudos del video
-      strategyAnalysis,           // strategyAnalysis ← en su lugar correcto
-      viewerAnalysis,             // viewerAnalysis ← en su lugar correcto
-      platform,
-      selectedObjetivo,
-      perceptionParaScoring,
-      flagsDeterministic,
-      nicheConfig,
-      benchmarkData
-    ),
+      body: {
+        text: buildScoringBrainPrompt(
+          JSON.stringify(preFacts),
+          strategyAnalysis,
+          cognitiveScan,
+          failures,
+          scoringRaw,
+          viralCapData,
+          platform,
+          selectedObjetivo,
+          industria,
+          nicheConfig,
+          hookGate
+        ),
         storagePath,
         videoMimeType: mimeType,
         duration: Math.round(duration),
         expectsJson: true,
-        maxOutputTokens: 8192,
+        maxOutputTokens: 4096,
       }
     });
 
-    if (call3Error) throw call3Error;
+    if (call3Error) throw new Error(`CALL 3 falló: ${call3Error.message}`);
 
-    const parsed = safeParseJSON(extractGeminiText(call3Data), 'scoring');
-
+    const outputParsed = safeParseJSON(extractGeminiText(call3Data), 'scoring-output') || {};
     setAnalysisProgress(90);
     setStatusText("Estructurando reporte completo...");
 
-    const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic, perception.industria);
-
-    const viralScore = parsedFinal.viralScore?.score ?? 0;
-    if (viralScore >= 65) {
-      parsedFinal.salesScore = {
-        ...parsedFinal.salesScore,
-        score: Math.max(parsedFinal.salesScore?.score ?? 0, 35)
-      };
-      parsedFinal.potentialScore = Math.max(parsedFinal.potentialScore ?? 0, 38);
-    }
-
+    // ── Ensamblar resultado final ─────────────────────────────
+    // El viralScore viene del scoringEngine JS — inapelable
+    // salesScore, honestVerdict, roadmap vienen de Gemini
     const finalResult = {
-      ...parsedFinal,
-      objetivo: selectedObjetivo,
-      _flags: flagsDeterministic,
-      _strategy_text: strategyAnalysis,
-      _viewer_text: viewerAnalysis,
-      _research_data: researchData,
-      _gap_analysis: gapAnalysis,
+      viralScore: {
+        score:        scoringRaw.viralScore,
+        breakdown:    scoringRaw.breakdown,
+        verdict:      outputParsed.honestVerdict ?? '',
+        accion_clave: outputParsed.roadmap?.[0]?.solucion ?? '',
+      },
+      salesScore:     outputParsed.salesScore ?? { score: 0, verdict: '', accion_clave: '' },
+      scrollStopScore: outputParsed.scrollStopScore ?? { score: 0, verdict: '' },
+      hookDNA:        outputParsed.hookDNA ?? {},
+      steppsScore:    outputParsed.steppsScore ?? {},
+      honestVerdict:  outputParsed.honestVerdict ?? '',
+      roadmap:        outputParsed.roadmap ?? [],
+      objetivo:       selectedObjetivo,
+
+      // Datos internos para debug y chat
+      _failures:       failures,
+      _hook_gate:      hookGate,
+      _cognitive_scan: cognitiveScan,
+      _strategy:       strategyParsed,
+      _research_data:  researchData,
+      _gap_analysis:   gapAnalysis,
+      _viral_cap:      viralCapData,
     };
 
     setAiResult(finalResult);
     setCompletedSteps([]);
     setChatMessages([{
       role: 'bot',
-      text: `Análisis completado. Potencial de venta: ${finalResult.salesScore?.score ?? '—'}% | Potencial viral: ${finalResult.viralScore?.score ?? '—'}%. ¿Qué sección repasamos primero?`
+      text: `Análisis completado. Viral: ${finalResult.viralScore.score}/100 | Ventas: ${finalResult.salesScore?.score ?? '—'}/100. ¿Qué sección repasamos primero?`
     }]);
 
     setAnalysisProgress(100);
@@ -1466,7 +1435,7 @@ const runDeepAnalysis = async () => {
 
   } catch (err) {
     console.error('Error en análisis profundo:', err);
-    alert(`❌ Error al procesar reporte profundo: ${err.message || err}`);
+    alert(`❌ Error al procesar reporte: ${err.message || err}`);
     setStep('upload');
   } finally {
     await supabase.storage.from('videos').remove([storagePath]);
