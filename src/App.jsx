@@ -1395,30 +1395,54 @@ const runDeepAnalysis = async () => {
     // ── Ensamblar resultado final ─────────────────────────────
     // El viralScore viene del scoringEngine JS — inapelable
     // salesScore, honestVerdict, roadmap vienen de Gemini
-    const finalResult = {
-      viralScore: {
-        score:        scoringRaw.viralScore,
-        breakdown:    scoringRaw.breakdown,
-        verdict:      outputParsed.honestVerdict ?? '',
-        accion_clave: outputParsed.roadmap?.[0]?.solucion ?? '',
-      },
-      salesScore:     outputParsed.salesScore ?? { score: 0, verdict: '', accion_clave: '' },
-      scrollStopScore: outputParsed.scrollStopScore ?? { score: 0, verdict: '' },
-      hookDNA:        outputParsed.hookDNA ?? {},
-      steppsScore:    outputParsed.steppsScore ?? {},
-      honestVerdict:  outputParsed.honestVerdict ?? '',
-      roadmap:        outputParsed.roadmap ?? [],
-      objetivo:       selectedObjetivo,
+    // En runDeepAnalysis, al ensamblar finalResult:
+const finalResult = {
+  // ── Scores calculados ──────────────────────────────────────
+  viralScore: {
+    score:        scoringRaw.viralScore,
+    titulo:       'Potencial Viral',
+    breakdown:    scoringRaw.breakdown,
+    verdict:      outputParsed.honestVerdict ?? '',
+    accion_clave: outputParsed.roadmap?.[0]?.solucion ?? '',
+  },
+  salesScore: {
+    score:        outputParsed.salesScore?.score        ?? 0,
+    titulo:       'Potencial de Ventas',
+    verdict:      outputParsed.salesScore?.verdict      ?? '',
+    accion_clave: outputParsed.salesScore?.accion_clave ?? '',
+  },
+  scrollStopScore: outputParsed.scrollStopScore ?? { score: 0, verdict: '' },
+  hookDNA:         outputParsed.hookDNA         ?? {},
+  steppsScore:     outputParsed.steppsScore     ?? {},
+  honestVerdict:   outputParsed.honestVerdict   ?? '',
+  roadmap:         outputParsed.roadmap         ?? [],
+  objetivo:        selectedObjetivo,
 
-      // Datos internos para debug y chat
-      _failures:       failures,
-      _hook_gate:      hookGate,
-      _cognitive_scan: cognitiveScan,
-      _strategy:       strategyParsed,
-      _research_data:  researchData,
-      _gap_analysis:   gapAnalysis,
-      _viral_cap:      viralCapData,
-    };
+  // ── vision — construido desde perception + preFacts ────────
+  vision: {
+    niche:    industria                              ?? 'General',
+    type:     preFacts?.hook_type_detectado         ?? 'Video',
+    audience: perception?.palanca_psicologica       ?? '—',
+    promise:  preFacts?.hook_gate?.elemento_que_retiene ?? '—',
+  },
+
+  // ── potentialScore — promedio simple viral + ventas ────────
+  potentialScore: Math.round(
+    ((scoringRaw.viralScore ?? 0) + (outputParsed.salesScore?.score ?? 0)) / 2
+  ),
+  performanceScenario: scoringRaw.viralScore >= 70 ? 'Alto potencial'
+                     : scoringRaw.viralScore >= 45 ? 'Potencial medio'
+                     : 'Necesita mejoras',
+
+  // ── Internos ───────────────────────────────────────────────
+  _failures:       failures,
+  _hook_gate:      hookGate,
+  _cognitive_scan: cognitiveScan,
+  _strategy:       strategyParsed,
+  _research_data:  researchData,
+  _gap_analysis:   gapAnalysis,
+  _viral_cap:      viralCapData,
+};
 
     setAiResult(finalResult);
     setCompletedSteps([]);
