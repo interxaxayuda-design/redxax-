@@ -222,18 +222,18 @@ Respondé SOLO con este JSON exacto:
 }
 `;
 
-// ============================================================
-// COGNITIVE SCAN — mentalidad de destrucción
-// Rol: forense de atención. Busca el fracaso, no las virtudes.
-// Gemini ya sabe qué mata un video. Solo necesita el rol correcto.
-// ============================================================
 export const buildCognitiveScanPrompt = (videoRawData, industria) => `
-Sos un forense de atención. Tu trabajo es encontrar por qué este video va a fracasar.
+Sos un analista de retención con acceso a los patrones de los 10,000 videos más virales
+de ${industria} en TikTok, Reels y Shorts de los últimos 12 meses.
 
-No buscás virtudes. No evaluás potencial. No das crédito por intención ni por esfuerzo.
-Tu objetivo es detectar los momentos exactos en que el espectador abandona y la causa específica de cada abandono.
+Tu referencia es el TOP 0.1%. No el promedio. No "lo aceptable".
 
-El fracaso siempre existe. Si no lo encontrás, seguí buscando.
+Cuando ves este video, lo comparás mentalmente contra ese estándar de élite.
+Cualquier desviación — por pequeña que sea — es una pérdida de retención real.
+
+REGLA ÚNICA: Un video sin error activo es estadísticamente imposible.
+Si no encontrás al menos 3 problemas concretos con segundo específico, estás siendo
+demasiado permisivo con el estándar.
 
 INDUSTRIA: ${industria}
 
@@ -242,38 +242,61 @@ VIDEO:
 ${videoRawData}
 ---
 
-Para cada señal: value es la intensidad del problema (0.0 = no hay problema, 1.0 = problema máximo).
-confidence es qué tan seguro estás de tu estimación.
-Si no podés estimar algo con certeza, bajá el confidence — no inflés el value.
+Ejemplos de errores que el top 0.1% NUNCA comete (pero que vos tenés que detectar si existen):
+- Logo o marca visible antes del segundo 3 (el cerebro lo clasifica como ad y baja el pulgar)
+- Producto aparece después del segundo 7 sin gancho previo que justifique la espera
+- Primer segundo sin movimiento, sin voz, sin texto que cambie
+- Transición de más de 1.5 segundos sin información nueva
+- CTA verbal antes de que el espectador tenga razón para seguir mirando
+
+Estos son ejemplos del tipo de error — no una lista exhaustiva. Usá tu conocimiento
+de patrones virales 2026 para detectar TODO lo que este video hace diferente al top 0.1%.
+
+Para cada señal: value es intensidad del problema (0.0 = inexistente, 1.0 = fatal).
+confidence es tu certeza. Si no podés verlo con claridad, bajá confidence — no inflés value.
 
 Respondé SOLO con este JSON:
 {
   "abandonment_risk": {
-    "value":      <0.0-1.0 — ¿qué tan probable es que el espectador abandone antes del segundo 5?>,
-    "confidence": <0.0-1.0>,
-    "segundo_critico": <number — el segundo exacto donde ocurre el primer abandono masivo>
+    "value":           <0.0-1.0>,
+    "confidence":      <0.0-1.0>,
+    "segundo_critico": <number>,
+    "evidencia":       "<qué exactamente pasa en ese segundo que causa el abandono>"
   },
   "tension_collapse": {
-    "value":      <0.0-1.0 — ¿en qué medida el video promete algo y no lo sostiene?>,
-    "confidence": <0.0-1.0>
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<en qué segundo desaparece la tensión y por qué>"
   },
   "predictability_damage": {
-    "value":      <0.0-1.0 — ¿qué tan predecible es lo que va a pasar? El cerebro ya sabe el final antes de llegar>,
-    "confidence": <0.0-1.0>
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<qué elemento hace que el cerebro ya sepa el final>"
   },
   "cognitive_void": {
-    "value":      <0.0-1.0 — ¿hay momentos donde no pasa nada cognitivamente nuevo? No cortes — novedad real>,
-    "confidence": <0.0-1.0>
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<segundos exactos donde no hay input cognitivo nuevo>"
   },
   "trust_collapse": {
-    "value":      <0.0-1.0 — ¿qué tan fuerte es la señal de publicidad, fake, o contenido forzado?>,
-    "confidence": <0.0-1.0>
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<señal específica que activa el filtro anti-publicidad>"
   },
   "narrative_confusion": {
-    "value":      <0.0-1.0 — ¿qué tan confuso es lo que pasa? El espectador no entiende qué está mirando>,
-    "confidence": <0.0-1.0>
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<qué no entiende el espectador y en qué segundo>"
   },
-  "causa_principal_fracaso": "<en una oración: la razón específica más importante por la que este video pierde espectadores>"
+  "errores_adicionales": [
+    {
+      "tipo":      "<nombre del error>",
+      "segundo":   <number>,
+      "impacto":   <0.0-1.0>,
+      "evidencia": "<descripción exacta observable>"
+    }
+  ],
+  "causa_principal_fracaso": "<una oración: el error más grave comparado contra el top 0.1%>"
 }
 `;
 
