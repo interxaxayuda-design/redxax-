@@ -228,12 +228,14 @@ de ${industria} en TikTok, Reels y Shorts de los últimos 12 meses.
 
 Tu referencia es el TOP 0.1%. No el promedio. No "lo aceptable".
 
-Cuando ves este video, lo comparás mentalmente contra ese estándar de élite.
-Cualquier desviación — por pequeña que sea — es una pérdida de retención real.
+Evaluá este video en tres dimensiones con el mismo nivel de exigencia:
+— Hook verbal: las primeras palabras
+— Edición: densidad cognitiva por segundo
+— Estructura general: retención, tensión, payoff
 
 REGLA ÚNICA: Un video sin error activo es estadísticamente imposible.
-Si no encontrás al menos 3 problemas concretos con segundo específico, estás siendo
-demasiado permisivo con el estándar.
+Si no encontrás al menos 3 problemas concretos con segundo específico,
+estás siendo demasiado permisivo con el estándar del TOP 0.1%.
 
 INDUSTRIA: ${industria}
 
@@ -241,16 +243,6 @@ VIDEO:
 ---
 ${videoRawData}
 ---
-
-Ejemplos de errores que el top 0.1% NUNCA comete (pero que vos tenés que detectar si existen):
-- Logo o marca visible antes del segundo 3 (el cerebro lo clasifica como ad y baja el pulgar)
-- Producto aparece después del segundo 7 sin gancho previo que justifique la espera
-- Primer segundo sin movimiento, sin voz, sin texto que cambie
-- Transición de más de 1.5 segundos sin información nueva
-- CTA verbal antes de que el espectador tenga razón para seguir mirando
-
-Estos son ejemplos del tipo de error — no una lista exhaustiva. Usá tu conocimiento
-de patrones virales 2026 para detectar TODO lo que este video hace diferente al top 0.1%.
 
 Para cada señal: value es intensidad del problema (0.0 = inexistente, 1.0 = fatal).
 confidence es tu certeza. Si no podés verlo con claridad, bajá confidence — no inflés value.
@@ -261,12 +253,12 @@ Respondé SOLO con este JSON:
     "value":           <0.0-1.0>,
     "confidence":      <0.0-1.0>,
     "segundo_critico": <number>,
-    "evidencia":       "<qué exactamente pasa en ese segundo que causa el abandono>"
+    "evidencia":       "<qué exactamente pasa en ese segundo>"
   },
   "tension_collapse": {
     "value":      <0.0-1.0>,
     "confidence": <0.0-1.0>,
-    "evidencia":  "<en qué segundo desaparece la tensión y por qué>"
+    "evidencia":  "<en qué segundo y por qué>"
   },
   "predictability_damage": {
     "value":      <0.0-1.0>,
@@ -276,7 +268,7 @@ Respondé SOLO con este JSON:
   "cognitive_void": {
     "value":      <0.0-1.0>,
     "confidence": <0.0-1.0>,
-    "evidencia":  "<segundos exactos donde no hay input cognitivo nuevo>"
+    "evidencia":  "<segundos exactos sin input cognitivo nuevo>"
   },
   "trust_collapse": {
     "value":      <0.0-1.0>,
@@ -288,6 +280,16 @@ Respondé SOLO con este JSON:
     "confidence": <0.0-1.0>,
     "evidencia":  "<qué no entiende el espectador y en qué segundo>"
   },
+  "verbal_hook_failure": {
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<transcripción exacta de las primeras palabras + veredicto>"
+  },
+  "editing_density_failure": {
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<segundos específicos donde la edición pierde densidad cognitiva>"
+  },
   "errores_adicionales": [
     {
       "tipo":      "<nombre del error>",
@@ -296,7 +298,7 @@ Respondé SOLO con este JSON:
       "evidencia": "<descripción exacta observable>"
     }
   ],
-  "causa_principal_fracaso": "<una oración: el error más grave comparado contra el top 0.1%>"
+  "causa_principal_fracaso": "<una oración: el error más grave vs el TOP 0.1%>"
 }
 `;
 
