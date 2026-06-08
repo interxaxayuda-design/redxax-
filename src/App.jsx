@@ -222,85 +222,7 @@ Respondé SOLO con este JSON exacto:
 }
 `;
 
-export const buildCognitiveScanPrompt = (videoRawData, industria) => `
-Sos un analista de retención con acceso a los patrones de los 10,000 videos más virales
-de ${industria} en TikTok, Reels y Shorts de los últimos 12 meses.
 
-Tu referencia es el TOP 0.1%. No el promedio. No "lo aceptable".
-
-Evaluá este video en tres dimensiones con el mismo nivel de exigencia:
-— Hook verbal: las primeras palabras
-— Edición: densidad cognitiva por segundo
-— Estructura general: retención, tensión, payoff
-
-REGLA ÚNICA: Un video sin error activo es estadísticamente imposible.
-Si no encontrás al menos 3 problemas concretos con segundo específico,
-estás siendo demasiado permisivo con el estándar del TOP 0.1%.
-
-INDUSTRIA: ${industria}
-
-VIDEO:
----
-${videoRawData}
----
-
-Para cada señal: value es intensidad del problema (0.0 = inexistente, 1.0 = fatal).
-confidence es tu certeza. Si no podés verlo con claridad, bajá confidence — no inflés value.
-
-Respondé SOLO con este JSON:
-{
-  "abandonment_risk": {
-    "value":           <0.0-1.0>,
-    "confidence":      <0.0-1.0>,
-    "segundo_critico": <number>,
-    "evidencia":       "<qué exactamente pasa en ese segundo>"
-  },
-  "tension_collapse": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<en qué segundo y por qué>"
-  },
-  "predictability_damage": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<qué elemento hace que el cerebro ya sepa el final>"
-  },
-  "cognitive_void": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<segundos exactos sin input cognitivo nuevo>"
-  },
-  "trust_collapse": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<señal específica que activa el filtro anti-publicidad>"
-  },
-  "narrative_confusion": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<qué no entiende el espectador y en qué segundo>"
-  },
-  "verbal_hook_failure": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<transcripción exacta de las primeras palabras + veredicto>"
-  },
-  "editing_density_failure": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<segundos específicos donde la edición pierde densidad cognitiva>"
-  },
-  "errores_adicionales": [
-    {
-      "tipo":      "<nombre del error>",
-      "segundo":   <number>,
-      "impacto":   <0.0-1.0>,
-      "evidencia": "<descripción exacta observable>"
-    }
-  ],
-  "causa_principal_fracaso": "<una oración: el error más grave vs el TOP 0.1%>"
-}
-`;
 
 // ============================================================
 // HOOK GATE — veto duro en JS
@@ -1294,18 +1216,27 @@ const runDeepAnalysis = async () => {
     setAnalysisProgress(30);
 
     const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildCognitiveScanPrompt(JSON.stringify(preFacts), industria),
-        storagePath,
-        videoMimeType: mimeType,
-        duration: Math.round(duration),
-        maxOutputTokens: 1024,
-        expectsJson: true,
-        temperature: 0,
-      }
-    });
+  body: {
+    text: buildCognitiveScanPrompt(JSON.stringify(preFacts), industria),
+    storagePath,
+    videoMimeType: mimeType,
+    duration: Math.round(duration),
+    maxOutputTokens: 1024,
+    expectsJson: true,
+    temperature: 0,
+  }
+});
 
-    if (call1Error) throw new Error(`CALL 1 falló: ${call1Error.message}`);
+if (call1Error) {
+  // Leer el body real del error — igual que hiciste con deduct-gems
+  let errorBody = '';
+  try {
+    errorBody = await call1Error.context?.text?.();
+  } catch (_) {}
+  console.error('[CALL 1] Status error:', call1Error.message);
+  console.error('[CALL 1] Body real:', errorBody);
+  throw new Error(`CALL 1 falló: ${errorBody || call1Error.message}`);
+}
     const cognitiveScan = safeParseJSON(extractGeminiText(call1Data), 'cognitive-scan') || {};
     console.log('[VIRAX] Cognitive scan:', cognitiveScan);
 
