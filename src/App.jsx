@@ -222,6 +222,89 @@ Respondé SOLO con este JSON exacto:
 }
 `;
 
+// ============================================================
+// COGNITIVE SCAN — mentalidad de destrucción
+// ============================================================
+export const buildCognitiveScanPrompt = (videoRawData, industria) => `
+Sos un analista de retención con acceso a los patrones de los 10,000 videos más virales
+de ${industria} en TikTok, Reels y Shorts de los últimos 12 meses.
+
+Tu referencia es el TOP 0.1%. No el promedio. No "lo aceptable".
+
+Evaluá este video en tres dimensiones con el mismo nivel de exigencia:
+— Hook verbal: las primeras palabras
+— Edición: densidad cognitiva por segundo
+— Estructura general: retención, tensión, payoff
+
+REGLA ÚNICA: Un video sin error activo es estadísticamente imposible.
+Si no encontrás al menos 3 problemas concretos con segundo específico,
+estás siendo demasiado permisivo con el estándar del TOP 0.1%.
+
+INDUSTRIA: ${industria}
+
+VIDEO:
+---
+${videoRawData}
+---
+
+Para cada señal: value es intensidad del problema (0.0 = inexistente, 1.0 = fatal).
+confidence es tu certeza. Si no podés verlo con claridad, bajá confidence — no inflés value.
+
+Respondé SOLO con este JSON:
+{
+  "abandonment_risk": {
+    "value":           <0.0-1.0>,
+    "confidence":      <0.0-1.0>,
+    "segundo_critico": <number>,
+    "evidencia":       "<qué exactamente pasa en ese segundo>"
+  },
+  "tension_collapse": {
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<en qué segundo y por qué>"
+  },
+  "predictability_damage": {
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<qué elemento hace que el cerebro ya sepa el final>"
+  },
+  "cognitive_void": {
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<segundos exactos sin input cognitivo nuevo>"
+  },
+  "trust_collapse": {
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<señal específica que activa el filtro anti-publicidad>"
+  },
+  "narrative_confusion": {
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<qué no entiende el espectador y en qué segundo>"
+  },
+  "verbal_hook_failure": {
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<transcripción exacta de las primeras palabras + veredicto>"
+  },
+  "editing_density_failure": {
+    "value":      <0.0-1.0>,
+    "confidence": <0.0-1.0>,
+    "evidencia":  "<segundos específicos donde la edición pierde densidad cognitiva>"
+  },
+  "errores_adicionales": [
+    {
+      "tipo":      "<nombre del error>",
+      "segundo":   <number>,
+      "impacto":   <0.0-1.0>,
+      "evidencia": "<descripción exacta observable>"
+    }
+  ],
+  "causa_principal_fracaso": "<una oración: el error más grave vs el TOP 0.1%>"
+}
+`;
+
 
 
 // ============================================================
