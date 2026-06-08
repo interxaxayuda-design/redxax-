@@ -1211,13 +1211,21 @@ const runDeepAnalysis = async () => {
   setAnalysisProgress(22);
 
   try {
-    // ── CALL 1 — Cognitive Scan ───────────────────────────────
-    setStatusText("Buscando puntos de fracaso...");
-    setAnalysisProgress(30);
+// ── CALL 1 — Cognitive Scan ───────────────────────────────
+setStatusText("Buscando puntos de fracaso...");
+setAnalysisProgress(30);
 
-    const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
+const preFactsStr = JSON.stringify(preFacts?.atomicas ?? {});
+console.log('[CALL 1] storagePath:', storagePath);
+console.log('[CALL 1] mimeType:', mimeType);
+console.log('[CALL 1] duration:', duration);
+console.log('[CALL 1] industria:', industria);
+console.log('[CALL 1] preFacts size:', preFactsStr.length, 'chars');
+console.log('[CALL 1] prompt preview:', buildCognitiveScanPrompt(preFactsStr, industria)?.slice(0, 150));
+
+const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
   body: {
-    text: buildCognitiveScanPrompt(JSON.stringify(preFacts), industria),
+    text: buildCognitiveScanPrompt(preFactsStr, industria),
     storagePath,
     videoMimeType: mimeType,
     duration: Math.round(duration),
@@ -1228,24 +1236,21 @@ const runDeepAnalysis = async () => {
 });
 
 if (call1Error) {
-  // Leer el body real del error — igual que hiciste con deduct-gems
   let errorBody = '';
-  try {
-    errorBody = await call1Error.context?.text?.();
-  } catch (_) {}
+  try { errorBody = await call1Error.context?.text?.(); } catch (_) {}
   console.error('[CALL 1] Status error:', call1Error.message);
   console.error('[CALL 1] Body real:', errorBody);
   throw new Error(`CALL 1 falló: ${errorBody || call1Error.message}`);
 }
-    const cognitiveScan = safeParseJSON(extractGeminiText(call1Data), 'cognitive-scan') || {};
-    console.log('[VIRAX] Cognitive scan:', cognitiveScan);
 
-    // ── JS — Gate + Failures + Scoring ───────────────────────
-    const hookGate     = deriveHookGateStatus(preFacts);
-    const failures     = deriveFailureSystems(preFacts, cognitiveScan);
-    const scoringRaw   = scoringEngine(failures, cognitiveScan, industria, nicheConfig);
-    // CAMBIO: deriveViralCap ahora recibe preFacts como segundo argumento
-    const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
+const cognitiveScan = safeParseJSON(extractGeminiText(call1Data), 'cognitive-scan') || {};
+console.log('[VIRAX] Cognitive scan:', cognitiveScan);
+
+// ── JS — Gate + Failures + Scoring ───────────────────────
+const hookGate     = deriveHookGateStatus(preFacts);
+const failures     = deriveFailureSystems(preFacts, cognitiveScan);
+const scoringRaw   = scoringEngine(failures, cognitiveScan, industria, nicheConfig);
+const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
 
     scoringRaw.viralScore = Math.min(scoringRaw.viralScore, viralCapData.cap);
 
