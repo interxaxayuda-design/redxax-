@@ -157,14 +157,6 @@ const safeParseJSON = (rawText, context = '') => {
   throw new Error(`JSON malformado. Preview: "${rawText.slice(0, 80)}..."`);
 };
 
-const limpiarJSON = (str) => {
-  if (typeof str !== 'string') return str;
-  const backtick = '\x60';
-  const fence = new RegExp(backtick + backtick + backtick + 'json', 'gi');
-  const fenceClose = new RegExp(backtick + backtick + backtick, 'gi');
-  return str.replace(fence, '').replace(fenceClose, '').trim();
-};
-
 // ============================================================
 // VIRAX — PROMPTS CORREGIDOS
 // Cambios aplicados vs versión anterior:
@@ -176,6 +168,14 @@ const limpiarJSON = (str) => {
 //   6. buildCognitiveScanPrompt ahora recibe y usa FEW_SHOTS reales
 //   7. Instrucción explícita anti-sesgo pesimista en cognitive scan
 // ============================================================
+
+const limpiarJSON = (str) => {
+  if (typeof str !== 'string') return str;
+  const backtick = '\x60';
+  const fence = new RegExp(backtick + backtick + backtick + 'json', 'gi');
+  const fenceClose = new RegExp(backtick + backtick + backtick, 'gi');
+  return str.replace(fence, '').replace(fenceClose, '').trim();
+};
 
 // ============================================================
 // NICHE CONFIG — sin cambios
@@ -287,105 +287,66 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
 
 
 // ============================================================
-// COGNITIVE SCAN — CALL 1
-// FIX #1 aplicado: fewShotExamples ya no es undefined
-// FIX #5 aplicado: temperatura recomendada 0.3
-// FIX #7 aplicado: instrucción anti-sesgo pesimista explícita
+// COGNITIVE SCAN — CALL 1 (Versión Optimizada/Corta)
 // ============================================================
 export const buildCognitiveScanPrompt = (videoRawData, industria, researchData = null) => {
-  // FIX #1: fewShotExamples se importa directo desde la constante FEW_SHOTS
-  // Ya no depende de un parámetro que puede llegar vacío
-
   const benchmarkContext = researchData
-    ? `BENCHMARK Y PATRONES GANADORES DEL NICHO (Usá esto como regla de calibración):
-${typeof researchData === 'string' ? researchData : JSON.stringify(researchData, null, 2)}`
-    : `No hay benchmark específico disponible. Usá tu conocimiento actualizado a 2026 sobre formato corto en el nicho: "${industria}".`;
+    ? `BENCHMARK DEL NICHO:\n${typeof researchData === 'string' ? researchData : JSON.stringify(researchData, null, 2)}`
+    : `Usá tu conocimiento a 2026 sobre formato corto en: "${industria}".`;
 
   return `
-# ROL
-Sos un Director de Contenido Senior con 10 años calibrando audiencias reales en TikTok, Reels y Shorts.
-Tu trabajo es PREDECIR el comportamiento real del espectador — no juzgar el video moralmente ni buscar errores para demostrar rigor.
-
-# ⚠️ ADVERTENCIA ANTI-SESGO (leer antes de evaluar)
-Los modelos de lenguaje tienden a penalizar contenido por defecto porque la mayoría del contenido
-en internet que fue etiquetado como "analizado" resultó ser malo. ESTO NO APLICA AQUÍ.
-Tu tarea es evaluar el video específico frente a su competencia real, no frente a un ideal perfecto.
-Un video COMPETENTE merece un score COMPETENTE (60-70). No lo penalices por no ser excepcional.
-Si buscás activamente fallas donde no las hay, el análisis es inútil para el usuario.
+# ROL Y CALIBRACIÓN
+Sos un Director de Contenido Senior prediciendo retención real en formato corto. 
+⚠️ ANTI-SESGO: No exijas perfección de Hollywood. Un video competente y normal en su nicho (ej. low-fi, talking head) merece un buen puntaje (60-75). Evaluá objetivamente sin buscar fallas donde no las hay.
 
 # CONTEXTO DEL MERCADO
 ${benchmarkContext}
 
-# PRINCIPIOS DE EVALUACIÓN — MANDATORIOS
-1. **El formato Low-Fi es válido**: Storytelling sin edición, talking heads, testimoniales lentos —
-   pueden ser EXCELENTES (score 65-80) si la narrativa retiene. No penalices ausencia de edición
-   si el formato del nicho no la requiere (ej: coaches, inmobiliaria, educación).
-2. **Calibración justa**: Evaluá lo que el video ES, no lo que le falta para ser perfecto.
-   El rango 60-75 es normal y representa contenido competente que funciona bien en su nicho.
-3. **Solo evidencia citable**: Solo podés declarar una debilidad si podés citar el segundo exacto
-   o el elemento literal del video. Sin evidencia específica → no existe el problema.
-4. **Contar fortalezas primero**: Antes de buscar fallas, identificá lo que funciona. Si hay 3
-   fortalezas y 1 debilidad, el score no puede ser menor a 55.
-
-# ESCALA ANCLADA — USÁ ESTOS RANGOS CON PRECISIÓN
-- 10–30  → Video roto. Sin hook, sin retención posible, sin valor. Ejemplo: logo estático 40s sin audio.
-- 31–50  → Intención sin ejecución. Idea presente pero ejecución que pierde al espectador antes del segundo 8.
-- 51–65  → Promedio competente. Cumple las reglas básicas. Consumible, correcto, distribución orgánica estándar.
-           ESTE RANGO ES VÁLIDO Y COMÚN. No lo tratés como "casi bueno" — ES bueno para su función.
-- 66–80  → Muy buen video. Hook funcional + desarrollo coherente + payoff claro. Alta probabilidad
-           de distribución en su nicho. La mayoría de los videos virales reales caen aquí.
-- 81–95  → Excepcional. Los tres pilares en alta ejecución + factor sorpresa o emocional fuerte.
-- 96–100 → Define tendencia global. Menos del 1% del contenido de internet. Requiere factor cultural impredecible.
-
-# EJEMPLOS DE REFERENCIA CALIBRADOS
-${FEW_SHOTS}
-
 # DATOS DEL VIDEO A EVALUAR
 NICHO: ${industria}
-HECHOS OBSERVADOS (output del pre-classifier):
+HECHOS OBSERVADOS:
 ---
 ${videoRawData}
 ---
+EJEMPLOS DE REFERENCIA:
+${FEW_SHOTS}
 
-# PROCESO OBLIGATORIO (hacé esto antes de escribir el JSON)
-Paso 1 → Identificá el ARQUETIPO del video. ¿Es hiper-editado, storytelling analógico, demo visual, educativo, POV?
-          El arquetipo define QUÉ estándares aplican. Un talking head NO se evalúa con los mismos criterios que un reel de producto.
-Paso 2 → Listá las FORTALEZAS con evidencia citada (segundo + elemento concreto). Mínimo 1 si existe.
-Paso 3 → Listá las DEBILIDADES con evidencia citada. Solo si hay punto de fuga concreto y citable.
-          Si no podés citar evidencia específica → no pongas la debilidad.
-Paso 4 → Balanceá. Si las fortalezas superan a las debilidades → score ≥ 60.
-          Si las debilidades son estructurales (hook muerto, sin payoff) → score puede bajar.
-Paso 5 → Asigná el score final. Escribí en razonamiento_score por qué ese número y no ±10.
+# PROCESO OBLIGATORIO
+1. Arquetipo: Definí el formato (POV, hiper-editado, educativo, etc.).
+2. Auditoría de Fricciones (EXACTAMENTE 5 items, ni más ni menos): 
+   - Identificá 5 fricciones basándote en el nicho.
+   - Asigná penalización negativa según gravedad:
+     * Grave (destruye retención): -8.0 a -15.0
+     * Medio (afecta ritmo): -3.0 a -7.9
+     * Leve (detalle estético): -0.6 a -2.9
+   - ⚠️ VÁLVULA DE ESCAPE: Si el video es excelente, INVENTARIÁ 5 "micro-fricciones" invisibles (ej. silencio de 0.1s, encuadre leve) con peso entre -0.1 y -0.5 para cumplir la cuota sin arruinar el score.
+3. Fricción Total: Sumá matemáticamente las 5 penalizaciones.
+4. Fortalezas: Listá lo que funciona con evidencia (mínimo 1).
+5. viralScore: Base según fortalezas + impacto del friccion_penalty_total. (Si la penalización total supera los -35.0, el score máximo posible es 45).
 
-# OUTPUT — Respondé ÚNICAMENTE con este JSON, sin texto extra
+# ESCALA ANCLADA
+10-30: Roto | 31-50: Falla ejecución | 51-65: Promedio competente | 66-80: Muy bueno/Viral | 81-100: Excepcional.
+
+# OUTPUT JSON (Respondé ÚNICAMENTE con esta estructura, sin texto extra)
 {
-  "arquetipo_detectado": "<talking_head|demo_producto|storytelling|educativo|pov|hiper_editado|otro>",
+  "arquetipo_detectado": "<string>",
+  "auditoria_fricciones_2026": [
+    { "nombre_falla": "<string>", "es_fatal": <boolean>, "evidencia": "<string>", "penalizacion": <number negativo> }
+  ],
+  "friccion_penalty_total": <number negativo>,
   "fortalezas_observadas": [
-    {
-      "elemento":        "<gancho visual / propuesta de valor / ritmo / narrativa>",
-      "segundo":         <number>,
-      "evidencia_citada": "<frase exacta o hecho observable del video>",
-      "impacto":         "<alto|medio|bajo>"
-    }
+    { "elemento": "<string>", "segundo": <number>, "evidencia_citada": "<string>", "impacto": "<alto|medio|bajo>" }
   ],
-  "debilidades_observadas": [
-    {
-      "elemento":        "<punto de fuga / audio plano / falta de claridad>",
-      "segundo":         <number>,
-      "evidencia_citada": "<frase exacta o hecho observable — si no tenés esto, no pongas la debilidad>",
-      "impacto":         "<alto|medio|bajo>"
-    }
-  ],
-  "razonamiento_score": "<2-3 frases explicando por qué este score y no +10/-10. Mencioná el arquetipo y cómo afecta la evaluación>",
-  "viralScore":          <number 0-100 — usá la escala anclada de arriba>,
-  "confianza_score":     <0.0 a 1.0 — qué tan seguro estás del score dado lo que podés observar>,
-  "causa_principal_fracaso": "<NINGUNO si viralScore >= 60. Si es menor, la razón técnica específica y citable>",
+  "razonamiento_score": "<string>",
+  "viralScore": <number 0-100>,
+  "confianza_score": <number 0.0-1.0>,
+  "causa_principal_fracaso": "<string o 'NINGUNO'>",
   "sub_dimensiones": {
-    "hook_strength":    { "score": <0-100>, "evidencia": "<justificación basada en los primeros 3 segundos>" },
-    "retention_design": { "score": <0-100>, "evidencia": "<justificación del ritmo o flujo narrativo>" },
-    "payoff_quality":   { "score": <0-100>, "evidencia": "<si la promesa se cumple con impacto>" },
-    "narrative_clarity":{ "score": <0-100>, "evidencia": "<si el mensaje se entiende al instante>" },
-    "trust_signals":    { "score": <0-100>, "evidencia": "<autoridad, rostro real, o demostración empírica>" }
+    "hook_strength": { "score": <number>, "evidencia": "<string>" },
+    "retention_design": { "score": <number>, "evidencia": "<string>" },
+    "payoff_quality": { "score": <number>, "evidencia": "<string>" },
+    "narrative_clarity": { "score": <number>, "evidencia": "<string>" },
+    "trust_signals": { "score": <number>, "evidencia": "<string>" }
   }
 }
 `;
@@ -811,7 +772,6 @@ Respondé SOLO con JSON:
   "señal_viral_minima":         "<qué necesita un video de este nicho para entrar al top esta semana>"
 }`;
 };
-
 
 export const deriveHookType = (preFacts) => {
   if (!preFacts || !Object.keys(preFacts).length) return 'debil';
