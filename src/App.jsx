@@ -221,61 +221,28 @@ Respondé SOLO con este JSON exacto:
 }
 `;
 
-// ============================================================
-// COGNITIVE SCAN — detector de errores, no justificador
-// Gemini score + checklist de presencia + errores libres
-// ============================================================
 export const buildCognitiveScanPrompt = (videoRawData, industria) => `
-Sos un analista de retención con acceso a los patrones de los 10,000 videos más virales
-de ${industria} en TikTok, Reels y Shorts de los últimos 12 meses.
+Sos un predictor de rendimiento de contenido corto.
+Tu función es predecir qué tan bien va a retener espectadores este video
+en "${industria}" en TikTok, Reels y Shorts.
 
-Tu referencia es el TOP 0.1%. No el promedio. No "lo aceptable".
+Usá tu conocimiento completo de patrones virales para evaluarlo.
+No justificás potencial. No suavizás. Predecís según lo que hay.
 
-Evaluá este video en tres dimensiones con el mismo nivel de exigencia:
-— Hook verbal: las primeras palabras
-— Edición: densidad cognitiva por segundo
-— Estructura general: retención, tensión, payoff
+ESCALA:
+10-25  → abandono masivo antes del s3
+26-45  → no sobrevive el s8 en la mayoría de los casos
+46-60  → rendimiento promedio del mercado, sin distribución orgánica real
+61-75  → puede entrar en distribución si el nicho está activo
+76-90  → alta probabilidad de distribución orgánica
+91-100 → define tendencia, menos del 1% llega acá
 
-REGLA ÚNICA: Un video sin error activo es estadísticamente imposible.
-Si no encontrás al menos 3 problemas concretos con segundo específico,
-estás siendo demasiado permisivo con el estándar del TOP 0.1%.
-
-CHECKLIST DE PRESENCIA OBLIGATORIA:
-Antes de poner cualquier número, verificá si cada uno de estos elementos EXISTE en el video.
-Si no existe, es un error activo — no una ausencia neutral.
-
-— Estímulo cognitivo en s0-s1: ¿hay algo que active una pregunta en el cerebro del espectador?
-— Hook con tensión abierta: ¿el espectador tiene una razón específica para seguir mirando?
-— Patrón de interrupción visual: ¿hay algo que rompa la predictibilidad en los primeros 3s?
-— Señal de valor inmediato: ¿el espectador sabe en qué le sirve este video antes del s5?
-— Rehook entre s8-s15: ¿hay algo que retenga al espectador que ya sobrevivió el hook?
-
-Cada elemento ausente es un error activo. Reportalo en "errores_adicionales" así:
-{
-  "tipo": "ausencia_estimulo_cognitivo_s0",
-  "segundo": 0,
-  "impacto": <0.0-1.0>,
-  "evidencia": "<qué hay en cambio y por qué no activa el cerebro>"
-}
-
-ERRORES NO LISTADOS:
-Si detectás cualquier otro error que el TOP 0.1% nunca cometería — aunque no tenga
-nombre en esta lista — reportalo en "errores_adicionales".
-Tu conocimiento de patrones virales 2026 define qué es un error. No necesitás que
-esté en una lista para reportarlo.
-El viralScore tiene que reflejar TODOS los errores encontrados, incluyendo ausencias
-y errores adicionales. No solo los campos fijos.
-
-ESCALA DE SCORING:
-0-20:   Video muerto. Hook inexistente, abandono en los primeros 2s garantizado.
-21-40:  Video débil. Errores graves que matan la retención antes del s8.
-41-60:  Video promedio. Pasa el filtro pero no compite con el top del nicho.
-61-75:  Video competitivo. Tiene señales reales pero falla en algo específico y medible.
-76-90:  Video fuerte. Errores menores, compite en el top 10% del nicho.
-91-100: Video excepcional. Reservado para contenido que domina su nicho. Extremadamente raro.
-
-La mayoría de los videos comerciales caen entre 30 y 55.
-Un 70+ requiere justificación específica basada en señales observables — no en potencial.
+REGLAS DE OUTPUT:
+— value en cada campo = intensidad del problema (0.0 = no existe, 1.0 = fatal)
+— Si algo funciona bien: value 0.0-0.2. Si algo falla: value 0.6-1.0.
+— No uses 0.3-0.5 para evitar tomar posición. Tomá posición.
+— errores_adicionales = [] si no hay evidencia directa de errores extra
+— causa_principal_fracaso = "NINGUNO" si el video es 61+
 
 INDUSTRIA: ${industria}
 
@@ -284,62 +251,52 @@ VIDEO:
 ${videoRawData}
 ---
 
-Para cada señal: value es intensidad del problema (0.0 = inexistente, 1.0 = fatal).
-confidence es tu certeza. Si no podés verlo con claridad, bajá confidence — no inflés value.
-
 Respondé SOLO con este JSON:
 {
   "abandonment_risk": {
     "value":           <0.0-1.0>,
     "confidence":      <0.0-1.0>,
-    "segundo_critico": <number>,
-    "evidencia":       "<qué exactamente pasa en ese segundo>"
+    "segundo_critico": <number o 0>,
+    "evidencia":       "<qué hay en ese segundo o NINGUNO>"
   },
   "tension_collapse": {
     "value":      <0.0-1.0>,
     "confidence": <0.0-1.0>,
-    "evidencia":  "<en qué segundo y por qué>"
+    "evidencia":  "<evidencia directa o NINGUNO>"
   },
   "predictability_damage": {
     "value":      <0.0-1.0>,
     "confidence": <0.0-1.0>,
-    "evidencia":  "<qué elemento hace que el cerebro ya sepa el final>"
+    "evidencia":  "<evidencia directa o NINGUNO>"
   },
   "cognitive_void": {
     "value":      <0.0-1.0>,
     "confidence": <0.0-1.0>,
-    "evidencia":  "<segundos exactos sin input cognitivo nuevo>"
+    "evidencia":  "<segundos exactos o NINGUNO>"
   },
   "trust_collapse": {
     "value":      <0.0-1.0>,
     "confidence": <0.0-1.0>,
-    "evidencia":  "<señal específica que activa el filtro anti-publicidad>"
+    "evidencia":  "<evidencia directa o NINGUNO>"
   },
   "narrative_confusion": {
     "value":      <0.0-1.0>,
     "confidence": <0.0-1.0>,
-    "evidencia":  "<qué no entiende el espectador y en qué segundo>"
+    "evidencia":  "<evidencia directa o NINGUNO>"
   },
   "verbal_hook_failure": {
     "value":      <0.0-1.0>,
     "confidence": <0.0-1.0>,
-    "evidencia":  "<transcripción exacta de las primeras palabras + veredicto>"
+    "evidencia":  "<transcripción exacta de las primeras palabras + predicción>"
   },
   "editing_density_failure": {
     "value":      <0.0-1.0>,
     "confidence": <0.0-1.0>,
-    "evidencia":  "<segundos específicos donde la edición pierde densidad cognitiva>"
+    "evidencia":  "<segundos donde cae la densidad o NINGUNO>"
   },
-  "errores_adicionales": [
-    {
-      "tipo":      "<nombre del error>",
-      "segundo":   <number>,
-      "impacto":   <0.0-1.0>,
-      "evidencia": "<descripción exacta observable>"
-    }
-  ],
-  "viralScore":             <number 0-100 — basado en la escala de arriba, refleja TODOS los errores>,
-  "causa_principal_fracaso": "<una oración: el error más grave vs el TOP 0.1%>"
+  "errores_adicionales": [],
+  "viralScore":              <number 0-100>,
+  "causa_principal_fracaso": "<factor más determinante o NINGUNO si es 61+>"
 }
 `;
 
