@@ -1190,7 +1190,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   }
 };
 
-const runDeepAnalysis = async () => {
+const runDeepAnalysis = async () => {  //const hookGate     = deriveHookGateStatus(preFacts);
   if (!videoMeta || !perception) {
     alert("Faltan datos de calibración.");
     return;
@@ -1245,9 +1245,34 @@ const cognitiveScan = safeParseJSON(extractGeminiText(call1Data), 'cognitive-sca
 console.log('[VIRAX] Cognitive scan:', cognitiveScan);
 
 // ── JS — Gate + Failures + Scoring ───────────────────────
-const hookGate     = deriveHookGateStatus(preFacts);
-const failures     = deriveFailureSystems(preFacts, cognitiveScan);
-const scoringRaw   = scoringEngine(failures, cognitiveScan, industria, nicheConfig);
+// ── JS — Gate + Failures + Scoring ───────────────────────
+const hookGate = deriveHookGateStatus(preFacts);
+
+// Derivar sistemas de falla desde cognitive scan + preFacts
+const failures = {
+  hook_dead:         (cognitiveScan?.verbal_hook_failure?.value ?? 0) > 0.6,
+  no_tension:        (cognitiveScan?.tension_collapse?.value ?? 0) > 0.6,
+  cognitive_void:    (cognitiveScan?.cognitive_void?.value ?? 0) > 0.5,
+  trust_broken:      (cognitiveScan?.trust_collapse?.value ?? 0) > 0.6,
+  predictable:       (cognitiveScan?.predictability_damage?.value ?? 0) > 0.6,
+  editing_flat:      (cognitiveScan?.editing_density_failure?.value ?? 0) > 0.5,
+  narrative_lost:    (cognitiveScan?.narrative_confusion?.value ?? 0) > 0.5,
+  high_abandonment:  (cognitiveScan?.abandonment_risk?.value ?? 0) > 0.6,
+};
+
+// Calcular viralScore desde cognitive scan
+const rawViralScore = cognitiveScan?.viralScore ?? 50;
+const penaltyCount  = Object.values(failures).filter(Boolean).length;
+const penalty       = penaltyCount * 3;
+const scoringRaw    = {
+  viralScore: Math.max(0, rawViralScore - penalty),
+  breakdown: {
+    causa_fracaso: cognitiveScan?.causa_principal_fracaso ?? '—',
+    penalties:     failures,
+    base_score:    rawViralScore,
+    penalty_applied: penalty,
+  }
+};
 const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
 
     scoringRaw.viralScore = Math.min(scoringRaw.viralScore, viralCapData.cap);
