@@ -165,6 +165,21 @@ const limpiarJSON = (str) => {
   return str.replace(fence, '').replace(fenceClose, '').trim();
 };
 
+// ============================================================
+// VIRAX — PROMPTS CORREGIDOS
+// Cambios aplicados vs versión anterior:
+//   1. FEW_SHOTS definidos como constante real (ya no undefined)
+//   2. Hook Gate convertido a penalización graduada (no veto binario)
+//   3. Cap subido de 20 → 55 cuando el gate falla (no mata el score)
+//   4. Penalización JS eliminada del pipeline (Gemini da el score, JS no lo toca)
+//   5. Temperatura recomendada: 0.3 en CALL 1, 0 en CALL 0
+//   6. buildCognitiveScanPrompt ahora recibe y usa FEW_SHOTS reales
+//   7. Instrucción explícita anti-sesgo pesimista en cognitive scan
+// ============================================================
+
+// ============================================================
+// NICHE CONFIG — sin cambios
+// ============================================================
 export const NICHE_MOTORS = {
   "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
   "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
@@ -187,137 +202,247 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
   "musica_artista":     { retention: 1.3, tension: 0.8, payoff: 0.9, clarity: 0.7, trust: 0.8 },
 };
 
+
 // ============================================================
-// PRE-CLASSIFIER — hechos observables, sin juicio
+// FEW_SHOTS — FIX #1
+// Antes: se pasaba como parámetro vacío → llegaba "undefined" al prompt
+// Ahora: constante definida aquí, siempre disponible, sin costo extra
+// Estos ejemplos están escritos como descripciones de video, no como
+// videos reales. Gemini los calibra igual de bien con texto descriptivo.
+// ============================================================
+export const FEW_SHOTS = `
+━━━ EJEMPLO SCORE 28 — VIDEO ROTO ━━━
+DESCRIPCIÓN: Logo estático de empresa durante 40 segundos con música de fondo genérica.
+Texto overlay: "Conocé nuestros servicios". Sin voz, sin persona visible, sin pregunta activa.
+Sin cortes. Motion intensity: 0.0. Payoff: nunca aparece.
+VEREDICTO: El espectador no tiene ninguna razón para quedarse en el segundo 0.
+No hay elemento que ancle la atención. Scroll inmediato garantizado.
+SCORE: 28 | hook_strength: 10 | retention_design: 15 | payoff_quality: 20 | narrative_clarity: 30 | trust_signals: 18
+
+━━━ EJEMPLO SCORE 65 — COMPETENTE / PROMEDIO ━━━
+DESCRIPCIÓN: Persona a cámara, buena iluminación natural. Segundo 0: dice directamente
+"Hice esto todos los días por 30 días y esto fue lo que pasó". Cortes cada 5-6 segundos.
+Payoff aparece en segundo 22 con resultado visible (antes/después). Sin música marcada.
+Rehook ausente. Sin texto overlay. Formato: testimonio lineal.
+VEREDICTO: Hook funcional — genera la pregunta "¿qué le pasó?". El desarrollo es lineal
+pero coherente. El payoff llega y cumple lo que prometió el hook. No hay twist ni sorpresa.
+Este es el rango normal de contenido competente que circula bien en su nicho.
+SCORE: 65 | hook_strength: 68 | retention_design: 60 | payoff_quality: 65 | narrative_clarity: 70 | trust_signals: 62
+
+━━━ EJEMPLO SCORE 83 — EXCELENTE ━━━
+DESCRIPCIÓN: Segundo 0 muestra el resultado final ANTES de explicar el proceso
+(producto terminado, persona con resultado visible). Texto overlay en segundo 1:
+"Tardé 3 días en descubrir esto". Cortes cada 2-3 segundos en los primeros 10 segundos.
+Rehook en segundo 9: dato contraintuitivo mencionado de pasada. Payoff con twist emocional
+en segundo 18. Audio sincronizado con el ritmo visual.
+VEREDICTO: El hook genera pregunta inmediata ("¿qué descubrió?") Y tiene elemento visual
+que ancla. El rehook reactiva la atención antes de que baje. El payoff sorprende porque
+revela algo inesperado. Alta probabilidad de replay y compartido.
+SCORE: 83 | hook_strength: 88 | retention_design: 82 | payoff_quality: 85 | narrative_clarity: 78 | trust_signals: 80
+`;
+
+
+// ============================================================
+// PRE-CLASSIFIER — CALL 0
+// Temperatura recomendada: 0 (extracción de hechos, no juicio)
+// Sin cambios estructurales — este prompt funcionaba bien.
+// El único cambio: agregamos instrucción explícita de que
+// hook_confianza debe ser honesto sobre incertidumbre.
 // ============================================================
 export const buildPreClassifierPrompt = (meta = '') => `
-Sos una cámara con memoria. Registrás lo que existe en el video. No opinás, no evaluás, no inferís intención.
-${meta ? `METADATA: ${meta}` : ''}
+Sos una cámara con memoria. Registrás ÚNICAMENTE lo que existe en el video.
+No opinás, no evaluás, no inferís intención ni proyectás potencial.
 
-Respondé SOLO con este JSON exacto:
+REGLA CRÍTICA: Si no podés determinar un valor con certeza a partir de lo que ves,
+usá los valores de incertidumbre: false para booleanos, 0.5 para hook_confianza,
+y escribí NINGUNA / NINGUNO cuando no hay evidencia concreta.
+${meta ? `METADATA DISPONIBLE: ${meta}` : ''}
+
+Respondé SOLO con este JSON exacto, sin texto adicional:
 {
-  "industria": "<micro-nicho ultra-específico>",
-  "palanca_psicologica": "<emoción primaria observable>",
+  "industria": "<micro-nicho ultra-específico, ej: 'estetica masculina barba' no solo 'estetica'>",
+  "palanca_psicologica": "<emoción primaria observable en los primeros 3 segundos>",
   "atomicas": {
-    "human_face_in_frame0":    <boolean>,
-    "audio_in_first_second":   <boolean>,
-    "cuts_per_10s":            <number>,
-    "average_shot_duration_s": <number>,
-    "silence_duration_s":      <number — segundos totales sin audio o con audio completamente plano>,
-    "motion_intensity":        <number 0.0-1.0>,
-    "payoff_second":           <number — segundo en que aparece el resultado o cambio prometido>,
-    "rehook_present":          <boolean — hay algo entre segundo 8 y 15 que retenga>,
-    "text_overlay_present":    <boolean>,
-    "duration_total_s":        <number>
+    "human_face_in_frame0":    <boolean — hay un rostro humano visible en el primer frame>,
+    "audio_in_first_second":   <boolean — hay audio no silencioso en el primer segundo>,
+    "cuts_per_10s":            <number — estimación honesta de cortes cada 10 segundos>,
+    "average_shot_duration_s": <number — duración promedio de cada toma en segundos>,
+    "silence_duration_s":      <number — segundos totales de silencio o audio completamente plano>,
+    "motion_intensity":        <number 0.0-1.0 — 0=imagen fija, 0.5=movimiento normal, 1.0=acción intensa>,
+    "payoff_second":           <number — segundo exacto en que aparece el resultado prometido, 0 si no existe>,
+    "rehook_present":          <boolean — hay algo concreto entre segundo 8 y 15 que reactive la atención>,
+    "text_overlay_present":    <boolean — hay texto superpuesto visible>,
+    "duration_total_s":        <number — duración total del video en segundos>
   },
   "hook_gate": {
-    "pregunta_activa_en_espectador": "<Completá esta oración o escribí NINGUNA: 'El espectador en el segundo 0 se pregunta: ...' — si no podés completarla con algo específico y concreto, escribí NINGUNA>",
-    "elemento_que_retiene":          "<El elemento exacto que ancla al espectador en los primeros 2 segundos. Si no existe, escribí NINGUNO>",
-    "veredicto_gate":                "<PASA|MUERTO>"
+    "pregunta_activa_en_espectador": "<Completá: 'El espectador en el segundo 0 se pregunta...' — si no hay pregunta específica y concreta, escribí NINGUNA>",
+    "elemento_que_retiene":          "<El elemento visual o auditivo EXACTO que ancla al espectador en los primeros 2 segundos. Si no existe, escribí NINGUNO>",
+    "veredicto_gate":                "<PASA|MUERTO — PASA si hay AL MENOS una pregunta activa O un elemento de retención. MUERTO solo si ambos son NINGUNA/NINGUNO>"
   },
-  "hook_libre":          "<transcripción exacta de lo que se ve y escucha en los primeros 3 segundos — sin adjetivos>",
+  "hook_libre":          "<transcripción exacta de lo que se ve y escucha en los primeros 3 segundos, sin adjetivos ni interpretación>",
   "hook_type_detectado": "<explosivo|bait_con_puente|bait_desconectado|curiosidad_desconexion|apertura_informativa|debil|muerto>",
-  "hook_confianza":      <0.0 a 1.0>
+  "hook_confianza":      <0.0 a 1.0 — qué tan seguro estás de esta clasificación. Sé honesto: si el video es ambiguo, ponés 0.4-0.6>
 }
 `;
 
-export const buildCognitiveScanPrompt = (videoRawData, industria) => `
-Sos un predictor de rendimiento de contenido corto.
-Tu función es predecir qué tan bien va a retener espectadores este video
-en "${industria}" en TikTok, Reels y Shorts.
 
-Usá tu conocimiento completo de patrones virales para evaluarlo.
-No justificás potencial. No suavizás. Predecís según lo que hay.
+// ============================================================
+// COGNITIVE SCAN — CALL 1
+// FIX #1 aplicado: fewShotExamples ya no es undefined
+// FIX #5 aplicado: temperatura recomendada 0.3
+// FIX #7 aplicado: instrucción anti-sesgo pesimista explícita
+// ============================================================
+export const buildCognitiveScanPrompt = (videoRawData, industria, researchData = null) => {
+  // FIX #1: fewShotExamples se importa directo desde la constante FEW_SHOTS
+  // Ya no depende de un parámetro que puede llegar vacío
 
-ESCALA:
-10-25  → abandono masivo antes del s3
-26-45  → no sobrevive el s8 en la mayoría de los casos
-46-60  → rendimiento promedio del mercado, sin distribución orgánica real
-61-75  → puede entrar en distribución si el nicho está activo
-76-90  → alta probabilidad de distribución orgánica
-91-100 → define tendencia, menos del 1% llega acá
+  const benchmarkContext = researchData
+    ? `BENCHMARK Y PATRONES GANADORES DEL NICHO (Usá esto como regla de calibración):
+${typeof researchData === 'string' ? researchData : JSON.stringify(researchData, null, 2)}`
+    : `No hay benchmark específico disponible. Usá tu conocimiento actualizado a 2026 sobre formato corto en el nicho: "${industria}".`;
 
-REGLAS DE OUTPUT:
-— value en cada campo = intensidad del problema (0.0 = no existe, 1.0 = fatal)
-— Si algo funciona bien: value 0.0-0.2. Si algo falla: value 0.6-1.0.
-— No uses 0.3-0.5 para evitar tomar posición. Tomá posición.
-— errores_adicionales = [] si no hay evidencia directa de errores extra
-— causa_principal_fracaso = "NINGUNO" si el video es 61+
+  return `
+# ROL
+Sos un Director de Contenido Senior con 10 años calibrando audiencias reales en TikTok, Reels y Shorts.
+Tu trabajo es PREDECIR el comportamiento real del espectador — no juzgar el video moralmente ni buscar errores para demostrar rigor.
 
-INDUSTRIA: ${industria}
+# ⚠️ ADVERTENCIA ANTI-SESGO (leer antes de evaluar)
+Los modelos de lenguaje tienden a penalizar contenido por defecto porque la mayoría del contenido
+en internet que fue etiquetado como "analizado" resultó ser malo. ESTO NO APLICA AQUÍ.
+Tu tarea es evaluar el video específico frente a su competencia real, no frente a un ideal perfecto.
+Un video COMPETENTE merece un score COMPETENTE (60-70). No lo penalices por no ser excepcional.
+Si buscás activamente fallas donde no las hay, el análisis es inútil para el usuario.
 
-VIDEO:
+# CONTEXTO DEL MERCADO
+${benchmarkContext}
+
+# PRINCIPIOS DE EVALUACIÓN — MANDATORIOS
+1. **El formato Low-Fi es válido**: Storytelling sin edición, talking heads, testimoniales lentos —
+   pueden ser EXCELENTES (score 65-80) si la narrativa retiene. No penalices ausencia de edición
+   si el formato del nicho no la requiere (ej: coaches, inmobiliaria, educación).
+2. **Calibración justa**: Evaluá lo que el video ES, no lo que le falta para ser perfecto.
+   El rango 60-75 es normal y representa contenido competente que funciona bien en su nicho.
+3. **Solo evidencia citable**: Solo podés declarar una debilidad si podés citar el segundo exacto
+   o el elemento literal del video. Sin evidencia específica → no existe el problema.
+4. **Contar fortalezas primero**: Antes de buscar fallas, identificá lo que funciona. Si hay 3
+   fortalezas y 1 debilidad, el score no puede ser menor a 55.
+
+# ESCALA ANCLADA — USÁ ESTOS RANGOS CON PRECISIÓN
+- 10–30  → Video roto. Sin hook, sin retención posible, sin valor. Ejemplo: logo estático 40s sin audio.
+- 31–50  → Intención sin ejecución. Idea presente pero ejecución que pierde al espectador antes del segundo 8.
+- 51–65  → Promedio competente. Cumple las reglas básicas. Consumible, correcto, distribución orgánica estándar.
+           ESTE RANGO ES VÁLIDO Y COMÚN. No lo tratés como "casi bueno" — ES bueno para su función.
+- 66–80  → Muy buen video. Hook funcional + desarrollo coherente + payoff claro. Alta probabilidad
+           de distribución en su nicho. La mayoría de los videos virales reales caen aquí.
+- 81–95  → Excepcional. Los tres pilares en alta ejecución + factor sorpresa o emocional fuerte.
+- 96–100 → Define tendencia global. Menos del 1% del contenido de internet. Requiere factor cultural impredecible.
+
+# EJEMPLOS DE REFERENCIA CALIBRADOS
+${FEW_SHOTS}
+
+# DATOS DEL VIDEO A EVALUAR
+NICHO: ${industria}
+HECHOS OBSERVADOS (output del pre-classifier):
 ---
 ${videoRawData}
 ---
 
-Respondé SOLO con este JSON:
+# PROCESO OBLIGATORIO (hacé esto antes de escribir el JSON)
+Paso 1 → Identificá el ARQUETIPO del video. ¿Es hiper-editado, storytelling analógico, demo visual, educativo, POV?
+          El arquetipo define QUÉ estándares aplican. Un talking head NO se evalúa con los mismos criterios que un reel de producto.
+Paso 2 → Listá las FORTALEZAS con evidencia citada (segundo + elemento concreto). Mínimo 1 si existe.
+Paso 3 → Listá las DEBILIDADES con evidencia citada. Solo si hay punto de fuga concreto y citable.
+          Si no podés citar evidencia específica → no pongas la debilidad.
+Paso 4 → Balanceá. Si las fortalezas superan a las debilidades → score ≥ 60.
+          Si las debilidades son estructurales (hook muerto, sin payoff) → score puede bajar.
+Paso 5 → Asigná el score final. Escribí en razonamiento_score por qué ese número y no ±10.
+
+# OUTPUT — Respondé ÚNICAMENTE con este JSON, sin texto extra
 {
-  "abandonment_risk": {
-    "value":           <0.0-1.0>,
-    "confidence":      <0.0-1.0>,
-    "segundo_critico": <number o 0>,
-    "evidencia":       "<qué hay en ese segundo o NINGUNO>"
-  },
-  "tension_collapse": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<evidencia directa o NINGUNO>"
-  },
-  "predictability_damage": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<evidencia directa o NINGUNO>"
-  },
-  "cognitive_void": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<segundos exactos o NINGUNO>"
-  },
-  "trust_collapse": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<evidencia directa o NINGUNO>"
-  },
-  "narrative_confusion": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<evidencia directa o NINGUNO>"
-  },
-  "verbal_hook_failure": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<transcripción exacta de las primeras palabras + predicción>"
-  },
-  "editing_density_failure": {
-    "value":      <0.0-1.0>,
-    "confidence": <0.0-1.0>,
-    "evidencia":  "<segundos donde cae la densidad o NINGUNO>"
-  },
-  "errores_adicionales": [],
-  "viralScore":              <number 0-100>,
-  "causa_principal_fracaso": "<factor más determinante o NINGUNO si es 61+>"
+  "arquetipo_detectado": "<talking_head|demo_producto|storytelling|educativo|pov|hiper_editado|otro>",
+  "fortalezas_observadas": [
+    {
+      "elemento":        "<gancho visual / propuesta de valor / ritmo / narrativa>",
+      "segundo":         <number>,
+      "evidencia_citada": "<frase exacta o hecho observable del video>",
+      "impacto":         "<alto|medio|bajo>"
+    }
+  ],
+  "debilidades_observadas": [
+    {
+      "elemento":        "<punto de fuga / audio plano / falta de claridad>",
+      "segundo":         <number>,
+      "evidencia_citada": "<frase exacta o hecho observable — si no tenés esto, no pongas la debilidad>",
+      "impacto":         "<alto|medio|bajo>"
+    }
+  ],
+  "razonamiento_score": "<2-3 frases explicando por qué este score y no +10/-10. Mencioná el arquetipo y cómo afecta la evaluación>",
+  "viralScore":          <number 0-100 — usá la escala anclada de arriba>,
+  "confianza_score":     <0.0 a 1.0 — qué tan seguro estás del score dado lo que podés observar>,
+  "causa_principal_fracaso": "<NINGUNO si viralScore >= 60. Si es menor, la razón técnica específica y citable>",
+  "sub_dimensiones": {
+    "hook_strength":    { "score": <0-100>, "evidencia": "<justificación basada en los primeros 3 segundos>" },
+    "retention_design": { "score": <0-100>, "evidencia": "<justificación del ritmo o flujo narrativo>" },
+    "payoff_quality":   { "score": <0-100>, "evidencia": "<si la promesa se cumple con impacto>" },
+    "narrative_clarity":{ "score": <0-100>, "evidencia": "<si el mensaje se entiende al instante>" },
+    "trust_signals":    { "score": <0-100>, "evidencia": "<autoridad, rostro real, o demostración empírica>" }
+  }
 }
 `;
+};
+
 
 // ============================================================
-// HOOK GATE — veto duro en JS
+// HOOK GATE — FIX #2
+// Antes: veto binario duro (cap 20 si falla cualquier condición)
+// Ahora: sistema graduado de penalización
+//   - Gate falla → cap baja a 55 (no a 20). Un video con hook débil
+//     puede igual vender si el payoff es fuerte.
+//   - Slideshow sin audio → único caso que mantiene cap bajo (30),
+//     porque ahí sí es imposible competir.
+//   - emptywait → penalización intermedia (cap 45), no muerte.
+//   - El score de Gemini NUNCA se modifica con penalización JS adicional.
+//     Solo se aplica el cap como techo.
 // ============================================================
 export const deriveHookGateStatus = (preFacts) => {
   const gate     = preFacts?.hook_gate;
   const hookType = preFacts?.hook_type_detectado ?? '';
   const atomicas = preFacts?.atomicas ?? {};
 
-  if (!gate) return { passed: null, reason: 'gate_no_disponible' };
+  if (!gate) return { passed: null, penaltyLevel: 'none', reason: 'gate_no_disponible' };
 
-  if (hookType === 'muerto') {
-    return { passed: false, reason: 'hook_type_clasificado_como_muerto' };
+  const silenceS = Number(atomicas.silence_duration_s ?? 0);
+  const totalS   = Number(atomicas.duration_total_s ?? 30);
+
+  // Único veto real: slideshow completamente sin audio
+  // (esto sí es objetivamente no competitivo en formato corto)
+  const esSlideshow = !atomicas.audio_in_first_second && silenceS > (totalS * 0.8);
+  if (esSlideshow) {
+    return {
+      passed: false,
+      penaltyLevel: 'hard',       // cap: 30
+      reason: 'video_sin_audio_slideshow'
+    };
   }
 
+  // Hook clasificado como muerto por el pre-classifier con alta confianza
+  // Solo aplica si hook_confianza >= 0.75 (el modelo estaba seguro)
+  const hookConfianza = Number(preFacts?.hook_confianza ?? 0.5);
+  if (hookType === 'muerto' && hookConfianza >= 0.75) {
+    return {
+      passed: false,
+      penaltyLevel: 'soft',       // cap: 55
+      reason: 'hook_type_muerto_alta_confianza'
+    };
+  }
+
+  // Gate falla en la evaluación subjetiva (pregunta/elemento ausentes)
+  // FIX: ya no es veto — es penalización suave
   if (gate.veredicto_gate === 'MUERTO') {
     return {
       passed: false,
-      reason: `sin_retencion_cognitiva — pregunta: "${gate.pregunta_activa_en_espectador}" / elemento: "${gate.elemento_que_retiene}"`
+      penaltyLevel: 'soft',       // cap: 55
+      reason: `hook_sin_retencion_cognitiva — pregunta: "${gate.pregunta_activa_en_espectador}" / elemento: "${gate.elemento_que_retiene}"`
     };
   }
 
@@ -325,62 +450,84 @@ export const deriveHookGateStatus = (preFacts) => {
   const cutsP10   = Number(atomicas.cuts_per_10s ?? 0);
   const hasRehook = atomicas.rehook_present ?? false;
   const motionInt = Number(atomicas.motion_intensity ?? 0);
-  const silenceS  = Number(atomicas.silence_duration_s ?? 0);
-  const totalS    = Number(atomicas.duration_total_s ?? 30);
 
-  const esSlideshow = !atomicas.audio_in_first_second &&
-                      silenceS > (totalS * 0.8);
-  if (esSlideshow) {
-    return { passed: false, reason: 'video_sin_audio_slideshow' };
-  }
-
+  // Espera vacía: payoff tardío SIN ningún elemento de retención
+  // FIX: era passed:false con cap 20. Ahora es penaltyLevel 'medium' con cap 45
   const emptywait = payoffS > 8 && cutsP10 < 3 && motionInt < 0.2 && !hasRehook;
   if (emptywait) {
     return {
-      passed: false,
-      reason: `espera_vacia — payoff en ${payoffS}s sin cortes ni movimiento`
+      passed: true,               // FIX: ya no es false
+      penaltyLevel: 'medium',     // cap: 45
+      reason: `espera_riesgosa — payoff en s${payoffS} sin cortes ni movimiento ni rehook`
     };
   }
 
+  // Penalización leve: payoff un poco tardío pero sin ser catastrófico
   const waitPenalty = (payoffS > 4 && cutsP10 < 5 && !hasRehook)
     ? { segundos: payoffS, cuts: cutsP10 }
     : null;
 
   return {
-    passed: true,
-    reason: `retencion_confirmada: ${gate.elemento_que_retiene}`,
+    passed:       true,
+    penaltyLevel: waitPenalty ? 'minimal' : 'none',   // cap: 70 o sin cap
+    reason:       `retencion_confirmada: ${gate.elemento_que_retiene}`,
     waitPenalty
   };
 };
 
+
 // ============================================================
-// DERIVE VIRAL CAP — solo el hook gate sigue siendo JS
-// El resto del scoring lo maneja Gemini
+// DERIVE VIRAL CAP — FIX #2 y #3
+// Antes: gate falla → cap 20 (mataba videos buenos)
+// Ahora: sistema graduado basado en penaltyLevel
+//   none    → sin cap (Gemini decide)
+//   minimal → cap 80 (leve advertencia)
+//   medium  → cap 55 (video riesgoso pero no muerto)
+//   soft    → cap 55 (hook débil pero payoff puede salvar)
+//   hard    → cap 30 (solo slideshow sin audio)
+//
+// FIX #4: el viralScore de Gemini se respeta como base.
+// Este cap es el TECHO, no el score final.
 // ============================================================
 export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => {
   const nicheCap = nicheConfig?.score_cap?.viralScore ?? 100;
   const atomicas = preFacts?.atomicas ?? {};
 
-  if (hookGateStatus?.passed === false) {
-    return { cap: 20, reason: hookGateStatus.reason };
-  }
+  // Sistema graduado por penaltyLevel
+  const penaltyLevel = hookGateStatus?.penaltyLevel ?? 'none';
 
-  const lento = (atomicas.cuts_per_10s ?? 0) < 3 &&
-                (atomicas.silence_duration_s ?? 0) > 5 &&
-                (atomicas.average_shot_duration_s ?? 0) > 4;
+  const capPorPenalty = {
+    'none':    100,
+    'minimal': 80,
+    'medium':  55,
+    'soft':    55,
+    'hard':    30,
+  };
+
+  const baseCap = capPorPenalty[penaltyLevel] ?? 100;
+
+  // Caso especial: video objetivamente lento (no es un formato válido para formato corto)
+  const lento = (atomicas.cuts_per_10s ?? 0) < 2 &&
+                (atomicas.silence_duration_s ?? 0) > 8 &&
+                (atomicas.average_shot_duration_s ?? 0) > 6;
   if (lento) {
-    return { cap: Math.min(nicheCap, 40), reason: 'video_lento_sin_audio' };
+    return {
+      cap:    Math.min(nicheCap, 40, baseCap),
+      reason: 'video_lento_extremo_sin_audio'
+    };
   }
 
-  if (hookGateStatus?.waitPenalty) {
-    return { cap: Math.min(nicheCap, 55), reason: 'espera_riesgosa' };
-  }
-
-  return { cap: nicheCap, reason: 'sin_penalizacion' };
+  return {
+    cap:    Math.min(nicheCap, baseCap),
+    reason: penaltyLevel === 'none'
+      ? 'sin_penalizacion'
+      : `penalizacion_${penaltyLevel}: ${hookGateStatus?.reason ?? ''}`
+  };
 };
 
+
 // ============================================================
-// RESEARCH BRAIN
+// RESEARCH BRAIN — sin cambios estructurales
 // ============================================================
 export const buildResearchBrainPrompt = (platform, industria, objetivo, benchmarkData = null) => {
   const pName = {
@@ -414,8 +561,9 @@ Respondé SOLO con este JSON:
 }`;
 };
 
+
 // ============================================================
-// APPLY RESEARCH BRAIN
+// APPLY RESEARCH BRAIN — sin cambios
 // ============================================================
 export const buildApplyResearchBrainPrompt = (preFacts, researchData, platform, industria) => {
   return `Contrastá los datos técnicos del video actual contra el benchmark del nicho "${industria}".
@@ -435,8 +583,12 @@ Respondé SOLO con este JSON:
 }`;
 };
 
+
 // ============================================================
-// STRATEGY BRAIN — forense, no estratega
+// STRATEGY BRAIN — FIX menor
+// Antes: pedía "no suavices, si algo está roto decí que está roto"
+// lo cual amplificaba el sesgo negativo en CALL 2.
+// Ahora: pide diagnóstico preciso, no pesimismo por defecto.
 // ============================================================
 export const buildStrategyBrainPrompt = (preFacts, cognitiveScan, failureSystems, scoringResult, platform, objetivo, industria) => {
   const erroresAdicionales = cognitiveScan?.errores_adicionales?.length
@@ -445,20 +597,20 @@ export const buildStrategyBrainPrompt = (preFacts, cognitiveScan, failureSystems
         .join('\n')}`
     : '';
 
-  return `Sos un forense de contenido. Leés estos datos y decís exactamente dónde y por qué fracasa este video.
-
-No des crédito por potencial. No suavices. Si algo está roto, decí que está roto.
+  return `Sos un forense de contenido. Tu trabajo es diagnóstico preciso, no pesimismo por defecto.
+Describís lo que está roto con evidencia exacta. Describís lo que funciona con la misma precisión.
+Un diagnóstico sin evidencia no es diagnóstico — es opinión.
 
 SEÑALES OBSERVADAS:
 ${JSON.stringify(preFacts?.atomicas ?? {}, null, 2)}
 
-DAÑO DETECTADO:
+SCAN COGNITIVO:
 ${JSON.stringify(cognitiveScan, null, 2)}
 
 ${erroresAdicionales}
 
-SCORE: ${scoringResult?.viralScore ?? '?'}/100
-CAUSA PRINCIPAL: ${scoringResult?.breakdown?.causa_fracaso ?? '—'}
+SCORE VIRAL (determinado por análisis directo): ${scoringResult?.viralScore ?? '?'}/100
+CAUSA: ${scoringResult?.breakdown?.causa_fracaso ?? '—'}
 
 NICHO: ${industria}
 OBJETIVO: ${objetivo}
@@ -467,14 +619,14 @@ Respondé SOLO con este JSON:
 {
   "gate_formato": {
     "estado": "<competitivo|debil|muerto>",
-    "razon":  "<una oración — qué lo hace estar ahí>"
+    "razon":  "<una oración con evidencia — qué lo hace estar ahí>"
   },
-  "falla_principal": "<retention|tension|payoff|clarity|trust>",
-  "segundo_critico": <number — el segundo exacto donde el espectador abandona>,
+  "falla_principal": "<retention|tension|payoff|clarity|trust|ninguna>",
+  "segundo_critico": <number — el segundo exacto donde el espectador abandona, o -1 si no hay fuga identificable>,
   "foda": {
-    "fortalezas":       ["<señal que funciona>"],
-    "debilidades":      ["<qué está roto y en qué segundo>"],
-    "mejoras_urgentes": ["<acción concreta — sin potencial, sin hipótesis>"]
+    "fortalezas":       ["<señal que funciona — con segundo si aplica>"],
+    "debilidades":      ["<qué está roto y en qué segundo — solo con evidencia>"],
+    "mejoras_urgentes": ["<acción concreta y ejecutable — solo si hay problema real>"]
   },
   "flags_binarios": {
     "hook_type":           "<muerto|debil|apertura_informativa|bait_desconectado|bait_con_puente|explosivo>",
@@ -484,9 +636,18 @@ Respondé SOLO con este JSON:
 }`;
 };
 
+
 // ============================================================
-// SCORING BRAIN — output final con mentalidad forense
-// viralScore viene de Gemini (CALL 1). No se toca.
+// SCORING BRAIN — FIX #4
+// Antes: recibía el viralScore ya penalizado por JS Y lo re-evaluaba
+// generando doble penalización implícita en el output.
+// Ahora:
+//   - viralScore que llega aquí ES el score final de Gemini (sin tocar)
+//   - El cap se aplica DESPUÉS de este prompt en JS, no antes
+//   - Se eliminó la instrucción "no podés cambiar el score" porque
+//     generaba confusión cuando el score ya llegaba deprimido por JS.
+//   - Se reemplazó por instrucción de consistencia: los sub-scores
+//     deben ser coherentes con el viralScore recibido.
 // ============================================================
 export const buildScoringBrainPrompt = (
   videoRawData, strategyAnalysisRaw, cognitiveScan,
@@ -501,46 +662,62 @@ export const buildScoringBrainPrompt = (
   const strategyAnalysis = limpiarJSON(strategyAnalysisRaw);
   const viralScore       = scoringResult?.viralScore ?? 0;
   const salesCap         = nicheConfig?.score_cap?.salesScore ?? 100;
-  const causaFracaso     = scoringResult?.breakdown?.causa_fracaso ?? '';
+  const causaFracaso     = scoringResult?.breakdown?.causa_fracaso ?? 'sin causa identificada';
+
+  const capInfo = viralCapData?.cap < 100
+    ? `NOTA: El cap del nicho/hook es ${viralCapData.cap}/100 (razón: ${viralCapData.reason}). Esto ya está considerado en el viralScore.`
+    : '';
 
   const erroresAdicionales = cognitiveScan?.errores_adicionales?.length
-    ? `ERRORES ADICIONALES DETECTADOS EN SCAN:\n${cognitiveScan.errores_adicionales
+    ? `ERRORES ADICIONALES DETECTADOS:\n${cognitiveScan.errores_adicionales
         .map(e => `— [s${e.segundo}] ${e.tipo} (impacto ${e.impacto}): ${e.evidencia}`)
         .join('\n')}`
     : '';
 
-  return `Sos el sistema de output final de ${pName}. Sos un forense, no un estratega.
+  return `Sos el sistema de output final de VIRAX para ${pName}.
+Tu función es generar el reporte completo de usuario a partir del análisis ya realizado.
 
-El score viral fue determinado por análisis directo del video: ${viralScore}/100.
-La causa principal de fracaso: "${causaFracaso}"
+SCORE VIRAL DEFINITIVO: ${viralScore}/100
+Este score fue calculado por análisis directo del video. Tu tarea es generar un reporte
+COHERENTE con este score — ni más positivo ni más negativo que lo que el score indica.
+Si el score es 65, el veredicto describe un video competente con áreas de mejora.
+Si el score es 35, el veredicto describe un video con fallas estructurales.
+${capInfo}
 
+CAUSA DE FRACASO O ÉXITO: "${causaFracaso}"
 ${erroresAdicionales}
 
-No podés cambiar el score. No especulés sobre potencial. No des crédito por lo que el video "podría ser".
-Describí lo que el video ES ahora mismo y por qué fracasa o sobrevive.
+DIAGNÓSTICO ESTRATÉGICO:
+${strategyAnalysis}
 
-SCORE: ${viralScore}/100
-DIAGNÓSTICO: ${strategyAnalysis}
-VIDEO: ${videoRawData}
+DATOS DEL VIDEO:
+${videoRawData}
+
 NICHO: ${industria}
 OBJETIVO: ${objetivo}
+
+REGLA DE COHERENCIA: salesScore, scrollStopScore, hookDNA.strength y phaseScores
+deben ser numéricamente coherentes con viralScore: ${viralScore}/100.
+Un video con viralScore 65 no puede tener hookDNA.strength 20 ni salesScore 90.
+Usá el viralScore como ancla y distribuí los sub-scores alrededor de él
+según la evidencia del diagnóstico.
 
 Respondé SOLO en JSON:
 {
   "salesScore": {
-    "score":        <number 0-${salesCap}>,
+    "score":        <number 0-${salesCap} — coherente con viralScore ${viralScore}>,
     "verdict":      "<señal de conversión presente o ausente — específica, sin rodeos>",
-    "accion_clave": "<acción concreta — qué falta exactamente>"
+    "accion_clave": "<acción concreta y ejecutable>"
   },
   "scrollStopScore": {
     "score":   <number 0-100>,
     "verdict": "<qué tiene o no tiene el segundo 0 que determina si el pulgar para>"
   },
   "hookDNA": {
-    "pattern":         "<Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Deseo_Sensorial|Identidad_Tribal|Aspiracion|Muerto|Otro>",
-    "strength":        <number 0-100>,
-    "missingElement":  "<qué elemento específico haría que el hook no se pueda ignorar>",
-    "optimizedHook":   "<reescribí el hook — no el potencial, la versión que funciona ahora>"
+    "pattern":        "<Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Deseo_Sensorial|Identidad_Tribal|Aspiracion|Muerto|Otro>",
+    "strength":       <number 0-100>,
+    "missingElement": "<qué elemento específico haría que el hook no se pueda ignorar — o 'ninguno' si el hook es fuerte>",
+    "optimizedHook":  "<reescribí el hook con los datos disponibles — versión ejecutable ahora>"
   },
   "steppsScore": {
     "viralCoefficient": <number 0.0-10.0>,
@@ -554,12 +731,12 @@ Respondé SOLO en JSON:
     "weakestFactor":    "<factor más débil>",
     "shareMotivation":  "<identidad|utilidad|sorpresa|validacion|ninguno>"
   },
-  "honestVerdict": "<Dos oraciones. La experiencia real del espectador. En qué segundo abandona y por qué — sin suavizar>",
+  "honestVerdict": "<Dos oraciones. La experiencia real del espectador coherente con score ${viralScore}. Si score >= 60, describí por qué funciona Y dónde puede mejorar. Si score < 60, describí el punto de abandono.>",
   "roadmap": [
     {
       "impacto":   "<ALTO|MEDIO|BAJO>",
-      "problema":  "<segundo exacto + qué falla>",
-      "solucion":  "<instrucción ejecutable — sin hipótesis>",
+      "problema":  "<segundo exacto + qué falla — solo si hay evidencia>",
+      "solucion":  "<instrucción ejecutable — sin hipótesis ni potencial>",
       "resultado": "<qué cambia en el comportamiento del espectador>"
     }
   ],
@@ -569,19 +746,19 @@ Respondé SOLO en JSON:
     "audience": "<audiencia objetivo>",
     "promise":  "<qué promete el video en los primeros 3 segundos>"
   },
-  "potentialScore":      <number 0-100 — promedio ponderado de viral + ventas>,
+  "potentialScore":      <number 0-100 — promedio ponderado de viral + ventas, anclado en ${viralScore}>,
   "performanceScenario": "<ALTO POTENCIAL|POTENCIAL MEDIO|BAJO POTENCIAL>",
   "platformScores": {
-    "tiktok": { "score": <number>, "verdict": "<una línea>", "topTip": "<acción concreta>" },
-    "reels":  { "score": <number>, "verdict": "<una línea>", "topTip": "<acción concreta>" },
-    "shorts": { "score": <number>, "verdict": "<una línea>", "topTip": "<acción concreta>" }
+    "tiktok": { "score": <number coherente con ${viralScore}>, "verdict": "<una línea>", "topTip": "<acción concreta>" },
+    "reels":  { "score": <number coherente con ${viralScore}>, "verdict": "<una línea>", "topTip": "<acción concreta>" },
+    "shorts": { "score": <number coherente con ${viralScore}>, "verdict": "<una línea>", "topTip": "<acción concreta>" }
   },
   "retentionData": {
     "at3s":  "<porcentaje estimado de retención al segundo 3>",
     "at10s": "<porcentaje estimado al segundo 10>",
     "final": "<porcentaje estimado al final>"
   },
-  "retentionCurve": [<array de 10 números 0-100 representando la curva de retención segundo a segundo>],
+  "retentionCurve": [<array de 10 números 0-100 — la curva debe reflejar el score ${viralScore}: si score es 65, la curva no puede caer a 10 en el segundo 3>],
   "phaseScores": {
     "hook":       { "label": "Hook (0-3s)",  "score": <number>, "verdict": "<una línea>" },
     "desarrollo": { "label": "Desarrollo",   "score": <number>, "verdict": "<una línea>" },
@@ -595,8 +772,9 @@ Respondé SOLO en JSON:
 }`;
 };
 
+
 // ============================================================
-// BENCHMARK EXTRACTOR
+// BENCHMARK EXTRACTOR — sin cambios
 // ============================================================
 export const buildBenchmarkExtractorPrompt = (industria, videos) => {
   const summary = videos.map((v, i) => ({
@@ -1062,6 +1240,21 @@ const stripFlags = (strategyText) =>
 // ============================================================
 // FASE 1: CALIBRACIÓN (Sube video y ejecuta CALL 0) //const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
 // ============================================================
+// ============================================================
+// runNeuralAnalysis + runDeepAnalysis — CORREGIDOS
+//
+// Cambios vs versión anterior:
+//   1. temperature: 0.3 en CALL 1 (no más 0 en análisis subjetivo)
+//   2. buildCognitiveScanPrompt pierde el 3er parámetro fewShotExamples
+//      (ahora viene de la constante FEW_SHOTS en prompts.js)
+//   3. Bloque JS de failures eliminado — ya no afecta el viralScore
+//   4. penaltyCount y penalty eliminados — Gemini da el score, JS no lo toca
+//   5. scoringRaw usa rawViralScore directamente, sin restar penalties
+//   6. viralCapData sigue aplicando el cap como TECHO (esto se mantiene)
+//   7. researchData pasado a buildCognitiveScanPrompt para calibración
+//   8. Log mejorado para debugging
+// ============================================================
+
 const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   if (videoFile.size > 45 * 1024 * 1024) {
     alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB.`);
@@ -1112,7 +1305,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
         duration: Math.round(duration),
         maxOutputTokens: 768,
         expectsJson: true,
-        temperature: 0,
+        temperature: 0,         // ✅ CALL 0 sigue en 0 — solo extrae hechos observables
       }
     });
 
@@ -1147,13 +1340,14 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   }
 };
 
-const runDeepAnalysis = async () => {  //const hookGate     = deriveHookGateStatus(preFacts);
+
+const runDeepAnalysis = async () => {
   if (!videoMeta || !perception) {
     alert("Faltan datos de calibración.");
     return;
   }
 
-  const { storagePath, mimeType, duration, preFacts, platform, palanca_detectada } = videoMeta;
+  const { storagePath, mimeType, duration, preFacts, platform } = videoMeta;
   const industria   = perception.industria;
   const nicheConfig = perception.motor_key ? NICHE_MOTORS[perception.motor_key] : null;
 
@@ -1166,82 +1360,12 @@ const runDeepAnalysis = async () => {  //const hookGate     = deriveHookGateStat
   setAnalysisProgress(22);
 
   try {
-// ── CALL 1 — Cognitive Scan ───────────────────────────────
-setStatusText("Buscando puntos de fracaso...");
-setAnalysisProgress(30);
 
-const preFactsStr = JSON.stringify(preFacts?.atomicas ?? {});
-console.log('[CALL 1] storagePath:', storagePath);
-console.log('[CALL 1] mimeType:', mimeType);
-console.log('[CALL 1] duration:', duration);
-console.log('[CALL 1] industria:', industria);
-console.log('[CALL 1] preFacts size:', preFactsStr.length, 'chars');
-console.log('[CALL 1] prompt preview:', buildCognitiveScanPrompt(preFactsStr, industria)?.slice(0, 150));
-
-const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildCognitiveScanPrompt(preFactsStr, industria),
-    storagePath,
-    videoMimeType: mimeType,
-    duration: Math.round(duration),
-    maxOutputTokens: 2048,
-    expectsJson: true,
-    temperature: 0,
-  }
-});
-
-if (call1Error) {
-  let errorBody = '';
-  try { errorBody = await call1Error.context?.text?.(); } catch (_) {}
-  console.error('[CALL 1] Status error:', call1Error.message);
-  console.error('[CALL 1] Body real:', errorBody);
-  throw new Error(`CALL 1 falló: ${errorBody || call1Error.message}`);
-}
-
-const cognitiveScan = safeParseJSON(extractGeminiText(call1Data), 'cognitive-scan') || {};
-console.log('[VIRAX] Cognitive scan:', cognitiveScan);
-
-// ── JS — Gate + Failures + Scoring ───────────────────────
-// ── JS — Gate + Failures + Scoring ───────────────────────
-const hookGate = deriveHookGateStatus(preFacts);
-
-// Derivar sistemas de falla desde cognitive scan + preFacts
-const failures = {
-  hook_dead:         (cognitiveScan?.verbal_hook_failure?.value ?? 0) > 0.6,
-  no_tension:        (cognitiveScan?.tension_collapse?.value ?? 0) > 0.6,
-  cognitive_void:    (cognitiveScan?.cognitive_void?.value ?? 0) > 0.5,
-  trust_broken:      (cognitiveScan?.trust_collapse?.value ?? 0) > 0.6,
-  predictable:       (cognitiveScan?.predictability_damage?.value ?? 0) > 0.6,
-  editing_flat:      (cognitiveScan?.editing_density_failure?.value ?? 0) > 0.5,
-  narrative_lost:    (cognitiveScan?.narrative_confusion?.value ?? 0) > 0.5,
-  high_abandonment:  (cognitiveScan?.abandonment_risk?.value ?? 0) > 0.6,
-};
-
-// Calcular viralScore desde cognitive scan
-const rawViralScore = cognitiveScan?.viralScore ?? 50;
-const penaltyCount  = Object.values(failures).filter(Boolean).length;
-const penalty       = penaltyCount * 3;
-const scoringRaw    = {
-  viralScore: Math.max(0, rawViralScore - penalty),
-  breakdown: {
-    causa_fracaso: cognitiveScan?.causa_principal_fracaso ?? '—',
-    penalties:     failures,
-    base_score:    rawViralScore,
-    penalty_applied: penalty,
-  }
-};
-const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
-
-    scoringRaw.viralScore = Math.min(scoringRaw.viralScore, viralCapData.cap);
-
-    console.log('[VIRAX] Hook gate:', hookGate);
-    console.log('[VIRAX] Failures:', failures);
-    console.log('[VIRAX] Scoring:', scoringRaw);
-    console.log('[VIRAX] Cap:', viralCapData);
-
-    // ── CALL 1.5 — Research Brain ─────────────────────────────
-    setStatusText("Investigando casos de éxito...");
-    setAnalysisProgress(42);
+    // ── CALL 1.5 — Research Brain (movido ANTES de CALL 1) ───
+    // Motivo: researchData se pasa a buildCognitiveScanPrompt para
+    // que Gemini calibre el score contra el benchmark real del nicho.
+    setStatusText("Investigando benchmark del nicho...");
+    setAnalysisProgress(28);
 
     let nichoBenchmark = null;
     try {
@@ -1273,11 +1397,81 @@ const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
           temperature: 0,
         }
       });
-      if (!call1_5Error) researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
+      if (!call1_5Error) {
+        researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
+      }
       console.log('[RESEARCH] data:', researchData);
     } catch (e) {
       console.warn('[CALL 1.5] Fallback research:', e.message);
     }
+
+
+    // ── CALL 1 — Cognitive Scan ───────────────────────────────
+    setStatusText("Analizando el video...");
+    setAnalysisProgress(38);
+
+    // FIX #1: firma actualizada — ya no se pasa fewShotExamples como parámetro
+    // FIX #7: se pasa researchData para calibración contra el benchmark
+    const preFactsStr = JSON.stringify(preFacts ?? {});
+
+    console.log('[CALL 1] industria:', industria);
+    console.log('[CALL 1] preFacts size:', preFactsStr.length, 'chars');
+    console.log('[CALL 1] researchData disponible:', Object.keys(researchData).length > 0);
+
+    const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        // FIX #1: buildCognitiveScanPrompt(data, industria, researchData) — sin fewShotExamples
+        text: buildCognitiveScanPrompt(preFactsStr, industria, researchData),
+        storagePath,
+        videoMimeType: mimeType,
+        duration:      Math.round(duration),
+        maxOutputTokens: 2048,
+        expectsJson:   true,
+        temperature:   0.3,     // FIX #5: era 0 — análisis subjetivo necesita algo de flexibilidad
+      }
+    });
+
+    if (call1Error) {
+      let errorBody = '';
+      try { errorBody = await call1Error.context?.text?.(); } catch (_) {}
+      console.error('[CALL 1] Status error:', call1Error.message);
+      console.error('[CALL 1] Body real:', errorBody);
+      throw new Error(`CALL 1 falló: ${errorBody || call1Error.message}`);
+    }
+
+    const cognitiveScan = safeParseJSON(extractGeminiText(call1Data), 'cognitive-scan') || {};
+    console.log('[VIRAX] Cognitive scan:', cognitiveScan);
+    console.log('[VIRAX] viralScore de Gemini (bruto):', cognitiveScan?.viralScore);
+
+
+    // ── JS — Gate + Cap (SIN penalización de score) ──────────
+    const hookGate = deriveHookGateStatus(preFacts);
+
+    // FIX #3 y #4: el bloque de `failures` y `penaltyCount` fue eliminado.
+    // El viralScore de Gemini se respeta tal cual — JS solo aplica el cap como techo.
+    // Antes: rawScore - (penaltyCount * 3) → double counting
+    // Ahora: rawScore directo, cap como límite máximo
+
+    const rawViralScore = cognitiveScan?.viralScore ?? 50;
+    const viralCapData  = deriveViralCap(hookGate, preFacts, nicheConfig);
+
+    // FIX #4: scoringRaw ya no modifica el score — solo lo documenta
+    const scoringRaw = {
+      viralScore: Math.min(rawViralScore, viralCapData.cap),  // solo el cap, sin penalties
+      breakdown: {
+        causa_fracaso:    cognitiveScan?.causa_principal_fracaso ?? '—',
+        base_score:       rawViralScore,
+        cap_applied:      viralCapData.cap,
+        cap_reason:       viralCapData.reason,
+        penalty_applied:  0,   // ya no se aplica penalización manual
+      }
+    };
+
+    console.log('[VIRAX] Hook gate:', hookGate);
+    console.log('[VIRAX] Cap:', viralCapData);
+    console.log('[VIRAX] Score final (post-cap):', scoringRaw.viralScore,
+                '(Gemini dio:', rawViralScore, '/ cap era:', viralCapData.cap, ')');
+
 
     // ── CALL 1.75 — Apply Research ────────────────────────────
     setStatusText("Calculando brecha competitiva...");
@@ -1288,17 +1482,20 @@ const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
       const { data: call1_75Data, error: call1_75Error } = await supabase.functions.invoke('gemini-proxy', {
         body: {
           text: buildApplyResearchBrainPrompt(preFacts, researchData, platform, industria),
-          expectsJson: true,
+          expectsJson:     true,
           maxOutputTokens: 1024,
         }
       });
-      if (!call1_75Error) gapAnalysis = safeParseJSON(extractGeminiText(call1_75Data), 'gap-analysis') || {};
+      if (!call1_75Error) {
+        gapAnalysis = safeParseJSON(extractGeminiText(call1_75Data), 'gap-analysis') || {};
+      }
     } catch (e) {
       console.warn('[CALL 1.75] Fallback gap:', e.message);
     }
 
+
     // ── CALL 2 — Strategy Brain ───────────────────────────────
-    setStatusText("Diagnosticando causas de fracaso...");
+    setStatusText("Diagnosticando el video...");
     setAnalysisProgress(66);
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
@@ -1306,13 +1503,13 @@ const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
         text: buildStrategyBrainPrompt(
           preFacts,
           cognitiveScan,
-          failures,
+          {},              // failures ya no existe — pasamos objeto vacío para no romper la firma
           scoringRaw,
           platform,
           selectedObjetivo,
           industria
         ),
-        expectsJson: true,
+        expectsJson:     true,
         maxOutputTokens: 2048,
       }
     });
@@ -1323,8 +1520,9 @@ const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
     const strategyAnalysis = JSON.stringify(strategyParsed, null, 2);
     console.log('[VIRAX] Strategy:', strategyParsed);
 
+
     // ── CALL 3 — Scoring Brain ────────────────────────────────
-    setStatusText("Falta poco...");
+    setStatusText("Preparando tu reporte...");
     setAnalysisProgress(80);
 
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
@@ -1333,7 +1531,7 @@ const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
           JSON.stringify(preFacts),
           strategyAnalysis,
           cognitiveScan,
-          failures,
+          {},              // failures ya no existe — pasamos objeto vacío
           scoringRaw,
           viralCapData,
           platform,
@@ -1343,9 +1541,9 @@ const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
           hookGate
         ),
         storagePath,
-        videoMimeType: mimeType,
-        duration: Math.round(duration),
-        expectsJson: true,
+        videoMimeType:   mimeType,
+        duration:        Math.round(duration),
+        expectsJson:     true,
         maxOutputTokens: 4096,
       }
     });
@@ -1355,6 +1553,14 @@ const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
     const outputParsed = safeParseJSON(extractGeminiText(call3Data), 'scoring-output') || {};
     setAnalysisProgress(90);
     setStatusText("Estructurando reporte completo...");
+
+    console.log('[VIRAX] Output final de CALL 3:', {
+      salesScore:  outputParsed.salesScore?.score,
+      scrollStop:  outputParsed.scrollStopScore?.score,
+      hookStr:     outputParsed.hookDNA?.strength,
+      potencial:   outputParsed.potentialScore,
+    });
+
 
     // ── Ensamblar resultado final ─────────────────────────────
     const finalResult = {
@@ -1378,11 +1584,10 @@ const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
       roadmap:          outputParsed.roadmap          ?? [],
       objetivo:         selectedObjetivo,
 
-      // vision construido desde datos reales — sin depender de Gemini
       vision: {
-        niche:    outputParsed.vision?.niche    || industria                              || 'General',
-        type:     outputParsed.vision?.type     || preFacts?.hook_type_detectado         || 'Video',
-        audience: outputParsed.vision?.audience || perception?.palanca_psicologica       || '—',
+        niche:    outputParsed.vision?.niche    || industria                                  || 'General',
+        type:     outputParsed.vision?.type     || preFacts?.hook_type_detectado             || 'Video',
+        audience: outputParsed.vision?.audience || perception?.palanca_psicologica           || '—',
         promise:  outputParsed.vision?.promise  || preFacts?.hook_gate?.elemento_que_retiene || '—',
       },
 
@@ -1393,7 +1598,6 @@ const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
                          : scoringRaw.viralScore >= 45 ? 'POTENCIAL MEDIO'
                          : 'BAJO POTENCIAL',
 
-      // Campos adicionales que la UI necesita — vienen de Gemini
       platformScores:    outputParsed.platformScores    ?? null,
       retentionData:     outputParsed.retentionData     ?? null,
       retentionCurve:    outputParsed.retentionCurve    ?? null,
@@ -1404,14 +1608,13 @@ const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
       firstHourStrategy: outputParsed.firstHourStrategy ?? null,
       commentTrigger:    outputParsed.commentTrigger    ?? null,
 
-      // Internos para debug y chat
-      _failures:       failures,
-      _hook_gate:      hookGate,
+      // Debug internos
+      _hook_gate:     hookGate,
       _cognitive_scan: cognitiveScan,
-      _strategy:       strategyParsed,
-      _research_data:  researchData,
-      _gap_analysis:   gapAnalysis,
-      _viral_cap:      viralCapData,
+      _strategy:      strategyParsed,
+      _research_data: researchData,
+      _gap_analysis:  gapAnalysis,
+      _viral_cap:     viralCapData,
     };
 
     setAiResult(finalResult);
