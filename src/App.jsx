@@ -1227,7 +1227,7 @@ const { data: call1Data, error: call1Error } = await supabase.functions.invoke('
     storagePath,
     videoMimeType: mimeType,
     duration: Math.round(duration),
-    maxOutputTokens: 1024,
+    maxOutputTokens: 2048,
     expectsJson: true,
     temperature: 0,
   }
