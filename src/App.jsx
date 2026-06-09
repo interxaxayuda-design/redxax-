@@ -189,7 +189,6 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
 
 // ============================================================
 // PRE-CLASSIFIER — hechos observables, sin juicio
-// Rol: cámara con memoria. Solo registra lo que existe.
 // ============================================================
 export const buildPreClassifierPrompt = (meta = '') => `
 Sos una cámara con memoria. Registrás lo que existe en el video. No opinás, no evaluás, no inferís intención.
@@ -223,7 +222,8 @@ Respondé SOLO con este JSON exacto:
 `;
 
 // ============================================================
-// COGNITIVE SCAN — mentalidad de destrucción
+// COGNITIVE SCAN — detector de errores, no justificador
+// Gemini score + checklist de presencia + errores libres
 // ============================================================
 export const buildCognitiveScanPrompt = (videoRawData, industria) => `
 Sos un analista de retención con acceso a los patrones de los 10,000 videos más virales
@@ -239,6 +239,43 @@ Evaluá este video en tres dimensiones con el mismo nivel de exigencia:
 REGLA ÚNICA: Un video sin error activo es estadísticamente imposible.
 Si no encontrás al menos 3 problemas concretos con segundo específico,
 estás siendo demasiado permisivo con el estándar del TOP 0.1%.
+
+CHECKLIST DE PRESENCIA OBLIGATORIA:
+Antes de poner cualquier número, verificá si cada uno de estos elementos EXISTE en el video.
+Si no existe, es un error activo — no una ausencia neutral.
+
+— Estímulo cognitivo en s0-s1: ¿hay algo que active una pregunta en el cerebro del espectador?
+— Hook con tensión abierta: ¿el espectador tiene una razón específica para seguir mirando?
+— Patrón de interrupción visual: ¿hay algo que rompa la predictibilidad en los primeros 3s?
+— Señal de valor inmediato: ¿el espectador sabe en qué le sirve este video antes del s5?
+— Rehook entre s8-s15: ¿hay algo que retenga al espectador que ya sobrevivió el hook?
+
+Cada elemento ausente es un error activo. Reportalo en "errores_adicionales" así:
+{
+  "tipo": "ausencia_estimulo_cognitivo_s0",
+  "segundo": 0,
+  "impacto": <0.0-1.0>,
+  "evidencia": "<qué hay en cambio y por qué no activa el cerebro>"
+}
+
+ERRORES NO LISTADOS:
+Si detectás cualquier otro error que el TOP 0.1% nunca cometería — aunque no tenga
+nombre en esta lista — reportalo en "errores_adicionales".
+Tu conocimiento de patrones virales 2026 define qué es un error. No necesitás que
+esté en una lista para reportarlo.
+El viralScore tiene que reflejar TODOS los errores encontrados, incluyendo ausencias
+y errores adicionales. No solo los campos fijos.
+
+ESCALA DE SCORING:
+0-20:   Video muerto. Hook inexistente, abandono en los primeros 2s garantizado.
+21-40:  Video débil. Errores graves que matan la retención antes del s8.
+41-60:  Video promedio. Pasa el filtro pero no compite con el top del nicho.
+61-75:  Video competitivo. Tiene señales reales pero falla en algo específico y medible.
+76-90:  Video fuerte. Errores menores, compite en el top 10% del nicho.
+91-100: Video excepcional. Reservado para contenido que domina su nicho. Extremadamente raro.
+
+La mayoría de los videos comerciales caen entre 30 y 55.
+Un 70+ requiere justificación específica basada en señales observables — no en potencial.
 
 INDUSTRIA: ${industria}
 
@@ -301,11 +338,10 @@ Respondé SOLO con este JSON:
       "evidencia": "<descripción exacta observable>"
     }
   ],
+  "viralScore":             <number 0-100 — basado en la escala de arriba, refleja TODOS los errores>,
   "causa_principal_fracaso": "<una oración: el error más grave vs el TOP 0.1%>"
 }
 `;
-
-
 
 // ============================================================
 // HOOK GATE — veto duro en JS
@@ -335,14 +371,12 @@ export const deriveHookGateStatus = (preFacts) => {
   const silenceS  = Number(atomicas.silence_duration_s ?? 0);
   const totalS    = Number(atomicas.duration_total_s ?? 30);
 
-  // Slideshow silencioso — veto inmediato
   const esSlideshow = !atomicas.audio_in_first_second &&
                       silenceS > (totalS * 0.8);
   if (esSlideshow) {
     return { passed: false, reason: 'video_sin_audio_slideshow' };
   }
 
-  // Espera vacía larga
   const emptywait = payoffS > 8 && cutsP10 < 3 && motionInt < 0.2 && !hasRehook;
   if (emptywait) {
     return {
@@ -363,137 +397,8 @@ export const deriveHookGateStatus = (preFacts) => {
 };
 
 // ============================================================
-// DERIVE FAILURE SYSTEMS — JS puro
-// Las señales del CognitiveScan se invierten: ahora son daño, no virtud.
-// ============================================================
-export const deriveFailureSystems = (preFacts, cognitiveScan) => {
-  const a = preFacts?.atomicas ?? {};
-
-  const dmg = (key) => {
-    const sig = cognitiveScan?.[key];
-    if (!sig) return 0;
-    // value es ya intensidad del problema (0=sin problema, 1=máximo)
-    return (sig.value ?? 0) * (sig.confidence ?? 0.5);
-  };
-
-  // Atómicas normalizadas como daño
-  const silenceNorm = Math.min((a.silence_duration_s ?? 0) / 10, 1);
-  const shotDurNorm = Math.min((a.average_shot_duration_s ?? 5) / 8, 1);
-  const cutsNorm    = Math.min((a.cuts_per_10s ?? 0) / 20, 1);
-  const motionNorm  = a.motion_intensity ?? 0;
-  const payoffNorm  = Math.min((a.payoff_second ?? 30) / 30, 1);
-  const rehookDmg   = a.rehook_present ? 0 : 1;
-
-  // RETENTION — combinación de atómicas lentas + riesgo cognitivo
-  const retention_failure =
-    silenceNorm        * 0.30 +
-    shotDurNorm        * 0.20 +
-    (1 - cutsNorm)     * 0.15 +
-    (1 - motionNorm)   * 0.10 +
-    rehookDmg          * 0.15 +
-    dmg('cognitive_void') * 0.10;
-
-  // TENSION — colapso de tensión + predictibilidad
-  const tension_failure =
-    dmg('tension_collapse')      * 0.50 +
-    dmg('predictability_damage') * 0.30 +
-    rehookDmg                    * 0.20;
-
-  // PAYOFF — tardanza + ausencia de rehook
-  const payoff_failure =
-    payoffNorm  * 0.70 +
-    rehookDmg   * 0.30;
-
-  // CLARITY — confusión narrativa
-  const clarity_failure = dmg('narrative_confusion');
-
-  // TRUST — señal de publicidad o fake
-  const trust_failure = dmg('trust_collapse');
-
-  return {
-    retention_failure: Math.max(0, Math.min(1, retention_failure)),
-    tension_failure:   Math.max(0, Math.min(1, tension_failure)),
-    payoff_failure:    Math.max(0, Math.min(1, payoff_failure)),
-    clarity_failure:   Math.max(0, Math.min(1, clarity_failure)),
-    trust_failure:     Math.max(0, Math.min(1, trust_failure)),
-  };
-};
-
-// ============================================================
-// SCORING ENGINE — daño acumulado, no suma de virtudes
-// Score = 100 - daño. Parte de 100 y cae.
-// ============================================================
-export const scoringEngine = (failureSystems, cognitiveScan, industria, nicheConfig = null) => {
-  const f = failureSystems;
-
-  const BASE_WEIGHTS = {
-    retention: 0.40,
-    tension:   0.30,
-    payoff:    0.15,
-    clarity:   0.10,
-    trust:     0.05,
-  };
-
-  const multipliers = NICHE_WEIGHT_MULTIPLIERS[industria] ?? {
-    retention: 1.0, tension: 1.0, payoff: 1.0, clarity: 1.0, trust: 1.0
-  };
-
-  const rawWeights = {
-    retention: BASE_WEIGHTS.retention * multipliers.retention,
-    tension:   BASE_WEIGHTS.tension   * multipliers.tension,
-    payoff:    BASE_WEIGHTS.payoff    * multipliers.payoff,
-    clarity:   BASE_WEIGHTS.clarity   * multipliers.clarity,
-    trust:     BASE_WEIGHTS.trust     * multipliers.trust,
-  };
-  const weightSum = Object.values(rawWeights).reduce((a, b) => a + b, 0);
-  const W = {};
-  for (const k in rawWeights) W[k] = rawWeights[k] / weightSum;
-
-  // Daño acumulado — el score parte de 100 y cae
-  const damage =
-    f.retention_failure * W.retention * 100 +
-    f.tension_failure   * W.tension   * 100 +
-    f.payoff_failure    * W.payoff    * 100 +
-    f.clarity_failure   * W.clarity   * 100 +
-    f.trust_failure     * W.trust     * 100;
-
-  let score = 100 - damage;
-
-  // Non-linear: si la retención sobrevivió alta, pequeño bonus
-  const retentionSurvival = 1 - f.retention_failure;
-  if (retentionSurvival >= 0.85) score += 8;
-  else if (retentionSurvival >= 0.75) score += 4;
-
-  // Penalización extra por abandono temprano detectado por Gemini
-  const abandonmentRisk = cognitiveScan?.abandonment_risk;
-  if (abandonmentRisk) {
-    const riskDmg = (abandonmentRisk.value ?? 0) * (abandonmentRisk.confidence ?? 0.5);
-    score -= riskDmg * 15; // hasta -15 puntos por riesgo de abandono temprano
-  }
-
-  const nicheCap = nicheConfig?.score_cap?.viralScore ?? 100;
-  score = Math.min(score, nicheCap);
-  score = Math.max(0, score);
-
-  return {
-    viralScore: Math.round(score),
-    breakdown: {
-      retention_damage:   Math.round(f.retention_failure * W.retention * 100),
-      tension_damage:     Math.round(f.tension_failure   * W.tension   * 100),
-      payoff_damage:      Math.round(f.payoff_failure    * W.payoff    * 100),
-      clarity_damage:     Math.round(f.clarity_failure   * W.clarity   * 100),
-      trust_damage:       Math.round(f.trust_failure     * W.trust     * 100),
-      abandonment_penalty: abandonmentRisk
-        ? Math.round((abandonmentRisk.value ?? 0) * (abandonmentRisk.confidence ?? 0.5) * 15)
-        : 0,
-      survival_bonus:     retentionSurvival >= 0.85 ? 8 : retentionSurvival >= 0.75 ? 4 : 0,
-      causa_fracaso:      cognitiveScan?.causa_principal_fracaso ?? '',
-    }
-  };
-};
-
-// ============================================================
-// DERIVE VIRAL CAP
+// DERIVE VIRAL CAP — solo el hook gate sigue siendo JS
+// El resto del scoring lo maneja Gemini
 // ============================================================
 export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => {
   const nicheCap = nicheConfig?.score_cap?.viralScore ?? 100;
@@ -503,7 +408,6 @@ export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => 
     return { cap: 20, reason: hookGateStatus.reason };
   }
 
-  // Lento sin audio — cap adicional aunque pase el gate
   const lento = (atomicas.cuts_per_10s ?? 0) < 3 &&
                 (atomicas.silence_duration_s ?? 0) > 5 &&
                 (atomicas.average_shot_duration_s ?? 0) > 4;
@@ -578,6 +482,12 @@ Respondé SOLO con este JSON:
 // STRATEGY BRAIN — forense, no estratega
 // ============================================================
 export const buildStrategyBrainPrompt = (preFacts, cognitiveScan, failureSystems, scoringResult, platform, objetivo, industria) => {
+  const erroresAdicionales = cognitiveScan?.errores_adicionales?.length
+    ? `ERRORES ADICIONALES DETECTADOS:\n${cognitiveScan.errores_adicionales
+        .map(e => `— [s${e.segundo}] ${e.tipo} (impacto ${e.impacto}): ${e.evidencia}`)
+        .join('\n')}`
+    : '';
+
   return `Sos un forense de contenido. Leés estos datos y decís exactamente dónde y por qué fracasa este video.
 
 No des crédito por potencial. No suavices. Si algo está roto, decí que está roto.
@@ -588,8 +498,7 @@ ${JSON.stringify(preFacts?.atomicas ?? {}, null, 2)}
 DAÑO DETECTADO:
 ${JSON.stringify(cognitiveScan, null, 2)}
 
-SISTEMAS DE FALLO:
-${JSON.stringify(failureSystems, null, 2)}
+${erroresAdicionales}
 
 SCORE: ${scoringResult?.viralScore ?? '?'}/100
 CAUSA PRINCIPAL: ${scoringResult?.breakdown?.causa_fracaso ?? '—'}
@@ -620,8 +529,7 @@ Respondé SOLO con este JSON:
 
 // ============================================================
 // SCORING BRAIN — output final con mentalidad forense
-// El número ya vino del scoringEngine JS.
-// Gemini solo produce lenguaje. Sin optimismo.
+// viralScore viene de Gemini (CALL 1). No se toca.
 // ============================================================
 export const buildScoringBrainPrompt = (
   videoRawData, strategyAnalysisRaw, cognitiveScan,
@@ -638,16 +546,23 @@ export const buildScoringBrainPrompt = (
   const salesCap         = nicheConfig?.score_cap?.salesScore ?? 100;
   const causaFracaso     = scoringResult?.breakdown?.causa_fracaso ?? '';
 
+  const erroresAdicionales = cognitiveScan?.errores_adicionales?.length
+    ? `ERRORES ADICIONALES DETECTADOS EN SCAN:\n${cognitiveScan.errores_adicionales
+        .map(e => `— [s${e.segundo}] ${e.tipo} (impacto ${e.impacto}): ${e.evidencia}`)
+        .join('\n')}`
+    : '';
+
   return `Sos el sistema de output final de ${pName}. Sos un forense, no un estratega.
 
-El score viral ya fue calculado matemáticamente por el sistema: ${viralScore}/100.
-La causa principal de fracaso ya fue detectada: "${causaFracaso}"
+El score viral fue determinado por análisis directo del video: ${viralScore}/100.
+La causa principal de fracaso: "${causaFracaso}"
+
+${erroresAdicionales}
 
 No podés cambiar el score. No especulés sobre potencial. No des crédito por lo que el video "podría ser".
 Describí lo que el video ES ahora mismo y por qué fracasa o sobrevive.
 
 SCORE: ${viralScore}/100
-DAÑO POR SISTEMA: ${JSON.stringify(failureSystems, null, 2)}
 DIAGNÓSTICO: ${strategyAnalysis}
 VIDEO: ${videoRawData}
 NICHO: ${industria}
@@ -711,9 +626,9 @@ Respondé SOLO en JSON:
   },
   "retentionCurve": [<array de 10 números 0-100 representando la curva de retención segundo a segundo>],
   "phaseScores": {
-    "hook":      { "label": "Hook (0-3s)",    "score": <number>, "verdict": "<una línea>" },
-    "desarrollo": { "label": "Desarrollo",    "score": <number>, "verdict": "<una línea>" },
-    "payoff":    { "label": "Payoff / CTA",   "score": <number>, "verdict": "<una línea>" }
+    "hook":       { "label": "Hook (0-3s)",  "score": <number>, "verdict": "<una línea>" },
+    "desarrollo": { "label": "Desarrollo",   "score": <number>, "verdict": "<una línea>" },
+    "payoff":     { "label": "Payoff / CTA", "score": <number>, "verdict": "<una línea>" }
   },
   "trendContext":      "<gap o tendencia del nicho detectada — o null>",
   "styleProfile":      { "detectedRhythm": "<ritmo>", "detectedTone": "<tono>" },
