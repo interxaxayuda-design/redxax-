@@ -289,57 +289,54 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
 // ============================================================
 // COGNITIVE SCAN — CALL 1 (Versión Optimizada/Corta)
 // ============================================================
+// ============================================================
+// COGNITIVE SCAN — CALL 1 (Versión Final Optimizada)
+// ============================================================
 export const buildCognitiveScanPrompt = (videoRawData, industria, researchData = null) => {
   const benchmarkContext = researchData
     ? `BENCHMARK DEL NICHO:\n${typeof researchData === 'string' ? researchData : JSON.stringify(researchData, null, 2)}`
     : `Usá tu conocimiento a 2026 sobre formato corto en: "${industria}".`;
 
   return `
-# ROL Y CALIBRACIÓN
-Sos un Director de Contenido Senior prediciendo retención real en formato corto. 
-⚠️ ANTI-SESGO: No exijas perfección de Hollywood. Un video competente y normal en su nicho (ej. low-fi, talking head) merece un buen puntaje (60-75). Evaluá objetivamente sin buscar fallas donde no las hay.
+# ROL
+Sos Director de Contenido Senior experto en "${industria}" (Data 2026). Tu objetivo es auditar la eficacia del video según los estándares de retención de este nicho específico.
 
-# CONTEXTO DEL MERCADO
+# CONTEXTO Y REFERENCIAS
 ${benchmarkContext}
+
+EJEMPLOS DE REFERENCIA CALIBRADOS:
+${FEW_SHOTS}
+
+# INSTRUCCIONES DE AUDITORÍA
+1. ANALIZA: Definí el arquetipo y los estándares de edición/ritmo para "${industria}" (ej. Inmobiliaria = planos estables y aspiracionales; Gaming = cortes rápidos y ganchos visuales continuos).
+2. AUDITA: Buscá fallas fatales reales (Hook muerto, audio inaudible, estática prolongada injustificada).
+   - Prioridad de análisis: Faltas de retención > Calidad técnica > Claridad narrativa.
+   - REGLA DE ORO: Si el video es sólido para su nicho y cumple el estándar, NO reportes fallas por la fuerza.
+   - LÍMITE: Máximo 5 fallas. Si no encontrás problemas reales, el array debe quedar totalmente vacío [] y la penalización en 0.
+3. PENALIZA: Asigná números negativos según gravedad: Grave (-8.0 a -15.0) | Medio (-3.0 a -7.9) | Leve (-0.6 a -2.9).
+4. PUNTÚA: viralScore = (100 + friccion_penalty_total) ± ajuste por fortalezas. Si la penalización total supera los -35.0, el score máximo permitido es 45.
 
 # DATOS DEL VIDEO A EVALUAR
 NICHO: ${industria}
-HECHOS OBSERVADOS:
+HECHOS OBSERVADOS (Pre-Classifier):
 ---
 ${videoRawData}
 ---
-EJEMPLOS DE REFERENCIA:
-${FEW_SHOTS}
 
-# PROCESO OBLIGATORIO
-1. Arquetipo: Definí el formato (POV, hiper-editado, educativo, etc.).
-2. Auditoría de Fricciones (EXACTAMENTE 5 items, ni más ni menos): 
-   - Identificá 5 fricciones basándote en el nicho.
-   - Asigná penalización negativa según gravedad:
-     * Grave (destruye retención): -8.0 a -15.0
-     * Medio (afecta ritmo): -3.0 a -7.9
-     * Leve (detalle estético): -0.6 a -2.9
-   - ⚠️ VÁLVULA DE ESCAPE: Si el video es excelente, INVENTARIÁ 5 "micro-fricciones" invisibles (ej. silencio de 0.1s, encuadre leve) con peso entre -0.1 y -0.5 para cumplir la cuota sin arruinar el score.
-3. Fricción Total: Sumá matemáticamente las 5 penalizaciones.
-4. Fortalezas: Listá lo que funciona con evidencia (mínimo 1).
-5. viralScore: Base según fortalezas + impacto del friccion_penalty_total. (Si la penalización total supera los -35.0, el score máximo posible es 45).
-
-# ESCALA ANCLADA
-10-30: Roto | 31-50: Falla ejecución | 51-65: Promedio competente | 66-80: Muy bueno/Viral | 81-100: Excepcional.
-
-# OUTPUT JSON (Respondé ÚNICAMENTE con esta estructura, sin texto extra)
+# OUTPUT JSON (Respondé ÚNICAMENTE con este JSON, sin texto extra)
 {
   "arquetipo_detectado": "<string>",
+  "standard_edicion_nicho": "<breve análisis del estándar esperado en ${industria} según tu conocimiento 2026>",
   "auditoria_fricciones_2026": [
-    { "nombre_falla": "<string>", "es_fatal": <boolean>, "evidencia": "<string>", "penalizacion": <number negativo> }
+    { "nombre_falla": "<string>", "es_fatal": <boolean>, "evidencia": "<string>", "penalizacion": <number> }
   ],
-  "friccion_penalty_total": <number negativo>,
+  "friccion_penalty_total": <number negativo o 0>,
   "fortalezas_observadas": [
     { "elemento": "<string>", "segundo": <number>, "evidencia_citada": "<string>", "impacto": "<alto|medio|bajo>" }
   ],
-  "razonamiento_score": "<string>",
+  "razonamiento_score": "<explicación breve del balance matemático final>",
   "viralScore": <number 0-100>,
-  "confianza_score": <number 0.0-1.0>,
+  "confianza_score": <number 0-1>,
   "causa_principal_fracaso": "<string o 'NINGUNO'>",
   "sub_dimensiones": {
     "hook_strength": { "score": <number>, "evidencia": "<string>" },
