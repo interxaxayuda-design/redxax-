@@ -285,20 +285,27 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
 }
 `;
 
-
-export const buildCognitiveScanPrompt = (videoRawData, industria, researchData = null) => {
+export const buildCognitiveScanPrompt = (videoRawData, industria, researchData = null, platform = 'all') => {
   const benchmarkContext = researchData
     ? `BENCHMARK: ${typeof researchData === 'string' ? researchData : JSON.stringify(researchData)}`
     : `Usá tu conocimiento 2026 sobre formato corto en: "${industria}".`;
 
-  return `Sos el mejor Director de Contenido del mundo en "${industria}". Diagnóstico preciso: ni optimista ni pesimista. Si el video es bueno, decilo. Si hay fallas, nombralas con evidencia exacta. Score alto con pocas fricciones es válido. Nunca inventes fallas para justificar un score bajo.
+  const platformName = {
+    tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
+  }[platform] || platform;
 
-CONTEXTO: Feed orgánico 2026, sin distribución paga. Compite contra los mejores creadores de "${industria}" en tiempo real.
+  return `Sos el mejor Director de Contenido del mundo en "${industria}" para ${platformName}. Diagnóstico preciso: ni optimista ni pesimista. Si el video es bueno, decilo. Si hay fallas, nombralas con evidencia exacta. Score alto con pocas fricciones es válido. Nunca inventes fallas para justificar un score bajo.
 
-Antes de evaluar, respondete: ¿qué necesita un video de "${industria}" para detener el scroll hoy? Evaluá contra esa respuesta.
+CONTEXTO: Feed orgánico de ${platformName} en 2026, sin distribución paga. Compite contra los mejores creadores de "${industria}" en ${platformName} hoy.
+
+Antes de evaluar, respondete internamente estas dos preguntas y usá las respuestas como criterio de evaluación:
+1. ¿Qué formato, ritmo y estilo domina "${industria}" en ${platformName} en 2026? (comportamiento del algoritmo, duración ideal, tipo de hook que para el scroll en esta plataforma específica)
+2. ¿Qué necesita un video de "${industria}" en ${platformName} para hacerse viral hoy? (no genérico — específico para esta combinación de nicho y plataforma)
+
+Evaluá este video contra esas respuestas.
 
 INSTRUCCIONES:
-1. Definí el estándar del nicho "${industria}" en 2026.
+1. Definí el estándar de "${industria}" en ${platformName} 2026.
 2. Evaluá objetivamente. Lo que funciona es fortaleza — nombralo. Lo que falla con evidencia observable es fricción — nombralo. Sin fallas reales → auditoria_fricciones_2026: [] y friccion_penalty_total: 0.
 3. Penalización: Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9).
 4. viralScore = (100 + friccion_penalty_total) ± fortalezas. Si penalización > -35 → score máx 45.
@@ -309,11 +316,12 @@ EJEMPLOS:
 ${FEW_SHOTS}
 
 NICHO: ${industria}
+PLATAFORMA: ${platformName}
 DATOS:
 ${videoRawData}
 
 JSON:
-{"arquetipo_detectado":"<string>","standard_edicion_nicho":"<string>","auditoria_fricciones_2026":[{"nombre_falla":"<string>","es_fatal":<boolean>,"evidencia":"<string>","penalizacion":<number>}],"friccion_penalty_total":<number>,"fortalezas_observadas":[{"elemento":"<string>","segundo":<number>,"evidencia_citada":"<string>","impacto":"<alto|medio|bajo>"}],"razonamiento_score":"<string>","viralScore":<number>,"confianza_score":<number>,"causa_principal_fracaso":"<string o NINGUNO>","sub_dimensiones":{"hook_strength":{"score":<number>,"evidencia":"<string>"},"retention_design":{"score":<number>,"evidencia":"<string>"},"payoff_quality":{"score":<number>,"evidencia":"<string>"},"narrative_clarity":{"score":<number>,"evidencia":"<string>"},"trust_signals":{"score":<number>,"evidencia":"<string>"}}}`;
+{"arquetipo_detectado":"<string>","standard_edicion_nicho":"<qué funciona en ${industria} en ${platformName} hoy>","auditoria_fricciones_2026":[{"nombre_falla":"<string>","es_fatal":<boolean>,"evidencia":"<string>","penalizacion":<number>}],"friccion_penalty_total":<number>,"fortalezas_observadas":[{"elemento":"<string>","segundo":<number>,"evidencia_citada":"<string>","impacto":"<alto|medio|bajo>"}],"razonamiento_score":"<string>","viralScore":<number>,"confianza_score":<number>,"causa_principal_fracaso":"<string o NINGUNO>","sub_dimensiones":{"hook_strength":{"score":<number>,"evidencia":"<string>"},"retention_design":{"score":<number>,"evidencia":"<string>"},"payoff_quality":{"score":<number>,"evidencia":"<string>"},"narrative_clarity":{"score":<number>,"evidencia":"<string>"},"trust_signals":{"score":<number>,"evidencia":"<string>"}}}`;
 };
 
 // ============================================================
@@ -1314,7 +1322,7 @@ const runDeepAnalysis = async () => {
       // CALL 1 — Cognitive Scan
       const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-      text: buildCognitiveScanPrompt(preFactsStr, industria, researchData),
+     text: buildCognitiveScanPrompt(preFactsStr, industria, researchData, platform),
       storagePath,
       videoMimeType: mimeType,
       duration:      Math.round(duration),
