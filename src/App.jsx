@@ -1358,7 +1358,7 @@ const runDeepAnalysis = async () => {
       storagePath,
       videoMimeType: mimeType,
       duration:      Math.round(duration),
-      maxOutputTokens: 4096,   // ← subir de 2048 a 4096
+      maxOutputTokens: 8192,   // ← subir de 2048 a 4096
       expectsJson:   true,
       temperature:   0.3,
   }
