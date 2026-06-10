@@ -286,20 +286,36 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
 `;
 
 
-// ============================================================
-// COGNITIVE SCAN — CALL 1 (Versión Optimizada/Corta)
-// ============================================================
-// ============================================================
-// COGNITIVE SCAN — CALL 1 (Versión Final Optimizada)
-// ============================================================
 export const buildCognitiveScanPrompt = (videoRawData, industria, researchData = null) => {
   const benchmarkContext = researchData
     ? `BENCHMARK DEL NICHO:\n${typeof researchData === 'string' ? researchData : JSON.stringify(researchData, null, 2)}`
-    : `Usá tu conocimiento a 2026 sobre formato corto en: "${industria}".`;
+    : `Usá tu conocimiento actualizado a 2026 sobre formato corto en: "${industria}".`;
 
   return `
 # ROL
-Sos Director de Contenido Senior experto en "${industria}" (Data 2026). Tu objetivo es auditar la eficacia del video según los estándares de retención de este nicho específico.
+Sos el mejor Director de Contenido del mundo especializado en "${industria}".
+Conocés en profundidad el comportamiento del feed orgánico en 2026 —
+qué retiene, qué convierte, y qué hace que un espectador abandone un video
+antes del segundo 3 en TikTok, Reels y Shorts.
+
+# CONTEXTO
+Este video compite de forma orgánica en el feed, sin presupuesto de distribución.
+No es un anuncio pagado. Compite en tiempo real contra los mejores creadores
+del nicho "${industria}" en 2026.
+
+Antes de evaluar, respondete internamente:
+¿Qué necesita un video de "${industria}" para detener el scroll y hacerse viral
+en el feed orgánico hoy? Usá todo tu conocimiento para responder eso primero,
+y luego auditá este video contra esa respuesta.
+
+# INSTRUCCIONES
+1. Definí qué espera ver el espectador de "${industria}" en los primeros 3 segundos
+   según el estado actual del nicho en 2026.
+2. Auditá el video contra eso. Detectá fallas reales con evidencia observable.
+   No fuerces fallas donde no las hay. No ignores señales claras de abandono.
+3. Penalizá según gravedad: Grave (-8.0 a -15.0) | Medio (-3.0 a -7.9) | Leve (-0.6 a -2.9).
+4. viralScore = (100 + friccion_penalty_total) ± ajuste por fortalezas.
+   Si la penalización total supera -35.0, el score máximo permitido es 45.
 
 # CONTEXTO Y REFERENCIAS
 ${benchmarkContext}
@@ -307,26 +323,17 @@ ${benchmarkContext}
 EJEMPLOS DE REFERENCIA CALIBRADOS:
 ${FEW_SHOTS}
 
-# INSTRUCCIONES DE AUDITORÍA
-1. ANALIZA: Definí el arquetipo y los estándares de edición/ritmo para "${industria}" (ej. Inmobiliaria = planos estables y aspiracionales; Gaming = cortes rápidos y ganchos visuales continuos).
-2. AUDITA: Buscá fallas fatales reales (Hook muerto, audio inaudible, estática prolongada injustificada).
-   - Prioridad de análisis: Faltas de retención > Calidad técnica > Claridad narrativa.
-   - REGLA DE ORO: Si el video es sólido para su nicho y cumple el estándar, NO reportes fallas por la fuerza.
-   - LÍMITE: Máximo 5 fallas. Si no encontrás problemas reales, el array debe quedar totalmente vacío [] y la penalización en 0.
-3. PENALIZA: Asigná números negativos según gravedad: Grave (-8.0 a -15.0) | Medio (-3.0 a -7.9) | Leve (-0.6 a -2.9).
-4. PUNTÚA: viralScore = (100 + friccion_penalty_total) ± ajuste por fortalezas. Si la penalización total supera los -35.0, el score máximo permitido es 45.
-
-# DATOS DEL VIDEO A EVALUAR
+# DATOS DEL VIDEO
 NICHO: ${industria}
-HECHOS OBSERVADOS (Pre-Classifier):
+HECHOS OBSERVADOS:
 ---
 ${videoRawData}
 ---
 
-# OUTPUT JSON (Respondé ÚNICAMENTE con este JSON, sin texto extra)
+# OUTPUT JSON
 {
   "arquetipo_detectado": "<string>",
-  "standard_edicion_nicho": "<breve análisis del estándar esperado en ${industria} según tu conocimiento 2026>",
+  "standard_edicion_nicho": "<qué necesita un video de ${industria} para ser competitivo hoy — desde tu conocimiento 2026>",
   "auditoria_fricciones_2026": [
     { "nombre_falla": "<string>", "es_fatal": <boolean>, "evidencia": "<string>", "penalizacion": <number> }
   ],
@@ -334,16 +341,16 @@ ${videoRawData}
   "fortalezas_observadas": [
     { "elemento": "<string>", "segundo": <number>, "evidencia_citada": "<string>", "impacto": "<alto|medio|bajo>" }
   ],
-  "razonamiento_score": "<explicación breve del balance matemático final>",
+  "razonamiento_score": "<explicación del balance matemático final>",
   "viralScore": <number 0-100>,
   "confianza_score": <number 0-1>,
   "causa_principal_fracaso": "<string o 'NINGUNO'>",
   "sub_dimensiones": {
-    "hook_strength": { "score": <number>, "evidencia": "<string>" },
-    "retention_design": { "score": <number>, "evidencia": "<string>" },
-    "payoff_quality": { "score": <number>, "evidencia": "<string>" },
+    "hook_strength":     { "score": <number>, "evidencia": "<string>" },
+    "retention_design":  { "score": <number>, "evidencia": "<string>" },
+    "payoff_quality":    { "score": <number>, "evidencia": "<string>" },
     "narrative_clarity": { "score": <number>, "evidencia": "<string>" },
-    "trust_signals": { "score": <number>, "evidencia": "<string>" }
+    "trust_signals":     { "score": <number>, "evidencia": "<string>" }
   }
 }
 `;
@@ -607,75 +614,7 @@ Respondé SOLO con este JSON:
 //   - Se reemplazó por instrucción de consistencia: los sub-scores
 //     deben ser coherentes con el viralScore recibido.
 // ============================================================
-export const buildCognitiveScanPrompt = (videoRawData, industria, researchData = null) => {
-  const benchmarkContext = researchData
-    ? `BENCHMARK DEL NICHO:\n${typeof researchData === 'string' ? researchData : JSON.stringify(researchData, null, 2)}`
-    : `Usá tu conocimiento actualizado a 2026 sobre formato corto en: "${industria}".`;
 
-  return `
-# ROL
-Sos el mejor Director de Contenido del mundo especializado en "${industria}".
-Conocés en profundidad el comportamiento del feed orgánico en 2026 —
-qué retiene, qué convierte, y qué hace que un espectador abandone un video
-antes del segundo 3 en TikTok, Reels y Shorts.
-
-# CONTEXTO
-Este video compite de forma orgánica en el feed, sin presupuesto de distribución.
-No es un anuncio pagado. Compite en tiempo real contra los mejores creadores
-del nicho "${industria}" en 2026.
-
-Antes de evaluar, respondete internamente:
-¿Qué necesita un video de "${industria}" para detener el scroll y hacerse viral
-en el feed orgánico hoy? Usá todo tu conocimiento para responder eso primero,
-y luego auditá este video contra esa respuesta.
-
-# INSTRUCCIONES
-1. Definí qué espera ver el espectador de "${industria}" en los primeros 3 segundos
-   según el estado actual del nicho en 2026.
-2. Auditá el video contra eso. Detectá fallas reales con evidencia observable.
-   No fuerces fallas donde no las hay. No ignores señales claras de abandono.
-3. Penalizá según gravedad: Grave (-8.0 a -15.0) | Medio (-3.0 a -7.9) | Leve (-0.6 a -2.9).
-4. viralScore = (100 + friccion_penalty_total) ± ajuste por fortalezas.
-   Si la penalización total supera -35.0, el score máximo permitido es 45.
-
-# CONTEXTO Y REFERENCIAS
-${benchmarkContext}
-
-EJEMPLOS DE REFERENCIA CALIBRADOS:
-${FEW_SHOTS}
-
-# DATOS DEL VIDEO
-NICHO: ${industria}
-HECHOS OBSERVADOS:
----
-${videoRawData}
----
-
-# OUTPUT JSON
-{
-  "arquetipo_detectado": "<string>",
-  "standard_edicion_nicho": "<qué necesita un video de ${industria} para ser competitivo hoy — desde tu conocimiento 2026>",
-  "auditoria_fricciones_2026": [
-    { "nombre_falla": "<string>", "es_fatal": <boolean>, "evidencia": "<string>", "penalizacion": <number> }
-  ],
-  "friccion_penalty_total": <number negativo o 0>,
-  "fortalezas_observadas": [
-    { "elemento": "<string>", "segundo": <number>, "evidencia_citada": "<string>", "impacto": "<alto|medio|bajo>" }
-  ],
-  "razonamiento_score": "<explicación del balance matemático final>",
-  "viralScore": <number 0-100>,
-  "confianza_score": <number 0-1>,
-  "causa_principal_fracaso": "<string o 'NINGUNO'>",
-  "sub_dimensiones": {
-    "hook_strength":     { "score": <number>, "evidencia": "<string>" },
-    "retention_design":  { "score": <number>, "evidencia": "<string>" },
-    "payoff_quality":    { "score": <number>, "evidencia": "<string>" },
-    "narrative_clarity": { "score": <number>, "evidencia": "<string>" },
-    "trust_signals":     { "score": <number>, "evidencia": "<string>" }
-  }
-}
-`;
-};
 
 
 // ============================================================
