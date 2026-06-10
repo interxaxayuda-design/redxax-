@@ -288,72 +288,32 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
 
 export const buildCognitiveScanPrompt = (videoRawData, industria, researchData = null) => {
   const benchmarkContext = researchData
-    ? `BENCHMARK DEL NICHO:\n${typeof researchData === 'string' ? researchData : JSON.stringify(researchData, null, 2)}`
-    : `Usá tu conocimiento actualizado a 2026 sobre formato corto en: "${industria}".`;
+    ? `BENCHMARK: ${typeof researchData === 'string' ? researchData : JSON.stringify(researchData)}`
+    : `Usá tu conocimiento 2026 sobre formato corto en: "${industria}".`;
 
-  return `
-# ROL
-Sos el mejor Director de Contenido del mundo especializado en "${industria}".
-Conocés en profundidad el comportamiento del feed orgánico en 2026 —
-qué retiene, qué convierte, y qué hace que un espectador abandone un video
-antes del segundo 3 en TikTok, Reels y Shorts.
+  return `Sos el mejor Director de Contenido del mundo en "${industria}". Diagnóstico preciso: ni optimista ni pesimista. Si el video es bueno, decilo. Si hay fallas, nombralas con evidencia exacta. Score alto con pocas fricciones es válido. Nunca inventes fallas para justificar un score bajo.
 
-# CONTEXTO
-Este video compite de forma orgánica en el feed, sin presupuesto de distribución.
-No es un anuncio pagado. Compite en tiempo real contra los mejores creadores
-del nicho "${industria}" en 2026.
+CONTEXTO: Feed orgánico 2026, sin distribución paga. Compite contra los mejores creadores de "${industria}" en tiempo real.
 
-Antes de evaluar, respondete internamente:
-¿Qué necesita un video de "${industria}" para detener el scroll y hacerse viral
-en el feed orgánico hoy? Usá todo tu conocimiento para responder eso primero,
-y luego auditá este video contra esa respuesta.
+Antes de evaluar, respondete: ¿qué necesita un video de "${industria}" para detener el scroll hoy? Evaluá contra esa respuesta.
 
-# INSTRUCCIONES
-1. Definí qué espera ver el espectador de "${industria}" en los primeros 3 segundos
-   según el estado actual del nicho en 2026.
-2. Auditá el video contra eso. Detectá fallas reales con evidencia observable.
-   No fuerces fallas donde no las hay. No ignores señales claras de abandono.
-3. Penalizá según gravedad: Grave (-8.0 a -15.0) | Medio (-3.0 a -7.9) | Leve (-0.6 a -2.9).
-4. viralScore = (100 + friccion_penalty_total) ± ajuste por fortalezas.
-   Si la penalización total supera -35.0, el score máximo permitido es 45.
+INSTRUCCIONES:
+1. Definí el estándar del nicho "${industria}" en 2026.
+2. Evaluá objetivamente. Lo que funciona es fortaleza — nombralo. Lo que falla con evidencia observable es fricción — nombralo. Sin fallas reales → auditoria_fricciones_2026: [] y friccion_penalty_total: 0.
+3. Penalización: Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9).
+4. viralScore = (100 + friccion_penalty_total) ± fortalezas. Si penalización > -35 → score máx 45.
 
-# CONTEXTO Y REFERENCIAS
 ${benchmarkContext}
 
-EJEMPLOS DE REFERENCIA CALIBRADOS:
+EJEMPLOS:
 ${FEW_SHOTS}
 
-# DATOS DEL VIDEO
 NICHO: ${industria}
-HECHOS OBSERVADOS:
----
+DATOS:
 ${videoRawData}
----
 
-# OUTPUT JSON
-{
-  "arquetipo_detectado": "<string>",
-  "standard_edicion_nicho": "<qué necesita un video de ${industria} para ser competitivo hoy — desde tu conocimiento 2026>",
-  "auditoria_fricciones_2026": [
-    { "nombre_falla": "<string>", "es_fatal": <boolean>, "evidencia": "<string>", "penalizacion": <number> }
-  ],
-  "friccion_penalty_total": <number negativo o 0>,
-  "fortalezas_observadas": [
-    { "elemento": "<string>", "segundo": <number>, "evidencia_citada": "<string>", "impacto": "<alto|medio|bajo>" }
-  ],
-  "razonamiento_score": "<explicación del balance matemático final>",
-  "viralScore": <number 0-100>,
-  "confianza_score": <number 0-1>,
-  "causa_principal_fracaso": "<string o 'NINGUNO'>",
-  "sub_dimensiones": {
-    "hook_strength":     { "score": <number>, "evidencia": "<string>" },
-    "retention_design":  { "score": <number>, "evidencia": "<string>" },
-    "payoff_quality":    { "score": <number>, "evidencia": "<string>" },
-    "narrative_clarity": { "score": <number>, "evidencia": "<string>" },
-    "trust_signals":     { "score": <number>, "evidencia": "<string>" }
-  }
-}
-`;
+JSON:
+{"arquetipo_detectado":"<string>","standard_edicion_nicho":"<string>","auditoria_fricciones_2026":[{"nombre_falla":"<string>","es_fatal":<boolean>,"evidencia":"<string>","penalizacion":<number>}],"friccion_penalty_total":<number>,"fortalezas_observadas":[{"elemento":"<string>","segundo":<number>,"evidencia_citada":"<string>","impacto":"<alto|medio|bajo>"}],"razonamiento_score":"<string>","viralScore":<number>,"confianza_score":<number>,"causa_principal_fracaso":"<string o NINGUNO>","sub_dimensiones":{"hook_strength":{"score":<number>,"evidencia":"<string>"},"retention_design":{"score":<number>,"evidencia":"<string>"},"payoff_quality":{"score":<number>,"evidencia":"<string>"},"narrative_clarity":{"score":<number>,"evidencia":"<string>"},"trust_signals":{"score":<number>,"evidencia":"<string>"}}}`;
 };
 
 // ============================================================
