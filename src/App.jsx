@@ -356,7 +356,6 @@ ${videoRawData}
 `;
 };
 
-
 // ============================================================
 // HOOK GATE — FIX #2
 // Antes: veto binario duro (cap 20 si falla cualquier condición)
@@ -614,7 +613,128 @@ Respondé SOLO con este JSON:
 //   - Se reemplazó por instrucción de consistencia: los sub-scores
 //     deben ser coherentes con el viralScore recibido.
 // ============================================================
+export const buildScoringBrainPrompt = (
+  videoRawData, strategyAnalysisRaw, cognitiveScan,
+  failureSystems, scoringResult, viralCapData,
+  platform, objetivo, industria,
+  nicheConfig = null, hookGateStatus = null
+) => {
+  const pName = {
+    tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
+  }[platform] || platform;
 
+  const strategyAnalysis = limpiarJSON(strategyAnalysisRaw);
+  const viralScore       = scoringResult?.viralScore ?? 0;
+  const salesCap         = nicheConfig?.score_cap?.salesScore ?? 100;
+  const causaFracaso     = scoringResult?.breakdown?.causa_fracaso ?? 'sin causa identificada';
+
+  const capInfo = viralCapData?.cap < 100
+    ? `NOTA: El cap del nicho/hook es ${viralCapData.cap}/100 (razón: ${viralCapData.reason}). Esto ya está considerado en el viralScore.`
+    : '';
+
+  const erroresAdicionales = cognitiveScan?.errores_adicionales?.length
+    ? `ERRORES ADICIONALES DETECTADOS:\n${cognitiveScan.errores_adicionales
+        .map(e => `— [s${e.segundo}] ${e.tipo} (impacto ${e.impacto}): ${e.evidencia}`)
+        .join('\n')}`
+    : '';
+
+  return `Sos el sistema de output final de VIRAX para ${pName}.
+Tu función es generar el reporte completo de usuario a partir del análisis ya realizado.
+
+SCORE VIRAL DEFINITIVO: ${viralScore}/100
+Este score fue calculado por análisis directo del video. Tu tarea es generar un reporte
+COHERENTE con este score — ni más positivo ni más negativo que lo que el score indica.
+Si el score es 65, el veredicto describe un video competente con áreas de mejora.
+Si el score es 35, el veredicto describe un video con fallas estructurales.
+${capInfo}
+
+CAUSA DE FRACASO O ÉXITO: "${causaFracaso}"
+${erroresAdicionales}
+
+DIAGNÓSTICO ESTRATÉGICO:
+${strategyAnalysis}
+
+DATOS DEL VIDEO:
+${videoRawData}
+
+NICHO: ${industria}
+OBJETIVO: ${objetivo}
+
+REGLA DE COHERENCIA: salesScore, scrollStopScore, hookDNA.strength y phaseScores
+deben ser numéricamente coherentes con viralScore: ${viralScore}/100.
+Un video con viralScore 65 no puede tener hookDNA.strength 20 ni salesScore 90.
+Usá el viralScore como ancla y distribuí los sub-scores alrededor de él
+según la evidencia del diagnóstico.
+
+Respondé SOLO en JSON:
+{
+  "salesScore": {
+    "score":        <number 0-${salesCap} — coherente con viralScore ${viralScore}>,
+    "verdict":      "<señal de conversión presente o ausente — específica, sin rodeos>",
+    "accion_clave": "<acción concreta y ejecutable>"
+  },
+  "scrollStopScore": {
+    "score":   <number 0-100>,
+    "verdict": "<qué tiene o no tiene el segundo 0 que determina si el pulgar para>"
+  },
+  "hookDNA": {
+    "pattern":        "<Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Deseo_Sensorial|Identidad_Tribal|Aspiracion|Muerto|Otro>",
+    "strength":       <number 0-100>,
+    "missingElement": "<qué elemento específico haría que el hook no se pueda ignorar — o 'ninguno' si el hook es fuerte>",
+    "optimizedHook":  "<reescribí el hook con los datos disponibles — versión ejecutable ahora>"
+  },
+  "steppsScore": {
+    "viralCoefficient": <number 0.0-10.0>,
+    "socialCurrency":   <number 0-10>,
+    "triggers":         <number 0-10>,
+    "emotion":          <number 0-10>,
+    "public":           <number 0-10>,
+    "practicalValue":   <number 0-10>,
+    "stories":          <number 0-10>,
+    "dominantFactor":   "<factor más fuerte>",
+    "weakestFactor":    "<factor más débil>",
+    "shareMotivation":  "<identidad|utilidad|sorpresa|validacion|ninguno>"
+  },
+  "honestVerdict": "<Dos oraciones. La experiencia real del espectador coherente con score ${viralScore}. Si score >= 60, describí por qué funciona Y dónde puede mejorar. Si score < 60, describí el punto de abandono.>",
+  "roadmap": [
+    {
+      "impacto":   "<ALTO|MEDIO|BAJO>",
+      "problema":  "<segundo exacto + qué falla — solo si hay evidencia>",
+      "solucion":  "<instrucción ejecutable — sin hipótesis ni potencial>",
+      "resultado": "<qué cambia en el comportamiento del espectador>"
+    }
+  ],
+  "vision": {
+    "niche":    "<nicho específico del video>",
+    "type":     "<tipo de contenido>",
+    "audience": "<audiencia objetivo>",
+    "promise":  "<qué promete el video en los primeros 3 segundos>"
+  },
+  "potentialScore":      <number 0-100 — promedio ponderado de viral + ventas, anclado en ${viralScore}>,
+  "performanceScenario": "<ALTO POTENCIAL|POTENCIAL MEDIO|BAJO POTENCIAL>",
+  "platformScores": {
+    "tiktok": { "score": <number coherente con ${viralScore}>, "verdict": "<una línea>", "topTip": "<acción concreta>" },
+    "reels":  { "score": <number coherente con ${viralScore}>, "verdict": "<una línea>", "topTip": "<acción concreta>" },
+    "shorts": { "score": <number coherente con ${viralScore}>, "verdict": "<una línea>", "topTip": "<acción concreta>" }
+  },
+  "retentionData": {
+    "at3s":  "<porcentaje estimado de retención al segundo 3>",
+    "at10s": "<porcentaje estimado al segundo 10>",
+    "final": "<porcentaje estimado al final>"
+  },
+  "retentionCurve": [<array de 10 números 0-100 — la curva debe reflejar el score ${viralScore}: si score es 65, la curva no puede caer a 10 en el segundo 3>],
+  "phaseScores": {
+    "hook":       { "label": "Hook (0-3s)",  "score": <number>, "verdict": "<una línea>" },
+    "desarrollo": { "label": "Desarrollo",   "score": <number>, "verdict": "<una línea>" },
+    "payoff":     { "label": "Payoff / CTA", "score": <number>, "verdict": "<una línea>" }
+  },
+  "trendContext":      "<gap o tendencia del nicho detectada — o null>",
+  "styleProfile":      { "detectedRhythm": "<ritmo>", "detectedTone": "<tono>" },
+  "viewsPrediction":   { "scenario_low": "<rango>", "scenario_mid": "<rango>", "scenario_high": "<rango>", "probability_viral": "<porcentaje>" },
+  "firstHourStrategy": { "optimalPostTime": "<horario>", "firstActionAfterPost": "<acción>", "commentSeed": "<texto>", "engagementBoost": "<táctica>" },
+  "commentTrigger":    { "probability": <number>, "triggerType": "<tipo>", "suggestedCTA": "<texto>" }
+}`;
+};
 
 
 // ============================================================
