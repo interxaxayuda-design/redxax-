@@ -1351,15 +1351,18 @@ const runDeepAnalysis = async () => {
 
     let researchData = {};
     try {
-      const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: buildResearchBrainPrompt(platform, industria, selectedObjetivo, nichoBenchmark),
-          useSearch: true,
-          expectsJson: true,
-          maxOutputTokens: 2048,
-          temperature: 0,
-        }
-      });
+      // CALL 1 — Cognitive Scan
+      const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+      text: buildCognitiveScanPrompt(preFactsStr, industria, researchData),
+      storagePath,
+      videoMimeType: mimeType,
+      duration:      Math.round(duration),
+      maxOutputTokens: 4096,   // ← subir de 2048 a 4096
+      expectsJson:   true,
+      temperature:   0.3,
+  }
+});
       if (!call1_5Error) {
         researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
       }
