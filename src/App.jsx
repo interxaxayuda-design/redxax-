@@ -294,34 +294,29 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Sos el mejor Director de Contenido del mundo en "${industria}" para ${platformName}. Diagnóstico preciso: ni optimista ni pesimista. Si el video es bueno, decilo. Si hay fallas, nombralas con evidencia exacta. Score alto con pocas fricciones es válido. Nunca inventes fallas para justificar un score bajo.
+  return `Sos el mejor Director de Contenido del mundo en "${industria}" para ${platformName}. Diagnóstico preciso: ni optimista ni pesimista. Score alto con pocas fricciones es válido. Nunca inventes fallas.
 
-CONTEXTO: Feed orgánico de ${platformName} en 2026, sin distribución paga. Compite contra los mejores creadores de "${industria}" en ${platformName} hoy.
+CONTEXTO: Feed orgánico ${platformName} 2026, sin distribución paga.
 
-Antes de evaluar, respondete internamente estas dos preguntas y usá las respuestas como criterio de evaluación:
-1. ¿Qué formato, ritmo y estilo domina "${industria}" en ${platformName} en 2026? (comportamiento del algoritmo, duración ideal, tipo de hook que para el scroll en esta plataforma específica)
-2. ¿Qué necesita un video de "${industria}" en ${platformName} para hacerse viral hoy? (no genérico — específico para esta combinación de nicho y plataforma)
-
-Evaluá este video contra esas respuestas.
+Antes de evaluar, respondete internamente:
+1. ¿Qué formato y ritmo domina "${industria}" en ${platformName} hoy?
+2. ¿Qué necesita este nicho en esta plataforma para ser viral?
+Evaluá el video contra esas respuestas.
 
 INSTRUCCIONES:
-1. Definí el estándar de "${industria}" en ${platformName} 2026.
-2. Evaluá objetivamente. Lo que funciona es fortaleza — nombralo. Lo que falla con evidencia observable es fricción — nombralo. Sin fallas reales → auditoria_fricciones_2026: [] y friccion_penalty_total: 0.
+1. Evaluá objetivamente. Fortalezas y fricciones solo con evidencia observable.
+2. Sin fallas reales → auditoria_fricciones_2026: [] y friccion_penalty_total: 0.
 3. Penalización: Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9).
-4. viralScore = (100 + friccion_penalty_total) ± fortalezas. Si penalización > -35 → score máx 45.
+4. viralScore = (100 + friccion_penalty_total) ± fortalezas. Penalización > -35 → máx 45.
 
 ${benchmarkContext}
-
-EJEMPLOS:
 ${FEW_SHOTS}
 
-NICHO: ${industria}
-PLATAFORMA: ${platformName}
-DATOS:
-${videoRawData}
+NICHO: ${industria} | PLATAFORMA: ${platformName}
+DATOS: ${videoRawData}
 
-JSON:
-{"arquetipo_detectado":"<string>","standard_edicion_nicho":"<qué funciona en ${industria} en ${platformName} hoy>","auditoria_fricciones_2026":[{"nombre_falla":"<string>","es_fatal":<boolean>,"evidencia":"<string>","penalizacion":<number>}],"friccion_penalty_total":<number>,"fortalezas_observadas":[{"elemento":"<string>","segundo":<number>,"evidencia_citada":"<string>","impacto":"<alto|medio|bajo>"}],"razonamiento_score":"<string>","viralScore":<number>,"confianza_score":<number>,"causa_principal_fracaso":"<string o NINGUNO>","sub_dimensiones":{"hook_strength":{"score":<number>,"evidencia":"<string>"},"retention_design":{"score":<number>,"evidencia":"<string>"},"payoff_quality":{"score":<number>,"evidencia":"<string>"},"narrative_clarity":{"score":<number>,"evidencia":"<string>"},"trust_signals":{"score":<number>,"evidencia":"<string>"}}}`;
+JSON (sé conciso en los strings, máximo 15 palabras por campo de texto):
+{"arquetipo_detectado":"<string>","auditoria_fricciones_2026":[{"nombre_falla":"<string>","es_fatal":<boolean>,"evidencia":"<string>","penalizacion":<number>}],"friccion_penalty_total":<number>,"fortalezas_observadas":[{"elemento":"<string>","segundo":<number>,"evidencia_citada":"<string>","impacto":"<alto|medio|bajo>"}],"razonamiento_score":"<string>","viralScore":<number>,"confianza_score":<number>,"sub_dimensiones":{"hook_strength":<number>,"retention_design":<number>,"payoff_quality":<number>,"narrative_clarity":<number>,"trust_signals":<number>}}`;
 };
 
 // ============================================================
