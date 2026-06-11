@@ -177,9 +177,6 @@ const limpiarJSON = (str) => {
   return str.replace(fence, '').replace(fenceClose, '').trim();
 };
 
-// ============================================================
-// NICHE CONFIG — sin cambios
-// ============================================================
 export const NICHE_MOTORS = {
   "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
   "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
@@ -202,14 +199,6 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
   "musica_artista":     { retention: 1.3, tension: 0.8, payoff: 0.9, clarity: 0.7, trust: 0.8 },
 };
 
-
-// ============================================================
-// FEW_SHOTS — FIX #1
-// Antes: se pasaba como parámetro vacío → llegaba "undefined" al prompt
-// Ahora: constante definida aquí, siempre disponible, sin costo extra
-// Estos ejemplos están escritos como descripciones de video, no como
-// videos reales. Gemini los calibra igual de bien con texto descriptivo.
-// ============================================================
 export const FEW_SHOTS = `
 ━━━ EJEMPLO SCORE 28 — VIDEO ROTO ━━━
 DESCRIPCIÓN: Logo estático de empresa durante 40 segundos con música de fondo genérica.
@@ -241,14 +230,6 @@ revela algo inesperado. Alta probabilidad de replay y compartido.
 SCORE: 83 | hook_strength: 88 | retention_design: 82 | payoff_quality: 85 | narrative_clarity: 78 | trust_signals: 80
 `;
 
-
-// ============================================================
-// PRE-CLASSIFIER — CALL 0
-// Temperatura recomendada: 0 (extracción de hechos, no juicio)
-// Sin cambios estructurales — este prompt funcionaba bien.
-// El único cambio: agregamos instrucción explícita de que
-// hook_confianza debe ser honesto sobre incertidumbre.
-// ============================================================
 export const buildPreClassifierPrompt = (meta = '') => `
 Sos una cámara con memoria. Registrás ÚNICAMENTE lo que existe en el video.
 No opinás, no evaluás, no inferís intención ni proyectás potencial.
@@ -298,6 +279,14 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
 
 CONTEXTO: Feed orgánico ${platformName} 2026, sin distribución paga.
 
+REGLA FUNDAMENTAL — el espectador que ve este video:
+- No sabe de qué trata
+- No leyó la descripción ni los hashtags
+- No conoce al creador
+- Entró en frío desde el feed, con el pulgar listo para hacer scroll
+- Tiene menos de 2 segundos para decidir si se queda o no
+Evaluá desde ese punto de vista. Si algo es claro y atractivo en frío → es fortaleza. Si necesita contexto previo para entenderse → es fricción.
+
 Antes de evaluar, respondete internamente:
 1. ¿Qué formato y ritmo domina "${industria}" en ${platformName} hoy?
 2. ¿Qué necesita este nicho en esta plataforma para ser viral?
@@ -319,18 +308,6 @@ JSON (sé conciso en los strings, máximo 15 palabras por campo de texto):
 {"arquetipo_detectado":"<string>","auditoria_fricciones_2026":[{"nombre_falla":"<string>","es_fatal":<boolean>,"evidencia":"<string>","penalizacion":<number>}],"friccion_penalty_total":<number>,"fortalezas_observadas":[{"elemento":"<string>","segundo":<number>,"evidencia_citada":"<string>","impacto":"<alto|medio|bajo>"}],"razonamiento_score":"<string>","viralScore":<number>,"confianza_score":<number>,"sub_dimensiones":{"hook_strength":<number>,"retention_design":<number>,"payoff_quality":<number>,"narrative_clarity":<number>,"trust_signals":<number>}}`;
 };
 
-// ============================================================
-// HOOK GATE — FIX #2
-// Antes: veto binario duro (cap 20 si falla cualquier condición)
-// Ahora: sistema graduado de penalización
-//   - Gate falla → cap baja a 55 (no a 20). Un video con hook débil
-//     puede igual vender si el payoff es fuerte.
-//   - Slideshow sin audio → único caso que mantiene cap bajo (30),
-//     porque ahí sí es imposible competir.
-//   - emptywait → penalización intermedia (cap 45), no muerte.
-//   - El score de Gemini NUNCA se modifica con penalización JS adicional.
-//     Solo se aplica el cap como techo.
-// ============================================================
 export const deriveHookGateStatus = (preFacts) => {
   const gate     = preFacts?.hook_gate;
   const hookType = preFacts?.hook_type_detectado ?? '';
@@ -341,34 +318,20 @@ export const deriveHookGateStatus = (preFacts) => {
   const silenceS = Number(atomicas.silence_duration_s ?? 0);
   const totalS   = Number(atomicas.duration_total_s ?? 30);
 
-  // Único veto real: slideshow completamente sin audio
-  // (esto sí es objetivamente no competitivo en formato corto)
   const esSlideshow = !atomicas.audio_in_first_second && silenceS > (totalS * 0.8);
   if (esSlideshow) {
-    return {
-      passed: false,
-      penaltyLevel: 'hard',       // cap: 30
-      reason: 'video_sin_audio_slideshow'
-    };
+    return { passed: false, penaltyLevel: 'hard', reason: 'video_sin_audio_slideshow' };
   }
 
-  // Hook clasificado como muerto por el pre-classifier con alta confianza
-  // Solo aplica si hook_confianza >= 0.75 (el modelo estaba seguro)
   const hookConfianza = Number(preFacts?.hook_confianza ?? 0.5);
   if (hookType === 'muerto' && hookConfianza >= 0.75) {
-    return {
-      passed: false,
-      penaltyLevel: 'soft',       // cap: 55
-      reason: 'hook_type_muerto_alta_confianza'
-    };
+    return { passed: false, penaltyLevel: 'soft', reason: 'hook_type_muerto_alta_confianza' };
   }
 
-  // Gate falla en la evaluación subjetiva (pregunta/elemento ausentes)
-  // FIX: ya no es veto — es penalización suave
   if (gate.veredicto_gate === 'MUERTO') {
     return {
       passed: false,
-      penaltyLevel: 'soft',       // cap: 55
+      penaltyLevel: 'soft',
       reason: `hook_sin_retencion_cognitiva — pregunta: "${gate.pregunta_activa_en_espectador}" / elemento: "${gate.elemento_que_retiene}"`
     };
   }
@@ -378,49 +341,30 @@ export const deriveHookGateStatus = (preFacts) => {
   const hasRehook = atomicas.rehook_present ?? false;
   const motionInt = Number(atomicas.motion_intensity ?? 0);
 
-  // Espera vacía: payoff tardío SIN ningún elemento de retención
-  // FIX: era passed:false con cap 20. Ahora es penaltyLevel 'medium' con cap 45
   const emptywait = payoffS > 8 && cutsP10 < 3 && motionInt < 0.2 && !hasRehook;
   if (emptywait) {
     return {
-      passed: true,               // FIX: ya no es false
-      penaltyLevel: 'medium',     // cap: 45
+      passed: true,
+      penaltyLevel: 'medium',
       reason: `espera_riesgosa — payoff en s${payoffS} sin cortes ni movimiento ni rehook`
     };
   }
 
-  // Penalización leve: payoff un poco tardío pero sin ser catastrófico
   const waitPenalty = (payoffS > 4 && cutsP10 < 5 && !hasRehook)
     ? { segundos: payoffS, cuts: cutsP10 }
     : null;
 
   return {
     passed:       true,
-    penaltyLevel: waitPenalty ? 'minimal' : 'none',   // cap: 70 o sin cap
+    penaltyLevel: waitPenalty ? 'minimal' : 'none',
     reason:       `retencion_confirmada: ${gate.elemento_que_retiene}`,
     waitPenalty
   };
 };
 
-
-// ============================================================
-// DERIVE VIRAL CAP — FIX #2 y #3
-// Antes: gate falla → cap 20 (mataba videos buenos)
-// Ahora: sistema graduado basado en penaltyLevel
-//   none    → sin cap (Gemini decide)
-//   minimal → cap 80 (leve advertencia)
-//   medium  → cap 55 (video riesgoso pero no muerto)
-//   soft    → cap 55 (hook débil pero payoff puede salvar)
-//   hard    → cap 30 (solo slideshow sin audio)
-//
-// FIX #4: el viralScore de Gemini se respeta como base.
-// Este cap es el TECHO, no el score final.
-// ============================================================
 export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => {
   const nicheCap = nicheConfig?.score_cap?.viralScore ?? 100;
   const atomicas = preFacts?.atomicas ?? {};
-
-  // Sistema graduado por penaltyLevel
   const penaltyLevel = hookGateStatus?.penaltyLevel ?? 'none';
 
   const capPorPenalty = {
@@ -433,15 +377,11 @@ export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => 
 
   const baseCap = capPorPenalty[penaltyLevel] ?? 100;
 
-  // Caso especial: video objetivamente lento (no es un formato válido para formato corto)
   const lento = (atomicas.cuts_per_10s ?? 0) < 2 &&
                 (atomicas.silence_duration_s ?? 0) > 8 &&
                 (atomicas.average_shot_duration_s ?? 0) > 6;
   if (lento) {
-    return {
-      cap:    Math.min(nicheCap, 40, baseCap),
-      reason: 'video_lento_extremo_sin_audio'
-    };
+    return { cap: Math.min(nicheCap, 40, baseCap), reason: 'video_lento_extremo_sin_audio' };
   }
 
   return {
@@ -452,10 +392,6 @@ export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => 
   };
 };
 
-
-// ============================================================
-// RESEARCH BRAIN — sin cambios estructurales
-// ============================================================
 export const buildResearchBrainPrompt = (platform, industria, objetivo, benchmarkData = null) => {
   const pName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
@@ -488,10 +424,6 @@ Respondé SOLO con este JSON:
 }`;
 };
 
-
-// ============================================================
-// APPLY RESEARCH BRAIN — sin cambios
-// ============================================================
 export const buildApplyResearchBrainPrompt = (preFacts, researchData, platform, industria) => {
   return `Contrastá los datos técnicos del video actual contra el benchmark del nicho "${industria}".
 
@@ -510,13 +442,6 @@ Respondé SOLO con este JSON:
 }`;
 };
 
-
-// ============================================================
-// STRATEGY BRAIN — FIX menor
-// Antes: pedía "no suavices, si algo está roto decí que está roto"
-// lo cual amplificaba el sesgo negativo en CALL 2.
-// Ahora: pide diagnóstico preciso, no pesimismo por defecto.
-// ============================================================
 export const buildStrategyBrainPrompt = (preFacts, cognitiveScan, failureSystems, scoringResult, platform, objetivo, industria) => {
   const erroresAdicionales = cognitiveScan?.errores_adicionales?.length
     ? `ERRORES ADICIONALES DETECTADOS:\n${cognitiveScan.errores_adicionales
@@ -563,19 +488,6 @@ Respondé SOLO con este JSON:
 }`;
 };
 
-
-// ============================================================
-// SCORING BRAIN — FIX #4
-// Antes: recibía el viralScore ya penalizado por JS Y lo re-evaluaba
-// generando doble penalización implícita en el output.
-// Ahora:
-//   - viralScore que llega aquí ES el score final de Gemini (sin tocar)
-//   - El cap se aplica DESPUÉS de este prompt en JS, no antes
-//   - Se eliminó la instrucción "no podés cambiar el score" porque
-//     generaba confusión cuando el score ya llegaba deprimido por JS.
-//   - Se reemplazó por instrucción de consistencia: los sub-scores
-//     deben ser coherentes con el viralScore recibido.
-// ============================================================
 export const buildScoringBrainPrompt = (
   videoRawData, strategyAnalysisRaw, cognitiveScan,
   failureSystems, scoringResult, viralCapData,
@@ -699,10 +611,6 @@ Respondé SOLO en JSON:
 }`;
 };
 
-
-// ============================================================
-// BENCHMARK EXTRACTOR — sin cambios
-// ============================================================
 export const buildBenchmarkExtractorPrompt = (industria, videos) => {
   const summary = videos.map((v, i) => ({
     rank:        i + 1,
