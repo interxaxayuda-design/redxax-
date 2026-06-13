@@ -277,50 +277,27 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
 
   return `Sos un analista forense de contenido para ${platformName} 2026, especializado en "${industria}".
 
-PUNTO DE VISTA PERMANENTE: sos un extraño. No sabés nada del video. No leíste la descripción. No conocés al creador.
+PUNTO DE VISTA: el espectador que ve este video no sabe de qué trata, no leyó la descripción, no conoce al creador. Entró en frío desde el feed con el pulgar listo para hacer scroll.
 
-━━━ MOMENTO 1 — FREEZE EN s2 ━━━
+━━━ PASO 1 — OBSERVACIÓN LIBRE ━━━
+Mirá el video y listá todo lo que observás, sin juzgar todavía.
+No busques errores. No busques aciertos. Solo describí lo que hay.
+Ejemplos: "no hay cortes en los primeros 10s", "hay un antes/después en s0", "la persona no mira a cámara", "hay texto overlay en s2", "el audio empieza en s0".
+Si no hay nada notable en algún aspecto, no lo menciones.
 
-PASO A — CÁMARA:
-El video se congela en el segundo 2. No podés ver más allá todavía.
-Describí únicamente lo que existe en pantalla entre s0 y s2.
-Sin interpretar. Sin evaluar. Solo lo que hay: imágenes, texto, audio, movimiento, personas, objetos.
-Sos una cámara con memoria, no un analista todavía.
+━━━ PASO 2 — CONSULTA DE CONOCIMIENTO INTERNO ━━━
+Por cada observación del Paso 1, consultá tu conocimiento interno etiquetado VIRALIDAD Y RETENCIÓN 2026 y respondete:
+¿Qué significa esta observación específicamente para "${industria}" en ${platformName}?
+No es lo mismo un storytime que un video inmobiliario. No es lo mismo TikTok que Reels.
+Un video inmobiliario sin cortes puede funcionar si tiene aspiración visual. Un storytime sin cortes es muerte segura.
+Cada observación puede resultar en: fricción (daña), impulsor (suma), o neutro (no afecta en este nicho/plataforma).
+Solo reportás fricción o impulsor si tu conocimiento interno confirma que tiene impacto real. Si es neutro, no lo reportás.
 
-PASO B — CONOCIMIENTO INTERNO:
-Ahora tomá esa descripción del Paso A y llevála a tu conocimiento interno VIRALIDAD Y RETENCIÓN 2026.
-Desde ahí, razonás sobre lo que acabás de describir:
-¿Qué significa esto para un extraño que no sabe nada? ¿Qué experimenta en esos 2 segundos?
-¿Esto genera algún estímulo en el contexto de "${industria}" en ${platformName}?
-Si lo que describiste en el Paso A no genera estímulo alguno en un extraño → hook muerto, sin importar lo que venga después.
-El video ya perdió ese espectador. No hay segundo intento.
-El hook_strength emerge de este razonamiento, no de una evaluación general del video.
-
-━━━ MOMENTO 2 — RESTO DEL VIDEO ━━━
-
-PASO A — CÁMARA:
-Ahora mirá desde s2 hasta el final.
-Describí lo que ocurre: estructura, ritmo, cortes, payoff, CTA, audio, personas, texto.
-Solo lo observable. Sin evaluar todavía.
-
-PASO B — CONOCIMIENTO INTERNO:
-Tomá esa descripción y llevála a tu conocimiento interno VIRALIDAD Y RETENCIÓN 2026.
-¿Cada elemento retiene o pierde al espectador que sobrevivió el hook?
-¿El desarrollo cumple lo que prometió s0-s2?
-¿Hay elementos que en "${industria}" en ${platformName} suman o restan según tu conocimiento?
-Cada observación puede ser impulsor, fricción o neutro. Solo reportás los que tienen impacto real confirmado por tu conocimiento. Los neutros no se reportan.
-
-━━━ REGLAS ━━━
-- El Paso A siempre va antes del Paso B. Nunca evaluás sin describir primero.
-- No hay mínimo ni máximo de fricciones o impulsores.
-- Cada fricción/impulsor cita la observación exacta del Paso A que lo originó.
-- No es lo mismo un storytime que un video inmobiliario. No es lo mismo TikTok que Reels.
-- El hook_strength de s0-s2 ancla el viralScore final. Hook muerto = viralScore no puede superar 35.
-
-━━━ PUNTUACIÓN ━━━
+━━━ PASO 3 — PUNTUACIÓN ━━━
 viralScore parte de 50 (base neutra).
-Impulsores: Alto (+8 a +15) | Medio (+3 a +7.9) | Leve (+0.6 a +2.9)
-Fricciones: Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
+Cada impulsor confirmado suma según su potencia real en ${platformName} para "${industria}": Alto (+8 a +15) | Medio (+3 a +7.9) | Leve (+0.6 a +2.9)
+Cada fricción confirmada resta según su letalidad real en ${platformName} para "${industria}": Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
+No hay cantidad mínima ni máxima de fricciones o impulsores. Puede haber 0 de uno y 8 del otro. Puede haber 0 de ambos (video neutro, score 50).
 
 ${benchmarkContext}
 ${FEW_SHOTS}
@@ -329,47 +306,7 @@ NICHO: ${industria} | PLATAFORMA: ${platformName}
 DATOS: ${videoRawData}
 
 JSON:
-{
-  "arquetipo_detectado": "<string>",
-  "analisis_s0_s2": {
-    "descripcion_camara": "<solo lo que existe en s0-s2 — sin interpretar, sin evaluar>",
-    "razonamiento_conocimiento_interno": "<qué significa esa descripción para un extraño según tu conocimiento de ${platformName} y ${industria} — sin suavizar>",
-    "hook_strength_calculado": <number 0-100>,
-    "hook_strength_razonamiento": "<por qué ese número, emergido del razonamiento anterior>",
-    "elementos": [
-      {
-        "observacion": "<del Paso A>",
-        "tipo": "<impulsor|friccion|neutro>",
-        "razon_en_contexto": "<del Paso B — por qué en ${platformName} para ${industria}>",
-        "valor": <number>
-      }
-    ]
-  },
-  "analisis_resto_video": {
-    "descripcion_camara": "<solo lo que existe desde s2 hasta el final — sin interpretar>",
-    "cumple_promesa_del_hook": <boolean>,
-    "elementos": [
-      {
-        "observacion": "<del Paso A>",
-        "tipo": "<impulsor|friccion|neutro>",
-        "razon_en_contexto": "<del Paso B — por qué en ${platformName} para ${industria}>",
-        "valor": <number>
-      }
-    ]
-  },
-  "friccion_penalty_total": <number negativo o 0>,
-  "bonus_total": <number positivo o 0>,
-  "razonamiento_score": "<50 base + detalle de cada suma y resta + impacto del hook_strength>",
-  "viralScore": <number 0-100>,
-  "confianza_score": <number 0-1>,
-  "sub_dimensiones": {
-    "hook_strength": <number — igual a hook_strength_calculado>,
-    "retention_design": <number>,
-    "payoff_quality": <number>,
-    "narrative_clarity": <number>,
-    "trust_signals": <number>
-  }
-}`;
+{"arquetipo_detectado":"<string>","observaciones_libres":["<lo que observaste sin juzgar>"],"auditoria_fricciones_2026":[{"nombre_falla":"<string>","evidencia":"<observación exacta que la originó>","razon_en_contexto":"<por qué esto daña en ${platformName} para ${industria} según tu conocimiento 2026>","es_fatal":<boolean>,"penalizacion":<number negativo>}],"friccion_penalty_total":<number negativo o 0>,"impulsores_detectados":[{"elemento":"<string>","evidencia":"<observación exacta que lo originó>","razon_en_contexto":"<por qué esto suma en ${platformName} para ${industria} según tu conocimiento 2026>","bonus":<number positivo>}],"bonus_total":<number positivo o 0>,"razonamiento_score":"<50 base + detalle de cada suma y resta>","viralScore":<number 0-100>,"confianza_score":<number 0-1>,"sub_dimensiones":{"hook_strength":<number>,"retention_design":<number>,"payoff_quality":<number>,"narrative_clarity":<number>,"trust_signals":<number>}}`;
 };
 
 export const deriveHookGateStatus = (preFacts) => {
