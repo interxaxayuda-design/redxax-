@@ -275,41 +275,64 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Tu tarea tiene dos fases independientes y secuenciales sobre el mismo video. NO mezcles las fases ni dejes que una contamine a la otra.
+  return `Tu tarea tiene dos fases. NO saltes a la FASE 2 sin completar la FASE 1.
 
 Sos un extraño en ${platformName}. No sabés nada del video. No leíste la descripción. No conocés al creador.
 
-═══ FASE 1: CAZA DE ERRORES (modo destructivo puro) ═══
-En esta fase tu ÚNICO trabajo es encontrar fallas. No busques nada positivo, no pienses en "compensaciones" ni en balance. La ausencia de un gancho de retención TAMBIÉN es un error, aunque no haya nada "roto" técnicamente — aburrimiento y silencio narrativo cuentan como errores. Si encontrás 10 errores y 0 aciertos en esta fase, está perfecto y esperado.
+═══ FASE 1: INVENTARIO NEUTRAL ═══
+Mirá el video completo y listá CADA elemento observable, en orden cronológico.
+NO opines. NO evalúes. NO digas si es bueno o malo. Solo describí lo que existe.
 
-MOMENTO 1 — FREEZE s0-s2:
-Describí literalmente s0-s2. Solo lo observable.
-Explorá tu conocimiento sobre "${industria}" en ${platformName} — algoritmo, psicología, retención, edición, ritmo, audio, confianza, viralidad, tendencias 2026, estándares del nicho, feed.
-Listá TODOS los errores confirmados (incluyendo ausencia de hook, ritmo plano, falta de gancho).
+Cubrí (cuando aplique — si algo no existe, no lo incluyas, no inventes que existe):
+- s0-s2: qué se ve y se escucha exactamente.
+- Cada corte/transición: en qué segundo, de qué a qué.
+- Ritmo general: cuántos cortes por bloque de 10s, duración promedio de tomas.
+- Audio: presencia, tipo, sincronía con lo visual.
+- Texto en pantalla: contenido y momento.
+- Estructura narrativa: cuándo aparece cada "bloque" de información.
+- Payoff: si existe, en qué segundo y qué muestra.
+- Rehook: si existe algo entre s8-s15 que reactive atención.
+- CTA: si existe, cómo se presenta.
+- Cualquier otro elemento técnico relevante (calidad de imagen, encuadre, iluminación, etc.)
 
-MOMENTO 2 — RESTO:
-Describí literalmente s2 hasta el final. Solo lo observable.
-Explorá retención post-hook, narrativa, cortes, rehook, payoff, CTA, coherencia, conversión.
-Listá TODOS los errores confirmados.
+Esta lista tiene tantos ítems como existan en el video. Un video de 15 segundos
+puede tener 6 ítems. Un video de 60 segundos puede tener 20. No hay número objetivo.
 
-═══ FASE 2: CAZA DE ACIERTOS (modo constructivo puro) ═══
-Volvé a analizar el video DESDE CERO, ignorando completamente lo que listaste en la FASE 1. En esta fase tu ÚNICO trabajo es encontrar qué funciona genuinamente bien y hace un trabajo ACTIVO de retención (no simplemente "no está roto"). "No tener errores" no es un acierto — un acierto es algo que activamente genera curiosidad, retiene, sorprende o construye confianza.
+═══ FASE 2: CLASIFICACIÓN POR CONOCIMIENTO ═══
+Para CADA elemento del inventario de FASE 1, explorá tu conocimiento sobre
+"${industria}" en ${platformName} — algoritmo, psicología, retención, edición,
+ritmo, audio, confianza, viralidad, tendencias 2026, estándares del nicho — y
+preguntate: "¿Este elemento específico tiene impacto CONFIRMADO en retención,
+conversión o algoritmo, o es simplemente parte normal del video sin impacto medible?"
 
-MOMENTO 1 — FREEZE s0-s2:
-Listá TODOS los aciertos confirmados con la misma exigencia. Si el hook es genérico o solo "anuncia un tema" sin generar pregunta activa, NO es un acierto.
+Clasificación posible para cada elemento:
+- ACIERTO: el elemento hace un trabajo ACTIVO — genera curiosidad, retiene,
+  sorprende, construye confianza, reduce fricción. Especificá el MECANISMO
+  (no "se ve bien", sino "esto reduce el tiempo de decisión del espectador porque...").
+- ERROR: el elemento perjudica de forma CONFIRMADA — pierde atención, genera
+  confusión, rompe ritmo, desperdicia el hook, etc. Incluye AUSENCIAS: si falta
+  un gancho de retención donde el nicho lo exige, ESO es un error, aunque
+  "no haya nada roto".
+- NEUTRAL (no aparece en ninguna lista): el elemento simplemente "es" — no ayuda
+  ni perjudica de forma medible. ESTE ES EL RESULTADO MÁS FRECUENTE. Un video
+  de 15 elementos en el inventario puede perfectamente tener 11-12 neutrales.
 
-MOMENTO 2 — RESTO:
-Listá TODOS los aciertos confirmados con la misma exigencia.
+REGLA CRÍTICA ANTI-INVENCIÓN:
+- No conviertas un elemento neutral en acierto o error para "llenar" una lista.
+- Si tenés que esforzarte para justificar por qué algo es bueno o malo, es NEUTRAL.
+- Cada acierto/error cita el elemento exacto del inventario de FASE 1 que lo originó.
+  Sin ítem de inventario → no existe.
+- Está perfectamente bien que un video tenga 8 errores y 0 aciertos, o 5 aciertos
+  y 1 error, o cualquier combinación. No hay balance obligatorio ni mínimo.
 
-═══ FASE 3: FUSIÓN ═══
-Combiná las listas de FASE 1 y FASE 2 sin eliminar ni balancear nada. Calculá los totales.
+═══ DIVISIÓN POR MOMENTOS (para el JSON final) ═══
+Una vez clasificados todos los elementos, separalos en:
+- analisis_s0_s2: elementos del inventario que ocurren en s0-s2.
+- analisis_resto: elementos del inventario que ocurren después de s2.
 
 REGLAS GLOBALES:
-- Cada error/acierto cita la observación exacta que lo originó. Sin observación → no existe.
-- No hay balance obligatorio entre fases. Un video puede tener errores en FASE 1 y cero aciertos en FASE 2.
-- "Correcto pero sin gancho" NO es neutral — es un error de FASE 1 (oportunidad perdida de retención).
-- Si tenés que justificar por qué algo es bueno o malo más allá de la observación → no existe.
-- Hook s0-s2 ancla el viralScore. Hook que no retiene a un extraño (no genera pregunta activa, solo anuncia tema) → viralScore máximo 35.
+- Hook s0-s2 ancla el viralScore. Hook que no retiene a un extraño (no genera
+  pregunta activa, solo anuncia tema) → viralScore máximo 35.
 
 PUNTUACIÓN: base 50.
 Errores: Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
