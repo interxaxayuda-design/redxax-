@@ -276,33 +276,36 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
   }[platform] || platform;
 
   return `Sos un analista forense de contenido para ${platformName} 2026, especializado en "${industria}".
-Vas a analizar este video en dos momentos separados, simulando exactamente cómo lo experimenta un espectador real en frío.
 
-PUNTO DE VISTA PERMANENTE: no sabés de qué trata el video, no leíste la descripción, no conocés al creador. Entraste desde el feed.
+PUNTO DE VISTA PERMANENTE E INNEGOCIABLE:
+Sos un extraño. No sabés nada del video. No leíste la descripción. No conocés al creador.
+Tu única información es lo que ves y escuchás en pantalla.
 
-━━━ MOMENTO 1 — SOLO LOS PRIMEROS 3 SEGUNDOS ━━━
-STOP. No mires más allá del segundo 3 todavía.
-Describí únicamente lo que ocurre entre s0 y s3. Qué ves, qué escuchás, qué aparece en pantalla.
-Sé literal y específico: "una mano sostiene un producto", "texto overlay dice X", "voz femenina dice Y", "pantalla negra con música".
-Una vez descripto, consultá tu conocimiento interno VIRALIDAD Y RETENCIÓN 2026:
-¿Lo que acabás de ver en estos 3 segundos detiene el scroll de alguien que no sabe nada del video?
-¿Genera una pregunta, una tensión, un deseo, una identidad? ¿O es invisible para un extraño?
-Evaluá cada elemento de s0-s3 como fricción, impulsor o neutro para "${industria}" en ${platformName}.
+━━━ MOMENTO 1 — FREEZE EN s3 ━━━
+El video se congela en el segundo 3. No podés ver más allá todavía.
+Describí literalmente qué ves y escuchás entre s0 y s3. Solo lo observable.
 
-━━━ MOMENTO 2 — EL RESTO DEL VIDEO ━━━
-Ahora sí, mirá el video completo desde s3 hasta el final.
-Describí lo que ocurre: estructura, desarrollo, payoff, CTA, ritmo, cortes, audio.
-Con cada observación nueva, consultá tu conocimiento interno VIRALIDAD Y RETENCIÓN 2026:
+Ahora consultá tu conocimiento interno VIRALIDAD Y RETENCIÓN 2026.
+Desde ese conocimiento, evaluá lo que acabás de ver como ese extraño en frío.
+¿Qué tan efectivo es este hook para "${industria}" en ${platformName}?
+El hook_strength debe reflejar honestamente lo que un extraño experimenta en esos 3 segundos.
+Si el video no se entiende en frío, si no genera ningún estímulo observable, el hook_strength es bajo. Sin excepciones.
+
+━━━ MOMENTO 2 — RESTO DEL VIDEO ━━━
+Ahora mirá desde s3 hasta el final.
+Describí lo que ocurre: estructura, ritmo, cortes, payoff, CTA, audio.
+Consultá tu conocimiento interno VIRALIDAD Y RETENCIÓN 2026 por cada observación:
 ¿Este elemento retiene o pierde al espectador que ya pasó el hook?
-¿El desarrollo cumple lo que prometió s0-s3? ¿Hay rehook? ¿El payoff sorprende o defrauda?
-Evaluá cada elemento como fricción, impulsor o neutro para "${industria}" en ${platformName}.
+¿El desarrollo cumple lo que prometió s0-s3?
+Evaluá como fricción, impulsor o neutro para "${industria}" en ${platformName}.
 
-━━━ REGLAS DE EVALUACIÓN (aplican a ambos momentos) ━━━
+━━━ REGLAS ━━━
 - Solo reportás fricción o impulsor si tu conocimiento interno confirma impacto real en este nicho y plataforma.
+- Cada fricción/impulsor debe citar la observación exacta que lo originó.
 - Si es neutro, no lo reportás.
-- No hay cantidad mínima ni máxima. Puede haber 0 fricciones y 5 impulsores, o al revés.
-- Cada fricción o impulsor debe citar la observación exacta que lo originó.
+- No hay mínimo ni máximo. Puede haber 0 de uno y muchos del otro.
 - No es lo mismo un storytime que un video inmobiliario. No es lo mismo TikTok que Reels.
+- El hook_strength de s0-s3 ancla el viralScore. Un hook débil no puede convivir con un viralScore alto.
 
 ━━━ PUNTUACIÓN ━━━
 viralScore parte de 50 (base neutra).
@@ -320,38 +323,41 @@ JSON:
   "arquetipo_detectado": "<string>",
   "analisis_s0_s3": {
     "descripcion_literal": "<exactamente qué se ve y escucha en s0-s3, sin interpretar>",
-    "para_el_espectador_en_frio": "<¿qué pregunta, tensión o deseo genera en alguien que no sabe nada? Si no genera nada, decilo>",
+    "evaluacion_en_frio": "<qué experimenta un extraño en esos 3 segundos según tu conocimiento interno — sin suavizar>",
+    "hook_strength_calculado": <number 0-100>,
+    "hook_strength_razonamiento": "<por qué ese número según tu conocimiento de ${platformName} para ${industria}>",
     "elementos": [
       {
         "observacion": "<qué se ve/escucha>",
         "tipo": "<impulsor|friccion|neutro>",
         "razon_en_contexto": "<por qué en ${platformName} para ${industria}>",
-        "valor": "<number — positivo si impulsor, negativo si friccion, 0 si neutro>"
+        "valor": <number>
       }
     ]
   },
   "analisis_resto_video": {
-    "descripcion_literal": "<qué ocurre desde s3 hasta el final — estructura, ritmo, payoff>",
+    "descripcion_literal": "<qué ocurre desde s3 hasta el final>",
+    "cumple_promesa_del_hook": <boolean>,
     "elementos": [
       {
         "observacion": "<qué se ve/escucha>",
         "tipo": "<impulsor|friccion|neutro>",
         "razon_en_contexto": "<por qué en ${platformName} para ${industria}>",
-        "valor": "<number — positivo si impulsor, negativo si friccion, 0 si neutro>"
+        "valor": <number>
       }
     ]
   },
-  "friccion_penalty_total": "<suma de todos los valores negativos>",
-  "bonus_total": "<suma de todos los valores positivos>",
-  "razonamiento_score": "<50 base + cada suma y resta con su origen>",
-  "viralScore": "<number 0-100>",
-  "confianza_score": "<number 0-1>",
+  "friccion_penalty_total": <number negativo o 0>,
+  "bonus_total": <number positivo o 0>,
+  "razonamiento_score": "<50 base + detalle de cada suma y resta + impacto del hook_strength>",
+  "viralScore": <number 0-100>,
+  "confianza_score": <number 0-1>,
   "sub_dimensiones": {
-    "hook_strength": "<number — basado SOLO en analisis_s0_s3>",
-    "retention_design": "<number>",
-    "payoff_quality": "<number>",
-    "narrative_clarity": "<number>",
-    "trust_signals": "<number>"
+    "hook_strength": <number — igual a hook_strength_calculado>,
+    "retention_design": <number>,
+    "payoff_quality": <number>,
+    "narrative_clarity": <number>,
+    "trust_signals": <number>
   }
 }`;
 };
