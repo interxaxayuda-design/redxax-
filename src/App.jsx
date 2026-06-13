@@ -275,7 +275,7 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Tu única tarea es destruir este video. No buscás nada bueno. No existe lo positivo en este análisis.
+  return `Tu tarea es analizar este video sin piedad. Buscás todo lo malo. Y si existe algo genuinamente bueno, también lo reportás — pero con la misma exigencia.
 
 Sos un extraño en ${platformName}. No sabés nada del video. No leíste la descripción. No conocés al creador.
 
@@ -284,29 +284,32 @@ Sos un extraño en ${platformName}. No sabés nada del video. No leíste la desc
 PASO A — CÁMARA:
 Describí literalmente qué existe en pantalla entre s0 y s2. Solo lo observable.
 
-PASO B — DESTRUCCIÓN:
+PASO B — ANÁLISIS:
 Tomá esa descripción y llevala a tu conocimiento interno sobre "${industria}" en ${platformName}.
-Encontrá todo lo que falla en esos 2 segundos para un extraño que no sabe nada.
-Todo lo que no esté funcionando para retener a ese extraño es un error. Nombralo.
+Buscá todo lo que falla para un extraño que no sabe nada.
+Si existe algo que genuinamente retiene, genera estímulo o para el scroll — reportalo. Pero solo si tu conocimiento interno lo confirma con evidencia en el Paso A. Si tenés que justificarlo, no existe.
 
 ━━━ MOMENTO 2 — RESTO DEL VIDEO ━━━
 
 PASO A — CÁMARA:
 Describí literalmente qué existe desde s2 hasta el final. Solo lo observable.
 
-PASO B — DESTRUCCIÓN:
+PASO B — ANÁLISIS:
 Tomá esa descripción y llevala a tu conocimiento interno sobre "${industria}" en ${platformName}.
-Encontrá todo lo que falla en el desarrollo, ritmo, payoff y cierre para ese extraño.
+Buscá todo lo que falla en el desarrollo para ese extraño.
+Si existe algo que genuinamente retiene, sorprende o convierte — reportalo. Solo si tu conocimiento interno lo confirma con evidencia en el Paso A.
 
 ━━━ REGLAS ━━━
 - Paso A siempre antes de Paso B.
-- Cada error debe citar la observación exacta del Paso A que lo originó.
-- No hay errores inventados. Si no está en el Paso A, no existe.
-- Usá tu conocimiento de "${industria}" en ${platformName} para calibrar la letalidad de cada error.
+- Cada error y cada acierto debe citar la observación exacta del Paso A que lo originó.
+- No hay errores ni aciertos inventados. Si no está en el Paso A, no existe.
+- Puede haber muchos errores y cero aciertos. Puede haber muchos aciertos y pocos errores. O cualquier combinación. No hay balance obligatorio.
+- Usá tu conocimiento de "${industria}" en ${platformName} para calibrar el peso de cada uno.
 
 ━━━ PUNTUACIÓN ━━━
-viralScore parte de 100. Cada error resta según su letalidad en ${platformName} para "${industria}".
-Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
+viralScore parte de 50 (base neutra).
+Errores restan según letalidad: Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
+Aciertos suman según potencia: Alto (+8 a +15) | Medio (+3 a +7.9) | Leve (+0.6 a +2.9)
 El hook_strength de s0-s2 ancla el viralScore. Si s0-s2 no retiene a un extraño, el viralScore no supera 35.
 
 ${benchmarkContext}
@@ -320,29 +323,43 @@ JSON:
   "arquetipo_detectado": "<string>",
   "analisis_s0_s2": {
     "descripcion_camara": "<solo lo que existe en s0-s2 — sin interpretar>",
-    "destruccion": "<todo lo que falla en esos 2 segundos para un extraño — sin piedad>",
     "hook_strength_calculado": <number 0-100>,
-    "elementos": [
+    "errores": [
       {
         "observacion": "<del Paso A>",
         "error": "<qué falla y por qué en ${platformName} para ${industria}>",
         "penalizacion": <number negativo>
+      }
+    ],
+    "aciertos": [
+      {
+        "observacion": "<del Paso A>",
+        "acierto": "<qué funciona y por qué en ${platformName} para ${industria}>",
+        "bonus": <number positivo>
       }
     ]
   },
   "analisis_resto_video": {
     "descripcion_camara": "<solo lo observable desde s2 hasta el final>",
-    "destruccion": "<todo lo que falla en el desarrollo para ese extraño>",
-    "elementos": [
+    "cumple_promesa_del_hook": <boolean>,
+    "errores": [
       {
         "observacion": "<del Paso A>",
         "error": "<qué falla y por qué en ${platformName} para ${industria}>",
         "penalizacion": <number negativo>
       }
+    ],
+    "aciertos": [
+      {
+        "observacion": "<del Paso A>",
+        "acierto": "<qué funciona y por qué en ${platformName} para ${industria}>",
+        "bonus": <number positivo>
+      }
     ]
   },
-  "friccion_penalty_total": <number negativo>,
-  "razonamiento_score": "<100 base — detalle de cada resta>",
+  "friccion_penalty_total": <number negativo o 0>,
+  "bonus_total": <number positivo o 0>,
+  "razonamiento_score": "<50 base + detalle de cada suma y resta>",
   "viralScore": <number 0-100>,
   "confianza_score": <number 0-1>,
   "sub_dimensiones": {
