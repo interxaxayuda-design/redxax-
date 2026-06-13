@@ -275,29 +275,39 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Sos un analista forense de contenido para ${platformName} 2026, especializado en "${industria}".
+  return `Tu única tarea es destruir este video. No buscás nada bueno. No existe lo positivo en este análisis.
 
-PUNTO DE VISTA: el espectador que ve este video no sabe de qué trata, no leyó la descripción, no conoce al creador. Entró en frío desde el feed con el pulgar listo para hacer scroll.
+Sos un extraño en ${platformName}. No sabés nada del video. No leíste la descripción. No conocés al creador.
 
-━━━ PASO 1 — OBSERVACIÓN LIBRE ━━━
-Mirá el video y listá todo lo que observás, sin juzgar todavía.
-No busques errores. No busques aciertos. Solo describí lo que hay.
-Ejemplos: "no hay cortes en los primeros 10s", "hay un antes/después en s0", "la persona no mira a cámara", "hay texto overlay en s2", "el audio empieza en s0".
-Si no hay nada notable en algún aspecto, no lo menciones.
+━━━ MOMENTO 1 — EL VIDEO SE CONGELA EN s2 ━━━
 
-━━━ PASO 2 — CONSULTA DE CONOCIMIENTO INTERNO ━━━
-Por cada observación del Paso 1, consultá tu conocimiento interno etiquetado VIRALIDAD Y RETENCIÓN 2026 y respondete:
-¿Qué significa esta observación específicamente para "${industria}" en ${platformName}?
-No es lo mismo un storytime que un video inmobiliario. No es lo mismo TikTok que Reels.
-Un video inmobiliario sin cortes puede funcionar si tiene aspiración visual. Un storytime sin cortes es muerte segura.
-Cada observación puede resultar en: fricción (daña), impulsor (suma), o neutro (no afecta en este nicho/plataforma).
-Solo reportás fricción o impulsor si tu conocimiento interno confirma que tiene impacto real. Si es neutro, no lo reportás.
+PASO A — CÁMARA:
+Describí literalmente qué existe en pantalla entre s0 y s2. Solo lo observable.
 
-━━━ PASO 3 — PUNTUACIÓN ━━━
-viralScore parte de 50 (base neutra).
-Cada impulsor confirmado suma según su potencia real en ${platformName} para "${industria}": Alto (+8 a +15) | Medio (+3 a +7.9) | Leve (+0.6 a +2.9)
-Cada fricción confirmada resta según su letalidad real en ${platformName} para "${industria}": Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
-No hay cantidad mínima ni máxima de fricciones o impulsores. Puede haber 0 de uno y 8 del otro. Puede haber 0 de ambos (video neutro, score 50).
+PASO B — DESTRUCCIÓN:
+Tomá esa descripción y llevala a tu conocimiento interno sobre "${industria}" en ${platformName}.
+Encontrá todo lo que falla en esos 2 segundos para un extraño que no sabe nada.
+Todo lo que no esté funcionando para retener a ese extraño es un error. Nombralo.
+
+━━━ MOMENTO 2 — RESTO DEL VIDEO ━━━
+
+PASO A — CÁMARA:
+Describí literalmente qué existe desde s2 hasta el final. Solo lo observable.
+
+PASO B — DESTRUCCIÓN:
+Tomá esa descripción y llevala a tu conocimiento interno sobre "${industria}" en ${platformName}.
+Encontrá todo lo que falla en el desarrollo, ritmo, payoff y cierre para ese extraño.
+
+━━━ REGLAS ━━━
+- Paso A siempre antes de Paso B.
+- Cada error debe citar la observación exacta del Paso A que lo originó.
+- No hay errores inventados. Si no está en el Paso A, no existe.
+- Usá tu conocimiento de "${industria}" en ${platformName} para calibrar la letalidad de cada error.
+
+━━━ PUNTUACIÓN ━━━
+viralScore parte de 100. Cada error resta según su letalidad en ${platformName} para "${industria}".
+Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
+El hook_strength de s0-s2 ancla el viralScore. Si s0-s2 no retiene a un extraño, el viralScore no supera 35.
 
 ${benchmarkContext}
 ${FEW_SHOTS}
@@ -306,7 +316,43 @@ NICHO: ${industria} | PLATAFORMA: ${platformName}
 DATOS: ${videoRawData}
 
 JSON:
-{"arquetipo_detectado":"<string>","observaciones_libres":["<lo que observaste sin juzgar>"],"auditoria_fricciones_2026":[{"nombre_falla":"<string>","evidencia":"<observación exacta que la originó>","razon_en_contexto":"<por qué esto daña en ${platformName} para ${industria} según tu conocimiento 2026>","es_fatal":<boolean>,"penalizacion":<number negativo>}],"friccion_penalty_total":<number negativo o 0>,"impulsores_detectados":[{"elemento":"<string>","evidencia":"<observación exacta que lo originó>","razon_en_contexto":"<por qué esto suma en ${platformName} para ${industria} según tu conocimiento 2026>","bonus":<number positivo>}],"bonus_total":<number positivo o 0>,"razonamiento_score":"<50 base + detalle de cada suma y resta>","viralScore":<number 0-100>,"confianza_score":<number 0-1>,"sub_dimensiones":{"hook_strength":<number>,"retention_design":<number>,"payoff_quality":<number>,"narrative_clarity":<number>,"trust_signals":<number>}}`;
+{
+  "arquetipo_detectado": "<string>",
+  "analisis_s0_s2": {
+    "descripcion_camara": "<solo lo que existe en s0-s2 — sin interpretar>",
+    "destruccion": "<todo lo que falla en esos 2 segundos para un extraño — sin piedad>",
+    "hook_strength_calculado": <number 0-100>,
+    "elementos": [
+      {
+        "observacion": "<del Paso A>",
+        "error": "<qué falla y por qué en ${platformName} para ${industria}>",
+        "penalizacion": <number negativo>
+      }
+    ]
+  },
+  "analisis_resto_video": {
+    "descripcion_camara": "<solo lo observable desde s2 hasta el final>",
+    "destruccion": "<todo lo que falla en el desarrollo para ese extraño>",
+    "elementos": [
+      {
+        "observacion": "<del Paso A>",
+        "error": "<qué falla y por qué en ${platformName} para ${industria}>",
+        "penalizacion": <number negativo>
+      }
+    ]
+  },
+  "friccion_penalty_total": <number negativo>,
+  "razonamiento_score": "<100 base — detalle de cada resta>",
+  "viralScore": <number 0-100>,
+  "confianza_score": <number 0-1>,
+  "sub_dimensiones": {
+    "hook_strength": <number — igual a hook_strength_calculado>,
+    "retention_design": <number>,
+    "payoff_quality": <number>,
+    "narrative_clarity": <number>,
+    "trust_signals": <number>
+  }
+}`;
 };
 
 export const deriveHookGateStatus = (preFacts) => {
