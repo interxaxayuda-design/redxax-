@@ -275,31 +275,29 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Sos el espectador más exigente de ${platformName} en 2026. Tu pulgar hace scroll sin culpa. No tenés paciencia, no conocés al creador, no leíste la descripción. Entraste en frío y tenés menos de 2 segundos para decidir si te quedás.
+  return `Sos un analista forense de contenido para ${platformName} 2026, especializado en "${industria}".
 
-CONTEXTO: Este video compite orgánicamente en ${platformName} contra miles de creadores que dominan "${industria}" hoy. Sin distribución paga. Sin red de seguridad.
+PUNTO DE VISTA: el espectador que ve este video no sabe de qué trata, no leyó la descripción, no conoce al creador. Entró en frío desde el feed con el pulgar listo para hacer scroll.
 
-FASE 1 — DESTRUCCIÓN (obligatoria, sin límite de errores):
-Antes de ver cualquier fortaleza, respondete con tu conocimiento 2026:
-¿Qué está fallando en este video? Buscá sin piedad:
-- ¿El segundo 0 para el scroll de alguien que no sabe nada del video?
-- ¿Hay pregunta activa, tensión o loop abierto que fuerce a quedarse?
-- ¿El ritmo y formato compite con lo que domina "${industria}" en ${platformName} hoy?
-- ¿Qué haría que el espectador abandone en s0, s3, s8, s15?
-- ¿Hay contexto implícito que solo entiende alguien que ya conoce el creador?
-No hay límite de errores. Si encontrás 10 fallas reales, reportás 10.
+━━━ PASO 1 — OBSERVACIÓN LIBRE ━━━
+Mirá el video y listá todo lo que observás, sin juzgar todavía.
+No busques errores. No busques aciertos. Solo describí lo que hay.
+Ejemplos: "no hay cortes en los primeros 10s", "hay un antes/después en s0", "la persona no mira a cámara", "hay texto overlay en s2", "el audio empieza en s0".
+Si no hay nada notable en algún aspecto, no lo menciones.
 
-FASE 2 — LETALIDAD (por cada error encontrado):
-Para cada falla, investigá en tu conocimiento: ¿qué tan letal es esta falla específicamente en ${platformName} para el nicho "${industria}"? Una falla puede ser grave en TikTok y leve en Shorts. Asigná la penalización según esa letalidad real, no genérica.
-Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
+━━━ PASO 2 — CONSULTA DE CONOCIMIENTO INTERNO ━━━
+Por cada observación del Paso 1, consultá tu conocimiento interno etiquetado VIRALIDAD Y RETENCIÓN 2026 y respondete:
+¿Qué significa esta observación específicamente para "${industria}" en ${platformName}?
+No es lo mismo un storytime que un video inmobiliario. No es lo mismo TikTok que Reels.
+Un video inmobiliario sin cortes puede funcionar si tiene aspiración visual. Un storytime sin cortes es muerte segura.
+Cada observación puede resultar en: fricción (daña), impulsor (suma), o neutro (no afecta en este nicho/plataforma).
+Solo reportás fricción o impulsor si tu conocimiento interno confirma que tiene impacto real. Si es neutro, no lo reportás.
 
-FASE 3 — FORTALEZAS (solo si existen con evidencia):
-Si después de destruir el video encontrás elementos que genuinamente funcionan en frío para este nicho y plataforma, nombralos. Si no hay fortalezas reales, el array queda vacío [].
-
-FASE 4 — SCORE:
-viralScore = (100 + friccion_penalty_total) ± ajuste por fortalezas reales.
-Un video aburrido sin hook claro en ${platformName} no puede superar 45.
-Si la penalización total supera -35 → score máximo 40.
+━━━ PASO 3 — PUNTUACIÓN ━━━
+viralScore parte de 50 (base neutra).
+Cada impulsor confirmado suma según su potencia real en ${platformName} para "${industria}": Alto (+8 a +15) | Medio (+3 a +7.9) | Leve (+0.6 a +2.9)
+Cada fricción confirmada resta según su letalidad real en ${platformName} para "${industria}": Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
+No hay cantidad mínima ni máxima de fricciones o impulsores. Puede haber 0 de uno y 8 del otro. Puede haber 0 de ambos (video neutro, score 50).
 
 ${benchmarkContext}
 ${FEW_SHOTS}
@@ -307,8 +305,8 @@ ${FEW_SHOTS}
 NICHO: ${industria} | PLATAFORMA: ${platformName}
 DATOS: ${videoRawData}
 
-JSON (máximo 15 palabras por campo de texto):
-{"arquetipo_detectado":"<string>","auditoria_fricciones_2026":[{"nombre_falla":"<string>","es_fatal":<boolean>,"evidencia":"<string>","letalidad_en_plataforma":"<por qué esta falla es grave/leve específicamente en ${platformName} para ${industria}>","penalizacion":<number>}],"friccion_penalty_total":<number>,"fortalezas_observadas":[{"elemento":"<string>","segundo":<number>,"evidencia_citada":"<string>","impacto":"<alto|medio|bajo>"}],"razonamiento_score":"<string>","viralScore":<number>,"confianza_score":<number>,"sub_dimensiones":{"hook_strength":<number>,"retention_design":<number>,"payoff_quality":<number>,"narrative_clarity":<number>,"trust_signals":<number>}}`;
+JSON:
+{"arquetipo_detectado":"<string>","observaciones_libres":["<lo que observaste sin juzgar>"],"auditoria_fricciones_2026":[{"nombre_falla":"<string>","evidencia":"<observación exacta que la originó>","razon_en_contexto":"<por qué esto daña en ${platformName} para ${industria} según tu conocimiento 2026>","es_fatal":<boolean>,"penalizacion":<number negativo>}],"friccion_penalty_total":<number negativo o 0>,"impulsores_detectados":[{"elemento":"<string>","evidencia":"<observación exacta que lo originó>","razon_en_contexto":"<por qué esto suma en ${platformName} para ${industria} según tu conocimiento 2026>","bonus":<number positivo>}],"bonus_total":<number positivo o 0>,"razonamiento_score":"<50 base + detalle de cada suma y resta>","viralScore":<number 0-100>,"confianza_score":<number 0-1>,"sub_dimensiones":{"hook_strength":<number>,"retention_design":<number>,"payoff_quality":<number>,"narrative_clarity":<number>,"trust_signals":<number>}}`;
 };
 
 export const deriveHookGateStatus = (preFacts) => {
