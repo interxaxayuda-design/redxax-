@@ -1265,7 +1265,6 @@ const runDeepAnalysis = async () => {
       console.warn('[CALL 1.5] Fallback research:', e.message);
     }
 
-
     // ── CALL 1 — Cognitive Scan ───────────────────────────────
     setStatusText("Analizando el video...");
     setAnalysisProgress(38);
@@ -1279,17 +1278,16 @@ const runDeepAnalysis = async () => {
     console.log('[CALL 1] researchData disponible:', Object.keys(researchData).length > 0);
 
     const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        // FIX #1: buildCognitiveScanPrompt(data, industria, researchData) — sin fewShotExamples
-        text: buildCognitiveScanPrompt(preFactsStr, industria, researchData),
-        storagePath,
-        videoMimeType: mimeType,
-        duration:      Math.round(duration),
-        maxOutputTokens: 2048,
-        expectsJson:   true,
-        temperature:   0.3,     // FIX #5: era 0 — análisis subjetivo necesita algo de flexibilidad
-      }
-    });
+    body: {
+    text: buildCognitiveScanPrompt(preFactsStr, industria, researchData, platform), // ← agregá platform aquí también, falta en tu versión actual
+    storagePath,
+    videoMimeType: mimeType,
+    duration:      Math.round(duration),
+    maxOutputTokens: 4096,   // ← subido de 2048
+    expectsJson:   true,
+    temperature:   0.3,
+  }
+});
 
     if (call1Error) {
       let errorBody = '';
