@@ -275,30 +275,54 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Tu tarea es analizar este video sin piedad. Buscás todo lo malo. Si existe algo genuinamente bueno, también lo reportás con la misma exigencia.
+  return `Tu tarea tiene dos fases independientes y secuenciales sobre el mismo video. NO mezcles las fases ni dejes que una contamine a la otra.
 
 Sos un extraño en ${platformName}. No sabés nada del video. No leíste la descripción. No conocés al creador.
 
-MOMENTO 1 — FREEZE s2:
+═══ FASE 1: CAZA DE ERRORES (modo destructivo puro) ═══
+En esta fase tu ÚNICO trabajo es encontrar fallas. No busques nada positivo, no pienses en "compensaciones" ni en balance. La ausencia de un gancho de retención TAMBIÉN es un error, aunque no haya nada "roto" técnicamente — aburrimiento y silencio narrativo cuentan como errores. Si encontrás 10 errores y 0 aciertos en esta fase, está perfecto y esperado.
+
+MOMENTO 1 — FREEZE s0-s2:
 Describí literalmente s0-s2. Solo lo observable.
-Luego explorá TODO tu conocimiento interno sobre "${industria}" en ${platformName} — algoritmo, psicología, retención, edición, ritmo, audio, confianza, viralidad, tendencias 2026, estándares del nicho, feed. Cada dimensión. Por cada una, evaluá si lo que viste tiene impacto real. Solo reportás impacto confirmado.
+Explorá tu conocimiento sobre "${industria}" en ${platformName} — algoritmo, psicología, retención, edición, ritmo, audio, confianza, viralidad, tendencias 2026, estándares del nicho, feed.
+Listá TODOS los errores confirmados (incluyendo ausencia de hook, ritmo plano, falta de gancho).
 
 MOMENTO 2 — RESTO:
 Describí literalmente s2 hasta el final. Solo lo observable.
-Luego explorá TODO tu conocimiento interno — retención post-hook, narrativa, cortes, rehook, payoff, CTA, coherencia, conversión. Cada dimensión. Solo reportás impacto confirmado.
+Explorá retención post-hook, narrativa, cortes, rehook, payoff, CTA, coherencia, conversión.
+Listá TODOS los errores confirmados.
 
-REGLAS:
+═══ FASE 2: CAZA DE ACIERTOS (modo constructivo puro) ═══
+Volvé a analizar el video DESDE CERO, ignorando completamente lo que listaste en la FASE 1. En esta fase tu ÚNICO trabajo es encontrar qué funciona genuinamente bien y hace un trabajo ACTIVO de retención (no simplemente "no está roto"). "No tener errores" no es un acierto — un acierto es algo que activamente genera curiosidad, retiene, sorprende o construye confianza.
+
+MOMENTO 1 — FREEZE s0-s2:
+Listá TODOS los aciertos confirmados con la misma exigencia. Si el hook es genérico o solo "anuncia un tema" sin generar pregunta activa, NO es un acierto.
+
+MOMENTO 2 — RESTO:
+Listá TODOS los aciertos confirmados con la misma exigencia.
+
+═══ FASE 3: FUSIÓN ═══
+Combiná las listas de FASE 1 y FASE 2 sin eliminar ni balancear nada. Calculá los totales.
+
+REGLAS GLOBALES:
 - Cada error/acierto cita la observación exacta que lo originó. Sin observación → no existe.
-- No hay balance obligatorio. Puede haber 10 errores y 0 aciertos o al revés.
-- Si tenés que justificar por qué algo es bueno o malo → no existe.
-- Hook s0-s2 ancla el viralScore. Hook que no retiene a un extraño → viralScore máximo 35.
+- No hay balance obligatorio entre fases. Un video puede tener errores en FASE 1 y cero aciertos en FASE 2.
+- "Correcto pero sin gancho" NO es neutral — es un error de FASE 1 (oportunidad perdida de retención).
+- Si tenés que justificar por qué algo es bueno o malo más allá de la observación → no existe.
+- Hook s0-s2 ancla el viralScore. Hook que no retiene a un extraño (no genera pregunta activa, solo anuncia tema) → viralScore máximo 35.
 
 PUNTUACIÓN: base 50.
 Errores: Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
 Aciertos: Alto (+8 a +15) | Medio (+3 a +7.9) | Leve (+0.6 a +2.9)
 
+RANGOS DE REFERENCIA (orientativos, no ejemplos a imitar):
+- 0-20: Errores graves múltiples o ausencia total de elementos de retención.
+- 21-40: Sin errores técnicos graves, pero sin ningún gancho activo de retención (aburrido = error).
+- 41-60: Hook funcional que genera pregunta activa, desarrollo coherente, sin elementos destacados.
+- 61-80: Múltiples aciertos reales (rehook, twist, payoff sorpresa) además de hook funcional.
+- 81-100: Ejecución excepcional en casi todas las dimensiones, alta probabilidad de viralidad orgánica.
+
 ${benchmarkContext}
-${FEW_SHOTS}
 
 NICHO: ${industria} | PLATAFORMA: ${platformName}
 DATOS: ${videoRawData}
