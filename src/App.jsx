@@ -277,35 +277,45 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
 
   return `Sos un analista forense de contenido para ${platformName} 2026, especializado en "${industria}".
 
-PUNTO DE VISTA PERMANENTE E INNEGOCIABLE:
-Sos un extraño. No sabés nada del video. No leíste la descripción. No conocés al creador.
-Tu única información es lo que ves y escuchás en pantalla.
+PUNTO DE VISTA PERMANENTE: sos un extraño. No sabés nada del video. No leíste la descripción. No conocés al creador.
 
 ━━━ MOMENTO 1 — FREEZE EN s2 ━━━
-El video se congela en el segundo 2. No podés ver más allá todavía.
-Describí literalmente qué ves y escuchás entre s0 y s2. Solo lo observable.
 
-Consultá tu conocimiento interno VIRALIDAD Y RETENCIÓN 2026.
-Desde ese conocimiento, evaluá lo que acabás de ver como ese extraño en frío.
-¿Qué tan efectivo es este hook para "${industria}" en ${platformName}?
-El hook_strength debe reflejar honestamente lo que un extraño experimenta en esos 2 segundos.
-Si el video no se entiende en frío, si no genera ningún estímulo observable, el hook_strength es bajo. Sin excepciones.
+PASO A — CÁMARA:
+El video se congela en el segundo 2. No podés ver más allá todavía.
+Describí únicamente lo que existe en pantalla entre s0 y s2.
+Sin interpretar. Sin evaluar. Solo lo que hay: imágenes, texto, audio, movimiento, personas, objetos.
+Sos una cámara con memoria, no un analista todavía.
+
+PASO B — CONOCIMIENTO INTERNO:
+Ahora tomá esa descripción del Paso A y llevála a tu conocimiento interno VIRALIDAD Y RETENCIÓN 2026.
+Desde ahí, razonás sobre lo que acabás de describir:
+¿Qué significa esto para un extraño que no sabe nada? ¿Qué experimenta en esos 2 segundos?
+¿Esto genera algún estímulo en el contexto de "${industria}" en ${platformName}?
+Si lo que describiste en el Paso A no genera estímulo alguno en un extraño → hook muerto, sin importar lo que venga después.
+El video ya perdió ese espectador. No hay segundo intento.
+El hook_strength emerge de este razonamiento, no de una evaluación general del video.
 
 ━━━ MOMENTO 2 — RESTO DEL VIDEO ━━━
+
+PASO A — CÁMARA:
 Ahora mirá desde s2 hasta el final.
-Describí lo que ocurre: estructura, ritmo, cortes, payoff, CTA, audio.
-Consultá tu conocimiento interno VIRALIDAD Y RETENCIÓN 2026 por cada observación:
-¿Este elemento retiene o pierde al espectador que ya pasó el hook?
+Describí lo que ocurre: estructura, ritmo, cortes, payoff, CTA, audio, personas, texto.
+Solo lo observable. Sin evaluar todavía.
+
+PASO B — CONOCIMIENTO INTERNO:
+Tomá esa descripción y llevála a tu conocimiento interno VIRALIDAD Y RETENCIÓN 2026.
+¿Cada elemento retiene o pierde al espectador que sobrevivió el hook?
 ¿El desarrollo cumple lo que prometió s0-s2?
-Evaluá como fricción, impulsor o neutro para "${industria}" en ${platformName}.
+¿Hay elementos que en "${industria}" en ${platformName} suman o restan según tu conocimiento?
+Cada observación puede ser impulsor, fricción o neutro. Solo reportás los que tienen impacto real confirmado por tu conocimiento. Los neutros no se reportan.
 
 ━━━ REGLAS ━━━
-- Solo reportás fricción o impulsor si tu conocimiento interno confirma impacto real en este nicho y plataforma.
-- Cada fricción/impulsor debe citar la observación exacta que lo originó.
-- Si es neutro, no lo reportás.
-- No hay mínimo ni máximo. Puede haber 0 de uno y muchos del otro.
+- El Paso A siempre va antes del Paso B. Nunca evaluás sin describir primero.
+- No hay mínimo ni máximo de fricciones o impulsores.
+- Cada fricción/impulsor cita la observación exacta del Paso A que lo originó.
 - No es lo mismo un storytime que un video inmobiliario. No es lo mismo TikTok que Reels.
-- El hook_strength de s0-s2 ancla el viralScore. Un hook débil no puede convivir con un viralScore alto.
+- El hook_strength de s0-s2 ancla el viralScore final. Hook muerto = viralScore no puede superar 35.
 
 ━━━ PUNTUACIÓN ━━━
 viralScore parte de 50 (base neutra).
@@ -322,27 +332,27 @@ JSON:
 {
   "arquetipo_detectado": "<string>",
   "analisis_s0_s2": {
-    "descripcion_literal": "<exactamente qué se ve y escucha en s0-s2, sin interpretar>",
-    "evaluacion_en_frio": "<qué experimenta un extraño en esos 2 segundos según tu conocimiento interno — sin suavizar>",
+    "descripcion_camara": "<solo lo que existe en s0-s2 — sin interpretar, sin evaluar>",
+    "razonamiento_conocimiento_interno": "<qué significa esa descripción para un extraño según tu conocimiento de ${platformName} y ${industria} — sin suavizar>",
     "hook_strength_calculado": <number 0-100>,
-    "hook_strength_razonamiento": "<por qué ese número según tu conocimiento de ${platformName} para ${industria}>",
+    "hook_strength_razonamiento": "<por qué ese número, emergido del razonamiento anterior>",
     "elementos": [
       {
-        "observacion": "<qué se ve/escucha>",
+        "observacion": "<del Paso A>",
         "tipo": "<impulsor|friccion|neutro>",
-        "razon_en_contexto": "<por qué en ${platformName} para ${industria}>",
+        "razon_en_contexto": "<del Paso B — por qué en ${platformName} para ${industria}>",
         "valor": <number>
       }
     ]
   },
   "analisis_resto_video": {
-    "descripcion_literal": "<qué ocurre desde s2 hasta el final>",
+    "descripcion_camara": "<solo lo que existe desde s2 hasta el final — sin interpretar>",
     "cumple_promesa_del_hook": <boolean>,
     "elementos": [
       {
-        "observacion": "<qué se ve/escucha>",
+        "observacion": "<del Paso A>",
         "tipo": "<impulsor|friccion|neutro>",
-        "razon_en_contexto": "<por qué en ${platformName} para ${industria}>",
+        "razon_en_contexto": "<del Paso B — por qué en ${platformName} para ${industria}>",
         "valor": <number>
       }
     ]
