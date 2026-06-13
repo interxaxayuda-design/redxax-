@@ -275,7 +275,7 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Tu tarea es analizar este video sin piedad. Buscás todo lo malo. Y si existe algo genuinamente bueno, también lo reportás — pero con la misma exigencia.
+  return `Tu tarea es analizar este video sin piedad. Buscás todo lo malo. Y si existe algo genuinamente bueno, también lo reportás — con la misma exigencia.
 
 Sos un extraño en ${platformName}. No sabés nada del video. No leíste la descripción. No conocés al creador.
 
@@ -284,32 +284,36 @@ Sos un extraño en ${platformName}. No sabés nada del video. No leíste la desc
 PASO A — CÁMARA:
 Describí literalmente qué existe en pantalla entre s0 y s2. Solo lo observable.
 
-PASO B — ANÁLISIS:
-Tomá esa descripción y llevala a tu conocimiento interno sobre "${industria}" en ${platformName}.
-Buscá todo lo que falla para un extraño que no sabe nada.
-Si existe algo que genuinamente retiene, genera estímulo o para el scroll — reportalo. Pero solo si tu conocimiento interno lo confirma con evidencia en el Paso A. Si tenés que justificarlo, no existe.
+PASO B — ANÁLISIS PROFUNDO:
+Tomá esa descripción y explorá TODO tu conocimiento interno sobre "${industria}" en ${platformName}.
+No te limités a un área. Recorrés cada dimensión que conocés:
+comportamiento del algoritmo, psicología del espectador, retención, edición, ritmo visual, audio, identidad de marca, señales de confianza, mecanismos de viralidad, estándares del nicho, comportamiento del feed, tendencias 2026, y cualquier otra dimensión relevante que tu conocimiento contenga.
+Por cada dimensión que recorrés, evaluás si lo que describiste en el Paso A tiene impacto — positivo, negativo o neutro.
+Solo reportás lo que tiene impacto real confirmado. Lo neutro no se reporta.
 
 ━━━ MOMENTO 2 — RESTO DEL VIDEO ━━━
 
 PASO A — CÁMARA:
 Describí literalmente qué existe desde s2 hasta el final. Solo lo observable.
 
-PASO B — ANÁLISIS:
-Tomá esa descripción y llevala a tu conocimiento interno sobre "${industria}" en ${platformName}.
-Buscá todo lo que falla en el desarrollo para ese extraño.
-Si existe algo que genuinamente retiene, sorprende o convierte — reportalo. Solo si tu conocimiento interno lo confirma con evidencia en el Paso A.
+PASO B — ANÁLISIS PROFUNDO:
+Tomá esa descripción y explorá TODO tu conocimiento interno sobre "${industria}" en ${platformName}.
+Recorrés cada dimensión que conocés: retención post-hook, desarrollo narrativo, ritmo de cortes, rehook, payoff, CTA, coherencia con el hook, edición, audio, confianza, conversión, y cualquier otra dimensión relevante.
+Por cada dimensión, evaluás si lo que describiste en el Paso A tiene impacto real para ese extraño.
+Solo reportás lo que tiene impacto real confirmado. Lo neutro no se reporta.
 
 ━━━ REGLAS ━━━
 - Paso A siempre antes de Paso B.
 - Cada error y cada acierto debe citar la observación exacta del Paso A que lo originó.
 - No hay errores ni aciertos inventados. Si no está en el Paso A, no existe.
-- Puede haber muchos errores y cero aciertos. Puede haber muchos aciertos y pocos errores. O cualquier combinación. No hay balance obligatorio.
+- Puede haber muchos errores y cero aciertos. Puede haber muchos aciertos y pocos errores. No hay balance obligatorio.
 - Usá tu conocimiento de "${industria}" en ${platformName} para calibrar el peso de cada uno.
+- Si tenés que justificar por qué algo es bueno o malo → no existe.
 
 ━━━ PUNTUACIÓN ━━━
 viralScore parte de 50 (base neutra).
-Errores restan según letalidad: Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
-Aciertos suman según potencia: Alto (+8 a +15) | Medio (+3 a +7.9) | Leve (+0.6 a +2.9)
+Errores restan según letalidad en ${platformName} para "${industria}": Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
+Aciertos suman según potencia en ${platformName} para "${industria}": Alto (+8 a +15) | Medio (+3 a +7.9) | Leve (+0.6 a +2.9)
 El hook_strength de s0-s2 ancla el viralScore. Si s0-s2 no retiene a un extraño, el viralScore no supera 35.
 
 ${benchmarkContext}
@@ -324,9 +328,11 @@ JSON:
   "analisis_s0_s2": {
     "descripcion_camara": "<solo lo que existe en s0-s2 — sin interpretar>",
     "hook_strength_calculado": <number 0-100>,
+    "dimensiones_exploradas": ["<cada dimensión de tu conocimiento que recorriste para evaluar s0-s2>"],
     "errores": [
       {
         "observacion": "<del Paso A>",
+        "dimension": "<desde qué área de conocimiento surgió este error>",
         "error": "<qué falla y por qué en ${platformName} para ${industria}>",
         "penalizacion": <number negativo>
       }
@@ -334,6 +340,7 @@ JSON:
     "aciertos": [
       {
         "observacion": "<del Paso A>",
+        "dimension": "<desde qué área de conocimiento surgió este acierto>",
         "acierto": "<qué funciona y por qué en ${platformName} para ${industria}>",
         "bonus": <number positivo>
       }
@@ -342,9 +349,11 @@ JSON:
   "analisis_resto_video": {
     "descripcion_camara": "<solo lo observable desde s2 hasta el final>",
     "cumple_promesa_del_hook": <boolean>,
+    "dimensiones_exploradas": ["<cada dimensión de tu conocimiento que recorriste para evaluar el resto>"],
     "errores": [
       {
         "observacion": "<del Paso A>",
+        "dimension": "<desde qué área de conocimiento surgió este error>",
         "error": "<qué falla y por qué en ${platformName} para ${industria}>",
         "penalizacion": <number negativo>
       }
@@ -352,6 +361,7 @@ JSON:
     "aciertos": [
       {
         "observacion": "<del Paso A>",
+        "dimension": "<desde qué área de conocimiento surgió este acierto>",
         "acierto": "<qué funciona y por qué en ${platformName} para ${industria}>",
         "bonus": <number positivo>
       }
