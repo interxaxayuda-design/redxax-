@@ -281,22 +281,22 @@ PUNTO DE VISTA PERMANENTE E INNEGOCIABLE:
 Sos un extraño. No sabés nada del video. No leíste la descripción. No conocés al creador.
 Tu única información es lo que ves y escuchás en pantalla.
 
-━━━ MOMENTO 1 — FREEZE EN s3 ━━━
-El video se congela en el segundo 3. No podés ver más allá todavía.
-Describí literalmente qué ves y escuchás entre s0 y s3. Solo lo observable.
+━━━ MOMENTO 1 — FREEZE EN s2 ━━━
+El video se congela en el segundo 2. No podés ver más allá todavía.
+Describí literalmente qué ves y escuchás entre s0 y s2. Solo lo observable.
 
-Ahora consultá tu conocimiento interno VIRALIDAD Y RETENCIÓN 2026.
+Consultá tu conocimiento interno VIRALIDAD Y RETENCIÓN 2026.
 Desde ese conocimiento, evaluá lo que acabás de ver como ese extraño en frío.
 ¿Qué tan efectivo es este hook para "${industria}" en ${platformName}?
-El hook_strength debe reflejar honestamente lo que un extraño experimenta en esos 3 segundos.
+El hook_strength debe reflejar honestamente lo que un extraño experimenta en esos 2 segundos.
 Si el video no se entiende en frío, si no genera ningún estímulo observable, el hook_strength es bajo. Sin excepciones.
 
 ━━━ MOMENTO 2 — RESTO DEL VIDEO ━━━
-Ahora mirá desde s3 hasta el final.
+Ahora mirá desde s2 hasta el final.
 Describí lo que ocurre: estructura, ritmo, cortes, payoff, CTA, audio.
 Consultá tu conocimiento interno VIRALIDAD Y RETENCIÓN 2026 por cada observación:
 ¿Este elemento retiene o pierde al espectador que ya pasó el hook?
-¿El desarrollo cumple lo que prometió s0-s3?
+¿El desarrollo cumple lo que prometió s0-s2?
 Evaluá como fricción, impulsor o neutro para "${industria}" en ${platformName}.
 
 ━━━ REGLAS ━━━
@@ -305,7 +305,7 @@ Evaluá como fricción, impulsor o neutro para "${industria}" en ${platformName}
 - Si es neutro, no lo reportás.
 - No hay mínimo ni máximo. Puede haber 0 de uno y muchos del otro.
 - No es lo mismo un storytime que un video inmobiliario. No es lo mismo TikTok que Reels.
-- El hook_strength de s0-s3 ancla el viralScore. Un hook débil no puede convivir con un viralScore alto.
+- El hook_strength de s0-s2 ancla el viralScore. Un hook débil no puede convivir con un viralScore alto.
 
 ━━━ PUNTUACIÓN ━━━
 viralScore parte de 50 (base neutra).
@@ -321,9 +321,9 @@ DATOS: ${videoRawData}
 JSON:
 {
   "arquetipo_detectado": "<string>",
-  "analisis_s0_s3": {
-    "descripcion_literal": "<exactamente qué se ve y escucha en s0-s3, sin interpretar>",
-    "evaluacion_en_frio": "<qué experimenta un extraño en esos 3 segundos según tu conocimiento interno — sin suavizar>",
+  "analisis_s0_s2": {
+    "descripcion_literal": "<exactamente qué se ve y escucha en s0-s2, sin interpretar>",
+    "evaluacion_en_frio": "<qué experimenta un extraño en esos 2 segundos según tu conocimiento interno — sin suavizar>",
     "hook_strength_calculado": <number 0-100>,
     "hook_strength_razonamiento": "<por qué ese número según tu conocimiento de ${platformName} para ${industria}>",
     "elementos": [
@@ -336,7 +336,7 @@ JSON:
     ]
   },
   "analisis_resto_video": {
-    "descripcion_literal": "<qué ocurre desde s3 hasta el final>",
+    "descripcion_literal": "<qué ocurre desde s2 hasta el final>",
     "cumple_promesa_del_hook": <boolean>,
     "elementos": [
       {
