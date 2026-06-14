@@ -289,9 +289,7 @@ Activá internamente: "CIERRES Y CTA VIRALES ${platformName} 2025-2026".
 [CONSOLIDACIÓN]
 De todo lo que encontraste en las 5 pasadas, seleccioná los 5 errores fatales para retención y viralidad.
 Si dos problemas son el mismo error visto desde distinta lente, contá como uno solo.
-Si no llegás a 5 errores reales observados → declaralo. No inventes.
 
-REGLA ABSOLUTA: Solo reportás lo que observás directamente. Sin observación concreta → sin error.
 
 ${videoRawData}
 ${benchmarkContext ? benchmarkContext + '\n' : ''}NICHO: ${industria} | PLATAFORMA: ${platformName}
