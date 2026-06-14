@@ -244,59 +244,48 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Sos un extraño en ${platformName}. No sabés nada del video. No leíste la descripción. No conocés al creador.
+  return `Sos un extraño en ${platformName}. No sabés nada del video. No leíste la descripción. No conocés al creador. Tu único objetivo es realizar una auditoría de errores implacable pero 100% real.
 
 ═══ FASE 1: INVENTARIO NEUTRAL ═══
 Mirá el video completo y listá CADA elemento observable, en orden cronológico.
-NO opines. NO evalúes. Solo describí lo que existe.
+NO opines. NO evalúes. Solo describí lo que existe de forma fáctica.
 Cubrí: s0-s2, cortes/transiciones, ritmo, audio, texto en pantalla, estructura narrativa, payoff, rehook, CTA, calidad técnica.
-No hay número objetivo de ítems — listá todo lo que existe y nada más.
 
-═══ FASE 2A: BÚSQUEDA DE ERRORES (prioridad máxima) ═══
-Para CADA elemento del inventario, consultá tu conocimiento sobre fallas reales
-en "${industria}" en ${platformName} en 2026.
+═══ FASE 2: DETECCIÓN CRÍTICA DE ERRORES (Enfoque 100%) ═══
+Analizá críticamente cada elemento del inventario usando tu conocimiento sobre fallas reales de retención, psicología del espectador y algoritmos para "${industria}" en ${platformName} en 2026.
 
-Por cada error encontrado, hacé tres pasos:
-1. IDENTIFICÁ: ¿qué elemento del inventario falla y cómo?
-2. INVESTIGÁ: ¿por qué esto específicamente daña en ${platformName} para "${industria}"?
-   Consultá todo tu conocimiento sobre comportamiento del algoritmo, retención, psicología
-   del espectador, estándares del nicho, datos de 2026, etc. No generalices — sé específico.
-3. SOLUCIONÁ: ¿cómo se arregla esto concretamente en este nicho y plataforma?
-   La solución debe ser ejecutable ahora, no hipotética.
+REGLA DE ORO DE VERACIDAD: PROHIBIDO INVENTAR. Si un elemento cumple perfectamente con los estándares de la industria, ignoralo (es neutral). Solo reportá errores que genuinamente perjudiquen la retención, conversión o distribución orgánica.
 
-Incluí AUSENCIAS como errores: si falta algo que el nicho exige (rehook, texto overlay,
-ritmo de cortes específico, etc.), eso es un error aunque "no haya nada roto".
-Sin elemento del inventario que lo origine → el error no existe.
+Por cada error real encontrado, ejecutá tres pasos:
+1. IDENTIFICÁ: ¿Qué elemento específico del inventario falla y qué tiene de malo?
+2. INVESTIGÁ: ¿Por qué esto daña la retención o el algoritmo en ${platformName} para "${industria}" en 2026? Sé específico, no uses generalidades.
+3. SOLUCIONÁ: ¿Cómo se arregla de forma concreta e inmediata en edición o guion?
 
-═══ FASE 2B: BÚSQUEDA DE ACIERTOS (secundaria) ═══
-Solo después de completar 2A, buscá elementos que genuinamente funcionan.
-Un acierto necesita un mecanismo concreto — no "se ve bien", sino por qué
-específicamente retiene o convierte en este nicho y plataforma.
-Si tenés que esforzarte para justificarlo → es NEUTRAL, no lo reportés.
+*Nota sobre Ausencias:* Si el nicho exige algo que falta (ej. un rehook al segundo 5, subtítulos clave, dinamismo visual), registralo como un error bajo la observación de "Elemento ausente".
 
-═══ REGLAS GLOBALES ═══
-- Neutral = no aparece en ninguna lista. Es el resultado más frecuente.
-- No hay balance obligatorio. Puede haber 8 errores y 0 aciertos.
-- Hook s0-s2 ancla el viralScore. Hook que no retiene a un extraño → viralScore máximo 35.
+═══ REGLAS DE PUNTUACIÓN GLOBALES ═══
+- El análisis es puramente punitivo. No existen los bonus ni los aciertos. 
+- PUNTUACIÓN: Base inicial de 100 puntos. Cada error resta directamente de la base.
+- Severidad de Errores:
+  * Grave: -8 a -15 puntos (Mata la retención al instante, rompe el ritmo, pésimo hook).
+  * Medio: -3 a -7.9 puntos (Aburre, fricción en el desarrollo, subtítulos deficientes).
+  * Leve: -0.6 a -2.9 puntos (Detalles técnicos menores, ligera falta de optimización).
+- Factor Hook (s0-s2): Si el hook inicial no logra retener a un extraño, el 'viralScore' máximo permitido es 35, sin importar el resto del video.
 
-PUNTUACIÓN: base 50.
-Errores: Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
-Aciertos: Alto (+8 a +15) | Medio (+3 a +7.9) | Leve (+0.6 a +2.9)
-
-RANGOS:
-- 0-20: Errores graves múltiples, sin retención.
-- 21-40: Sin errores graves pero sin gancho activo (aburrido = error).
-- 41-60: Hook funcional, desarrollo coherente, sin elementos destacados.
-- 61-80: Múltiples aciertos reales además de hook funcional.
-- 81-100: Ejecución excepcional, alta probabilidad de viralidad orgánica.
+RANGOS DE VIRALSCORE (100 - penalty_total):
+- 81-100: Ejecución limpia y sólida. Sin errores detectados o solo detalles imperceptibles. Alta probabilidad viral.
+- 61-80: Video funcional, pero con errores leves o un par de errores medios que frenan el potencial máximo.
+- 41-60: Hook aceptable pero desarrollo con baches graves de retención (el usuario se aburre y se va).
+- 21-40: Hook deficiente o errores graves acumulados que destruyen la métrica de retención promedio.
+- 0-20: Falla total. Errores graves múltiples en estructura, ritmo y apartado técnico.
 
 ${benchmarkContext}
 
 NICHO: ${industria} | PLATAFORMA: ${platformName}
 DATOS: ${videoRawData}
 
-JSON (strings máximo 12 palabras):
-{"arquetipo_detectado":"<str>","analisis_s0_s2":{"descripcion_camara":"<str>","hook_strength":<number>,"errores":[{"obs":"<str>","error":"<str>","por_que_daña":"<str>","solucion":"<str>","p":<number negativo>}],"aciertos":[{"obs":"<str>","acierto":"<str>","mecanismo":"<str>","b":<number positivo>}]},"analisis_resto":{"descripcion_camara":"<str>","cumple_hook":<boolean>,"errores":[{"obs":"<str>","error":"<str>","por_que_daña":"<str>","solucion":"<str>","p":<number negativo>}],"aciertos":[{"obs":"<str>","acierto":"<str>","mecanismo":"<str>","b":<number positivo>}]},"penalty_total":<number>,"bonus_total":<number>,"razonamiento":"<str>","viralScore":<number>,"confianza":<number>,"sub":{"hook_strength":<number>,"retention":<number>,"payoff":<number>,"clarity":<number>,"trust":<number>}}`;
+JSON (Claves estrictas, strings en campos de texto de máximo 12 palabras):
+{"arquetipo_detectado":"<str>","analisis_s0_s2":{"descripcion_camara":"<str>","hook_strength":<number>,"errores":[{"obs":"<str>","error":"<str>","por_que_daña":"<str>","solucion":"<str>","p":<number_negativo>}]},"analisis_resto":{"descripcion_camara":"<str>","cumple_hook":<boolean>,"errores":[{"obs":"<str>","error":"<str>","por_que_daña":"<str>","solucion":"<str>","p":<number_negativo>}]},"penalty_total":<number_positivo_o_cero>,"razonamiento":"<str>","viralScore":<number_entre_0_y_100>,"confianza":<number>,"sub":{"hook_strength":<number>,"retention":<number>,"payoff":<number>,"clarity":<number>,"trust":<number>}}`;
 };
 
 export const deriveHookGateStatus = (preFacts) => {
