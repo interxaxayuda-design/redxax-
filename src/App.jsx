@@ -262,11 +262,11 @@ REGLA ABSOLUTA: Debés encontrar MÍNIMO 5 errores fatales. Si encontrás menos 
 
 Antes del JSON, respondé UNA LÍNEA por cada lente. Sé brutal:
 
-H (hook — primeros 3 seg): activá "HOOKS VIRALES ${platformName} 2025-2026" → ¿qué falla exactamente?
-A (audio — video completo): activá "AUDIO Y RETENCIÓN ${platformName} 2025-2026" → ¿qué falla exactamente?
-V (visuales — video completo): activá "VISUALES Y RETENCIÓN ${platformName} 2025-2026" → ¿qué falla exactamente?
-R (ritmo — video completo): activá "RITMO Y PACING ${platformName} 2025-2026" → ¿qué falla exactamente?
-C (cierre — últimos 5 seg): activá "CIERRES Y CTA ${platformName} 2025-2026" → ¿qué falla exactamente?
+H (hook — primeros 1 seg): activá "HOOKS VIRALES ${platformName} 2026" → ¿qué falla exactamente?
+A (audio — video completo): activá "AUDIO Y RETENCIÓN ${platformName} 2026" → ¿qué falla exactamente?
+V (visuales — video completo): activá "VISUALES Y RETENCIÓN ${platformName} 2026" → ¿qué falla exactamente?
+R (ritmo — video completo): activá "RITMO Y PACING ${platformName} 2026" → ¿qué falla exactamente?
+C (cierre — últimos 5 seg): activá "CIERRES Y CTA ${platformName} 2026" → ¿qué falla exactamente?
 
 Si en alguna lente no tenés conocimiento actualizado 2025-2026 → declaralo con [SIN REF] y penalizá -5 al score final.
 Usá esas 5 respuestas como base para construir las fallas del JSON. Cada lente debe generar al menos 1 error fatal en el JSON.
@@ -1059,11 +1059,58 @@ const runDeepAnalysis = async () => {
   setStatusText("Iniciando auditoría profunda...");
   setAnalysisProgress(22);
 
+  // ── fileUri compartido entre todas las calls ──
+  // Se llena en CALL 0 y se reutiliza en CALL 1 y CALL 3
+  // Así Gemini ve el video real en cada análisis sin re-subir
+  let sharedFileUri: string | null = null;
+  let sharedFileName: string | null = null;
+
   try {
 
-    // ── CALL 1.5 — Research Brain (movido ANTES de CALL 1) ───
-    // Motivo: researchData se pasa a buildCognitiveScanPrompt para
-    // que Gemini calibre el score contra el benchmark real del nicho.
+    // ── CALL 0 — Pre-classifier (ya existía, ahora captura fileUri) ──
+    setStatusText("Extrayendo señales del video...");
+    setAnalysisProgress(18);
+
+    const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildPreClassifierPrompt(),
+        storagePath,          // ← sube el video y devuelve _fileUri
+        videoMimeType: mimeType,
+        duration: Math.round(duration),
+        maxOutputTokens: 768,
+        expectsJson: true,
+        temperature: 0,
+      }
+    });
+
+    if (call0Error) throw new Error(`CALL 0 falló: ${call0Error.message}`);
+
+    // ── CAPTURAMOS el fileUri para reutilizar en todas las calls ──
+    sharedFileUri  = call0Data?._fileUri  ?? null;
+    sharedFileName = call0Data?._fileName ?? null;
+    console.log('[VIRAX] fileUri capturado:', sharedFileUri ? '✅' : '❌ no disponible');
+
+    const preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
+    console.log('[VIRAX] Pre-facts:', preFacts);
+
+    setPerception({
+      industria:           preFacts.industria || selectedNicho,
+      palanca_psicologica: preFacts.palanca_psicologica || 'Curiosidad / Retención',
+    });
+
+    setVideoMeta({
+      storagePath,
+      mimeType,
+      duration,
+      preFacts,
+      platform,
+      followerRange: videoMeta.followerRange,
+      palanca_detectada: preFacts.palanca_psicologica || 'Curiosidad / Retención',
+    });
+
+    setAnalysisProgress(100);
+
+    // ── CALL 1.5 — Research Brain ─────────────────────────────
     setStatusText("Investigando benchmark del nicho...");
     setAnalysisProgress(28);
 
@@ -1088,18 +1135,15 @@ const runDeepAnalysis = async () => {
 
     let researchData = {};
     try {
-      // CALL 1 — Cognitive Scan
-      const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildCognitiveScanPrompt(preFactsStr, industria, researchData, platform),
-    storagePath,        // ← esto ya existe, solo hay que asegurarse que esté
-    videoMimeType: mimeType,
-    duration: Math.round(duration),
-    maxOutputTokens: 4096,
-    expectsJson: true,
-    temperature: 0.3,
-  }
-});
+      const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildResearchBrainPrompt(platform, industria, selectedObjetivo, nichoBenchmark),
+          // ← sin video: research es solo texto, no necesita ver el video
+          expectsJson:     true,
+          maxOutputTokens: 1024,
+          temperature:     0.2,
+        }
+      });
       if (!call1_5Error) {
         researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
       }
@@ -1109,28 +1153,34 @@ const runDeepAnalysis = async () => {
     }
 
     // ── CALL 1 — Cognitive Scan ───────────────────────────────
+    // CAMBIO CLAVE: usa fileUri en lugar de storagePath
+    // Ahora Gemini VE EL VIDEO REAL para detectar cortes, ritmo, audio, etc.
     setStatusText("Analizando el video...");
     setAnalysisProgress(38);
 
-    // FIX #1: firma actualizada — ya no se pasa fewShotExamples como parámetro
-    // FIX #7: se pasa researchData para calibración contra el benchmark
     const preFactsStr = JSON.stringify(preFacts ?? {});
 
     console.log('[CALL 1] industria:', industria);
     console.log('[CALL 1] preFacts size:', preFactsStr.length, 'chars');
     console.log('[CALL 1] researchData disponible:', Object.keys(researchData).length > 0);
+    console.log('[CALL 1] fileUri disponible:', !!sharedFileUri);
 
     const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
-    body: {
-    text: buildCognitiveScanPrompt(preFactsStr, industria, researchData, platform), // ← agregá platform aquí también, falta en tu versión actual
-    storagePath,
-    videoMimeType: mimeType,
-    duration:      Math.round(duration),
-    maxOutputTokens: 4096,   // ← subido de 2048
-    expectsJson:   true,
-    temperature:   0.3,
-  }
-});
+      body: {
+        text: buildCognitiveScanPrompt(preFactsStr, industria, researchData, platform),
+        // ── ANTES: storagePath → re-subía el video, costoso y lento ──
+        // ── AHORA: fileUri    → reutiliza el video ya subido en CALL 0 ──
+        ...(sharedFileUri
+          ? { fileUri: sharedFileUri, fileName: sharedFileName }  // ← reutiliza
+          : { storagePath, videoMimeType: mimeType }              // ← fallback si CALL 0 no devolvió URI
+        ),
+        videoMimeType:   mimeType,
+        duration:        Math.round(duration),
+        maxOutputTokens: 4096,
+        expectsJson:     true,
+        temperature:     0.3,
+      }
+    });
 
     if (call1Error) {
       let errorBody = '';
@@ -1145,26 +1195,19 @@ const runDeepAnalysis = async () => {
     console.log('[VIRAX] viralScore de Gemini (bruto):', cognitiveScan?.viralScore);
 
 
-    // ── JS — Gate + Cap (SIN penalización de score) ──────────
-    const hookGate = deriveHookGateStatus(preFacts);
-
-    // FIX #3 y #4: el bloque de `failures` y `penaltyCount` fue eliminado.
-    // El viralScore de Gemini se respeta tal cual — JS solo aplica el cap como techo.
-    // Antes: rawScore - (penaltyCount * 3) → double counting
-    // Ahora: rawScore directo, cap como límite máximo
-
+    // ── JS — Gate + Cap ──────────────────────────────────────
+    const hookGate     = deriveHookGateStatus(preFacts);
     const rawViralScore = cognitiveScan?.viralScore ?? 50;
     const viralCapData  = deriveViralCap(hookGate, preFacts, nicheConfig);
 
-    // FIX #4: scoringRaw ya no modifica el score — solo lo documenta
     const scoringRaw = {
-      viralScore: Math.min(rawViralScore, viralCapData.cap),  // solo el cap, sin penalties
+      viralScore: Math.min(rawViralScore, viralCapData.cap),
       breakdown: {
-        causa_fracaso:    cognitiveScan?.causa_principal_fracaso ?? '—',
-        base_score:       rawViralScore,
-        cap_applied:      viralCapData.cap,
-        cap_reason:       viralCapData.reason,
-        penalty_applied:  0,   // ya no se aplica penalización manual
+        causa_fracaso:   cognitiveScan?.causa_principal_fracaso ?? '—',
+        base_score:      rawViralScore,
+        cap_applied:     viralCapData.cap,
+        cap_reason:      viralCapData.reason,
+        penalty_applied: 0,
       }
     };
 
@@ -1175,6 +1218,7 @@ const runDeepAnalysis = async () => {
 
 
     // ── CALL 1.75 — Apply Research ────────────────────────────
+    // Sin video: solo contrasta JSON vs JSON
     setStatusText("Calculando brecha competitiva...");
     setAnalysisProgress(54);
 
@@ -1196,6 +1240,7 @@ const runDeepAnalysis = async () => {
 
 
     // ── CALL 2 — Strategy Brain ───────────────────────────────
+    // Sin video: trabaja con el JSON del cognitive scan
     setStatusText("Diagnosticando el video...");
     setAnalysisProgress(66);
 
@@ -1204,7 +1249,7 @@ const runDeepAnalysis = async () => {
         text: buildStrategyBrainPrompt(
           preFacts,
           cognitiveScan,
-          {},              // failures ya no existe — pasamos objeto vacío para no romper la firma
+          {},
           scoringRaw,
           platform,
           selectedObjetivo,
@@ -1216,13 +1261,14 @@ const runDeepAnalysis = async () => {
     });
 
     if (call2Error) throw new Error(`CALL 2 falló: ${call2Error.message}`);
-    const strategyRaw    = extractGeminiText(call2Data);
-    const strategyParsed = safeParseJSON(strategyRaw, 'strategy') || {};
+    const strategyRaw     = extractGeminiText(call2Data);
+    const strategyParsed  = safeParseJSON(strategyRaw, 'strategy') || {};
     const strategyAnalysis = JSON.stringify(strategyParsed, null, 2);
     console.log('[VIRAX] Strategy:', strategyParsed);
 
 
     // ── CALL 3 — Scoring Brain ────────────────────────────────
+    // CAMBIO: también reutiliza fileUri en lugar de re-subir el video
     setStatusText("Preparando tu reporte...");
     setAnalysisProgress(80);
 
@@ -1232,7 +1278,7 @@ const runDeepAnalysis = async () => {
           JSON.stringify(preFacts),
           strategyAnalysis,
           cognitiveScan,
-          {},              // failures ya no existe — pasamos objeto vacío
+          {},
           scoringRaw,
           viralCapData,
           platform,
@@ -1241,7 +1287,11 @@ const runDeepAnalysis = async () => {
           nicheConfig,
           hookGate
         ),
-        storagePath,
+        // ── igual que CALL 1: reutiliza el fileUri si está disponible ──
+        ...(sharedFileUri
+          ? { fileUri: sharedFileUri, fileName: sharedFileName }
+          : { storagePath, videoMimeType: mimeType }
+        ),
         videoMimeType:   mimeType,
         duration:        Math.round(duration),
         expectsJson:     true,
@@ -1256,10 +1306,10 @@ const runDeepAnalysis = async () => {
     setStatusText("Estructurando reporte completo...");
 
     console.log('[VIRAX] Output final de CALL 3:', {
-      salesScore:  outputParsed.salesScore?.score,
-      scrollStop:  outputParsed.scrollStopScore?.score,
-      hookStr:     outputParsed.hookDNA?.strength,
-      potencial:   outputParsed.potentialScore,
+      salesScore: outputParsed.salesScore?.score,
+      scrollStop: outputParsed.scrollStopScore?.score,
+      hookStr:    outputParsed.hookDNA?.strength,
+      potencial:  outputParsed.potentialScore,
     });
 
 
@@ -1309,13 +1359,12 @@ const runDeepAnalysis = async () => {
       firstHourStrategy: outputParsed.firstHourStrategy ?? null,
       commentTrigger:    outputParsed.commentTrigger    ?? null,
 
-      // Debug internos
-      _hook_gate:     hookGate,
+      _hook_gate:      hookGate,
       _cognitive_scan: cognitiveScan,
-      _strategy:      strategyParsed,
-      _research_data: researchData,
-      _gap_analysis:  gapAnalysis,
-      _viral_cap:     viralCapData,
+      _strategy:       strategyParsed,
+      _research_data:  researchData,
+      _gap_analysis:   gapAnalysis,
+      _viral_cap:      viralCapData,
     };
 
     setAiResult(finalResult);
@@ -1336,7 +1385,24 @@ const runDeepAnalysis = async () => {
     alert(`❌ Error al procesar reporte: ${err.message || err}`);
     setStep('upload');
   } finally {
+    // ── Limpieza final: eliminamos el video de Google File API y de Supabase ──
+    // Se hace en finally para garantizar limpieza incluso si hubo error
+
+    // 1. Eliminar de Google File API (si tenemos el fileName)
+    if (sharedFileName) {
+      try {
+        await supabase.functions.invoke('gemini-proxy', {
+          body: { deleteOnly: true, fileName: sharedFileName }
+        });
+        console.log('[VIRAX] Video eliminado de Google File API ✅');
+      } catch (e) {
+        console.warn('[VIRAX] No se pudo eliminar de Google File API:', e);
+      }
+    }
+
+    // 2. Eliminar de Supabase Storage (siempre)
     await supabase.storage.from('videos').remove([storagePath]);
+    console.log('[VIRAX] Video eliminado de Supabase Storage ✅');
   }
 };
 
