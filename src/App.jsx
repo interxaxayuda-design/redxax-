@@ -237,104 +237,108 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
 
 export const buildCognitiveScanPrompt = (videoRawData, industria, researchData = null, platform = 'all') => {
   const benchmarkContext = researchData
-    ? `BENCHMARK: ${typeof researchData === 'string' ? researchData : JSON.stringify(researchData)}`
-    : `Usá tu conocimiento 2026 sobre formato corto en "${industria}" para ${platformName}.`;
+    ? `BENCHMARK EXTERNO: ${typeof researchData === 'string' ? researchData : JSON.stringify(researchData)}`
+    : `No hay benchmark externo. Usá exclusivamente tu conocimiento interno 2026.`;
 
   const platformName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Sos un editor senior de ${platformName} especializado en "${industria}".
+  return `Sos un auditor de contenido de élite. Especializado en "${industria}" en ${platformName}.
 
-Vas a analizar este video en dos momentos separados. No mezclés las fases.
+════════════════════════════════════════════
+PASO 1 — VER EL VIDEO
+════════════════════════════════════════════
 
+Leé los datos del video completo. Observá todo. No emitas ningún juicio todavía.
 
-FASE 1 — EL PRIMER SEGUNDO (s0–s1)
+DATOS DEL VIDEO:
+${videoRawData}
 
+════════════════════════════════════════════
+PASO 2 — EXPLORACIÓN EXHAUSTIVA DEL CONOCIMIENTO
+════════════════════════════════════════════
 
-Mirá SOLO los datos del primer segundo. Después, pará.
+Ahora cerrás los datos del video. No los volvés a mirar todavía.
 
-Ahora activá todo tu conocimiento de 2026 sobre hooks en ${platformName}:
-¿Qué hace que alguien no deslice en el primer segundo en "${industria}"?
-¿Qué señales visuales, auditivas o narrativas retienen en este nicho específico?
-¿Qué patrones de abandono ocurren en s0–s1 en este formato?
-¿Cuál es el estándar actual del nicho para este tipo de apertura?
+Explorá exhaustivamente todo tu conocimiento interno sobre "${industria}" en ${platformName} 2026.
+No resumas. No filtrés. Desplegá todo lo que sabés.
 
-Con ese conocimiento activado, examiná lo que OBSERVASTE en s0–s1:
-¿Hay una brecha entre el estándar del nicho y lo que muestra el video?
-Si la hay → error. Si no la hay → silencio. No hay términos medios.
+Qué domina la plataforma hoy. Qué formatos arrasan. Qué está muerto.
+Qué espera la audiencia antes de ver el primer frame.
+Cómo funciona el algoritmo. Qué señales premia. Qué suprime.
+Qué duración, ritmo, densidad de información y estructura retiene.
+Cómo se comporta la curva de retención en este nicho.
+Qué hace que alguien comparta, comente, guarde, vuelva a ver.
 
-Cada error de esta fase necesita:
-- obs: qué viste exactamente en s0–s1
-- conocimiento_aplicado: qué sabe sobre hooks en 2026 que lo convierte en error
-- por_que_daña: por qué específicamente en ${platformName} para "${industria}"
-- solucion: qué cambiaría en ese segundo concreto
+Luego, explorá exhaustivamente los errores fatales.
+Todo lo que hace que una persona se vaya. Todo lo que destruye un video.
+En el hook. En el desarrollo. En el ritmo. En lo visual. En lo auditivo. En lo narrativo.
+Cada patrón de abandono que conocés para este nicho y esta plataforma.
+Cada señal de que un video va a rendir mal antes de que termine.
 
-REGLA HOOK: Si hay errores en s0–s1 → viralScore no puede superar 35.
+Este conocimiento es tu único criterio. Tu vara de medición absoluta.
 
+${benchmarkContext}
 
-FASE 2 — EL DESARROLLO (s1 en adelante)
+════════════════════════════════════════════
+PASO 3 — AUDITORÍA
+════════════════════════════════════════════
 
+Ahora volvés al video con todo ese conocimiento activado.
 
-Continuá viendo el resto del video. Después, pará.
+Mirás SOLO s0–s1 primero. Con todo lo que exploraste: ¿hay brechas?
+Cada brecha entre lo que sabe tu conocimiento y lo que muestra el video → error.
+Sin brecha observable → silencio absoluto.
 
-Ahora activá todo tu conocimiento de 2026 sobre retención en ${platformName}:
-¿Qué hace que alguien llegue al final de un video de "${industria}"?
-¿Cuáles son los puntos de abandono más comunes en este tipo de contenido?
-¿Cómo funciona el ritmo de edición óptimo en este nicho y plataforma en 2026?
-¿Qué técnicas de rehook, payoff y tensión narrativa aplican acá?
-¿Qué exige el algoritmo de ${platformName} en términos de señales de retención?
+Luego mirás el desarrollo. Misma lógica. Misma exigencia.
 
-Con ese conocimiento activado, examiná lo que OBSERVASTE en el desarrollo:
-¿Hay brechas entre el estándar de retención y lo que hace el video?
-Solo errores con evidencia directa. Nunca ausencias asumidas.
-
-Misma estructura por error:
-- obs: qué viste exactamente
-- conocimiento_aplicado: qué sabés de retención 2026 que lo convierte en error
-- por_que_daña: impacto específico en ${platformName} para "${industria}"
+Por cada error:
+- obs: qué ves exactamente en los datos (sin interpretación, solo lo que está)
+- brecha: qué exige tu conocimiento 2026 vs qué hace el video
+- por_que_daña: cómo destruye retención o viralidad en ${platformName} para "${industria}"
 - solucion: cambio concreto e inmediato
+- p: Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
 
+REGLA ABSOLUTA: Sin observación directa en los datos → el error no existe.
+REGLA DE HIERRO: Errores en s0–s1 → viralScore ≤ 35. Sin excepciones.
 
-CÁLCULO FINAL
-
+════════════════════════════════════════════
+CÁLCULO
+════════════════════════════════════════════
 
 viralScore = 100 + penalty_total
 penalty_total = suma de todos los p
+Sin errores → viralScore 100, arrays vacíos.
 
-Pesos:
-Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
-
-Sin errores → viralScore 100, arrays vacíos. No forzés errores.
-
-${benchmarkContext}
 NICHO: ${industria} | PLATAFORMA: ${platformName}
-DATOS: ${videoRawData}
 
 JSON (strings máximo 15 palabras):
 {
   "arquetipo_detectado": "<tipo de video observado>",
+  "conocimiento_activado": {
+    "plataforma_2026": "<qué domina ${platformName} hoy para este nicho — 1 oración densa>",
+    "errores_fatales_conocidos": "<patrones de abandono que exploraste — 1 oración densa>"
+  },
   "fase1_hook": {
-    "knowledge_snapshot": "<qué activaste de tu conocimiento sobre hooks en este nicho — 1 oración>",
     "errores": [
       {
-        "obs": "<qué viste en s0-s1>",
-        "conocimiento_aplicado": "<por qué es un error según tu conocimiento 2026>",
-        "por_que_daña": "<impacto en ${platformName} / ${industria}>",
-        "solucion": "<acción concreta>",
+        "obs": "<qué ves exactamente en s0-s1>",
+        "brecha": "<conocimiento 2026 vs realidad del video>",
+        "por_que_daña": "<impacto concreto>",
+        "solucion": "<acción inmediata>",
         "p": <número negativo>
       }
     ],
     "hook_strength": <0-100>
   },
   "fase2_desarrollo": {
-    "knowledge_snapshot": "<qué activaste sobre retención en este nicho — 1 oración>",
     "errores": [
       {
-        "obs": "<qué viste en el desarrollo>",
-        "conocimiento_aplicado": "<por qué es un error según tu conocimiento 2026>",
-        "por_que_daña": "<impacto en ${platformName} / ${industria}>",
-        "solucion": "<acción concreta>",
+        "obs": "<qué ves exactamente en el desarrollo>",
+        "brecha": "<conocimiento 2026 vs realidad del video>",
+        "por_que_daña": "<impacto concreto>",
+        "solucion": "<acción inmediata>",
         "p": <número negativo>
       }
     ],
@@ -343,7 +347,7 @@ JSON (strings máximo 15 palabras):
   "penalty_total": <suma de todos los p>,
   "viralScore": <100 + penalty_total>,
   "confianza": <0-100>,
-  "razonamiento": "<por qué estos errores y no otros, en una oración>"
+  "razonamiento": "<por qué estos errores y no otros — 1 oración>"
 }`;
 };
 
