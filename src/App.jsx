@@ -1114,65 +1114,71 @@ const runDeepAnalysis = async () => {
     // ── CALL 1.5 — Research Brain (movido ANTES de CALL 1) ───
     // Motivo: researchData se pasa a buildCognitiveScanPrompt para
     // que Gemini calibre el score contra el benchmark real del nicho.
-    // ── CALL 1.5 — Research Brain ────────────────────────────
-setStatusText("Investigando benchmark del nicho...");
-setAnalysisProgress(28);
+    setStatusText("Investigando benchmark del nicho...");
+    setAnalysisProgress(28);
 
-let nichoBenchmark = null;
-try {
-  const { data: benchmarkRow } = await supabase
-    .from('niche_benchmarks')
-    .select('benchmark_json, updated_at')
-    .eq('industria', industria)
-    .eq('platform', platform)
-    .eq('region', 'AR')
-    .single();
-  nichoBenchmark = benchmarkRow?.benchmark_json ?? null;
-} catch (e) {
-  console.warn('[BENCHMARK] Error al leer:', e.message);
-}
-
-let researchData = {};
-try {
-  console.log('[RESEARCH] Llamando con useSearch: true, platform:', platform, 'industria:', industria);
-  const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
-    body: {
-      text: buildResearchBrainPrompt(platform, industria, selectedObjetivo, nichoBenchmark),
-      useSearch: true,
-      expectsJson: true,
-      maxOutputTokens: 1024,
-      temperature: 0,
+    let nichoBenchmark = null;
+    try {
+      const { data: benchmarkRow } = await supabase
+        .from('niche_benchmarks')
+        .select('benchmark_json, updated_at')
+        .eq('industria', industria)
+        .eq('platform', platform)
+        .eq('region', 'AR')
+        .single();
+      nichoBenchmark = benchmarkRow?.benchmark_json ?? null;
+      if (nichoBenchmark) {
+        console.log('[BENCHMARK] Cargado para', industria, '— actualizado:', benchmarkRow.updated_at);
+      } else {
+        console.warn('[BENCHMARK] Sin datos para', industria, '— usando conocimiento general');
+      }
+    } catch (e) {
+      console.warn('[BENCHMARK] Error al leer:', e.message);
     }
-  });
-  if (!call1_5Error) {
-    researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
-  } else {
-    console.warn('[RESEARCH] Error:', call1_5Error.message);
+
+    let researchData = {};
+    try {
+      // CALL 1 — Cognitive Scan
+      const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+     text: buildCognitiveScanPrompt(preFactsStr, industria, researchData, platform),
+      storagePath,
+      videoMimeType: mimeType,
+      duration:      Math.round(duration),
+      maxOutputTokens: 8192,   // ← subir de 2048 a 4096
+      expectsJson:   true,
+      temperature:   0.3,
   }
-  console.log('[RESEARCH] data:', researchData);
-} catch (e) {
-  console.warn('[CALL 1.5] Fallback research:', e.message);
-}
+});
+      if (!call1_5Error) {
+        researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
+      }
+      console.log('[RESEARCH] data:', researchData);
+    } catch (e) {
+      console.warn('[CALL 1.5] Fallback research:', e.message);
+    }
 
-// ── CALL 1 — Cognitive Scan ───────────────────────────────
-setStatusText("Analizando el video...");
-setAnalysisProgress(38);
+    // ── CALL 1 — Cognitive Scan ───────────────────────────────
+    setStatusText("Analizando el video...");
+    setAnalysisProgress(38);
 
-const preFactsStr = JSON.stringify(preFacts ?? {});
+    // FIX #1: firma actualizada — ya no se pasa fewShotExamples como parámetro
+    // FIX #7: se pasa researchData para calibración contra el benchmark
+    const preFactsStr = JSON.stringify(preFacts ?? {});
 
-console.log('[CALL 1] industria:', industria);
-console.log('[CALL 1] platform:', platform);
-console.log('[CALL 1] researchData disponible:', Object.keys(researchData).length > 0);
+    console.log('[CALL 1] industria:', industria);
+    console.log('[CALL 1] preFacts size:', preFactsStr.length, 'chars');
+    console.log('[CALL 1] researchData disponible:', Object.keys(researchData).length > 0);
 
-const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildCognitiveScanPrompt(preFactsStr, industria, researchData, platform),
+    const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
+    body: {
+    text: buildCognitiveScanPrompt(preFactsStr, industria, researchData, platform), // ← agregá platform aquí también, falta en tu versión actual
     storagePath,
     videoMimeType: mimeType,
-    duration: Math.round(duration),
-    maxOutputTokens: 4096,
-    expectsJson: true,
-    temperature: 0.3,
+    duration:      Math.round(duration),
+    maxOutputTokens: 4096,   // ← subido de 2048
+    expectsJson:   true,
+    temperature:   0.3,
   }
 });
 
