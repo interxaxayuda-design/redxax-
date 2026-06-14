@@ -199,37 +199,6 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
   "musica_artista":     { retention: 1.3, tension: 0.8, payoff: 0.9, clarity: 0.7, trust: 0.8 },
 };
 
-export const FEW_SHOTS = `
-━━━ EJEMPLO SCORE 28 — VIDEO ROTO ━━━
-DESCRIPCIÓN: Logo estático de empresa durante 40 segundos con música de fondo genérica.
-Texto overlay: "Conocé nuestros servicios". Sin voz, sin persona visible, sin pregunta activa.
-Sin cortes. Motion intensity: 0.0. Payoff: nunca aparece.
-VEREDICTO: El espectador no tiene ninguna razón para quedarse en el segundo 0.
-No hay elemento que ancle la atención. Scroll inmediato garantizado.
-SCORE: 28 | hook_strength: 10 | retention_design: 15 | payoff_quality: 20 | narrative_clarity: 30 | trust_signals: 18
-
-━━━ EJEMPLO SCORE 65 — COMPETENTE / PROMEDIO ━━━
-DESCRIPCIÓN: Persona a cámara, buena iluminación natural. Segundo 0: dice directamente
-"Hice esto todos los días por 30 días y esto fue lo que pasó". Cortes cada 5-6 segundos.
-Payoff aparece en segundo 22 con resultado visible (antes/después). Sin música marcada.
-Rehook ausente. Sin texto overlay. Formato: testimonio lineal.
-VEREDICTO: Hook funcional — genera la pregunta "¿qué le pasó?". El desarrollo es lineal
-pero coherente. El payoff llega y cumple lo que prometió el hook. No hay twist ni sorpresa.
-Este es el rango normal de contenido competente que circula bien en su nicho.
-SCORE: 65 | hook_strength: 68 | retention_design: 60 | payoff_quality: 65 | narrative_clarity: 70 | trust_signals: 62
-
-━━━ EJEMPLO SCORE 83 — EXCELENTE ━━━
-DESCRIPCIÓN: Segundo 0 muestra el resultado final ANTES de explicar el proceso
-(producto terminado, persona con resultado visible). Texto overlay en segundo 1:
-"Tardé 3 días en descubrir esto". Cortes cada 2-3 segundos en los primeros 10 segundos.
-Rehook en segundo 9: dato contraintuitivo mencionado de pasada. Payoff con twist emocional
-en segundo 18. Audio sincronizado con el ritmo visual.
-VEREDICTO: El hook genera pregunta inmediata ("¿qué descubrió?") Y tiene elemento visual
-que ancla. El rehook reactiva la atención antes de que baje. El payoff sorprende porque
-revela algo inesperado. Alta probabilidad de replay y compartido.
-SCORE: 83 | hook_strength: 88 | retention_design: 82 | payoff_quality: 85 | narrative_clarity: 78 | trust_signals: 80
-`;
-
 export const buildPreClassifierPrompt = (meta = '') => `
 Sos una cámara con memoria. Registrás ÚNICAMENTE lo que existe en el video.
 No opinás, no evaluás, no inferís intención ni proyectás potencial.
@@ -275,83 +244,59 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Tu tarea tiene dos fases. NO saltes a la FASE 2 sin completar la FASE 1.
-
-Sos un extraño en ${platformName}. No sabés nada del video. No leíste la descripción. No conocés al creador.
+  return `Sos un extraño en ${platformName}. No sabés nada del video. No leíste la descripción. No conocés al creador.
 
 ═══ FASE 1: INVENTARIO NEUTRAL ═══
 Mirá el video completo y listá CADA elemento observable, en orden cronológico.
-NO opines. NO evalúes. NO digas si es bueno o malo. Solo describí lo que existe.
+NO opines. NO evalúes. Solo describí lo que existe.
+Cubrí: s0-s2, cortes/transiciones, ritmo, audio, texto en pantalla, estructura narrativa, payoff, rehook, CTA, calidad técnica.
+No hay número objetivo de ítems — listá todo lo que existe y nada más.
 
-Cubrí (cuando aplique — si algo no existe, no lo incluyas, no inventes que existe):
-- s0-s2: qué se ve y se escucha exactamente.
-- Cada corte/transición: en qué segundo, de qué a qué.
-- Ritmo general: cuántos cortes por bloque de 10s, duración promedio de tomas.
-- Audio: presencia, tipo, sincronía con lo visual.
-- Texto en pantalla: contenido y momento.
-- Estructura narrativa: cuándo aparece cada "bloque" de información.
-- Payoff: si existe, en qué segundo y qué muestra.
-- Rehook: si existe algo entre s8-s15 que reactive atención.
-- CTA: si existe, cómo se presenta.
-- Cualquier otro elemento técnico relevante (calidad de imagen, encuadre, iluminación, etc.)
+═══ FASE 2A: BÚSQUEDA DE ERRORES (prioridad máxima) ═══
+Para CADA elemento del inventario, consultá tu conocimiento sobre fallas reales
+en "${industria}" en ${platformName} en 2026.
 
-Esta lista tiene tantos ítems como existan en el video. Un video de 15 segundos
-puede tener 6 ítems. Un video de 60 segundos puede tener 20. No hay número objetivo.
+Por cada error encontrado, hacé tres pasos:
+1. IDENTIFICÁ: ¿qué elemento del inventario falla y cómo?
+2. INVESTIGÁ: ¿por qué esto específicamente daña en ${platformName} para "${industria}"?
+   Consultá todo tu conocimiento sobre comportamiento del algoritmo, retención, psicología
+   del espectador, estándares del nicho, datos de 2026, etc. No generalices — sé específico.
+3. SOLUCIONÁ: ¿cómo se arregla esto concretamente en este nicho y plataforma?
+   La solución debe ser ejecutable ahora, no hipotética.
 
-═══ FASE 2: CLASIFICACIÓN POR CONOCIMIENTO ═══
-Para CADA elemento del inventario de FASE 1, explorá tu conocimiento sobre
-"${industria}" en ${platformName} — algoritmo, psicología, retención, edición,
-ritmo, audio, confianza, viralidad, tendencias 2026, estándares del nicho — y
-preguntate: "¿Este elemento específico tiene impacto CONFIRMADO en retención,
-conversión o algoritmo, o es simplemente parte normal del video sin impacto medible?"
+Incluí AUSENCIAS como errores: si falta algo que el nicho exige (rehook, texto overlay,
+ritmo de cortes específico, etc.), eso es un error aunque "no haya nada roto".
+Sin elemento del inventario que lo origine → el error no existe.
 
-Clasificación posible para cada elemento:
-- ACIERTO: el elemento hace un trabajo ACTIVO — genera curiosidad, retiene,
-  sorprende, construye confianza, reduce fricción. Especificá el MECANISMO
-  (no "se ve bien", sino "esto reduce el tiempo de decisión del espectador porque...").
-- ERROR: el elemento perjudica de forma CONFIRMADA — pierde atención, genera
-  confusión, rompe ritmo, desperdicia el hook, etc. Incluye AUSENCIAS: si falta
-  un gancho de retención donde el nicho lo exige, ESO es un error, aunque
-  "no haya nada roto".
-- NEUTRAL (no aparece en ninguna lista): el elemento simplemente "es" — no ayuda
-  ni perjudica de forma medible. ESTE ES EL RESULTADO MÁS FRECUENTE. Un video
-  de 15 elementos en el inventario puede perfectamente tener 11-12 neutrales.
+═══ FASE 2B: BÚSQUEDA DE ACIERTOS (secundaria) ═══
+Solo después de completar 2A, buscá elementos que genuinamente funcionan.
+Un acierto necesita un mecanismo concreto — no "se ve bien", sino por qué
+específicamente retiene o convierte en este nicho y plataforma.
+Si tenés que esforzarte para justificarlo → es NEUTRAL, no lo reportés.
 
-REGLA CRÍTICA ANTI-INVENCIÓN:
-- No conviertas un elemento neutral en acierto o error para "llenar" una lista.
-- Si tenés que esforzarte para justificar por qué algo es bueno o malo, es NEUTRAL.
-- Cada acierto/error cita el elemento exacto del inventario de FASE 1 que lo originó.
-  Sin ítem de inventario → no existe.
-- Está perfectamente bien que un video tenga 8 errores y 0 aciertos, o 5 aciertos
-  y 1 error, o cualquier combinación. No hay balance obligatorio ni mínimo.
-
-═══ DIVISIÓN POR MOMENTOS (para el JSON final) ═══
-Una vez clasificados todos los elementos, separalos en:
-- analisis_s0_s2: elementos del inventario que ocurren en s0-s2.
-- analisis_resto: elementos del inventario que ocurren después de s2.
-
-REGLAS GLOBALES:
-- Hook s0-s2 ancla el viralScore. Hook que no retiene a un extraño (no genera
-  pregunta activa, solo anuncia tema) → viralScore máximo 35.
+═══ REGLAS GLOBALES ═══
+- Neutral = no aparece en ninguna lista. Es el resultado más frecuente.
+- No hay balance obligatorio. Puede haber 8 errores y 0 aciertos.
+- Hook s0-s2 ancla el viralScore. Hook que no retiene a un extraño → viralScore máximo 35.
 
 PUNTUACIÓN: base 50.
 Errores: Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
 Aciertos: Alto (+8 a +15) | Medio (+3 a +7.9) | Leve (+0.6 a +2.9)
 
-RANGOS DE REFERENCIA (orientativos, no ejemplos a imitar):
-- 0-20: Errores graves múltiples o ausencia total de elementos de retención.
-- 21-40: Sin errores técnicos graves, pero sin ningún gancho activo de retención (aburrido = error).
-- 41-60: Hook funcional que genera pregunta activa, desarrollo coherente, sin elementos destacados.
-- 61-80: Múltiples aciertos reales (rehook, twist, payoff sorpresa) además de hook funcional.
-- 81-100: Ejecución excepcional en casi todas las dimensiones, alta probabilidad de viralidad orgánica.
+RANGOS:
+- 0-20: Errores graves múltiples, sin retención.
+- 21-40: Sin errores graves pero sin gancho activo (aburrido = error).
+- 41-60: Hook funcional, desarrollo coherente, sin elementos destacados.
+- 61-80: Múltiples aciertos reales además de hook funcional.
+- 81-100: Ejecución excepcional, alta probabilidad de viralidad orgánica.
 
 ${benchmarkContext}
 
 NICHO: ${industria} | PLATAFORMA: ${platformName}
 DATOS: ${videoRawData}
 
-JSON (strings máximo 10 palabras):
-{"arquetipo_detectado":"<str>","analisis_s0_s2":{"descripcion_camara":"<str>","hook_strength":<number>,"errores":[{"obs":"<str>","error":"<str>","p":<number negativo>}],"aciertos":[{"obs":"<str>","acierto":"<str>","b":<number positivo>}]},"analisis_resto":{"descripcion_camara":"<str>","cumple_hook":<boolean>,"errores":[{"obs":"<str>","error":"<str>","p":<number negativo>}],"aciertos":[{"obs":"<str>","acierto":"<str>","b":<number positivo>}]},"penalty_total":<number>,"bonus_total":<number>,"razonamiento":"<str>","viralScore":<number>,"confianza":<number>,"sub":{"hook_strength":<number>,"retention":<number>,"payoff":<number>,"clarity":<number>,"trust":<number>}}`;
+JSON (strings máximo 12 palabras):
+{"arquetipo_detectado":"<str>","analisis_s0_s2":{"descripcion_camara":"<str>","hook_strength":<number>,"errores":[{"obs":"<str>","error":"<str>","por_que_daña":"<str>","solucion":"<str>","p":<number negativo>}],"aciertos":[{"obs":"<str>","acierto":"<str>","mecanismo":"<str>","b":<number positivo>}]},"analisis_resto":{"descripcion_camara":"<str>","cumple_hook":<boolean>,"errores":[{"obs":"<str>","error":"<str>","por_que_daña":"<str>","solucion":"<str>","p":<number negativo>}],"aciertos":[{"obs":"<str>","acierto":"<str>","mecanismo":"<str>","b":<number positivo>}]},"penalty_total":<number>,"bonus_total":<number>,"razonamiento":"<str>","viralScore":<number>,"confianza":<number>,"sub":{"hook_strength":<number>,"retention":<number>,"payoff":<number>,"clarity":<number>,"trust":<number>}}`;
 };
 
 export const deriveHookGateStatus = (preFacts) => {
