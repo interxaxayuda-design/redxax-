@@ -1062,8 +1062,10 @@ const runDeepAnalysis = async () => {
   // ── fileUri compartido entre todas las calls ──
   // Se llena en CALL 0 y se reutiliza en CALL 1 y CALL 3
   // Así Gemini ve el video real en cada análisis sin re-subir
-  let sharedFileUri: string | null = null;
-  let sharedFileName: string | null = null;
+ // ✅ Esto es JavaScript puro
+let sharedFileUri = null;
+let sharedFileName = null;
+
 
   try {
 
