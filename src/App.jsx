@@ -258,38 +258,20 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
 
   return `Tenés acceso directo a este video. Tu misión: encontrar errores fatales. No describir, no elogiar.
 
-Vas a mirar el video 5 veces. Cada vez con una sola lente. No mezcles lentes entre pasadas.
+REGLA ABSOLUTA: Debés encontrar MÍNIMO 5 errores fatales. Si encontrás menos de 5, volvé a mirar. Un video sin 5 errores fatales no existe en ${platformName} 2026.
 
-[PASADA 1 — HOOK]
-Mirá únicamente los primeros 3 segundos.
-Activá todo tu conocimiento sobre: "HOOKS VIRALES ${platformName} 2025-2026".
-Si no tenés ese conocimiento actualizado → viralScore máximo = 25. Declaralo.
-Investiga en tu conocimiento que falla
+Antes del JSON, respondé UNA LÍNEA por cada lente. Sé brutal:
 
-[PASADA 2 — AUDIO]
-Mirá el video completo escuchando únicamente voz, música, efectos y silencios.
-Activá todo tu conocimiento sobre: "ROL DEL AUDIO EN RETENCIÓN ${platformName} 2026".
-Investiga en tu conocimiento que falla
+H (hook — primeros 3 seg): activá "HOOKS VIRALES ${platformName} 2025-2026" → ¿qué falla exactamente?
+A (audio — video completo): activá "AUDIO Y RETENCIÓN ${platformName} 2025-2026" → ¿qué falla exactamente?
+V (visuales — video completo): activá "VISUALES Y RETENCIÓN ${platformName} 2025-2026" → ¿qué falla exactamente?
+R (ritmo — video completo): activá "RITMO Y PACING ${platformName} 2025-2026" → ¿qué falla exactamente?
+C (cierre — últimos 5 seg): activá "CIERRES Y CTA ${platformName} 2025-2026" → ¿qué falla exactamente?
 
-[PASADA 3 — VISUALES]
-Mirá el video completo observando únicamente imagen, texto en pantalla y composición visual.
-Activá todo tu conocimiento sobre: "VISUALES Y RETENCIÓN ${platformName} 2026".
-Investiga en tu conocimiento que falla
+Si en alguna lente no tenés conocimiento actualizado 2025-2026 → declaralo con [SIN REF] y penalizá -5 al score final.
+Usá esas 5 respuestas como base para construir las fallas del JSON. Cada lente debe generar al menos 1 error fatal en el JSON.
 
-[PASADA 4 — RITMO]
-Mirá el video completo observando únicamente el ritmo de cortes, transiciones y pacing.
-Activá todo tu conocimiento sobre: "RITMO Y CURVA DE RETENCIÓN ${platformName} 2026".
-Investiga en tu conocimiento que falla
-
-[PASADA 5 — CIERRE Y CTA]
-Mirá únicamente los últimos 5 segundos.
-Activá todo tu conocimiento sobre: "CIERRES Y CTA VIRALES ${platformName} 2026".
-Investiga en tu conocimiento que falla
-
-[CONSOLIDACIÓN]
-De todo lo que encontraste en las 5 pasadas, los 5 errores fatales para retención y viralidad.
-Si dos problemas son el mismo error visto desde distinta lente, contá como uno solo.
-
+REGLA: Solo reportás lo que observás directamente. Sin observación concreta → sin error.
 
 ${videoRawData}
 ${benchmarkContext ? benchmarkContext + '\n' : ''}NICHO: ${industria} | PLATAFORMA: ${platformName}
