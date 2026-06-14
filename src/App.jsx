@@ -256,26 +256,42 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Tenés acceso directo a este video. Tu misión: encontrar errores. No describir, no elogiar.
+  return `Tenés acceso directo a este video. Tu misión: encontrar errores fatales. No describir, no elogiar.
 
-ANÁLISIS EN 3 PASOS — Ejecutalos en orden. No adelantes conclusiones.
+Vas a mirar el video 5 veces. Cada vez con una sola lente. No mezcles lentes entre pasadas.
 
-[1] DETENTE en el segundo 1.
-Antes de juzgar → activá internamente todo tu conocimiento de "HOOKS VIRALES ${platformName} 2026".
+[PASADA 1 — HOOK]
+Mirá únicamente los primeros 3 segundos.
+Activá internamente: "HOOKS VIRALES ${platformName} 2025-2026".
 Si no tenés ese conocimiento actualizado → viralScore máximo = 25. Declaralo.
-Luego juzgá: ¿genera intriga inmediata o falla? ¿Por qué exactamente?
+¿Qué falla exactamente en la apertura? Listá cada problema que observes, sin filtrar.
 
-[2] AVANZÁ hasta la mitad del video.
-Antes de juzgar → activá "RETENCIÓN Y DESARROLLO ${platformName} 2025-2026".
-Si no tenés ese conocimiento → penalización adicional de -5 al score final.
-Luego juzgá: ¿mantiene al usuario o lo pierde? ¿En qué momento y por qué?
+[PASADA 2 — AUDIO]
+Mirá el video completo escuchando únicamente voz, música, efectos y silencios.
+Activá internamente: "ROL DEL AUDIO EN RETENCIÓN ${platformName} 2025-2026".
+¿Qué falla en el audio? Listá cada problema sin filtrar.
 
-[3] LLEGÁ al final.
-Antes de juzgar → activá "CIERRES Y CTA VIRALES ${platformName} 2025-2026".
-Si no tenés ese conocimiento → penalización adicional de -5.
-Luego juzgá: ¿el cierre convierte o evapora la atención?
+[PASADA 3 — VISUALES]
+Mirá el video completo observando únicamente imagen, texto en pantalla y composición visual.
+Activá internamente: "VISUALES Y RETENCIÓN ${platformName} 2025-2026".
+¿Qué falla en los visuales? Listá cada problema sin filtrar.
 
-REGLAS: Solo reportás lo que observás directamente. Sin observación → sin error. Mínimo 5 fallas letales para el video distribuidas entre los 5 pasos.
+[PASADA 4 — RITMO]
+Mirá el video completo observando únicamente el ritmo de cortes, transiciones y pacing.
+Activá internamente: "RITMO Y CURVA DE RETENCIÓN ${platformName} 2025-2026".
+¿Dónde pierde velocidad o energía? Listá cada problema sin filtrar.
+
+[PASADA 5 — CIERRE Y CTA]
+Mirá únicamente los últimos 5 segundos.
+Activá internamente: "CIERRES Y CTA VIRALES ${platformName} 2025-2026".
+¿Qué falla en el remate? Listá cada problema sin filtrar.
+
+[CONSOLIDACIÓN]
+De todo lo que encontraste en las 5 pasadas, seleccioná los 5 errores fatales para retención y viralidad.
+Si dos problemas son el mismo error visto desde distinta lente, contá como uno solo.
+Si no llegás a 5 errores reales observados → declaralo. No inventes.
+
+REGLA ABSOLUTA: Solo reportás lo que observás directamente. Sin observación concreta → sin error.
 
 ${videoRawData}
 ${benchmarkContext ? benchmarkContext + '\n' : ''}NICHO: ${industria} | PLATAFORMA: ${platformName}
@@ -283,21 +299,21 @@ ${benchmarkContext ? benchmarkContext + '\n' : ''}NICHO: ${industria} | PLATAFOR
 JSON (strings mínimo 15 palabras):
 {
   "conocimiento": {
-    "hooks": <true|false>, "retencion": <true|false>, "cierres": <true|false>,
-    "cap_score": <null | 25>
+    "hooks": <true|false>, "audio": <true|false>, "visuales": <true|false>,
+    "ritmo": <true|false>, "cierres": <true|false>, "cap_score": <null|25>
   },
   "descripcion": {
-    "hook": "<qué ocurre exactamente en el segundo 1>",
-    "desarrollo": "<ritmo y estructura hasta la mitad>",
+    "hook": "<qué ocurre exactamente en los primeros 3 segundos>",
+    "desarrollo": "<ritmo y estructura general>",
     "cierre": "<remate y CTA>",
     "audio": "<voz, música, efectos>",
     "recursos": "<visuales y texto en pantalla>"
   },
   "fallas": [
     {
-      "fase": "<hook|desarrollo|cierre>",
+      "lente": "<hook|audio|visuales|ritmo|cierre>",
       "obs": "<qué ves exactamente>",
-      "por_que_daña": "<impacto en retención o viralidad en ${platformName}>",
+      "por_que_daña": "<impacto directo en retención o viralidad en ${platformName}>",
       "solucion": "<acción concreta>",
       "p": <Grave -8 a -15 | Medio -3 a -7.9 | Leve -0.6 a -2.9>
     }
