@@ -200,40 +200,53 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
 };
 
 export const buildPreClassifierPrompt = (meta = '') => `
-Sos una cámara con memoria. Registrás ÚNICAMENTE lo que existe en el video.
+Sos una cámara con memoria y un editor con 10 años de experiencia.
+Tu trabajo es DOS cosas: registrar señales técnicas Y describir el video completo.
 No opinás, no evaluás, no inferís intención ni proyectás potencial.
+Solo describís lo que ves y escuchás, con precisión quirúrgica.
 
-REGLA CRÍTICA: Si no podés determinar un valor con certeza a partir de lo que ves,
-usá los valores de incertidumbre: false para booleanos, 0.5 para hook_confianza,
+REGLA CRÍTICA: Si no podés determinar un valor con certeza, usá los valores de
+incertidumbre: false para booleanos, 0.5 para hook_confianza,
 y escribí NINGUNA / NINGUNO cuando no hay evidencia concreta.
 ${meta ? `METADATA DISPONIBLE: ${meta}` : ''}
 
 Respondé SOLO con este JSON exacto, sin texto adicional:
 {
-  "industria": "<micro-nicho ultra-específico, ej: 'estetica masculina barba' no solo 'estetica'>",
+  "descripcion_completa": {
+    "formato": "<ej: 'talking head a cámara directa' | 'voz en off con imágenes de producto' | 'pantalla grabada con narración'>",
+    "duracion_estructura": "<ej: '2s hook visual + 10s desarrollo hablado + 3s CTA'>",
+    "narrativa": "<ej: 'presenta un problema, muestra el producto como solución, cierra con precio'>",
+    "hook_descripcion": "<ej: 'mujer sostiene producto mirando a cámara, dice: esto cambió mi rutina'>",
+    "desarrollo_descripcion": "<ej: 'explica 3 beneficios con cortes rápidos, alterna cara y producto'>",
+    "cortes_y_ritmo": "<ej: 'jump cuts cada 1.5s, ritmo acelerado, sin transiciones'>",
+    "audio": "<ej: 'voz directa a cámara, música lo-fi de fondo baja, sin efectos'>",
+    "texto_en_pantalla": "<ej: 'subtítulos en blanco todo el video, texto amarillo en s0: ESPERÁ'>",
+    "elementos_visuales": "<ej: 'persona en cocina, iluminación natural, producto en mano, fondo limpio'>",
+    "cta": "<ej: 'en s18 aparece texto: link en bio — sin mención verbal'> | NINGUNO"
+  },
+  "industria": "<micro-nicho ultra-específico>",
   "palanca_psicologica": "<emoción primaria observable en los primeros 3 segundos>",
   "atomicas": {
-    "human_face_in_frame0":    <boolean — hay un rostro humano visible en el primer frame>,
-    "audio_in_first_second":   <boolean — hay audio no silencioso en el primer segundo>,
-    "cuts_per_10s":            <number — estimación honesta de cortes cada 10 segundos>,
-    "average_shot_duration_s": <number — duración promedio de cada toma en segundos>,
-    "silence_duration_s":      <number — segundos totales de silencio o audio completamente plano>,
-    "motion_intensity":        <number 0.0-1.0 — 0=imagen fija, 0.5=movimiento normal, 1.0=acción intensa>,
-    "payoff_second":           <number — segundo exacto en que aparece el resultado prometido, 0 si no existe>,
-    "rehook_present":          <boolean — hay algo concreto entre segundo 8 y 15 que reactive la atención>,
-    "text_overlay_present":    <boolean — hay texto superpuesto visible>,
-    "duration_total_s":        <number — duración total del video en segundos>
+    "human_face_in_frame0":    <boolean>,
+    "audio_in_first_second":   <boolean>,
+    "cuts_per_10s":            <number>,
+    "average_shot_duration_s": <number>,
+    "silence_duration_s":      <number>,
+    "motion_intensity":        <number 0.0-1.0>,
+    "payoff_second":           <number>,
+    "rehook_present":          <boolean>,
+    "text_overlay_present":    <boolean>,
+    "duration_total_s":        <number>
   },
   "hook_gate": {
-    "pregunta_activa_en_espectador": "<Completá: 'El espectador en el segundo 0 se pregunta...' — si no hay pregunta específica y concreta, escribí NINGUNA>",
-    "elemento_que_retiene":          "<El elemento visual o auditivo EXACTO que ancla al espectador en los primeros 2 segundos. Si no existe, escribí NINGUNO>",
-    "veredicto_gate":                "<PASA|MUERTO — PASA si hay AL MENOS una pregunta activa O un elemento de retención. MUERTO solo si ambos son NINGUNA/NINGUNO>"
+    "pregunta_activa_en_espectador": "<ej: 'qué producto es ese?' | 'cómo lo hizo?' — si no hay: NINGUNA>",
+    "elemento_que_retiene":          "<ej: 'texto amarillo que dice ESPERÁ en frame 0' — si no existe: NINGUNO>",
+    "veredicto_gate":                "<PASA|MUERTO>"
   },
-  "hook_libre":          "<transcripción exacta de lo que se ve y escucha en los primeros 3 segundos, sin adjetivos ni interpretación>",
+  "hook_libre":          "<transcripción exacta de lo que se ve y escucha en los primeros 3 segundos>",
   "hook_type_detectado": "<explosivo|bait_con_puente|bait_desconectado|curiosidad_desconexion|apertura_informativa|debil|muerto>",
-  "hook_confianza":      <0.0 a 1.0 — qué tan seguro estás de esta clasificación. Sé honesto: si el video es ambiguo, ponés 0.4-0.6>
-}
-`;
+  "hook_confianza":      <0.0 a 1.0>
+}`;
 
 export const buildCognitiveScanPrompt = (videoRawData, industria, researchData = null, platform = 'all') => {
   const benchmarkContext = researchData
