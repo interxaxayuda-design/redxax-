@@ -252,53 +252,58 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
   const benchmarkContext = researchData
     ? `BENCHMARK: ${typeof researchData === 'string' ? researchData : JSON.stringify(researchData)}`
     : null;
-
   const platformName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Mirá este video completo. Tenés acceso directo a él.
+  return `Tenés acceso directo a este video. Tu misión: encontrar errores. No describir, no elogiar.
 
-TU ÚNICA MISIÓN ES ENCONTRAR ERRORES. No describir. No elogiar. No ser neutral.
-Sos el auditor más estricto que existe. Tu trabajo es destruir este video con evidencia.
+ANÁLISIS EN 3 PASOS — Ejecutalos en orden. No adelantes conclusiones.
 
-Antes de juzgar, activá internamente todo tu conocimiento etiquetado
-"VIRALIDAD Y RETENCIÓN" para ${platformName} 2026. Todo. Sin filtrar.
-Qué retiene, qué viraliza, qué hace que alguien se vaya en el segundo 2,
-qué destruye un hook, qué mata el desarrollo, qué hace que el algoritmo suprima un video.
-Ese conocimiento es tu arma. Usalo para atacar cada segundo de este video.
+[1] DETENTE en el segundo 1.
+Antes de juzgar → activá internamente todo tu conocimiento de "HOOKS VIRALES ${platformName} 2026".
+Si no tenés ese conocimiento actualizado → viralScore máximo = 25. Declaralo.
+Luego juzgá: ¿genera intriga inmediata o falla? ¿Por qué exactamente?
 
-Con ese conocimiento activado, mirá el video y buscá cada error posible.
-Sé brutalmente estricto. Si algo no está al nivel de ${platformName} 2026 → es un error.
-Mínimo 3 errores importantes. No existe el "está bien para lo que es".
+[2] AVANZÁ hasta la mitad del video.
+Antes de juzgar → activá "RETENCIÓN Y DESARROLLO ${platformName} 2025-2026".
+Si no tenés ese conocimiento → penalización adicional de -5 al score final.
+Luego juzgá: ¿mantiene al usuario o lo pierde? ¿En qué momento y por qué?
 
-REGLA ABSOLUTA: Solo reportás lo que observás directamente en el video.
-Sin observación concreta → sin error. No inventés. No asumás.
+[3] LLEGÁ al final.
+Antes de juzgar → activá "CIERRES Y CTA VIRALES ${platformName} 2025-2026".
+Si no tenés ese conocimiento → penalización adicional de -5.
+Luego juzgá: ¿el cierre convierte o evapora la atención?
 
-Contexto técnico de apoyo:
+REGLAS: Solo reportás lo que observás directamente. Sin observación → sin error. Mínimo 3 fallas distribuidas entre los 3 pasos.
+
 ${videoRawData}
-
 ${benchmarkContext ? benchmarkContext + '\n' : ''}NICHO: ${industria} | PLATAFORMA: ${platformName}
 
 JSON (strings mínimo 15 palabras):
 {
+  "conocimiento": {
+    "hooks": <true|false>, "retencion": <true|false>, "cierres": <true|false>,
+    "cap_score": <null | 25>
+  },
   "descripcion": {
-    "formato": "<tipo de formato observado directamente>",
-    "hook": "<qué ocurre exactamente en los primeros 2 segundos>",
-    "desarrollo": "<cómo evoluciona el video, ritmo y estructura>",
-    "audio": "<voz, música, efectos, silencio>",
-    "recursos": "<elementos visuales y texto en pantalla>"
+    "hook": "<qué ocurre exactamente en el segundo 1>",
+    "desarrollo": "<ritmo y estructura hasta la mitad>",
+    "cierre": "<remate y CTA>",
+    "audio": "<voz, música, efectos>",
+    "recursos": "<visuales y texto en pantalla>"
   },
   "fallas": [
     {
-      "obs": "<qué ves exactamente en el video>",
-      "por_que_daña": "<impacto directo en retención o viralidad en ${platformName}>",
-      "solucion": "<acción concreta e inmediata>",
+      "fase": "<hook|desarrollo|cierre>",
+      "obs": "<qué ves exactamente>",
+      "por_que_daña": "<impacto en retención o viralidad en ${platformName}>",
+      "solucion": "<acción concreta>",
       "p": <Grave -8 a -15 | Medio -3 a -7.9 | Leve -0.6 a -2.9>
     }
   ],
-  "penalty_total": <suma de todos los p>,
-  "viralScore": <100 + penalty_total>,
+  "penalty_total": <suma de p>,
+  "viralScore": <(cap_score ?? 100) + penalty_total>,
   "confianza": <0-100>
 }`;
 };
