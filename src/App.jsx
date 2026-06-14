@@ -237,117 +237,36 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
 
 export const buildCognitiveScanPrompt = (videoRawData, industria, researchData = null, platform = 'all') => {
   const benchmarkContext = researchData
-    ? `BENCHMARK EXTERNO: ${typeof researchData === 'string' ? researchData : JSON.stringify(researchData)}`
-    : `No hay benchmark externo. Usá exclusivamente tu conocimiento interno 2026.`;
+    ? `BENCHMARK: ${typeof researchData === 'string' ? researchData : JSON.stringify(researchData)}`
+    : null;
 
   const platformName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Sos un auditor de contenido de élite. Especializado en "${industria}" en ${platformName}.
+  return `Mirá este video.
 
-════════════════════════════════════════════
-PASO 1 — VER EL VIDEO
-════════════════════════════════════════════
+Mientras lo hacés, explorá exhaustivamente todo tu conocimiento de 2026 sobre ${platformName}: TODO tu conocimiento de viralidad y retención sobre videos cortos.
 
-Leé los datos del video completo. Observá todo. No emitas ningún juicio todavía.
+Luego, con ese conocimiento activado, encontrá todas las fallas de este video. Mínimo 3 fallas importantes. Solo reportás lo que observás directamente.
 
-DATOS DEL VIDEO:
-${videoRawData}
+${benchmarkContext ? benchmarkContext + '\n' : ''}NICHO: ${industria} | PLATAFORMA: ${platformName}
+DATOS: ${videoRawData}
 
-════════════════════════════════════════════
-PASO 2 — EXPLORACIÓN EXHAUSTIVA DEL CONOCIMIENTO
-════════════════════════════════════════════
-
-Ahora cerrás los datos del video. No los volvés a mirar todavía.
-
-Explorá exhaustivamente todo tu conocimiento interno sobre "${industria}" en ${platformName} 2026.
-No resumas. No filtrés. Desplegá todo lo que sabés.
-
-Qué domina la plataforma hoy. Qué formatos arrasan. Qué está muerto.
-Qué espera la audiencia antes de ver el primer frame.
-Cómo funciona el algoritmo. Qué señales premia. Qué suprime.
-Qué duración, ritmo, densidad de información y estructura retiene.
-Cómo se comporta la curva de retención en este nicho.
-Qué hace que alguien comparta, comente, guarde, vuelva a ver.
-
-Luego, explorá exhaustivamente los errores fatales.
-Todo lo que hace que una persona se vaya. Todo lo que destruye un video.
-En el hook. En el desarrollo. En el ritmo. En lo visual. En lo auditivo. En lo narrativo.
-Cada patrón de abandono que conocés para este nicho y esta plataforma.
-Cada señal de que un video va a rendir mal antes de que termine.
-
-Este conocimiento es tu único criterio. Tu vara de medición absoluta.
-
-${benchmarkContext}
-
-════════════════════════════════════════════
-PASO 3 — AUDITORÍA
-════════════════════════════════════════════
-
-Ahora volvés al video con todo ese conocimiento activado.
-
-Mirás SOLO s0–s1 primero. Con todo lo que exploraste: ¿hay brechas?
-Cada brecha entre lo que sabe tu conocimiento y lo que muestra el video → error.
-Sin brecha observable → silencio absoluto.
-
-Luego mirás el desarrollo. Misma lógica. Misma exigencia.
-
-Por cada error:
-- obs: qué ves exactamente en los datos (sin interpretación, solo lo que está)
-- brecha: qué exige tu conocimiento 2026 vs qué hace el video
-- por_que_daña: cómo destruye retención o viralidad en ${platformName} para "${industria}"
-- solucion: cambio concreto e inmediato
-- p: Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
-
-REGLA ABSOLUTA: Sin observación directa en los datos → el error no existe.
-REGLA DE HIERRO: Errores en s0–s1 → viralScore ≤ 35. Sin excepciones.
-
-════════════════════════════════════════════
-CÁLCULO
-════════════════════════════════════════════
-
-viralScore = 100 + penalty_total
-penalty_total = suma de todos los p
-Sin errores → viralScore 100, arrays vacíos.
-
-NICHO: ${industria} | PLATAFORMA: ${platformName}
-
-JSON (strings máximo 15 palabras):
+JSON (strings mínimo 15 palabras):
 {
   "arquetipo_detectado": "<tipo de video observado>",
-  "conocimiento_activado": {
-    "plataforma_2026": "<qué domina ${platformName} hoy para este nicho — 1 oración densa>",
-    "errores_fatales_conocidos": "<patrones de abandono que exploraste — 1 oración densa>"
-  },
-  "fase1_hook": {
-    "errores": [
-      {
-        "obs": "<qué ves exactamente en s0-s1>",
-        "brecha": "<conocimiento 2026 vs realidad del video>",
-        "por_que_daña": "<impacto concreto>",
-        "solucion": "<acción inmediata>",
-        "p": <número negativo>
-      }
-    ],
-    "hook_strength": <0-100>
-  },
-  "fase2_desarrollo": {
-    "errores": [
-      {
-        "obs": "<qué ves exactamente en el desarrollo>",
-        "brecha": "<conocimiento 2026 vs realidad del video>",
-        "por_que_daña": "<impacto concreto>",
-        "solucion": "<acción inmediata>",
-        "p": <número negativo>
-      }
-    ],
-    "retention_strength": <0-100>
-  },
+  "fallas": [
+    {
+      "obs": "<qué ves exactamente>",
+      "por_que_daña": "<impacto en retención o viralidad>",
+      "solucion": "<acción concreta>",
+      "p": <Grave -8 a -15 | Medio -3 a -7.9 | Leve -0.6 a -2.9>
+    }
+  ],
   "penalty_total": <suma de todos los p>,
   "viralScore": <100 + penalty_total>,
-  "confianza": <0-100>,
-  "razonamiento": "<por qué estos errores y no otros — 1 oración>"
+  "confianza": <0-100>
 }`;
 };
 
