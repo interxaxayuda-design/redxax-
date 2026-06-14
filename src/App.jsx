@@ -246,57 +246,44 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
 
   return `Sos un extraño en ${platformName}. No sabés nada del video. No leíste la descripción. No conocés al creador.
 
-═══ MOMENTO 1: SOLO EL PRIMER SEGUNDO ═══
-El video se congela en s1. No podés ver más allá todavía.
-Describí únicamente lo que existe en pantalla en ese primer segundo.
+Tu única tarea es encontrar errores reales en este video usando todo tu conocimiento.
+No existen los aciertos en este análisis. Solo errores o neutral.
 
-Ahora explorá TODO tu conocimiento interno — no solo retención, sino:
-percepción visual, psicología de la atención, emociones primarias, instinto de repulsión
-o atracción, procesamiento sensorial, señales de aburrimiento, curiosidad instintiva,
-deseo, incomodidad, familiaridad, extrañeza — todo.
-Preguntate como ese extraño: ¿Esto me llama la atención? ¿Me genera alguna emoción?
-¿Siento repulsión, aburrimiento, curiosidad, deseo? ¿Quiero ver más o scrolleo?
-Si algo falla en este primer segundo — por cualquier razón, desde cualquier dimensión
-de tu conocimiento — es un error. Nombralo con evidencia exacta de lo que viste.
-Si no encontrás nada que falle, no inventés.
+Explorá absolutamente todo tu conocimiento interno:
+percepción visual, emociones primarias, psicología de atención, repulsión, aburrimiento,
+curiosidad, deseo, ritmo de edición, cortes, estímulo visual y auditivo, tensión narrativa,
+rehooks, fatiga visual, sincronía audio-visual, momentum, señales de abandono,
+comportamiento del algoritmo, estándares del nicho, retención, conversión — todo.
 
-═══ MOMENTO 2: EL RESTO DEL VIDEO ═══
-Ahora mirá desde s1 hasta el final.
-Describí lo que existe: cortes, edición, ritmo, audio, texto, estructura, payoff, CTA.
+Por cada elemento que observés en el video, preguntate si falla según tu conocimiento
+de "${industria}" en ${platformName} 2026. Si falla → error con evidencia. Si no → neutral, no lo reportés.
 
-Explorá TODO tu conocimiento interno especializado en:
-ritmo de edición, frecuencia de cortes, estímulo visual y auditivo, tensión narrativa,
-rehooks, saturación de atención, fatiga visual, sincronía audio-visual, densidad
-informativa, momentum, micro-variaciones de ritmo, señales de abandono por aburrimiento,
-efectividad del payoff, claridad del CTA — todo lo que sabés sobre retención post-hook.
-Por cada elemento que observés, preguntate si falla según tu conocimiento de
-"${industria}" en ${platformName} 2026. Si falla, es un error con evidencia.
-Si no falla, es neutral — no lo reportés.
+PROHIBIDO INVENTAR. Sin observación concreta en el video → el error no existe.
+Incluí ausencias como errores solo si el nicho las exige con certeza.
 
-═══ REGLAS ═══
-- Solo errores. No existen los aciertos en este análisis.
-- Cada error cita la observación exacta que lo originó. Sin observación → no existe.
-- Incluí ausencias como errores si el nicho las exige.
-- No inventés errores. Si algo no falla, es neutral.
-- Hook s1 ancla el viralScore. Si s0-s1 no retiene → viralScore máximo 35.
+Por cada error encontrado:
+1. ¿Qué observaste exactamente?
+2. ¿Por qué daña específicamente en ${platformName} para "${industria}"?
+3. ¿Cómo se arregla de forma concreta e inmediata?
+
+Hook s0-s1 ancla el viralScore. Si no retiene → viralScore máximo 35.
 
 PUNTUACIÓN: base 100. Cada error resta.
 Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
 
 RANGOS:
-- 81-100: Sin errores o solo detalles imperceptibles.
-- 61-80: Errores leves o un par de medios que frenan el potencial.
+- 81-100: Sin errores reales o solo detalles imperceptibles.
+- 61-80: Errores leves o un par de medios.
 - 41-60: Hook aceptable pero desarrollo con baches de retención.
 - 21-40: Hook deficiente o errores graves acumulados.
 - 0-20: Falla total en estructura, ritmo y técnica.
 
 ${benchmarkContext}
-
 NICHO: ${industria} | PLATAFORMA: ${platformName}
 DATOS: ${videoRawData}
 
 JSON (strings máximo 12 palabras):
-{"arquetipo_detectado":"<str>","analisis_s0_s1":{"descripcion_camara":"<str>","hook_strength":<number>,"errores":[{"obs":"<str>","error":"<str>","por_que_daña":"<str>","solucion":"<str>","p":<number negativo>}]},"analisis_resto":{"descripcion_camara":"<str>","cumple_hook":<boolean>,"errores":[{"obs":"<str>","error":"<str>","por_que_daña":"<str>","solucion":"<str>","p":<number negativo>}]},"penalty_total":<number>,"razonamiento":"<str>","viralScore":<number>,"confianza":<number>,"sub":{"hook_strength":<number>,"retention":<number>,"payoff":<number>,"clarity":<number>,"trust":<number>}}`;
+{"arquetipo_detectado":"<str>","errores_s0_s1":[{"obs":"<str>","error":"<str>","por_que_daña":"<str>","solucion":"<str>","p":<number negativo>}],"hook_strength":<number>,"errores_resto":[{"obs":"<str>","error":"<str>","por_que_daña":"<str>","solucion":"<str>","p":<number negativo>}],"penalty_total":<number>,"razonamiento":"<str>","viralScore":<number>,"confianza":<number>,"sub":{"hook_strength":<number>,"retention":<number>,"payoff":<number>,"clarity":<number>,"trust":<number>}}`;
 };
 
 export const deriveHookGateStatus = (preFacts) => {
