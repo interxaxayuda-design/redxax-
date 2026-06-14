@@ -238,52 +238,113 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
 export const buildCognitiveScanPrompt = (videoRawData, industria, researchData = null, platform = 'all') => {
   const benchmarkContext = researchData
     ? `BENCHMARK: ${typeof researchData === 'string' ? researchData : JSON.stringify(researchData)}`
-    : `Usá tu conocimiento 2026 sobre formato corto en: "${industria}".`;
+    : `Usá tu conocimiento 2026 sobre formato corto en "${industria}" para ${platformName}.`;
 
   const platformName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Sos un extraño en ${platformName}. No sabés nada del video. No leíste la descripción. No conocés al creador.
+  return `Sos un editor senior de ${platformName} especializado en "${industria}".
 
-Tu única tarea es encontrar errores reales en este video usando todo tu conocimiento.
-No existen los aciertos en este análisis. Solo errores o neutral.
+Vas a analizar este video en dos momentos separados. No mezclés las fases.
 
-Explorá absolutamente todo tu conocimiento interno:
-percepción visual, emociones primarias, psicología de atención, repulsión, aburrimiento,
-curiosidad, deseo, ritmo de edición, cortes, estímulo visual y auditivo, tensión narrativa,
-rehooks, fatiga visual, sincronía audio-visual, momentum, señales de abandono,
-comportamiento del algoritmo, estándares del nicho, retención, conversión — todo.
 
-Por cada elemento que observés en el video, preguntate si falla según tu conocimiento
-de "${industria}" en ${platformName} 2026. Si falla → error con evidencia. Si no → neutral, no lo reportés.
+FASE 1 — EL PRIMER SEGUNDO (s0–s1)
 
-PROHIBIDO INVENTAR. Sin observación concreta en el video → el error no existe.
-Incluí ausencias como errores solo si el nicho las exige con certeza.
 
-Por cada error encontrado:
-1. ¿Qué observaste exactamente?
-2. ¿Por qué daña específicamente en ${platformName} para "${industria}"?
-3. ¿Cómo se arregla de forma concreta e inmediata?
+Mirá SOLO los datos del primer segundo. Después, pará.
 
-Hook s0-s1 ancla el viralScore. Si no retiene → viralScore máximo 35.
+Ahora activá todo tu conocimiento de 2026 sobre hooks en ${platformName}:
+¿Qué hace que alguien no deslice en el primer segundo en "${industria}"?
+¿Qué señales visuales, auditivas o narrativas retienen en este nicho específico?
+¿Qué patrones de abandono ocurren en s0–s1 en este formato?
+¿Cuál es el estándar actual del nicho para este tipo de apertura?
 
-PUNTUACIÓN: base 100. Cada error resta.
+Con ese conocimiento activado, examiná lo que OBSERVASTE en s0–s1:
+¿Hay una brecha entre el estándar del nicho y lo que muestra el video?
+Si la hay → error. Si no la hay → silencio. No hay términos medios.
+
+Cada error de esta fase necesita:
+- obs: qué viste exactamente en s0–s1
+- conocimiento_aplicado: qué sabe sobre hooks en 2026 que lo convierte en error
+- por_que_daña: por qué específicamente en ${platformName} para "${industria}"
+- solucion: qué cambiaría en ese segundo concreto
+
+REGLA HOOK: Si hay errores en s0–s1 → viralScore no puede superar 35.
+
+
+FASE 2 — EL DESARROLLO (s1 en adelante)
+
+
+Continuá viendo el resto del video. Después, pará.
+
+Ahora activá todo tu conocimiento de 2026 sobre retención en ${platformName}:
+¿Qué hace que alguien llegue al final de un video de "${industria}"?
+¿Cuáles son los puntos de abandono más comunes en este tipo de contenido?
+¿Cómo funciona el ritmo de edición óptimo en este nicho y plataforma en 2026?
+¿Qué técnicas de rehook, payoff y tensión narrativa aplican acá?
+¿Qué exige el algoritmo de ${platformName} en términos de señales de retención?
+
+Con ese conocimiento activado, examiná lo que OBSERVASTE en el desarrollo:
+¿Hay brechas entre el estándar de retención y lo que hace el video?
+Solo errores con evidencia directa. Nunca ausencias asumidas.
+
+Misma estructura por error:
+- obs: qué viste exactamente
+- conocimiento_aplicado: qué sabés de retención 2026 que lo convierte en error
+- por_que_daña: impacto específico en ${platformName} para "${industria}"
+- solucion: cambio concreto e inmediato
+
+
+CÁLCULO FINAL
+
+
+viralScore = 100 + penalty_total
+penalty_total = suma de todos los p
+
+Pesos:
 Grave (-8 a -15) | Medio (-3 a -7.9) | Leve (-0.6 a -2.9)
 
-RANGOS:
-- 81-100: Sin errores reales o solo detalles imperceptibles.
-- 61-80: Errores leves o un par de medios.
-- 41-60: Hook aceptable pero desarrollo con baches de retención.
-- 21-40: Hook deficiente o errores graves acumulados.
-- 0-20: Falla total en estructura, ritmo y técnica.
+Sin errores → viralScore 100, arrays vacíos. No forzés errores.
 
 ${benchmarkContext}
 NICHO: ${industria} | PLATAFORMA: ${platformName}
 DATOS: ${videoRawData}
 
-JSON (strings máximo 12 palabras):
-{"arquetipo_detectado":"<str>","errores_s0_s1":[{"obs":"<str>","error":"<str>","por_que_daña":"<str>","solucion":"<str>","p":<number negativo>}],"hook_strength":<number>,"errores_resto":[{"obs":"<str>","error":"<str>","por_que_daña":"<str>","solucion":"<str>","p":<number negativo>}],"penalty_total":<number>,"razonamiento":"<str>","viralScore":<number>,"confianza":<number>,"sub":{"hook_strength":<number>,"retention":<number>,"payoff":<number>,"clarity":<number>,"trust":<number>}}`;
+JSON (strings máximo 15 palabras):
+{
+  "arquetipo_detectado": "<tipo de video observado>",
+  "fase1_hook": {
+    "knowledge_snapshot": "<qué activaste de tu conocimiento sobre hooks en este nicho — 1 oración>",
+    "errores": [
+      {
+        "obs": "<qué viste en s0-s1>",
+        "conocimiento_aplicado": "<por qué es un error según tu conocimiento 2026>",
+        "por_que_daña": "<impacto en ${platformName} / ${industria}>",
+        "solucion": "<acción concreta>",
+        "p": <número negativo>
+      }
+    ],
+    "hook_strength": <0-100>
+  },
+  "fase2_desarrollo": {
+    "knowledge_snapshot": "<qué activaste sobre retención en este nicho — 1 oración>",
+    "errores": [
+      {
+        "obs": "<qué viste en el desarrollo>",
+        "conocimiento_aplicado": "<por qué es un error según tu conocimiento 2026>",
+        "por_que_daña": "<impacto en ${platformName} / ${industria}>",
+        "solucion": "<acción concreta>",
+        "p": <número negativo>
+      }
+    ],
+    "retention_strength": <0-100>
+  },
+  "penalty_total": <suma de todos los p>,
+  "viralScore": <100 + penalty_total>,
+  "confianza": <0-100>,
+  "razonamiento": "<por qué estos errores y no otros, en una oración>"
+}`;
 };
 
 export const deriveHookGateStatus = (preFacts) => {
