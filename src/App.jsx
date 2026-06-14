@@ -257,22 +257,34 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Mirá este video.
+  return `Mirá este video completo. Tenés acceso directo a él.
 
-Mientras lo hacés, explorá exhaustivamente todo tu conocimiento de 2026 sobre ${platformName}: TODO tu conocimiento de viralidad y retención sobre videos cortos.
+Mientras lo hacés, explorá todo tu conocimiento de 2026 sobre ${platformName} —
+viralidad, retención, qué destruye un video — y usalo para detectar errores
+en lo que estás viendo directamente.
 
-Luego, con ese conocimiento activado, encontrá todas las fallas de este video. Mínimo 3 fallas importantes. Solo reportás lo que observás directamente.
+Contexto técnico ya extraído del video (usalo como referencia, no como única fuente):
+${videoRawData}
+
+Prestá máxima atención al hook y al desarrollo.
+Describí lo que ves. Luego, con ese conocimiento activado, encontrá todas las fallas.
+Mínimo 3 fallas importantes. Solo reportás lo que observás directamente en el video.
 
 ${benchmarkContext ? benchmarkContext + '\n' : ''}NICHO: ${industria} | PLATAFORMA: ${platformName}
-DATOS: ${videoRawData}
 
 JSON (strings mínimo 15 palabras):
 {
-  "arquetipo_detectado": "<tipo de video observado>",
+  "descripcion": {
+    "formato": "<tipo de formato observado directamente>",
+    "hook": "<qué ocurre exactamente en los primeros 2 segundos>",
+    "desarrollo": "<cómo evoluciona el video, ritmo y estructura>",
+    "audio": "<voz, música, efectos, silencio>",
+    "recursos": "<elementos visuales y texto en pantalla>"
+  },
   "fallas": [
     {
-      "obs": "<qué ves exactamente>",
-      "por_que_daña": "<impacto en retención o viralidad>",
+      "obs": "<qué ves exactamente en el video>",
+      "por_que_daña": "<impacto directo en retención o viralidad en ${platformName}>",
       "solucion": "<acción concreta>",
       "p": <Grave -8 a -15 | Medio -3 a -7.9 | Leve -0.6 a -2.9>
     }
@@ -1069,14 +1081,14 @@ const runDeepAnalysis = async () => {
     try {
       // CALL 1 — Cognitive Scan
       const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-     text: buildCognitiveScanPrompt(preFactsStr, industria, researchData, platform),
-      storagePath,
-      videoMimeType: mimeType,
-      duration:      Math.round(duration),
-      maxOutputTokens: 8192,   // ← subir de 2048 a 4096
-      expectsJson:   true,
-      temperature:   0.3,
+  body: {
+    text: buildCognitiveScanPrompt(preFactsStr, industria, researchData, platform),
+    storagePath,        // ← esto ya existe, solo hay que asegurarse que esté
+    videoMimeType: mimeType,
+    duration: Math.round(duration),
+    maxOutputTokens: 4096,
+    expectsJson: true,
+    temperature: 0.3,
   }
 });
       if (!call1_5Error) {
