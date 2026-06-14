@@ -275,7 +275,7 @@ Antes de juzgar → activá "CIERRES Y CTA VIRALES ${platformName} 2025-2026".
 Si no tenés ese conocimiento → penalización adicional de -5.
 Luego juzgá: ¿el cierre convierte o evapora la atención?
 
-REGLAS: Solo reportás lo que observás directamente. Sin observación → sin error. Mínimo 3 fallas distribuidas entre los 3 pasos.
+REGLAS: Solo reportás lo que observás directamente. Sin observación → sin error. Mínimo 5 fallas letales para el video distribuidas entre los 5 pasos.
 
 ${videoRawData}
 ${benchmarkContext ? benchmarkContext + '\n' : ''}NICHO: ${industria} | PLATAFORMA: ${platformName}
