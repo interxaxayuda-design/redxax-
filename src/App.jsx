@@ -262,32 +262,32 @@ Vas a mirar el video 5 veces. Cada vez con una sola lente. No mezcles lentes ent
 
 [PASADA 1 — HOOK]
 Mirá únicamente los primeros 3 segundos.
-Activá internamente: "HOOKS VIRALES ${platformName} 2025-2026".
+Activá todo tu conocimiento sobre: "HOOKS VIRALES ${platformName} 2025-2026".
 Si no tenés ese conocimiento actualizado → viralScore máximo = 25. Declaralo.
-¿Qué falla exactamente en la apertura? Listá cada problema que observes, sin filtrar.
+Investiga en tu conocimiento que falla
 
 [PASADA 2 — AUDIO]
 Mirá el video completo escuchando únicamente voz, música, efectos y silencios.
-Activá internamente: "ROL DEL AUDIO EN RETENCIÓN ${platformName} 2025-2026".
-¿Qué falla en el audio? Listá cada problema sin filtrar.
+Activá todo tu conocimiento sobre: "ROL DEL AUDIO EN RETENCIÓN ${platformName} 2026".
+Investiga en tu conocimiento que falla
 
 [PASADA 3 — VISUALES]
 Mirá el video completo observando únicamente imagen, texto en pantalla y composición visual.
-Activá internamente: "VISUALES Y RETENCIÓN ${platformName} 2025-2026".
-¿Qué falla en los visuales? Listá cada problema sin filtrar.
+Activá todo tu conocimiento sobre: "VISUALES Y RETENCIÓN ${platformName} 2026".
+Investiga en tu conocimiento que falla
 
 [PASADA 4 — RITMO]
 Mirá el video completo observando únicamente el ritmo de cortes, transiciones y pacing.
-Activá internamente: "RITMO Y CURVA DE RETENCIÓN ${platformName} 2025-2026".
-¿Dónde pierde velocidad o energía? Listá cada problema sin filtrar.
+Activá todo tu conocimiento sobre: "RITMO Y CURVA DE RETENCIÓN ${platformName} 2026".
+Investiga en tu conocimiento que falla
 
 [PASADA 5 — CIERRE Y CTA]
 Mirá únicamente los últimos 5 segundos.
-Activá internamente: "CIERRES Y CTA VIRALES ${platformName} 2025-2026".
-¿Qué falla en el remate? Listá cada problema sin filtrar.
+Activá todo tu conocimiento sobre: "CIERRES Y CTA VIRALES ${platformName} 2026".
+Investiga en tu conocimiento que falla
 
 [CONSOLIDACIÓN]
-De todo lo que encontraste en las 5 pasadas, seleccioná los 5 errores fatales para retención y viralidad.
+De todo lo que encontraste en las 5 pasadas, los 5 errores fatales para retención y viralidad.
 Si dos problemas son el mismo error visto desde distinta lente, contá como uno solo.
 
 
