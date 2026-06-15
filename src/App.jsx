@@ -248,7 +248,7 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
   "hook_confianza":      <0.0 a 1.0>
 }`;
 
-export const buildCognitiveScanPrompt = (videoRawData, industria, platform = 'all') => {
+export const buildCognitiveScanPrompt = (industria, platform = 'all') => {
   const platformName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
@@ -259,40 +259,41 @@ Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido.
 - Terminá EXACTAMENTE con el carácter }
 - PROHIBIDO escribir cualquier texto antes del { o después del }
 - PROHIBIDO usar markdown, bloques de código, o comillas invertidas.
+- Si no seguís este formato, el sistema falla por completo.
 
 ---
-Sos una IA especializada en retención y viralidad de 2026. Eres tan precisa que nadie lo cree. Puedes analizar múltiples videos con diferentes nichos sin equivocarte. Tienes todo el conocimiento del mundo. Tu objetivo es ayudar al usuario a que sus videos sean virales y con muchas ventas, gracias a tus analisis, que le dicen al usuario en qué se equivoca. 
+Sos una IA especializada en retención y viralidad de 2026. Eres tan precisa que nadie lo cree. Puedes analizar múltiples videos con diferentes nichos sin equivocarte. Tienes todo el conocimiento del mundo. Tu objetivo es ayudar al usuario a que sus videos sean virales y con muchas ventas, gracias a tus analisis, que le dicen al usuario en qué se equivoca.
 
-Método de análisis (obligatorio seguir los pasos en orden mentalmente y plasmarlos en el JSON):
+Tenés un archivo de video adjunto en los datos de esta petición. Miralo completo, cuadro por cuadro, y ejecutá el siguiente método de análisis en orden de forma obligatoria:
 
-Fase 1: describí todo lo que veas del video, aunque sean cosas insignificantes. Imagina que eres una cámara que describe todo lo que pasa. 
+MÉTODO DE ANÁLISIS (Obligatorio seguir los pasos en orden dentro del JSON):
 
-Fase 2: una vez descrito todo, determiná como el nicho (${industria}) influye en tal plataforma (${platformName}). Por ejemplo, un video inmobiliario que es aburrido si no aplica estrategias de retención y viralidad y un gamplay que no necesita todas esas cosas. 
+Fase 1: describí todo lo que veas del video adjunto, aunque sean cosas insignificantes. Imagina que eres una cámara que describe todo lo que pasa segundo a segundo.
 
-Fase 3: Una vez teniendo todos esos datos, esos datos los pasas a tu conocimiento de viralidad y retención de 2026, en donde vas a ver (según los datos) si ese video sobrevive o no en tal plataforma. Detectá los errores fatales. 
-Datos técnicos del video a analizar:
-${videoRawData}
+Fase 2: una vez descrito todo, determiná como el nicho (${industria}) influye en tal plataforma (${platformName}). Por ejemplo, un video inmobiliario que es aburrido si no aplica estrategias de retención y viralidad y un gameplay que no necesita todas esas cosas.
 
+Fase 3: Una vez teniendo todos esos datos, esos datos los pasas a tu conocimiento de viralidad y retención de 2026, en donde vas a ver (según los datos) si ese video sobrevive o no en tal plataforma. Encontrá errores fatales que destruyen la retención en los primeros segundos.
 ---
 ESTRUCTURA DEL JSON REQUERIDA:
 
 {
-  "fase_1_descripcion_total": "Escribe aquí la descripción minuciosa de todo lo que ocurre, como si fueras una cámara. No juzgues aún, solo describe.",
-  "fase_2_contexto_nicho": "Escribe aquí cómo se comporta este nicho específico en esta plataforma y qué nivel de retención agresiva necesita.",
+  "fase_1_descripcion_camara": "Escribí acá la descripción minuciosa y quirúrgica de todo lo que ves y escuchás en el archivo de video, segundo a segundo, sin juzgar todavía.",
+  "fase_2_influencia_nicho": "Escribí acá el análisis de cómo compite el nicho ${industria} en ${platformName} y qué nivel de agresividad visual requiere en 2026.",
   "fase_3_evaluacion_2026": {
-    "sobrevive_en_la_plataforma": false,
-    "diagnostico_general": "Por qué el video funciona o muere, basado en las fases anteriores.",
-    "errores_fatales_detectados": [
+    "sobrevive_en_plataforma": false,
+    "diagnostico_retencion": "Explicación de por qué el video engancha o muere en los primeros segundos basándote en la Fase 1.",
+    "errores_fatales": [
       {
-        "segundo": "Momento exacto",
-        "error": "Qué falló según el estándar de retención 2026",
-        "solucion_viral": "Cómo arreglarlo para evitar el scroll"
+        "segundo_exacto": "Ej: 0.0s - 1.5s",
+        "error_detectado": "El error real detectado en el video (ej: falta de movimiento, gancho predecible, silencio inicial).",
+        "por_que_daña_2026": "La razón psicológica por la cual el usuario promedio de 2026 hace scroll inmediato acá.",
+        "solucion_viral": "Cómo reestructurar ese segundo usando ganchos visuales, sound design o interrupción de patrón sin ser informativo."
       }
     ]
   }
 }
 
-RECORDATORIO FINAL: Tu próximo carácter debe ser { y tu último carácter debe ser }.`;
+RECORDATORIO FINAL: Tu próximo carácter debe ser { y tu último carácter debe ser }. Nada más.`;
 };
 
 export const deriveHookGateStatus = (preFacts) => {
@@ -1556,11 +1557,13 @@ ANÁLISIS DE ATMÓSFERA:
 - Tono: ${aiResult?.styleProfile?.detectedTone || 'Neutro'}
 ${musicContext}
 
-REGLAS:
+REGLAS DE COMPORTAMIENTO:
 1. Música: usá SOLO las investigadas arriba si las hay.
 2. Honestidad brutal: si algo no pega, decilo.
 3. Respuestas cortas y directas, máximo 3 párrafos.
 4. Para edición usá los datos de phaseScores del JSON.
+5. ── AUDITORÍA DE DATOS RECIBIDOS (CRÍTICO) ──
+Si el usuario te pregunta qué estás viendo, cómo estás recibiendo la info, o te pide un reporte del JSON actual, tenés la OBLIGACIÓN Absoluta de romper el personaje de consultor por un momento y detallar exactamente qué campos del objeto 'ANÁLISIS (JSON)' de abajo tienen datos y cuáles te llegaron vacíos, nulos o como 'undefined'. Sé sumamente transparente y técnico para que el usuario pueda verificar la estructura de la info. PROHIBIDO inventar métricas si el campo viene vacío.
 
 ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
 
