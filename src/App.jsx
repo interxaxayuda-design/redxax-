@@ -248,10 +248,7 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
   "hook_confianza":      <0.0 a 1.0>
 }`;
 
-export const buildCognitiveScanPrompt = (videoRawData, industria, researchData = null, platform = 'all') => {
-  const benchmarkContext = researchData
-    ? `BENCHMARK: ${typeof researchData === 'string' ? researchData : JSON.stringify(researchData)}`
-    : null;
+export const buildCognitiveScanPrompt = (videoRawData, industria, platform = 'all') => {
   const platformName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
@@ -260,81 +257,42 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
 Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido.
 - Empezá EXACTAMENTE con el carácter {
 - Terminá EXACTAMENTE con el carácter }
-- PROHIBIDO escribir cualquier texto antes del {
-- PROHIBIDO escribir cualquier texto después del }
-- PROHIBIDO usar markdown, bloques de código, o comillas invertidas
-- PROHIBIDO escribir "Aquí tienes", "Claro", "Análisis:", ni ninguna introducción
-- Si no seguís este formato, el sistema falla completamente
+- PROHIBIDO escribir cualquier texto antes del { o después del }
+- PROHIBIDO usar markdown, bloques de código, o comillas invertidas.
 
 ---
+Sos una IA especializada en retención y viralidad de 2026. Eres tan precisa que nadie lo cree. Puedes analizar múltiples videos con diferentes nichos sin equivocarte. Tienes todo el conocimiento del mundo. Tu objetivo es ayudar al usuario a que sus videos sean virales y con muchas ventas, gracias a tus analisis, que le dicen al usuario en qué se equivoca. 
 
-Tenés acceso directo a este video. Miralo completo antes de hacer cualquier juicio.
+Método de análisis (obligatorio seguir los pasos en orden mentalmente y plasmarlos en el JSON):
 
-FASE 1 — REGISTRO TOTAL (sin juicio)
+Fase 1: describí todo lo que veas del video, aunque sean cosas insignificantes. Imagina que eres una cámara que describe todo lo que pasa. 
 
-Mirá el video de principio a fin. Registrá con precisión quirúrgica todo lo que ocurre:
-qué se ve, qué se escucha, cuándo ocurre cada cosa, cuántos cortes hay,
-cuándo aparece el elemento principal del video por primera vez,
-cuándo ocurre la primera acción que podría retener al usuario.
-No evaluás nada todavía. Solo registrás.
+Fase 2: una vez descrito todo, determiná como el nicho (${industria}) influye en tal plataforma (${platformName}). Por ejemplo, un video inmobiliario que es aburrido si no aplica estrategias de retención y viralidad y un gamplay que no necesita todas esas cosas. 
 
-
-FASE 2 — ACTIVACIÓN DE CONOCIMIENTO
-
-Antes de juzgar, activá internamente TODO tu conocimiento sobre estos ejes:
-
-"¿Qué hace que un usuario de ${platformName} en 2026 se quede en un video que parece aburrido?"
-"¿Qué hace que abandone en los primeros 3 segundos aunque el contenido sea bueno?"
-"¿Qué errores de ritmo, audio, visual o estructura matan la retención antes del segundo 5?"
-
-Estos son algunos ejemplos. Explorá todo en general para que no te quedes con ninguna duda.
-
-Este conocimiento aplica dependiendo el tipo de nicho. No es lo mismo un video de producto que en lo general es aburrido que un story time. Cualquier nicho que te encuentres, investigalo en tu conocimiento de 2026 de como ganan en una plataforma saturada de videos.
-
-
-FASE 3 — CONTRASTE Y DESTRUCCIÓN
-
-Con lo que observaste en FASE 1 y el conocimiento activado en FASE 2,
-destruye el video. Encontrá cada punto donde lo que viste no cumple con lo que funciona en ${platformName} 2026.
-
-REGLA ABSOLUTA: Mínimo 5 fallas fatales. Si encontrás menos de 5, volvé a FASE 1 y mirá de nuevo.
-Cada falla debe estar anclada en algo concreto observado en FASE 1. Sin observación → sin falla.
-No generalices. No apliques fallas genéricas que podrían ser de cualquier video.
-
-Fallas que solés pasar por alto independientemente del nicho:
-- El elemento principal aparece demasiado tarde → el usuario no sabe de qué va el video
-- Los primeros segundos no generan ninguna pregunta activa en el espectador
-- Hay silencio o música sin tensión en el arranque
-
-
-Datos técnicos de apoyo:
+Fase 3: Una vez teniendo todos esos datos, esos datos los pasas a tu conocimiento de viralidad y retención de 2026, en donde vas a ver (según los datos) si ese video sobrevive o no en tal plataforma. Detectá los errores fatales. 
+Datos técnicos del video a analizar:
 ${videoRawData}
-${benchmarkContext ? benchmarkContext + '\n' : ''}NICHO: ${industria} | PLATAFORMA: ${platformName}
 
 ---
-
-RECORDATORIO FINAL ANTES DE RESPONDER:
-Tu próximo carácter debe ser { y tu último carácter debe ser }. Nada más.
-
-JSON sin estructura fija. Incluí todos los campos que necesites para describir lo que encontraste.
-La única regla del JSON: mínimo 5 objetos en "fallas", cada uno con "segundo", "obs", "por_que_daña", "solucion" y "p".
-Strings mínimo 15 palabras. El resto de campos los definís vos según lo que el video necesite.
+ESTRUCTURA DEL JSON REQUERIDA:
 
 {
-  "registro": {},
-  "fallas": [
-    {
-      "segundo": 0,
-      "obs": "",
-      "por_que_daña": "",
-      "solucion": "",
-      "p": 0
-    }
-  ],
-  "penalty_total": 0,
-  "viralScore": 0,
-  "confianza": 0
-}`;
+  "fase_1_descripcion_total": "Escribe aquí la descripción minuciosa de todo lo que ocurre, como si fueras una cámara. No juzgues aún, solo describe.",
+  "fase_2_contexto_nicho": "Escribe aquí cómo se comporta este nicho específico en esta plataforma y qué nivel de retención agresiva necesita.",
+  "fase_3_evaluacion_2026": {
+    "sobrevive_en_la_plataforma": false,
+    "diagnostico_general": "Por qué el video funciona o muere, basado en las fases anteriores.",
+    "errores_fatales_detectados": [
+      {
+        "segundo": "Momento exacto",
+        "error": "Qué falló según el estándar de retención 2026",
+        "solucion_viral": "Cómo arreglarlo para evitar el scroll"
+      }
+    ]
+  }
+}
+
+RECORDATORIO FINAL: Tu próximo carácter debe ser { y tu último carácter debe ser }.`;
 };
 
 export const deriveHookGateStatus = (preFacts) => {
