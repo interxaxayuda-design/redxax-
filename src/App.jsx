@@ -268,8 +268,8 @@ V (visuales — video completo): activá "VISUALES Y RETENCIÓN ${platformName} 
 R (ritmo — video completo): activá "RITMO Y PACING ${platformName} 2026" → ¿qué falla exactamente?
 C (cierre — últimos 5 seg): activá "CIERRES Y CTA ${platformName} 2026" → ¿qué falla exactamente?
 
-Si en alguna lente no tenés conocimiento actualizado 2025-2026 → declaralo con [SIN REF] y penalizá -5 al score final.
-Usá esas 5 respuestas como base para construir las fallas del JSON. Cada lente debe generar al menos 1 error fatal en el JSON.
+Si en alguna lente no tenés conocimiento actualizado 2026 → declaralo con [SIN REF] y penalizá -5 al score final.
+Usá esas 5 respuestas como base para construir las fallas del JSON. Cada lente debe generar al menos 3 error fatal en el JSON que debes nombrar.
 
 REGLA: Solo reportás lo que observás directamente. Sin observación concreta → sin error.
 
