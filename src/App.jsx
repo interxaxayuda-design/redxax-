@@ -580,9 +580,7 @@ export const deriveHookType = (preFacts) => {
 };
 
 
-// ============================================================
-// MERGE DE FLAGS
-// ============================================================
+
 export const buildFlagsDeterministic = (flagsFromStrategy, preFacts, preHookType) => {
   if (!preFacts || !Object.keys(preFacts).length) return flagsFromStrategy;
   return {
