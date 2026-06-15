@@ -1201,21 +1201,22 @@ let sharedFileName = null;
     console.log('[CALL 1] fileUri disponible:', !!sharedFileUri);
 
     const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildCognitiveScanPrompt(preFactsStr, industria, researchData, platform),
-        // ── ANTES: storagePath → re-subía el video, costoso y lento ──
-        // ── AHORA: fileUri    → reutiliza el video ya subido en CALL 0 ──
-        ...(sharedFileUri
-          ? { fileUri: sharedFileUri, fileName: sharedFileName }  // ← reutiliza
-          : { storagePath, videoMimeType: mimeType }              // ← fallback si CALL 0 no devolvió URI
-        ),
-        videoMimeType:   mimeType,
-        duration:        Math.round(duration),
-        maxOutputTokens: 4096,
-        expectsJson:     true,
-        temperature:     0.3,
-      }
-    });
+  body: {
+    text: buildCognitiveScanPrompt(preFactsStr, industria, researchData, platform),
+    systemPrompt: 'Sos un analizador de video que responde ÚNICAMENTE con JSON válido. NUNCA escribís texto introductorio ni explicaciones. Tu respuesta siempre empieza con { y termina con }. Si escribís cualquier texto fuera del JSON, el sistema falla completamente.',
+    // ── ANTES: storagePath → re-subía el video, costoso y lento ──
+    // ── AHORA: fileUri    → reutiliza el video ya subido en CALL 0 ──
+    ...(sharedFileUri
+      ? { fileUri: sharedFileUri, fileName: sharedFileName }  // ← reutiliza
+      : { storagePath, videoMimeType: mimeType }              // ← fallback si CALL 0 no devolvió URI
+    ),
+    videoMimeType:   mimeType,
+    duration:        Math.round(duration),
+    maxOutputTokens: 4096,
+    expectsJson:     true,
+    temperature:     0.3,
+  }
+});
 
     if (call1Error) {
       let errorBody = '';
