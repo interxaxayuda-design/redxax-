@@ -1552,20 +1552,20 @@ const sendMessage = async () => {
 
     // ── Contexto Expandido — Mapeo de todo el Pipeline de Cerebros ──
     const aiContext = {
-      // 1. Rastro técnico crudo de los cerebros de visión y estrategia (Lo que el sistema vio y procesó)
+      // 1. Rastro técnico crudo de los cerebros de visión y estrategia
       autopsia_tecnica: {
-        pre_clasificador_facts: aiResult?.preFacts || null, // Datos de buildPreClassifierPrompt
+        pre_clasificador_facts: aiResult?.preFacts || null, // buildPreClassifierPrompt
         escaneo_cognitivo: {
           fase_1_camara: aiResult?.fase_1_descripcion_camara || aiResult?.cognitiveScan?.fase_1_descripcion_camara || null, // buildCognitiveScanPrompt
           fase_2_nicho: aiResult?.fase_2_influencia_nicho || aiResult?.cognitiveScan?.fase_2_influencia_nicho || null,
           fase_3_evaluacion: aiResult?.fase_3_evaluacion_2026 || aiResult?.cognitiveScan?.fase_3_evaluacion_2026 || null
         },
-        analisis_forense_foda: aiResult?.strategyAnalysis || null // Datos de buildStrategyBrainPrompt
+        analisis_forense_foda: aiResult?.strategyAnalysis || null // buildStrategyBrainPrompt
       },
       
       // 2. Output macro consolidado (Lo que llegó al Scoring final)
       metricas_macro: {
-        vision: aiResult?.vision, // Datos de marketing condensados de buildScoringBrainPrompt
+        vision: aiResult?.vision,
         salesScore: aiResult?.salesScore,
         viralScore: aiResult?.viralScore,
         hookDNA: aiResult?.hookDNA,
@@ -1577,24 +1577,22 @@ const sendMessage = async () => {
       }
     };
 
-    const systemPrompt = `Sos la Arquitecta de IA y Auditora Senior de VIRAX (esta semana de junio de 2026).
-Tu objetivo es auditar las decisiones del backend cruzando los datos macro con los rastros técnicos crudos de cada cerebro y tu conocimiento avanzado sobre retención salvaje en plataformas digitales.
+    const systemPrompt = `Sos la Arquitecta de IA y Auditora Senior de VIRAX (junio de 2026).
+Tu objetivo es auditar las decisiones del backend cruzando los datos macro con los rastros técnicos crudos de cada cerebro.
 
-REGLAS DE EVALUACIÓN Y AUTOCORRECCIÓN:
-1. DICTAMEN DE EQUIVOCACIÓN: Cuando el usuario te marque un error del video, contrastalo con 'autopsia_tecnica' (especialmente la Fase 1 de la cámara). Dictaminá explícitamente si el pipeline se equivocó (punto ciego) o si estuvo bien otorgado el score, justificando el porqué psicológico de la retención. Sé ultra directa: "Sí, acá el sistema falló" o "No, no fue una equivocación por tal motivo".
+REGLAS DE EVALUACIÓN Y DICTAMEN:
+1. DICTAMEN DE EQUIVOCACIÓN: Cuando el usuario te marque un error, contrastalo con 'autopsia_tecnica'. Dictaminá explícitamente si el pipeline tuvo un punto ciego o si estuvo bien otorgado el score. Sé directa: "Sí, acá el sistema falló" o "No, no fue una equivocación".
 
-2. AUDITORÍA DE PROMPTS ("REBUSCÁTELAS"): Si confirmás un fallo, debés "meterte adentro del código" del pipeline. Identificá con precisión quirúrgica cuál de los prompts de la arquitectura fue el culpable del punto ciego:
-   - ¿Falló el 'buildPreClassifierPrompt' al no registrar la señal atómica correcta?
-   - ¿Se ablandó el 'buildCognitiveScanPrompt' en su Fase 3 limitando su criterio?
-   - ¿El 'buildStrategyBrainPrompt' diluyó el impacto crítico en su FODA de strings cortos?
-   - ¿O el 'buildScoringBrainPrompt' promedió para arriba ignorando la guillotina del gancho?
+2. AUDITORÍA DE PROMPTS: Identificá con precisión quirúrgica cuál de los prompts de la arquitectura fue el culpable del punto ciego: buildPreClassifierPrompt, buildCognitiveScanPrompt, buildStrategyBrainPrompt o buildScoringBrainPrompt.
 
-3. SOLUCIONES NATIVAS DE IA (PROHIBIDO HARDCODING): Está terminantemente prohibido sugerir soluciones con reglas fijas o parches matemáticos rígidos (ej: "si pasa X restá 20 puntos"). Eso mata la flexibilidad de la IA.
-En su lugar, rebuscatelas usando tu conocimiento para proponer optimizaciones semánticas, de enfoque o de restricciones cognitivas en el prompt culpable. Decile al usuario exactamente qué instrucción modificar o qué sesgo remover en ese 'buildPrompt' específico para que la IA del backend se vuelva más estricta de forma orgánica y autónoma.
+3. REGLA DE ABSTRACCIÓN COGNITIVA (MANDATORIO - PROHIBIDO CASUÍSTICA):
+   - PROHIBIDO EL HARDCODING MATEMÁTICO: No sugieras "restar X puntos" ni penalizaciones numéricas fijas.
+   - PROHIBIDO EL HARDCODING SEMÁNTICO: No uses palabras, objetos ni situaciones específicas del ejemplo del usuario en tu solución. Si el usuario se queja de que "el video tardó en mostrar el producto porque mostró accesorios", tu solución NO puede mencionar las palabras "accesorios" ni "producto". 
+   - SOLUCIONES NATIVAS DE IA: Debes traducir el problema de edición a métricas estructurales, abstractas y universales (ej: "Latencia del Estímulo Principal / Time to Value", "Densidad de Fricción Inicial", "Interrupción Excesiva de Patrón", "Asimetría de Atención Visual"). Proponé cómo modificar el prompt culpable agregando nuevas directivas conceptuales o nuevas propiedades de metadatos JSON para que la IA del backend rastree el tiempo y el impacto de estos fenómenos de retención de forma autónoma, sin importar el nicho del video.
 
 REGLAS DE TONO:
-- Clínico, ingenieril y directo.
-- Máximo 3 párrafos de respuesta para ir directo al hueso.
+- Clínico, ingenieril y directo al grano.
+- Máximo 3 párrafos de respuesta.
 
 DATOS DE AUDITORÍA (JSON COMPLETO): ${JSON.stringify(aiContext)}`;
 
@@ -1611,7 +1609,6 @@ DATOS DE AUDITORÍA (JSON COMPLETO): ${JSON.stringify(aiContext)}`;
       }
     });
 
-    // ── DEBUG TEMPORAL ──
     if (error) {
       const errorBody = await error.context?.response?.text?.();
       console.error('Error completo:', error);
@@ -1621,7 +1618,6 @@ DATOS DE AUDITORÍA (JSON COMPLETO): ${JSON.stringify(aiContext)}`;
 
     if (!data) throw new Error('Respuesta vacía del proxy');
 
-    // ── Extraer texto de la respuesta Gemini ──
     const botResponse =
       data?.candidates?.[0]?.content?.parts?.[0]?.text
       ?? data?.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join('')
