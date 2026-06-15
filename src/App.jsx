@@ -256,7 +256,19 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Tenés acceso directo a este video. Miralo completo antes de hacer cualquier juicio.
+  return `INSTRUCCIÓN CRÍTICA — FORMATO DE SALIDA:
+Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido.
+- Empezá EXACTAMENTE con el carácter {
+- Terminá EXACTAMENTE con el carácter }
+- PROHIBIDO escribir cualquier texto antes del {
+- PROHIBIDO escribir cualquier texto después del }
+- PROHIBIDO usar markdown, bloques de código, o comillas invertidas
+- PROHIBIDO escribir "Aquí tienes", "Claro", "Análisis:", ni ninguna introducción
+- Si no seguís este formato, el sistema falla completamente
+
+---
+
+Tenés acceso directo a este video. Miralo completo antes de hacer cualquier juicio.
 
 FASE 1 — REGISTRO TOTAL (sin juicio)
 
@@ -275,10 +287,9 @@ Antes de juzgar, activá internamente TODO tu conocimiento sobre estos ejes:
 "¿Qué hace que abandone en los primeros 3 segundos aunque el contenido sea bueno?"
 "¿Qué errores de ritmo, audio, visual o estructura matan la retención antes del segundo 5?"
 
-Estos son algunos ejemplos. Explorá todo en general para que no te quedes con ninguna duda. 
+Estos son algunos ejemplos. Explorá todo en general para que no te quedes con ninguna duda.
 
-Este conocimiento aplica dependiendo el tipo de nicho. No es lo mismo un video de producto que en lo general es aburrido que un story time. CUalquier nicho que te encuentres, investigalo en tu conocimiento de 2026
-de como ganan en una plataforma saturada de videos. 
+Este conocimiento aplica dependiendo el tipo de nicho. No es lo mismo un video de producto que en lo general es aburrido que un story time. Cualquier nicho que te encuentres, investigalo en tu conocimiento de 2026 de como ganan en una plataforma saturada de videos.
 
 
 FASE 3 — CONTRASTE Y DESTRUCCIÓN
@@ -300,24 +311,29 @@ Datos técnicos de apoyo:
 ${videoRawData}
 ${benchmarkContext ? benchmarkContext + '\n' : ''}NICHO: ${industria} | PLATAFORMA: ${platformName}
 
-JSON — sin estructura fija. Incluí todos los campos que necesites para describir lo que encontraste.
+---
+
+RECORDATORIO FINAL ANTES DE RESPONDER:
+Tu próximo carácter debe ser { y tu último carácter debe ser }. Nada más.
+
+JSON sin estructura fija. Incluí todos los campos que necesites para describir lo que encontraste.
 La única regla del JSON: mínimo 5 objetos en "fallas", cada uno con "segundo", "obs", "por_que_daña", "solucion" y "p".
 Strings mínimo 15 palabras. El resto de campos los definís vos según lo que el video necesite.
 
 {
-  "registro": { <describí el video con los campos que tenga sentido para este contenido específico> },
+  "registro": {},
   "fallas": [
     {
-      "segundo": <número>,
-      "obs": "<qué ves exactamente>",
-      "por_que_daña": "<por qué mata retención o viralidad en ${platformName} 2026>",
-      "solucion": "<acción concreta>",
-      "p": <Grave -8 a -15 | Medio -3 a -7.9 | Leve -0.6 a -2.9>
+      "segundo": 0,
+      "obs": "",
+      "por_que_daña": "",
+      "solucion": "",
+      "p": 0
     }
   ],
-  "penalty_total": <suma de p>,
-  "viralScore": <(cap_score ?? 100) + penalty_total>,
-  "confianza": <0-100>
+  "penalty_total": 0,
+  "viralScore": 0,
+  "confianza": 0
 }`;
 };
 
