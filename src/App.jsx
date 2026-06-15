@@ -294,7 +294,7 @@ Compará el video con el estándar del nicho en 2026.
 FASE 3 — EVALUACIÓN DE SUPERVIVENCIA 2026:
 Con los datos exactos de la Fase 1, evaluá si el video sobrevive en ${platformName}.
 Encontrá los errores fatales usando los timestamps reales que describiste.
-Cada error debe referenciar el segundo exacto donde ocurre — no rangos vagos.
+Cada error debe referenciar el segundo exacto donde ocurre — no rangos vagos. Debes encontrar como mínimo 5 errores fatales
 
 ---
 ESTRUCTURA DEL JSON REQUERIDA:
