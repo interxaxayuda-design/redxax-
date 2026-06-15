@@ -1198,7 +1198,7 @@ let sharedFileName = null;
     console.log('[CALL 1] industria:', industria);
     console.log('[CALL 1] preFacts size:', preFactsStr.length, 'chars');
     console.log('[CALL 1] researchData disponible:', Object.keys(researchData).length > 0);
-    console.log('[CALL 1] fileUri disponible:', !!sharedFileUri);
+    console.log('[CALL 1] fileUri disponible:', !!ssharedFileUri);
 
     const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
   body: {
