@@ -191,7 +191,7 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
 };
 
 export const buildPreClassifierPrompt = (meta = '') => `
-Sos una cámara con memoria y un editor con 10 años de experiencia.
+Sos una cámara con memoria y un editor con 20 años de experiencia.
 Tu trabajo es DOS cosas: registrar señales técnicas Y describir el video completo.
 No opinás, no evaluás, no inferís intención ni proyectás potencial.
 Solo describís lo que ves y escuchás, con precisión quirúrgica.
