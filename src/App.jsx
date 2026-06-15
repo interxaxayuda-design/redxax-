@@ -256,44 +256,61 @@ export const buildCognitiveScanPrompt = (videoRawData, industria, researchData =
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  return `Tenés acceso directo a este video. Tu misión: encontrar errores fatales. No describir, no elogiar.
+  return `Tenés acceso directo a este video. Miralo completo antes de hacer cualquier juicio.
 
-REGLA ABSOLUTA: Debés encontrar MÍNIMO 5 errores fatales. Si encontrás menos de 5, volvé a mirar. Un video sin 5 errores fatales no existe en ${platformName} 2026.
+FASE 1 — REGISTRO TOTAL (sin juicio)
 
-Antes del JSON, respondé UNA LÍNEA por cada lente. Sé brutal:
+Mirá el video de principio a fin. Registrá con precisión quirúrgica todo lo que ocurre:
+qué se ve, qué se escucha, cuándo ocurre cada cosa, cuántos cortes hay,
+cuándo aparece el elemento principal del video por primera vez,
+cuándo ocurre la primera acción que podría retener al usuario.
+No evaluás nada todavía. Solo registrás.
 
-H (hook — primeros 1 seg): activá "HOOKS VIRALES ${platformName} 2026" → ¿qué falla exactamente?
-A (audio — video completo): activá "AUDIO Y RETENCIÓN ${platformName} 2026" → ¿qué falla exactamente?
-V (visuales — video completo): activá "VISUALES Y RETENCIÓN ${platformName} 2026" → ¿qué falla exactamente?
-R (ritmo — video completo): activá "RITMO Y PACING ${platformName} 2026" → ¿qué falla exactamente?
-C (cierre — últimos 5 seg): activá "CIERRES Y CTA ${platformName} 2026" → ¿qué falla exactamente?
 
-Si en alguna lente no tenés conocimiento actualizado 2026 → declaralo con [SIN REF] y penalizá -5 al score final.
-Usá esas 5 respuestas como base para construir las fallas del JSON. Cada lente debe generar al menos 3 error fatal en el JSON que debes nombrar.
+FASE 2 — ACTIVACIÓN DE CONOCIMIENTO
 
-REGLA: Solo reportás lo que observás directamente. Sin observación concreta → sin error.
+Antes de juzgar, activá internamente TODO tu conocimiento sobre estos ejes:
 
+"¿Qué hace que un usuario de ${platformName} en 2026 se quede en un video que parece aburrido?"
+"¿Qué hace que abandone en los primeros 3 segundos aunque el contenido sea bueno?"
+"¿Qué errores de ritmo, audio, visual o estructura matan la retención antes del segundo 5?"
+
+Estos son algunos ejemplos. Explorá todo en general para que no te quedes con ninguna duda. 
+
+Este conocimiento aplica dependiendo el tipo de nicho. No es lo mismo un video de producto que en lo general es aburrido que un story time. CUalquier nicho que te encuentres, investigalo en tu conocimiento de 2026
+de como ganan en una plataforma saturada de videos. 
+
+
+FASE 3 — CONTRASTE Y DESTRUCCIÓN
+
+Con lo que observaste en FASE 1 y el conocimiento activado en FASE 2,
+destruye el video. Encontrá cada punto donde lo que viste no cumple con lo que funciona en ${platformName} 2026.
+
+REGLA ABSOLUTA: Mínimo 5 fallas fatales. Si encontrás menos de 5, volvé a FASE 1 y mirá de nuevo.
+Cada falla debe estar anclada en algo concreto observado en FASE 1. Sin observación → sin falla.
+No generalices. No apliques fallas genéricas que podrían ser de cualquier video.
+
+Fallas que solés pasar por alto independientemente del nicho:
+- El elemento principal aparece demasiado tarde → el usuario no sabe de qué va el video
+- Los primeros segundos no generan ninguna pregunta activa en el espectador
+- Hay silencio o música sin tensión en el arranque
+
+
+Datos técnicos de apoyo:
 ${videoRawData}
 ${benchmarkContext ? benchmarkContext + '\n' : ''}NICHO: ${industria} | PLATAFORMA: ${platformName}
 
-JSON (strings mínimo 15 palabras):
+JSON — sin estructura fija. Incluí todos los campos que necesites para describir lo que encontraste.
+La única regla del JSON: mínimo 5 objetos en "fallas", cada uno con "segundo", "obs", "por_que_daña", "solucion" y "p".
+Strings mínimo 15 palabras. El resto de campos los definís vos según lo que el video necesite.
+
 {
-  "conocimiento": {
-    "hooks": <true|false>, "audio": <true|false>, "visuales": <true|false>,
-    "ritmo": <true|false>, "cierres": <true|false>, "cap_score": <null|25>
-  },
-  "descripcion": {
-    "hook": "<qué ocurre exactamente en los primeros 3 segundos>",
-    "desarrollo": "<ritmo y estructura general>",
-    "cierre": "<remate y CTA>",
-    "audio": "<voz, música, efectos>",
-    "recursos": "<visuales y texto en pantalla>"
-  },
+  "registro": { <describí el video con los campos que tenga sentido para este contenido específico> },
   "fallas": [
     {
-      "lente": "<hook|audio|visuales|ritmo|cierre>",
+      "segundo": <número>,
       "obs": "<qué ves exactamente>",
-      "por_que_daña": "<impacto directo en retención o viralidad en ${platformName}>",
+      "por_que_daña": "<por qué mata retención o viralidad en ${platformName} 2026>",
       "solucion": "<acción concreta>",
       "p": <Grave -8 a -15 | Medio -3 a -7.9 | Leve -0.6 a -2.9>
     }
