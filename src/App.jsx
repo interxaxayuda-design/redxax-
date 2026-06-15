@@ -1550,38 +1550,53 @@ const sendMessage = async () => {
         ).join('\n')}`
       : '';
 
-    // ── Contexto reducido — solo lo que el chat necesita ──
+    // ── Contexto Expandido — Mapeo de todo el Pipeline de Cerebros ──
     const aiContext = {
-      vision: aiResult?.vision,
-      salesScore: aiResult?.salesScore,
-      viralScore: aiResult?.viralScore,
-      hookDNA: aiResult?.hookDNA,
-      honestVerdict: aiResult?.honestVerdict,
-      roadmap: aiResult?.roadmap,
-      dropOffPoints: aiResult?.dropOffPoints,
-      styleProfile: aiResult?.styleProfile,
-      musicSuggestions: aiResult?.musicSuggestions,
-      phaseScores: aiResult?.phaseScores,
+      // 1. Rastro técnico crudo de los cerebros de visión y estrategia (Lo que el sistema vio y procesó)
+      autopsia_tecnica: {
+        pre_clasificador_facts: aiResult?.preFacts || null, // Datos de buildPreClassifierPrompt
+        escaneo_cognitivo: {
+          fase_1_camara: aiResult?.fase_1_descripcion_camara || aiResult?.cognitiveScan?.fase_1_descripcion_camara || null, // buildCognitiveScanPrompt
+          fase_2_nicho: aiResult?.fase_2_influencia_nicho || aiResult?.cognitiveScan?.fase_2_influencia_nicho || null,
+          fase_3_evaluacion: aiResult?.fase_3_evaluacion_2026 || aiResult?.cognitiveScan?.fase_3_evaluacion_2026 || null
+        },
+        analisis_forense_foda: aiResult?.strategyAnalysis || null // Datos de buildStrategyBrainPrompt
+      },
+      
+      // 2. Output macro consolidado (Lo que llegó al Scoring final)
+      metricas_macro: {
+        vision: aiResult?.vision, // Datos de marketing condensados de buildScoringBrainPrompt
+        salesScore: aiResult?.salesScore,
+        viralScore: aiResult?.viralScore,
+        hookDNA: aiResult?.hookDNA,
+        honestVerdict: aiResult?.honestVerdict,
+        roadmap: aiResult?.roadmap,
+        dropOffPoints: aiResult?.dropOffPoints,
+        styleProfile: aiResult?.styleProfile,
+        phaseScores: aiResult?.phaseScores,
+      }
     };
 
-    const systemPrompt = `Sos el Consultor Senior de VIRAX.
-Tu objetivo es ayudar al usuario a entender su análisis y mejorar su contenido.
+    const systemPrompt = `Sos la Arquitecta de IA y Auditora Senior de VIRAX (esta semana de junio de 2026).
+Tu objetivo es auditar las decisiones del backend cruzando los datos macro con los rastros técnicos crudos de cada cerebro y tu conocimiento avanzado sobre retención salvaje en plataformas digitales.
 
-ANÁLISIS DE ATMÓSFERA:
-- Nicho: ${aiResult?.vision?.niche || 'General'}
-- Estilo: ${aiResult?.styleProfile?.detectedRhythm || 'Normal'}
-- Tono: ${aiResult?.styleProfile?.detectedTone || 'Neutro'}
-${musicContext}
+REGLAS DE EVALUACIÓN Y AUTOCORRECCIÓN:
+1. DICTAMEN DE EQUIVOCACIÓN: Cuando el usuario te marque un error del video, contrastalo con 'autopsia_tecnica' (especialmente la Fase 1 de la cámara). Dictaminá explícitamente si el pipeline se equivocó (punto ciego) o si estuvo bien otorgado el score, justificando el porqué psicológico de la retención. Sé ultra directa: "Sí, acá el sistema falló" o "No, no fue una equivocación por tal motivo".
 
-REGLAS DE COMPORTAMIENTO:
-1. Música: usá SOLO las investigadas arriba si las hay.
-2. Honestidad brutal: si algo no pega, decilo.
-3. Respuestas cortas y directas, máximo 3 párrafos.
-4. Para edición usá los datos de phaseScores del JSON.
-5. ── AUDITORÍA DE DATOS RECIBIDOS (CRÍTICO) ──
-Si el usuario te pregunta qué estás viendo, cómo estás recibiendo la info, o te pide un reporte del JSON actual, tenés la OBLIGACIÓN Absoluta de romper el personaje de consultor por un momento y detallar exactamente qué campos del objeto 'ANÁLISIS (JSON)' de abajo tienen datos y cuáles te llegaron vacíos, nulos o como 'undefined'. Sé sumamente transparente y técnico para que el usuario pueda verificar la estructura de la info. PROHIBIDO inventar métricas si el campo viene vacío.
+2. AUDITORÍA DE PROMPTS ("REBUSCÁTELAS"): Si confirmás un fallo, debés "meterte adentro del código" del pipeline. Identificá con precisión quirúrgica cuál de los prompts de la arquitectura fue el culpable del punto ciego:
+   - ¿Falló el 'buildPreClassifierPrompt' al no registrar la señal atómica correcta?
+   - ¿Se ablandó el 'buildCognitiveScanPrompt' en su Fase 3 limitando su criterio?
+   - ¿El 'buildStrategyBrainPrompt' diluyó el impacto crítico en su FODA de strings cortos?
+   - ¿O el 'buildScoringBrainPrompt' promedió para arriba ignorando la guillotina del gancho?
 
-ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
+3. SOLUCIONES NATIVAS DE IA (PROHIBIDO HARDCODING): Está terminantemente prohibido sugerir soluciones con reglas fijas o parches matemáticos rígidos (ej: "si pasa X restá 20 puntos"). Eso mata la flexibilidad de la IA.
+En su lugar, rebuscatelas usando tu conocimiento para proponer optimizaciones semánticas, de enfoque o de restricciones cognitivas en el prompt culpable. Decile al usuario exactamente qué instrucción modificar o qué sesgo remover en ese 'buildPrompt' específico para que la IA del backend se vuelva más estricta de forma orgánica y autónoma.
+
+REGLAS DE TONO:
+- Clínico, ingenieril y directo.
+- Máximo 3 párrafos de respuesta para ir directo al hueso.
+
+DATOS DE AUDITORÍA (JSON COMPLETO): ${JSON.stringify(aiContext)}`;
 
     const historyText = newMessages
       .slice(0, -1)
