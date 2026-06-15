@@ -157,17 +157,8 @@ const safeParseJSON = (rawText, context = '') => {
   throw new Error(`JSON malformado. Preview: "${rawText.slice(0, 80)}..."`);
 };
 
-// ============================================================
-// VIRAX — PROMPTS CORREGIDOS
-// Cambios aplicados vs versión anterior:
-//   1. FEW_SHOTS definidos como constante real (ya no undefined)
-//   2. Hook Gate convertido a penalización graduada (no veto binario)
-//   3. Cap subido de 20 → 55 cuando el gate falla (no mata el score)
-//   4. Penalización JS eliminada del pipeline (Gemini da el score, JS no lo toca)
-//   5. Temperatura recomendada: 0.3 en CALL 1, 0 en CALL 0
-//   6. buildCognitiveScanPrompt ahora recibe y usa FEW_SHOTS reales
-//   7. Instrucción explícita anti-sesgo pesimista en cognitive scan
-// ============================================================
+
+
 
 const limpiarJSON = (str) => {
   if (typeof str !== 'string') return str;
@@ -289,12 +280,12 @@ REGLAS ESTRICTAS de la Fase 1:
 FASE 2 — INFLUENCIA DEL NICHO:
 Una vez descripto todo, determiná cómo el nicho (${industria}) compite en ${platformName} en 2026.
 ¿Qué nivel de agresividad visual requiere? ¿Qué tolerancia tiene el algoritmo con este tipo de contenido?
-Compará el video con el estándar del nicho en 2026. 
+Compará el video con el estándar del nicho en 2026. Si no encuentras ejemplos, usá todo tu conocimiento de 2026 sobre aquel nicho y viralidad y retención. 
 
 FASE 3 — EVALUACIÓN DE SUPERVIVENCIA 2026:
 Con los datos exactos de la Fase 1, evaluá si el video sobrevive en ${platformName}.
 Encontrá los errores fatales usando los timestamps reales que describiste.
-Cada error debe referenciar el segundo exacto donde ocurre — no rangos vagos. Debes encontrar como mínimo 5 errores fatales
+Cada error debe referenciar el segundo exacto donde ocurre — no rangos vagos. Debes encontrar como mínimo 5 errores fatales usando todo tu conocimiento de viralidad y retención
 
 ---
 ESTRUCTURA DEL JSON REQUERIDA:
