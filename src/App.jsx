@@ -430,16 +430,48 @@ Respondé SOLO con este JSON:
 }`;
 };
 
-export const buildStrategyBrainPrompt = (preFacts, cognitiveScan, failureSystems, scoringResult, platform, objetivo, industria) => {
-  return `Forense de contenido. Diagnóstico preciso con evidencia. Sin opinión.
+// ============================================================
+// FIX: buildStrategyBrainPrompt — anti-break-at-929
+// ============================================================
+export const buildStrategyBrainPrompt = (
+  preFacts, cognitiveScan, failureSystems,
+  scoringResult, platform, objetivo, industria
+) => {
+  return `Sos un forense de contenido. Analizás señales técnicas y devolvés diagnóstico estructurado.
 
+REGLAS CRÍTICAS DE FORMATO:
+- Tu respuesta empieza EXACTAMENTE con { y termina EXACTAMENTE con }
+- PROHIBIDO texto fuera del JSON
+- PROHIBIDO usar comillas dobles dentro de strings — usá comillas simples si necesitás citar
+- Cada string tiene máximo 12 palabras. Si necesitás más, cortá la idea
+- PROHIBIDO saltos de línea dentro de strings
+- Todos los valores string van entre comillas dobles sin excepción
+
+DATOS DE ENTRADA:
 SEÑALES: ${JSON.stringify(preFacts?.atomicas ?? {})}
-SCAN: ${JSON.stringify(cognitiveScan)}
+SCAN: ${JSON.stringify(cognitiveScan).slice(0, 800)}
 SCORE: ${scoringResult?.viralScore ?? '?'}/100
 NICHO: ${industria} | OBJETIVO: ${objetivo}
 
-JSON:
-{"gate_formato":{"estado":"<competitivo|debil|muerto>","razon":"<str>"},"falla_principal":"<retention|tension|payoff|clarity|trust|ninguna>","segundo_critico":<number>,"foda":{"fortalezas":["<str>"],"debilidades":["<str>"],"mejoras_urgentes":["<str>"]},"flags_binarios":{"hook_type":"<muerto|debil|apertura_informativa|bait_desconectado|bait_con_puente|explosivo>","ad_filter_triggered":<boolean>,"parece_publicidad":<boolean>}}`;
+Respondé con este JSON exacto:
+{
+  "gate_formato": {
+    "estado": "<competitivo|debil|muerto>",
+    "razon": "<max 10 palabras sin comillas dobles>"
+  },
+  "falla_principal": "<retention|tension|payoff|clarity|trust|ninguna>",
+  "segundo_critico": <número entero>,
+  "foda": {
+    "fortalezas": ["<max 8 palabras>", "<max 8 palabras>"],
+    "debilidades": ["<max 8 palabras>", "<max 8 palabras>"],
+    "mejoras_urgentes": ["<max 8 palabras>", "<max 8 palabras>"]
+  },
+  "flags_binarios": {
+    "hook_type": "<muerto|debil|apertura_informativa|bait_desconectado|bait_con_puente|explosivo>",
+    "ad_filter_triggered": <true|false>,
+    "parece_publicidad": <true|false>
+  }
+}`;
 };
 
 export const buildScoringBrainPrompt = (
