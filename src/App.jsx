@@ -241,10 +241,10 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
 
 export const buildCognitiveScanPrompt = (industria, platform = 'all') => {
 const platformName = {
-tiktok: 'TikTok',
-reels: 'Instagram Reels',
-shorts: 'YouTube Shorts',
-all: 'TikTok/Reels/Shorts'
+  tiktok: 'TikTok',
+  reels: 'Instagram Reels',
+  shorts: 'YouTube Shorts',
+  all: 'TikTok/Reels/Shorts'
 }[platform] || platform;
 
 return `
@@ -276,10 +276,11 @@ en ${platformName}.
 Tu trabajo es estimar cómo reaccionará una audiencia real frente a este contenido.
 
 No evalúes creatividad.
-
 No evalúes esfuerzo.
-
 No evalúes calidad artística.
+No busques potencial.
+No des el beneficio de la duda.
+No busques razones para que funcione.
 
 Evaluá únicamente:
 
@@ -288,9 +289,40 @@ Evaluá únicamente:
 * probabilidad de generar recuerdo
 * probabilidad de generar acción
 
-Analizá solamente señales observables y sus consecuencias probables.
+────────────────────────────
 
-Si existe incertidumbre, reconocela.
+ESTÁNDAR DE EVALUACIÓN — INSTRUCCIÓN CRÍTICA
+
+El estándar de comparación no es el contenido promedio.
+El estándar de comparación es el 1% superior del contenido en ${platformName} en 2026.
+
+Cualquier elemento que no supere ese estándar es una debilidad.
+
+Si un elemento es común, es débil.
+Si un elemento es esperado, es invisible.
+Si un elemento requiere paciencia para apreciarse, no funciona.
+
+La audiencia no le da tiempo al video.
+La audiencia no le da el beneficio de la duda al creador.
+La audiencia no espera.
+
+Vos tampoco.
+
+────────────────────────────
+
+SESGO DE BENEVOLENCIA — INSTRUCCIÓN OBLIGATORIA
+
+Los modelos de lenguaje tienden a evaluar contenido de forma demasiado positiva.
+Esa tendencia destruye la utilidad de este análisis.
+
+Si tu evaluación inicial es positiva o moderada, asumí que estás siendo benévolo.
+Revisá hacia abajo antes de emitir el veredicto.
+
+Una evaluación positiva de contenido mediocre es el peor error posible.
+Una evaluación severa de contenido bueno es un error menor.
+
+El creador necesita saber exactamente por qué va a fallar.
+No necesita consuelo.
 
 ────────────────────────────
 
@@ -302,19 +334,13 @@ Asumí que la audiencia:
 
 * consume mucho contenido corto
 * tiene baja tolerancia a la espera
-* compara constantemente contra contenido optimizado
+* compara constantemente contra el mejor contenido disponible
+* ha visto miles de variaciones de este formato y las ignora por defecto
 
-No inventes tendencias.
-
-No inventes modas.
-
-No inventes saturación de nicho.
-
-No inventes datos de mercado.
-
-Basá el análisis principalmente en lo que observás en el video.
+Basá el análisis únicamente en lo que observás en el video.
 
 ────────────────────────────
+
 VALIDACIÓN DE EVIDENCIA (OBLIGATORIO)
 
 Antes de concluir que existe:
@@ -338,90 +364,58 @@ con evidencia suficiente de interés real.
 
 Toda conclusión positiva debe estar respaldada por una señal observable específica.
 
-Si no podés identificar evidencia clara, reducí tu confianza.
+Si no podés identificar evidencia clara, la conclusión es negativa. No existe zona gris.
 
-Si existen varias explicaciones posibles, elegí la más conservadora.
+Si existen varias explicaciones posibles, elegí siempre la más desfavorable.
 
 No asumas que el espectador continuará mirando porque algo podría volverse interesante más adelante.
 
 Evaluá únicamente la información disponible hasta ese instante.
 
-PRIORIDAD ANALÍTICA
+────────────────────────────
 
-Prestá especial atención a:
+PRIORIDAD ANALÍTICA
 
 PRIORIDAD MÁXIMA
 
 Analizá primero el intervalo 0.0s - 1.0s.
 
-Antes de evaluar cualquier otra parte del video respondé:
+Antes de evaluar cualquier otra parte del video respondé internamente:
 
-"¿Existe una razón observable e inmediata para detener el scroll?"
+"¿Existe una razón fisiológica o psicológica concreta e inmediata
+para que el pulgar de un extraño se detenga en este preciso segundo?"
 
-No evalúes potencial futuro.
+Las únicas respuestas posibles son:
 
-No evalúes lo que podría ocurrir después.
+SÍ — con una señal observable específica que lo justifique
+NO — el scroll continúa
 
-Evaluá únicamente lo que el espectador recibe durante el primer segundo.
+No existe "podría funcionar".
+No existe "depende de la audiencia".
+No existe "tiene potencial".
 
-Si la respuesta depende de información que aparece después,
-considerá que esa información aún no existe para el espectador.
+Si no podés nombrar la señal específica, la respuesta es NO.
+Si la señal existe pero es común o esperada, la respuesta es NO.
+Si la señal requiere contexto previo para funcionar, la respuesta es NO.
 
 2. Desarrollo inicial (3-15 segundos)
 
-Estas zonas suelen determinar la mayor parte de la retención. Tenés que prestar atención acá obligatoriamente.
-
-Durante el análisis simulá obligatoriamente una audiencia que:
+Simulá obligatoriamente una audiencia que:
 
 * no conoce al creador
 * no está esperando este contenido
 * puede hacer scroll instantáneamente
+* no tiene ningún motivo para ser paciente
 
 No describas solamente lo que ocurre.
 
 Respondé obligatoriamente:
 
-"¿Qué motivo tiene esta persona para quedarse mirando?"
-
-VALIDACIÓN DE NECESIDAD DE ATENCIÓN
-
-Durante los primeros segundos no preguntes:
-
-"¿Puede funcionar?"
-
-Preguntá:
-
-"¿Por qué esta escena merece atención inmediata frente a miles de alternativas disponibles?"
-
-Si la respuesta depende de:
-
-- contexto externo
-- interés previo del espectador
-- conocimiento del creador
-- paciencia del espectador
-- expectativa previa
-
-entonces la escena posee una dependencia alta de contexto y debe considerarse débil para scroll stop.
-
-Evaluá el primer segundo como una pieza aislada.
-
-Preguntate:
-
-"Si este segundo apareciera entre miles de videos aleatorios, ¿contiene una razón observable para detener el scroll?"
-
-No evalúes intención.
-
-No evalúes potencial.
-
-Evaluá únicamente la razón visible e inmediata para prestar atención.
-
-Y también:
-
+"¿Qué motivo concreto tiene esta persona para quedarse mirando?"
 "¿En qué momento siente que está avanzando hacia una recompensa?"
-
 "¿En qué momento siente que está esperando?"
 
-Si detectás espera innecesaria, describila explícitamente aunque no exista un error técnico visible.
+Si detectás cualquier momento de espera, es una falla. Describila explícitamente.
 
 ────────────────────────────
 
@@ -429,32 +423,24 @@ MÉTODO
 
 FASE 1
 
-Describí objetivamente lo que ocurre.
+Describí objetivamente lo que ocurre segundo a segundo.
 
 FASE 2
 
-Explicá cómo probablemente reaccionará la audiencia.
+Aplicá el estándar del 1% superior.
+Evaluá cada elemento contra ese estándar, no contra el promedio.
 
 FASE 3
 
-Detectá fenómenos que aumenten o reduzcan:
-
-* atención
-* retención
-* memoria
-* conversión
-
-No es obligatorio que esos fenómenos tengan un nombre conocido.
+Detectá fenómenos que reduzcan atención, retención, memoria, conversión.
+Luego detectá fenómenos que los aumenten.
+El orden importa: buscá fallas primero.
 
 FASE 4
 
-Intentá refutar tu conclusión inicial.
-
-Buscá razones por las cuales el video podría funcionar.
-
-Buscá razones por las cuales podría fracasar.
-
-Emití el veredicto solamente después de considerar ambos escenarios.
+Intentá defender el video con el argumento más fuerte posible.
+Luego destruí ese argumento con evidencia observable.
+Emití el veredicto solamente después de ese proceso.
 
 CONTROL DE SUPOSICIONES
 
@@ -463,9 +449,23 @@ Antes de emitir el veredicto final:
 1. Enumerá las principales suposiciones que utilizaste.
 2. Preguntate cuáles podrían estar equivocadas.
 3. Verificá si la conclusión sigue siendo válida sin esas suposiciones.
+4. Si la conclusión se vuelve más severa sin las suposiciones, adoptá la versión más severa.
 
-No promociones una hipótesis a hecho sin evidencia observable.
+────────────────────────────
 
+ESCALA DE PROBABILIDADES
+
+Usá esta escala con criterio estricto:
+
+0–20   → Contenido que el algoritmo y la audiencia ignorarán.
+21–40  → Puede funcionar únicamente con audiencia preexistente y fiel.
+41–60  → Supera el mínimo pero no compite contra contenido optimizado.
+61–80  → Tiene señales reales y observables de retención para audiencia fría.
+81–100 → Reservado para contenido con múltiples señales fuertes y simultáneas, excepcional.
+
+Un hook genérico, familiar, o que depende de contexto
+no puede superar 35 en scroll_stop_probability.
+Si tu evaluación inicial es mayor, revisá hacia abajo.
 
 ────────────────────────────
 
@@ -506,7 +506,6 @@ JSON REQUERIDO
 
 `;
 };
-
 
 export const deriveHookGateStatus = (preFacts) => {
   const gate     = preFacts?.hook_gate;
