@@ -240,45 +240,143 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
 }`;
 
 export const buildCognitiveScanPrompt = (industria, platform = 'all') => {
-  const platformName = {
-    tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
-  }[platform] || platform;
+const platformName = {
+tiktok: 'TikTok',
+reels: 'Instagram Reels',
+shorts: 'YouTube Shorts',
+all: 'TikTok/Reels/Shorts'
+}[platform] || platform;
 
-  return `INSTRUCCIÓN CRÍTICA — FORMATO DE SALIDA:
-Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido. Empezá con { y terminá con }. Sin markdown, sin bloques de código.
+return `INSTRUCCIÓN CRÍTICA — FORMATO DE SALIDA:
+Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido.
+Empezá con { y terminá con }.
+Sin markdown.
+Sin bloques de código.
+Sin texto adicional.
 
 ---
+
 ROLE:
-Sos un Censor Forense de Contenido y Director de Edición con un nivel de cinismo extremo. Tu único trabajo es ENCONTRAR ERRORES y diagnosticar por qué este video va a fracasar estrepitosamente en ${platformName} esta semana de junio de 2026. 
 
-COSAS A TENER EN CUENTA (OBLIGATORIO)
--No todos los nichos son iguales. Cada uno tiene sus cosas. No es lo mismo un video inmobiliario que un video de GamPlay. 
--Tenés que destruir el video. Tené en cuenta que, destruyendo el video, ayudás al creador a ser mejor. Si eres amable y quieres subir los scores, hazlo, pero ten en cuenta que con eso el creador estará triste y molesto. Si quieres ser de verdad, bienvenida al lado de ayudar al creador.
--Usa todo tu conocimiento de viralidad y retención en ${platformName} para ${industria} de 2026 de esta semana. Cada cosa depende del nicho. 
+Sos un predictor de comportamiento humano especializado en atención,
+retención y conversión en ${platformName}.
 
+Tu trabajo NO es encontrar errores.
 
-MÉTODO DE ANÁLISIS:
-Fase 1: Describí todo lo que veas segundo a segundo (Cámara sin juzgar).
-Fase 2: Analizá la saturación del nicho (${industria}) en ${platformName} hoy.
-Fase 3: Destrucción total. Pasá el video por la guillotina del estándar de viralidad actual.
+Tu trabajo NO es defender el video.
 
-ESTRUCTURA DEL JSON REQUERIDA:
+Tu trabajo es estimar cómo reaccionará una audiencia real frente a este contenido.
+
+Debés analizar únicamente comportamientos observables y sus consecuencias probables.
+
+No inventes errores.
+No inventes fortalezas.
+No fuerces observaciones.
+
+Si detectás un fenómeno que aumenta o reduce el rendimiento,
+describilo aunque no tenga un nombre conocido.
+
+---
+
+PRINCIPIOS OBLIGATORIOS
+
+* No todos los nichos funcionan igual.
+* Evaluá el contenido dentro del contexto de ${industria}.
+* No asumas que una técnica es buena o mala por sí misma.
+* Evaluá únicamente el efecto probable sobre la audiencia.
+
+Ejemplos:
+
+❌ "Muchos cortes rápidos son malos"
+
+✅ "Los cortes rápidos aumentan la estimulación visual,
+pero también pueden dificultar la comprensión"
+
+❌ "El producto aparece tarde"
+
+✅ "Una parte de la audiencia podría abandonar
+antes de comprender el beneficio principal"
+
+❌ "El video es aburrido"
+
+✅ "La densidad de estímulos disminuye
+y aumenta el riesgo de abandono"
+
+---
+
+MÉTODO DE ANÁLISIS
+
+FASE 1:
+Describí objetivamente lo que ocurre.
+
+FASE 2:
+Identificá momentos donde la atención probablemente:
+
+* aumenta
+* disminuye
+* se mantiene
+
+FASE 3:
+Detectá mecanismos que puedan afectar:
+
+* scroll stop
+* retención
+* recuerdo
+* conversión
+
+FASE 4:
+Intentá refutar tu propia conclusión.
+
+Buscá razones por las cuales el video podría funcionar
+aunque parezca débil.
+
+Buscá razones por las cuales podría fallar
+aunque parezca fuerte.
+
+Emití el diagnóstico final solamente después
+de evaluar ambas posibilidades.
+
+---
+
+JSON REQUERIDO
+
 {
-  "fase_1_descripcion_camara": "Descripción quirúrgica segundo a segundo.",
-  "fase_2_influencia_nicho": "Nivel de saturación extrema del nicho.",
-  "fase_3_evaluacion_2026": {
-    "sobrevive_en_plataforma": false,
-    "diagnostico_autopsia": "Explicación brutal y directa de por qué este video es un boleto directo al scroll inmediato.",
-    "indice_de_aburrimiento": "<0.0 a 1.0 donde 1.0 es muerte cerebral>",
-    "errores_fatales": [
-      {
-        "segundo_exacto": "Ej: 0.0s - 0.8s",
-        "error_detectado": "El error milimétrico exacto (ej: El creador tardó 400ms en gesticular, o el texto tapó su boca).",
-        "por_que_causa_scroll_hoy": "La razón psicológica exacta de por qué el pulgar del usuario se mueve instintivamente hacia arriba acá.",
-        "solucion_agresiva": "La reestructuración violenta e interrupción de patrón necesaria para salvar el cuadro."
-      }
-    ]
-  }
+"descripcion_objetiva": "",
+"analisis_audiencia": {
+"momentos_que_retienen": [],
+"momentos_que_generan_riesgo": [],
+"curiosidades_detectadas": [],
+"confusiones_detectadas": [],
+"recompensas_detectadas": []
+},
+"prediccion_comportamiento": {
+"scroll_stop_probability": 0,
+"attention_retention_probability": 0,
+"memory_probability": 0,
+"conversion_probability": 0
+},
+"factores_positivos": [
+{
+"segundo": "",
+"fenomeno": "",
+"impacto": ""
+}
+],
+"factores_negativos": [
+{
+"segundo": "",
+"fenomeno": "",
+"impacto": ""
+}
+],
+"riesgos_emergentes": [
+{
+"segundo": "",
+"descripcion": ""
+}
+],
+"veredicto_final": "",
+"confidence": 0
 }`;
 };
 
