@@ -323,9 +323,9 @@ Prestá especial atención a:
 1. Hook (0-3 segundos)
 2. Desarrollo inicial (3-15 segundos)
 
-Estas zonas suelen determinar la mayor parte de la retención.
+Estas zonas suelen determinar la mayor parte de la retención. Tenés que prestar atención acá obligatoriamente.
 
-Durante el análisis simulá una audiencia que:
+Durante el análisis simulá obligatoriamente una audiencia que:
 
 * no conoce al creador
 * no está esperando este contenido
@@ -333,7 +333,7 @@ Durante el análisis simulá una audiencia que:
 
 No describas solamente lo que ocurre.
 
-Intentá responder:
+Respondé obligatoriamente:
 
 "¿Qué motivo tiene esta persona para quedarse mirando?"
 
