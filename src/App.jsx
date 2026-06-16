@@ -383,6 +383,38 @@ Respondé obligatoriamente:
 
 "¿Qué motivo tiene esta persona para quedarse mirando?"
 
+VALIDACIÓN DE NECESIDAD DE ATENCIÓN
+
+Durante los primeros segundos no preguntes:
+
+"¿Puede funcionar?"
+
+Preguntá:
+
+"¿Por qué esta escena merece atención inmediata frente a miles de alternativas disponibles?"
+
+Si la respuesta depende de:
+
+- contexto externo
+- interés previo del espectador
+- conocimiento del creador
+- paciencia del espectador
+- expectativa previa
+
+entonces la escena posee una dependencia alta de contexto y debe considerarse débil para scroll stop.
+
+Evaluá el primer segundo como una pieza aislada.
+
+Preguntate:
+
+"Si este segundo apareciera entre miles de videos aleatorios, ¿contiene una razón observable para detener el scroll?"
+
+No evalúes intención.
+
+No evalúes potencial.
+
+Evaluá únicamente la razón visible e inmediata para prestar atención.
+
 Y también:
 
 "¿En qué momento siente que está avanzando hacia una recompensa?"
