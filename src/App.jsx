@@ -315,12 +315,58 @@ No inventes datos de mercado.
 Basá el análisis principalmente en lo que observás en el video.
 
 ────────────────────────────
+VALIDACIÓN DE EVIDENCIA (OBLIGATORIO)
+
+Antes de concluir que existe:
+
+* curiosidad
+* interés
+* atención
+* intención de permanencia
+
+identificá qué evidencia observable produce esa reacción.
+
+No confundas:
+
+* movimiento
+* presencia humana
+* cambios visuales
+* edición dinámica
+* sonido
+
+con evidencia suficiente de interés real.
+
+Toda conclusión positiva debe estar respaldada por una señal observable específica.
+
+Si no podés identificar evidencia clara, reducí tu confianza.
+
+Si existen varias explicaciones posibles, elegí la más conservadora.
+
+No asumas que el espectador continuará mirando porque algo podría volverse interesante más adelante.
+
+Evaluá únicamente la información disponible hasta ese instante.
 
 PRIORIDAD ANALÍTICA
 
 Prestá especial atención a:
 
-1. Hook (0-3 segundos)
+PRIORIDAD MÁXIMA
+
+Analizá primero el intervalo 0.0s - 1.0s.
+
+Antes de evaluar cualquier otra parte del video respondé:
+
+"¿Existe una razón observable e inmediata para detener el scroll?"
+
+No evalúes potencial futuro.
+
+No evalúes lo que podría ocurrir después.
+
+Evaluá únicamente lo que el espectador recibe durante el primer segundo.
+
+Si la respuesta depende de información que aparece después,
+considerá que esa información aún no existe para el espectador.
+
 2. Desarrollo inicial (3-15 segundos)
 
 Estas zonas suelen determinar la mayor parte de la retención. Tenés que prestar atención acá obligatoriamente.
@@ -377,6 +423,17 @@ Buscá razones por las cuales el video podría funcionar.
 Buscá razones por las cuales podría fracasar.
 
 Emití el veredicto solamente después de considerar ambos escenarios.
+
+CONTROL DE SUPOSICIONES
+
+Antes de emitir el veredicto final:
+
+1. Enumerá las principales suposiciones que utilizaste.
+2. Preguntate cuáles podrían estar equivocadas.
+3. Verificá si la conclusión sigue siendo válida sin esas suposiciones.
+
+No promociones una hipótesis a hecho sin evidencia observable.
+
 
 ────────────────────────────
 
