@@ -196,6 +196,37 @@ Tu trabajo es DOS cosas: registrar señales técnicas Y describir el video compl
 No opinás, no evaluás, no inferís intención ni proyectás potencial.
 Solo describís lo que ves y escuchás, con precisión quirúrgica.
 
+VALIDACIÓN DE NECESIDAD DE ATENCIÓN
+
+Antes de completar hook_gate, evaluá:
+
+"¿Por qué esta escena merece atención inmediata frente a miles de alternativas?"
+
+Si la respuesta depende de:
+
+- curiosidad futura
+- contexto externo
+- conocer al creador
+- paciencia del espectador
+- recompensa posterior
+
+entonces NO existe retención observable.
+
+En ese caso:
+
+pregunta_activa_en_espectador = NINGUNA
+elemento_que_retiene = NINGUNO
+veredicto_gate = MUERTO
+
+IMPORTANTE:
+
+Movimiento NO implica retención.
+Una puerta abriéndose NO implica retención.
+Un recorrido de propiedad NO implica retención.
+Una persona caminando NO implica retención.
+
+La retención debe surgir de una necesidad cognitiva inmediata observable.
+
 REGLA CRÍTICA: Si no podés determinar un valor con certeza, usá los valores de
 incertidumbre: false para booleanos, 0.5 para hook_confianza,
 y escribí NINGUNA / NINGUNO cuando no hay evidencia concreta.
@@ -239,7 +270,7 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
   "hook_confianza":      <0.0 a 1.0>
 }`;
 
-export const buildCognitiveScanPrompt = (industria, platform = 'all') => {
+export const buildHookBrainPrompt = (industria, platform = 'all') => {
 const platformName = {
   tiktok: 'TikTok',
   reels: 'Instagram Reels',
@@ -251,256 +282,259 @@ return `
 
 INSTRUCCIÓN CRÍTICA
 
-Tu respuesta debe ser ÚNICAMENTE un objeto JSON válido.
+Tu respuesta debe ser únicamente JSON válido.
 
-* Empezá con {
-* Terminá con }
-* Sin markdown
-* Sin explicaciones fuera del JSON
+Sin markdown.
+Sin explicaciones fuera del JSON.
 
 ────────────────────────────
 
 ROLE
 
-Sos REDAXA VISION.
+Sos REDAXA HOOK ENGINE.
 
-Sos un predictor de comportamiento humano especializado en:
+Tu única misión es determinar si los primeros segundos
+detienen el scroll.
 
-* atención
-* retención
-* memoria
-* conversión
+NO analices:
 
-en ${platformName}.
+- ventas
+- CTA
+- conversión
+- narrativa completa
+- cierre
+- potencial futuro
 
-Tu trabajo es estimar cómo reaccionará una audiencia real frente a este contenido.
+Solo analizá:
 
-No evalúes creatividad.
-No evalúes esfuerzo.
-No evalúes calidad artística.
-No busques potencial.
-No des el beneficio de la duda.
-No busques razones para que funcione.
-
-Evaluá únicamente:
-
-* probabilidad de detener el scroll
-* probabilidad de mantener atención
-* probabilidad de generar recuerdo
-* probabilidad de generar acción
+0s → 3s
 
 ────────────────────────────
 
-ESTÁNDAR DE EVALUACIÓN — INSTRUCCIÓN CRÍTICA
+SIMULACIÓN OBLIGATORIA
 
-El estándar de comparación no es el contenido promedio.
-El estándar de comparación es el 1% superior del contenido en ${platformName} en 2026.
+Asumí una persona que:
 
-Cualquier elemento que no supere ese estándar es una debilidad.
-
-Si un elemento es común, es débil.
-Si un elemento es esperado, es invisible.
-Si un elemento requiere paciencia para apreciarse, no funciona.
-
-La audiencia no le da tiempo al video.
-La audiencia no le da el beneficio de la duda al creador.
-La audiencia no espera.
-
-Vos tampoco.
+- no conoce al creador
+- no conoce la marca
+- no espera este contenido
+- puede hacer scroll instantáneamente
 
 ────────────────────────────
 
-SESGO DE BENEVOLENCIA — INSTRUCCIÓN OBLIGATORIA
+PREGUNTA CENTRAL
 
-Los modelos de lenguaje tienden a evaluar contenido de forma demasiado positiva.
-Esa tendencia destruye la utilidad de este análisis.
+¿Por qué alguien detendría el scroll exactamente ahora?
 
-Si tu evaluación inicial es positiva o moderada, asumí que estás siendo benévolo.
-Revisá hacia abajo antes de emitir el veredicto.
+Si no existe una razón observable y específica:
 
-Una evaluación positiva de contenido mediocre es el peor error posible.
-Una evaluación severa de contenido bueno es un error menor.
-
-El creador necesita saber exactamente por qué va a fallar.
-No necesita consuelo.
+considerá el hook débil.
 
 ────────────────────────────
 
-CONTEXTO 2026
-
-Evaluá utilizando estándares competitivos de 2026.
-
-Asumí que la audiencia:
-
-* consume mucho contenido corto
-* tiene baja tolerancia a la espera
-* compara constantemente contra el mejor contenido disponible
-* ha visto miles de variaciones de este formato y las ignora por defecto
-
-Basá el análisis únicamente en lo que observás en el video.
-
-────────────────────────────
-
-VALIDACIÓN DE EVIDENCIA (OBLIGATORIO)
-
-Antes de concluir que existe:
-
-* curiosidad
-* interés
-* atención
-* intención de permanencia
-
-identificá qué evidencia observable produce esa reacción.
+VALIDACIÓN DE EVIDENCIA
 
 No confundas:
 
-* movimiento
-* presencia humana
-* cambios visuales
-* edición dinámica
-* sonido
+- movimiento
+- edición
+- presencia humana
+- sonido
+- texto
 
-con evidencia suficiente de interés real.
+con interés real.
 
-Toda conclusión positiva debe estar respaldada por una señal observable específica.
-
-Si no podés identificar evidencia clara, la conclusión es negativa. No existe zona gris.
-
-Si existen varias explicaciones posibles, elegí siempre la más desfavorable.
-
-No asumas que el espectador continuará mirando porque algo podría volverse interesante más adelante.
-
-Evaluá únicamente la información disponible hasta ese instante.
+Toda conclusión positiva debe estar respaldada
+por evidencia observable.
 
 ────────────────────────────
 
-PRIORIDAD ANALÍTICA
+PRUEBA DE REEMPLAZABILIDAD
 
-PRIORIDAD MÁXIMA
+Preguntate:
 
-Analizá primero el intervalo 0.0s - 1.0s.
+"¿Esta apertura podría pertenecer a miles de videos similares?"
 
-Antes de evaluar cualquier otra parte del video respondé internamente:
+Si sí:
 
-"¿Existe una razón fisiológica o psicológica concreta e inmediata
-para que el pulgar de un extraño se detenga en este preciso segundo?"
-
-Las únicas respuestas posibles son:
-
-SÍ — con una señal observable específica que lo justifique
-NO — el scroll continúa
-
-No existe "podría funcionar".
-No existe "depende de la audiencia".
-No existe "tiene potencial".
-
-Si no podés nombrar la señal específica, la respuesta es NO.
-Si la señal existe pero es común o esperada, la respuesta es NO.
-Si la señal requiere contexto previo para funcionar, la respuesta es NO.
-
-2. Desarrollo inicial (3-15 segundos)
-
-Simulá obligatoriamente una audiencia que:
-
-* no conoce al creador
-* no está esperando este contenido
-* puede hacer scroll instantáneamente
-* no tiene ningún motivo para ser paciente
-
-No describas solamente lo que ocurre.
-
-Respondé obligatoriamente:
-
-"¿Qué motivo concreto tiene esta persona para quedarse mirando?"
-"¿En qué momento siente que está avanzando hacia una recompensa?"
-"¿En qué momento siente que está esperando?"
-
-Si detectás cualquier momento de espera, es una falla. Describila explícitamente.
+considerá el hook débil.
 
 ────────────────────────────
 
-MÉTODO
+PRUEBA DE COSTO DE SCROLL
 
-FASE 1
+Preguntate:
 
-Describí objetivamente lo que ocurre segundo a segundo.
+"¿Qué pierde el espectador si hace scroll ahora?"
 
-FASE 2
+Si la respuesta no es evidente:
 
-Aplicá el estándar del 1% superior.
-Evaluá cada elemento contra ese estándar, no contra el promedio.
-
-FASE 3
-
-Detectá fenómenos que reduzcan atención, retención, memoria, conversión.
-Luego detectá fenómenos que los aumenten.
-El orden importa: buscá fallas primero.
-
-FASE 4
-
-Intentá defender el video con el argumento más fuerte posible.
-Luego destruí ese argumento con evidencia observable.
-Emití el veredicto solamente después de ese proceso.
-
-CONTROL DE SUPOSICIONES
-
-Antes de emitir el veredicto final:
-
-1. Enumerá las principales suposiciones que utilizaste.
-2. Preguntate cuáles podrían estar equivocadas.
-3. Verificá si la conclusión sigue siendo válida sin esas suposiciones.
-4. Si la conclusión se vuelve más severa sin las suposiciones, adoptá la versión más severa.
+considerá bajo poder de scroll stop.
 
 ────────────────────────────
 
-ESCALA DE PROBABILIDADES
-
-Usá esta escala con criterio estricto:
-
-0–20   → Contenido que el algoritmo y la audiencia ignorarán.
-21–40  → Puede funcionar únicamente con audiencia preexistente y fiel.
-41–60  → Supera el mínimo pero no compite contra contenido optimizado.
-61–80  → Tiene señales reales y observables de retención para audiencia fría.
-81–100 → Reservado para contenido con múltiples señales fuertes y simultáneas, excepcional.
-
-Un hook genérico, familiar, o que depende de contexto
-no puede superar 35 en scroll_stop_probability.
-Si tu evaluación inicial es mayor, revisá hacia abajo.
-
-────────────────────────────
-
-JSON REQUERIDO
+JSON
 
 {
-"descripcion_objetiva": "",
+"hook_funciona": false,
+"scroll_stop_strength": 0,
+"riesgo_scroll": 0,
+"razon_para_quedarse": "",
+"razon_para_hacer_scroll": "",
+"nivel_reemplazabilidad": 0,
+"velocidad_recompensa": 0,
+"confidence": 0
+}
 
-"hook": {
-"funciona": false,
-"motivo": "",
-"riesgo_scroll": 0
-},
+`;
+};
 
-"desarrollo": {
-"mantiene_interes": false,
-"motivo": "",
-"riesgo_abandono": 0
-},
+export const buildDevelopmentBrainPrompt = (industria, platform = 'all') => {
+const platformName = {
+  tiktok: 'TikTok',
+  reels: 'Instagram Reels',
+  shorts: 'YouTube Shorts',
+  all: 'TikTok/Reels/Shorts'
+}[platform] || platform;
 
-"prediccion": {
-"scroll_stop_probability": 0,
-"attention_retention_probability": 0,
-"memory_probability": 0,
-"conversion_probability": 0
-},
+return `
 
-"factores_positivos": [],
+INSTRUCCIÓN CRÍTICA
 
-"factores_negativos": [],
+Respuesta únicamente JSON válido.
 
-"fenomenos_emergentes": [],
+────────────────────────────
 
+ROLE
+
+Sos REDAXA DEVELOPMENT ENGINE.
+
+Tu misión es analizar qué ocurre después del hook.
+
+NO analices:
+
+- CTA
+- ventas
+- cierre
+- branding
+
+────────────────────────────
+
+PREGUNTA CENTRAL
+
+¿La promesa inicial avanza o se estanca?
+
+────────────────────────────
+
+SIMULACIÓN
+
+Asumí una audiencia:
+
+- impaciente
+- fría
+- sin interés previo
+
+────────────────────────────
+
+BUSCÁ
+
+- progreso
+- recompensa
+- novedad
+- avance narrativo
+
+Y detectá:
+
+- espera
+- relleno
+- repeticiones
+- pérdida de curiosidad
+
+────────────────────────────
+
+IMPORTANTE
+
+No analices calidad.
+
+Analizá progreso.
+
+────────────────────────────
+
+JSON
+
+{
+"promesa_avanza": false,
+"nivel_progreso": 0,
+"momentos_de_espera": [],
+"caidas_de_curiosidad": [],
+"recompensas_detectadas": [],
+"riesgo_abandono": 0,
+"confidence": 0
+}
+
+`;
+};
+
+export const buildJudgeBrainPrompt = () => {
+
+return `
+
+INSTRUCCIÓN CRÍTICA
+
+Recibirás exclusivamente análisis previos.
+
+No inventes fenómenos nuevos.
+
+No contradigas evidencia recibida.
+
+────────────────────────────
+
+ROLE
+
+Sos REDAXA JUDGE ENGINE.
+
+Tu función es fusionar los resultados de:
+
+- Hook Engine
+- Development Engine
+- Rhythm Engine
+
+────────────────────────────
+
+REGLAS
+
+El Hook tiene prioridad máxima.
+
+Si el Hook falla gravemente:
+
+el score viral nunca puede ser alto.
+
+Una narrativa excelente no compensa
+un hook invisible.
+
+Un ritmo excelente no compensa
+un hook invisible.
+
+────────────────────────────
+
+PONDERACIÓN
+
+Hook = importancia máxima
+
+Development = importancia alta
+
+Rhythm = importancia media
+
+────────────────────────────
+
+JSON
+
+{
+"viralScore": 0,
+"salesScore": 0,
+"principales_fortalezas": [],
+"principales_debilidades": [],
 "veredicto_final": "",
-
 "confidence": 0
 }
 
@@ -1280,7 +1314,7 @@ const runDeepAnalysis = async () => {
     return;
   }
 
-  const { storagePath, mimeType, duration, preFacts, platform } = videoMeta;
+  const { storagePath, mimeType, duration, platform } = videoMeta;
   const industria   = perception.industria;
   const nicheConfig = perception.motor_key ? NICHE_MOTORS[perception.motor_key] : null;
 
@@ -1290,37 +1324,31 @@ const runDeepAnalysis = async () => {
 
   setStep('analyzing');
   setStatusText("Iniciando auditoría profunda...");
-  setAnalysisProgress(22);
+  setAnalysisProgress(10);
 
-  // ── fileUri compartido entre todas las calls ──
-  // Se llena en CALL 0 y se reutiliza en CALL 1 y CALL 3
-  // Así Gemini ve el video real en cada análisis sin re-subir
- // ✅ Esto es JavaScript puro
-let sharedFileUri = null;
-let sharedFileName = null;
-
+  let sharedFileUri  = null;
+  let sharedFileName = null;
 
   try {
 
-    // ── CALL 0 — Pre-classifier (ya existía, ahora captura fileUri) ──
+    // ── CALL 0 — Pre-classifier ───────────────────────────────
     setStatusText("Extrayendo señales del video...");
-    setAnalysisProgress(18);
+    setAnalysisProgress(15);
 
     const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildPreClassifierPrompt(),
-        storagePath,          // ← sube el video y devuelve _fileUri
-        videoMimeType: mimeType,
-        duration: Math.round(duration),
+        text:            buildPreClassifierPrompt(),
+        storagePath,
+        videoMimeType:   mimeType,
+        duration:        Math.round(duration),
         maxOutputTokens: 768,
-        expectsJson: true,
-        temperature: 0,
+        expectsJson:     true,
+        temperature:     0,
       }
     });
 
     if (call0Error) throw new Error(`CALL 0 falló: ${call0Error.message}`);
 
-    // ── CAPTURAMOS el fileUri para reutilizar en todas las calls ──
     sharedFileUri  = call0Data?._fileUri  ?? null;
     sharedFileName = call0Data?._fileName ?? null;
     console.log('[VIRAX] fileUri capturado:', sharedFileUri ? '✅' : '❌ no disponible');
@@ -1328,26 +1356,22 @@ let sharedFileName = null;
     const preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
     console.log('[VIRAX] Pre-facts:', preFacts);
 
-    setPerception({
-      industria:           preFacts.industria || selectedNicho,
-      palanca_psicologica: preFacts.palanca_psicologica || 'Curiosidad / Retención',
-    });
+    setPerception(prev => ({
+      ...prev,
+      industria:           preFacts.industria           || prev.industria,
+      palanca_psicologica: preFacts.palanca_psicologica || prev.palanca_psicologica,
+    }));
 
-    setVideoMeta({
-      storagePath,
-      mimeType,
-      duration,
+    setVideoMeta(prev => ({
+      ...prev,
       preFacts,
-      platform,
-      followerRange: videoMeta.followerRange,
-      palanca_detectada: preFacts.palanca_psicologica || 'Curiosidad / Retención',
-    });
+      palanca_detectada: preFacts.palanca_psicologica || prev.palanca_detectada,
+    }));
 
-    setAnalysisProgress(100);
+    setAnalysisProgress(25);
 
     // ── CALL 1.5 — Research Brain ─────────────────────────────
     setStatusText("Investigando benchmark del nicho...");
-    setAnalysisProgress(28);
 
     let nichoBenchmark = null;
     try {
@@ -1359,11 +1383,6 @@ let sharedFileName = null;
         .eq('region', 'AR')
         .single();
       nichoBenchmark = benchmarkRow?.benchmark_json ?? null;
-      if (nichoBenchmark) {
-        console.log('[BENCHMARK] Cargado para', industria, '— actualizado:', benchmarkRow.updated_at);
-      } else {
-        console.warn('[BENCHMARK] Sin datos para', industria, '— usando conocimiento general');
-      }
     } catch (e) {
       console.warn('[BENCHMARK] Error al leer:', e.message);
     }
@@ -1372,8 +1391,7 @@ let sharedFileName = null;
     try {
       const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
         body: {
-          text: buildResearchBrainPrompt(platform, industria, selectedObjetivo, nichoBenchmark),
-          // ← sin video: research es solo texto, no necesita ver el video
+          text:            buildResearchBrainPrompt(platform, industria, selectedObjetivo, nichoBenchmark),
           expectsJson:     true,
           maxOutputTokens: 1024,
           temperature:     0.2,
@@ -1387,59 +1405,105 @@ let sharedFileName = null;
       console.warn('[CALL 1.5] Fallback research:', e.message);
     }
 
-    // ── CALL 1 — Cognitive Scan ───────────────────────────────
-    // CAMBIO CLAVE: usa fileUri en lugar de storagePath
-    // Ahora Gemini VE EL VIDEO REAL para detectar cortes, ritmo, audio, etc.
-    setStatusText("Analizando el video...");
-    setAnalysisProgress(38);
+    setAnalysisProgress(35);
 
-    const preFactsStr = JSON.stringify(preFacts ?? {});
+    // ── CALL 1A — Hook Brain ──────────────────────────────────
+    // Ve el video — analiza SOLO 0s→3s
+    setStatusText("Analizando el hook...");
 
-    console.log('[CALL 1] industria:', industria);
-    console.log('[CALL 1] preFacts size:', preFactsStr.length, 'chars');
-    console.log('[CALL 1] researchData disponible:', Object.keys(researchData).length > 0);
-    console.log('[CALL 1] fileUri disponible:', !!sharedFileUri);
+    const { data: call1AData, error: call1AError } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text:            buildHookBrainPrompt(industria, platform),
+        systemPrompt:    'Respondé ÚNICAMENTE con JSON válido. Sin texto fuera del JSON.',
+        ...(sharedFileUri
+          ? { fileUri: sharedFileUri, fileName: sharedFileName }
+          : { storagePath, videoMimeType: mimeType }
+        ),
+        videoMimeType:   mimeType,
+        duration:        Math.round(duration),
+        maxOutputTokens: 1024,
+        expectsJson:     true,
+        temperature:     0.2,
+      }
+    });
 
-    const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildCognitiveScanPrompt(preFactsStr, industria, researchData, platform),
-    systemPrompt: 'Sos un analizador de video que responde ÚNICAMENTE con JSON válido. NUNCA escribís texto introductorio ni explicaciones. Tu respuesta siempre empieza con { y termina con }. Si escribís cualquier texto fuera del JSON, el sistema falla completamente.',
-    // ── ANTES: storagePath → re-subía el video, costoso y lento ──
-    // ── AHORA: fileUri    → reutiliza el video ya subido en CALL 0 ──
-    ...(sharedFileUri
-      ? { fileUri: sharedFileUri, fileName: sharedFileName }  // ← reutiliza
-      : { storagePath, videoMimeType: mimeType }              // ← fallback si CALL 0 no devolvió URI
-    ),
-    videoMimeType:   mimeType,
-    duration:        Math.round(duration),
-    maxOutputTokens: 4096,
-    expectsJson:     true,
-    temperature:     0.3,
-  }
-});
+    if (call1AError) throw new Error(`CALL 1A (Hook Brain) falló: ${call1AError.message}`);
+    const hookScan = safeParseJSON(extractGeminiText(call1AData), 'hook-brain') || {};
+    console.log('[VIRAX] Hook Brain:', hookScan);
 
-    if (call1Error) {
-      let errorBody = '';
-      try { errorBody = await call1Error.context?.text?.(); } catch (_) {}
-      console.error('[CALL 1] Status error:', call1Error.message);
-      console.error('[CALL 1] Body real:', errorBody);
-      throw new Error(`CALL 1 falló: ${errorBody || call1Error.message}`);
-    }
+    setAnalysisProgress(48);
 
-    const cognitiveScan = safeParseJSON(extractGeminiText(call1Data), 'cognitive-scan') || {};
-    console.log('[VIRAX] Cognitive scan:', cognitiveScan);
-    console.log('[VIRAX] viralScore de Gemini (bruto):', cognitiveScan?.viralScore);
+    // ── CALL 1B — Development Brain ───────────────────────────
+    // Ve el video — analiza 3s en adelante
+    setStatusText("Analizando el desarrollo...");
 
+    const { data: call1BData, error: call1BError } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text:            buildDevelopmentBrainPrompt(industria, platform),
+        systemPrompt:    'Respondé ÚNICAMENTE con JSON válido. Sin texto fuera del JSON.',
+        ...(sharedFileUri
+          ? { fileUri: sharedFileUri, fileName: sharedFileName }
+          : { storagePath, videoMimeType: mimeType }
+        ),
+        videoMimeType:   mimeType,
+        duration:        Math.round(duration),
+        maxOutputTokens: 1024,
+        expectsJson:     true,
+        temperature:     0.2,
+      }
+    });
+
+    if (call1BError) throw new Error(`CALL 1B (Development Brain) falló: ${call1BError.message}`);
+    const developmentScan = safeParseJSON(extractGeminiText(call1BData), 'development-brain') || {};
+    console.log('[VIRAX] Development Brain:', developmentScan);
+
+    setAnalysisProgress(58);
+
+    // ── CALL 1C — Judge Brain ─────────────────────────────────
+    // NO ve el video — fusiona Hook + Development y emite viralScore
+    setStatusText("Calculando veredicto...");
+
+    const judgeBrainInput = `
+RESULTADOS A FUSIONAR:
+
+HOOK ENGINE:
+${JSON.stringify(hookScan, null, 2)}
+
+DEVELOPMENT ENGINE:
+${JSON.stringify(developmentScan, null, 2)}
+
+PRE-CLASSIFIER (señales técnicas):
+${JSON.stringify(preFacts?.atomicas ?? {}, null, 2)}
+
+HOOK GATE:
+${JSON.stringify(preFacts?.hook_gate ?? {}, null, 2)}
+`;
+
+    const { data: call1CData, error: call1CError } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text:            buildJudgeBrainPrompt() + '\n\n' + judgeBrainInput,
+        systemPrompt:    'Respondé ÚNICAMENTE con JSON válido. Sin texto fuera del JSON.',
+        expectsJson:     true,
+        maxOutputTokens: 1024,
+        temperature:     0.1,
+      }
+    });
+
+    if (call1CError) throw new Error(`CALL 1C (Judge Brain) falló: ${call1CError.message}`);
+    const judgeResult = safeParseJSON(extractGeminiText(call1CData), 'judge-brain') || {};
+    console.log('[VIRAX] Judge Brain:', judgeResult);
+
+    setAnalysisProgress(65);
 
     // ── JS — Gate + Cap ──────────────────────────────────────
-    const hookGate     = deriveHookGateStatus(preFacts);
-    const rawViralScore = cognitiveScan?.viralScore ?? 50;
+    const hookGate      = deriveHookGateStatus(preFacts);
+    const rawViralScore = judgeResult?.viralScore ?? 50;
     const viralCapData  = deriveViralCap(hookGate, preFacts, nicheConfig);
 
     const scoringRaw = {
       viralScore: Math.min(rawViralScore, viralCapData.cap),
       breakdown: {
-        causa_fracaso:   cognitiveScan?.causa_principal_fracaso ?? '—',
+        causa_fracaso:   judgeResult?.veredicto_final   ?? '—',
         base_score:      rawViralScore,
         cap_applied:     viralCapData.cap,
         cap_reason:      viralCapData.reason,
@@ -1450,19 +1514,17 @@ let sharedFileName = null;
     console.log('[VIRAX] Hook gate:', hookGate);
     console.log('[VIRAX] Cap:', viralCapData);
     console.log('[VIRAX] Score final (post-cap):', scoringRaw.viralScore,
-                '(Gemini dio:', rawViralScore, '/ cap era:', viralCapData.cap, ')');
-
+                '(Judge dio:', rawViralScore, '/ cap era:', viralCapData.cap, ')');
 
     // ── CALL 1.75 — Apply Research ────────────────────────────
-    // Sin video: solo contrasta JSON vs JSON
     setStatusText("Calculando brecha competitiva...");
-    setAnalysisProgress(54);
+    setAnalysisProgress(70);
 
     let gapAnalysis = {};
     try {
       const { data: call1_75Data, error: call1_75Error } = await supabase.functions.invoke('gemini-proxy', {
         body: {
-          text: buildApplyResearchBrainPrompt(preFacts, researchData, platform, industria),
+          text:            buildApplyResearchBrainPrompt(preFacts, researchData, platform, industria),
           expectsJson:     true,
           maxOutputTokens: 1024,
         }
@@ -1474,11 +1536,16 @@ let sharedFileName = null;
       console.warn('[CALL 1.75] Fallback gap:', e.message);
     }
 
-
     // ── CALL 2 — Strategy Brain ───────────────────────────────
-    // Sin video: trabaja con el JSON del cognitive scan
     setStatusText("Diagnosticando el video...");
-    setAnalysisProgress(66);
+    setAnalysisProgress(78);
+
+    // cognitiveScan ahora es la fusión de los tres cerebros
+    const cognitiveScan = {
+      hook:        hookScan,
+      development: developmentScan,
+      judge:       judgeResult,
+    };
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
@@ -1497,22 +1564,20 @@ let sharedFileName = null;
     });
 
     if (call2Error) throw new Error(`CALL 2 falló: ${call2Error.message}`);
-    const strategyRaw     = extractGeminiText(call2Data);
-    const strategyParsed  = safeParseJSON(strategyRaw, 'strategy') || {};
-    const strategyAnalysis = JSON.stringify(strategyParsed, null, 2);
+    const strategyRaw    = extractGeminiText(call2Data);
+    const strategyParsed = safeParseJSON(strategyRaw, 'strategy') || {};
     console.log('[VIRAX] Strategy:', strategyParsed);
 
+    setAnalysisProgress(87);
 
     // ── CALL 3 — Scoring Brain ────────────────────────────────
-    // CAMBIO: también reutiliza fileUri en lugar de re-subir el video
     setStatusText("Preparando tu reporte...");
-    setAnalysisProgress(80);
 
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildScoringBrainPrompt(
           JSON.stringify(preFacts),
-          strategyAnalysis,
+          JSON.stringify(strategyParsed, null, 2),
           cognitiveScan,
           {},
           scoringRaw,
@@ -1523,7 +1588,6 @@ let sharedFileName = null;
           nicheConfig,
           hookGate
         ),
-        // ── igual que CALL 1: reutiliza el fileUri si está disponible ──
         ...(sharedFileUri
           ? { fileUri: sharedFileUri, fileName: sharedFileName }
           : { storagePath, videoMimeType: mimeType }
@@ -1538,16 +1602,15 @@ let sharedFileName = null;
     if (call3Error) throw new Error(`CALL 3 falló: ${call3Error.message}`);
 
     const outputParsed = safeParseJSON(extractGeminiText(call3Data), 'scoring-output') || {};
-    setAnalysisProgress(90);
+    setAnalysisProgress(95);
     setStatusText("Estructurando reporte completo...");
 
-    console.log('[VIRAX] Output final de CALL 3:', {
+    console.log('[VIRAX] Output final CALL 3:', {
       salesScore: outputParsed.salesScore?.score,
       scrollStop: outputParsed.scrollStopScore?.score,
       hookStr:    outputParsed.hookDNA?.strength,
       potencial:  outputParsed.potentialScore,
     });
-
 
     // ── Ensamblar resultado final ─────────────────────────────
     const finalResult = {
@@ -1555,7 +1618,7 @@ let sharedFileName = null;
         score:        scoringRaw.viralScore,
         titulo:       'Potencial Viral',
         breakdown:    scoringRaw.breakdown,
-        verdict:      outputParsed.honestVerdict ?? '',
+        verdict:      judgeResult?.veredicto_final  ?? '',
         accion_clave: outputParsed.roadmap?.[0]?.solucion ?? '',
       },
       salesScore: {
@@ -1567,7 +1630,7 @@ let sharedFileName = null;
       scrollStopScore:  outputParsed.scrollStopScore  ?? { score: 0, verdict: '' },
       hookDNA:          outputParsed.hookDNA          ?? {},
       steppsScore:      outputParsed.steppsScore      ?? {},
-      honestVerdict:    outputParsed.honestVerdict    ?? '',
+      honestVerdict:    outputParsed.honestVerdict    ?? judgeResult?.veredicto_final ?? '',
       roadmap:          outputParsed.roadmap          ?? [],
       objetivo:         selectedObjetivo,
 
@@ -1595,12 +1658,14 @@ let sharedFileName = null;
       firstHourStrategy: outputParsed.firstHourStrategy ?? null,
       commentTrigger:    outputParsed.commentTrigger    ?? null,
 
-      _hook_gate:      hookGate,
-      _cognitive_scan: cognitiveScan,
-      _strategy:       strategyParsed,
-      _research_data:  researchData,
-      _gap_analysis:   gapAnalysis,
-      _viral_cap:      viralCapData,
+      _hook_gate:       hookGate,
+      _hook_scan:       hookScan,
+      _development_scan: developmentScan,
+      _judge_result:    judgeResult,
+      _strategy:        strategyParsed,
+      _research_data:   researchData,
+      _gap_analysis:    gapAnalysis,
+      _viral_cap:       viralCapData,
     };
 
     setAiResult(finalResult);
@@ -1621,10 +1686,6 @@ let sharedFileName = null;
     alert(`❌ Error al procesar reporte: ${err.message || err}`);
     setStep('upload');
   } finally {
-    // ── Limpieza final: eliminamos el video de Google File API y de Supabase ──
-    // Se hace en finally para garantizar limpieza incluso si hubo error
-
-    // 1. Eliminar de Google File API (si tenemos el fileName)
     if (sharedFileName) {
       try {
         await supabase.functions.invoke('gemini-proxy', {
@@ -1635,8 +1696,6 @@ let sharedFileName = null;
         console.warn('[VIRAX] No se pudo eliminar de Google File API:', e);
       }
     }
-
-    // 2. Eliminar de Supabase Storage (siempre)
     await supabase.storage.from('videos').remove([storagePath]);
     console.log('[VIRAX] Video eliminado de Supabase Storage ✅');
   }
