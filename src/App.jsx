@@ -1271,7 +1271,7 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
     storagePath,
     videoMimeType: mimeType,
     duration: Math.round(duration),
-    maxOutputTokens: 768,
+    maxOutputTokens: 1500,
     expectsJson: true,
     temperature: 0,
   }
@@ -1342,17 +1342,18 @@ const runDeepAnalysis = async () => {
     setStatusText("Extrayendo señales del video...");
     setAnalysisProgress(15);
 
-    const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text:            buildPreClassifierPrompt(),
-        storagePath,
-        videoMimeType:   mimeType,
-        duration:        Math.round(duration),
-        maxOutputTokens: 768,
-        expectsJson:     true,
-        temperature:     0,
-      }
-    });
+   // DESPUÉS
+const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    text:            buildPreClassifierPrompt(),
+    storagePath,
+    videoMimeType:   mimeType,
+    duration:        Math.round(duration),
+    maxOutputTokens: 1500,  // ← fix
+    expectsJson:     true,
+    temperature:     0,
+  }
+});
 
     if (call0Error) throw new Error(`CALL 0 falló: ${call0Error.message}`);
 
