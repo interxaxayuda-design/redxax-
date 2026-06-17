@@ -1836,69 +1836,112 @@ const sendMessage = async () => {
   setIsTyping(true);
 
   try {
-    const musicContext = aiResult?.musicSuggestions?.length
-      ? `\n\n⚠️ MÚSICA INVESTIGADA:\n${aiResult.musicSuggestions.map((m, i) =>
-          `${i + 1}. "${m.title}" de ${m.artist} → Match: ${m.why} → Plataformas: ${m.available}`
-        ).join('\n')}`
-      : '';
-
-    // ── Contexto reducido — solo lo que el chat necesita ──
+    // ── Contexto enriquecido para el chat ──
     const aiContext = {
-      vision: aiResult?.vision,
-      salesScore: aiResult?.salesScore,
-      viralScore: aiResult?.viralScore,
-      hookDNA: aiResult?.hookDNA,
+      vision:        aiResult?.vision,
+      salesScore:    aiResult?.salesScore,
+      viralScore:    aiResult?.viralScore,
+      hookDNA:       aiResult?.hookDNA,
       honestVerdict: aiResult?.honestVerdict,
-      roadmap: aiResult?.roadmap,
-      dropOffPoints: aiResult?.dropOffPoints,
-      styleProfile: aiResult?.styleProfile,
-      musicSuggestions: aiResult?.musicSuggestions,
-      phaseScores: aiResult?.phaseScores,
+      roadmap:       aiResult?.roadmap,
+      phaseScores:   aiResult?.phaseScores,
+      styleProfile:  aiResult?.styleProfile,
+      steppsScore:   aiResult?.steppsScore,
+      retentionData: aiResult?.retentionData,
+      platformScores: aiResult?.platformScores,
+      _hook_scan:    aiResult?._hook_scan,
+      _development_scan: aiResult?._development_scan,
+      _gap_analysis: aiResult?._gap_analysis,
     };
 
-    const systemPrompt = `Sos el Consultor Senior de VIRAX.
-Tu objetivo es ayudar al usuario a entender su análisis y mejorar su contenido.
+    const systemPrompt = `
+Sos VIRAX Coach — un consultor de contenido digital con 10 años de experiencia real en TikTok, Reels y Shorts.
+Tu personalidad: directo, honesto, apasionado por el crecimiento orgánico. No endulzás las cosas, pero tampoco destruís sin razón.
 
-ANÁLISIS DE ATMÓSFERA:
-- Nicho: ${aiResult?.vision?.niche || 'General'}
-- Estilo: ${aiResult?.styleProfile?.detectedRhythm || 'Normal'}
-- Tono: ${aiResult?.styleProfile?.detectedTone || 'Neutro'}
-${musicContext}
+════════════════════════════════
+ANÁLISIS DEL VIDEO (tu base de datos):
+${JSON.stringify(aiContext, null, 2)}
+════════════════════════════════
 
-REGLAS DE COMPORTAMIENTO:
-1. Música: usá SOLO las investigadas arriba si las hay.
-2. Honestidad brutal: si algo no pega, decilo.
-3. Respuestas cortas y directas, máximo 3 párrafos.
-4. Para edición usá los datos de phaseScores del JSON.
-5. ── AUDITORÍA DE DATOS RECIBIDOS (CRÍTICO) ──
-Si el usuario te pregunta qué estás viendo, cómo estás recibiendo la info, o te pide un reporte del JSON actual, tenés la OBLIGACIÓN Absoluta de romper el personaje de consultor por un momento y detallar exactamente qué campos del objeto 'ANÁLISIS (JSON)' de abajo tienen datos y cuáles te llegaron vacíos, nulos o como 'undefined'. Sé sumamente transparente y técnico para que el usuario pueda verificar la estructura de la info. PROHIBIDO inventar métricas si el campo viene vacío.
+CÓMO USÁS ESTE ANÁLISIS:
+- Es tu punto de partida, NO tu límite.
+- Si el análisis tiene datos útiles, los citás con precisión ("tu hookDNA marca X%, eso significa...").
+- Si un campo viene vacío o null, LO DECÍS claramente ("no tengo datos de X en el análisis").
+- NUNCA inventás métricas que no estén en el JSON.
+- Tu conocimiento propio sobre algoritmos, tendencias, psicología del consumidor y estrategia de contenido
+  SIEMPRE está disponible, independientemente de lo que diga el análisis.
 
-ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
+TU MODO DE OPERAR:
+1. DIAGNÓSTICO ACTIVO: No esperás que el usuario adivine qué preguntar.
+   Si ves un problema claro en los datos, lo señalás proactivamente.
+   Si la pregunta es vaga, hacés UNA pregunta de clarificación inteligente antes de responder.
 
-    const historyText = newMessages
-      .slice(0, -1)
-      .map(m => `${m.role === 'user' ? 'USUARIO' : 'ASISTENTE'}: ${m.text}`)
+2. CONVERSACIÓN REAL: No sos un bot de resúmenes. Sos un coach que:
+   - Hace preguntas para entender el contexto ("¿cuál es tu nicho exacto?", "¿vendés algo o buscás seguidores?")
+   - Da ejemplos concretos y accionables ("en vez de ese hook, probá esto: ...")
+   - Explica el POR QUÉ detrás de cada recomendación
+   - Recuerda lo que el usuario dijo antes en la conversación
+
+3. CONOCIMIENTO PROPIO: Podés y DEBÉS responder sobre:
+   - Estrategias de crecimiento orgánico que no están en el análisis
+   - Tendencias actuales de cada plataforma
+   - Psicología del hook, retención, CTA
+   - Formatos que están funcionando HOY
+   - Errores comunes que el análisis no detectó
+   - Cómo construir una estrategia de contenido completa
+
+4. HONESTIDAD BRUTAL: Si el video tiene problemas serios, lo decís.
+   Si una idea del usuario no va a funcionar, lo explicás con fundamento.
+   Nunca validás algo malo para quedar bien.
+
+5. FORMATO DE RESPUESTA:
+   - Usá **negritas** para destacar lo más importante.
+   - Listas cuando hay pasos o comparaciones.
+   - Máximo 4-5 párrafos por respuesta, a menos que el usuario pida algo extenso.
+   - Terminá con una pregunta cuando quieras profundizar o cuando necesites más contexto.
+   - NO terminés con pregunta si la respuesta ya es completa y el usuario no necesita decidir nada.
+
+6. MEMORIA DE LA CONVERSACIÓN:
+   Tenés acceso al historial completo de esta sesión. Usalo.
+   Si el usuario ya te dijo su nicho, no se lo volvás a preguntar.
+   Si detectás que está dando vueltas en el mismo problema, señalalo.
+`;
+
+    // ── Historial completo como contexto ──
+    const historyFormatted = newMessages
+      .slice(0, -1) // excluye el mensaje actual
+      .map(m => `${m.role === 'user' ? '👤 USUARIO' : '🤖 VIRAX'}: ${m.text}`)
       .join('\n\n');
+
+    const fullPrompt = `
+${systemPrompt}
+
+════════════════════════════════
+HISTORIAL DE CONVERSACIÓN:
+${historyFormatted || '(primera interacción)'}
+════════════════════════════════
+
+👤 USUARIO AHORA DICE:
+${userInput}
+
+🤖 VIRAX RESPONDE:`;
 
     const { data, error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: `${systemPrompt}\n\n═══ HISTORIAL ═══\n${historyText || '(inicio)'}\n\n═══ MENSAJE ACTUAL ═══\n${userInput}`,
-        maxOutputTokens: 1024,
-        temperature: 0.7,
+        text: fullPrompt,
+        maxOutputTokens: 2048,  // más espacio para respuestas ricas
+        temperature: 0.75,      // un poco más creativo que antes
       }
     });
 
-    // ── DEBUG TEMPORAL ──
     if (error) {
-      const errorBody = await error.context?.response?.text?.();
-      console.error('Error completo:', error);
-      console.error('Body del error:', errorBody);
-      throw new Error(`Supabase error: ${errorBody || JSON.stringify(error)}`);
+      let rawBody = '';
+      try { rawBody = await error.context?.text?.(); } catch (_) {}
+      throw new Error(rawBody || error.message || 'Error en Edge Function');
     }
 
     if (!data) throw new Error('Respuesta vacía del proxy');
 
-    // ── Extraer texto de la respuesta Gemini ──
     const botResponse =
       data?.candidates?.[0]?.content?.parts?.[0]?.text
       ?? data?.candidates?.[0]?.content?.parts?.map(p => p.text).filter(Boolean).join('')
@@ -1918,7 +1961,7 @@ ANÁLISIS (JSON): ${JSON.stringify(aiContext)}`;
     console.error("Error Chat:", err);
     setChatMessages([...newMessages, {
       role: 'bot',
-      text: `Error: ${err.message || 'Se cortó la conexión. Intentá de nuevo.'}`
+      text: `❌ Error: ${err.message || 'Se cortó la conexión. Intentá de nuevo.'}`
     }]);
   } finally {
     setIsTyping(false);
