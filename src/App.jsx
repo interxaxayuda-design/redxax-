@@ -1264,20 +1264,27 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     setStatusText("Extrayendo señales del video...");
     setAnalysisProgress(18);
 
-    const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildPreClassifierPrompt(),
-        storagePath,
-        videoMimeType: mimeType,
-        duration: Math.round(duration),
-        maxOutputTokens: 768,
-        expectsJson: true,
-        temperature: 0,         // ✅ CALL 0 sigue en 0 — solo extrae hechos observables
-      }
-    });
+   // En runNeuralAnalysis, reemplazá el bloque CALL 0:
+const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    text: buildPreClassifierPrompt(),
+    storagePath,
+    videoMimeType: mimeType,
+    duration: Math.round(duration),
+    maxOutputTokens: 768,
+    expectsJson: true,
+    temperature: 0,
+  }
+});
 
-    if (call0Error) throw new Error(`CALL 0 falló: ${call0Error.message}`);
-
+if (call0Error) {
+  // ← AGREGA ESTO para ver el error real
+  let rawBody = '';
+  try { rawBody = await call0Error.context?.text?.(); } catch (_) {}
+  console.error('[CALL 0 ERROR] Status:', call0Error.message);
+  console.error('[CALL 0 ERROR] Body real:', rawBody);
+  throw new Error(`CALL 0 falló: ${rawBody || call0Error.message}`);
+}
     const preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
     console.log('[VIRAX] Pre-facts:', preFacts);
 
