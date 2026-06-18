@@ -460,33 +460,55 @@ No inventes información. Solo fusioná evidencia recibida.
 ════════════════════════════
 ROLE
 Sos REDAXA JUDGE ENGINE.
-Fusionás los outputs de Hook Engine, Development Engine y Rhythm Engine.
+Fusionás los outputs de Hook Engine y Development Engine.
+
+════════════════════════════
+PASO OBLIGATORIO — ANTES DE CALCULAR EL SCORE
+
+Ejecutá estos tres chequeos en orden.
+Guardá los resultados internamente: los vas a necesitar.
+
+CHEQUEO 1 — CONTRADICCIÓN HOOK vs DEVELOPMENT
+¿El hook genera una expectativa que el desarrollo no cumple?
+Ejemplos de contradicción real:
+  - Hook promete una transformación → desarrollo no la muestra
+  - Hook genera tensión narrativa → desarrollo la resuelve demasiado rápido o nunca
+  - Hook es energético → desarrollo cae en ritmo lento sin recompensa
+Si detectás contradicción: penalizá el viralScore (máximo 65).
+Si no hay contradicción: continuá sin penalizar.
+
+CHEQUEO 2 — CONSISTENCIA INTERNA
+¿Los datos de ambos engines son coherentes entre sí?
+Si un engine da señales positivas fuertes y el otro da señales
+negativas fuertes sin explicación posible: priorizá el negativo.
+El beneficio de la duda no existe en análisis viral.
+
+CHEQUEO 3 — EVIDENCIA REAL vs AUSENCIA DE EVIDENCIA
+Toda conclusión positiva necesita respaldo observable en los datos.
+Si un engine da score alto pero sus factores_positivos están vacíos
+o son vagos: tratalo como score medio, no como score alto.
 
 ════════════════════════════
 JERARQUÍA DE PONDERACIÓN
 
-Hook     → peso 50%
-Development → peso 30%
-Rhythm   → peso 20%
+Hook        → peso 60%
+Development → peso 40%
 
 ════════════════════════════
-REGLAS DURAS (no negociables)
+REGLAS DURAS
 
 REGLA 1 — TECHO POR HOOK DÉBIL
-Si scroll_stop_probability del Hook < 35:
-  viralScore máximo = 45, sin excepción.
+Si scroll_stop_probability < 35: viralScore máximo = 40.
+Si scroll_stop_probability < 55: viralScore máximo = 62.
 
-Si scroll_stop_probability del Hook < 55:
-  viralScore máximo = 65, sin excepción.
+REGLA 2 — TECHO POR CONTRADICCIÓN (del Chequeo 1)
+Si detectaste contradicción Hook → Development:
+viralScore máximo = 65, aunque ambos scores individuales sean altos.
 
-REGLA 2 — ANTI-INFLACIÓN
-Si viralScore > 75, "explicacion_score" debe citar
-evidencia específica de al menos 2 engines.
-Si no podés citarla, bajá viralScore a 70.
-
-REGLA 3 — COHERENCIA
-Si Hook es fuerte pero Development colapsa,
-viralScore no puede superar 72.
+REGLA 3 — ANTI-INFLACIÓN
+Si viralScore > 72: "explicacion_score" debe citar evidencia
+específica de Hook Y Development.
+Si no podés citarla con datos reales: bajá viralScore a 68.
 
 ════════════════════════════
 ESCALA
@@ -503,6 +525,8 @@ OUTPUT JSON
 {
   "viralScore": 0,
   "salesScore": 0,
+  "contradiccion_detectada": false,
+  "tipo_contradiccion": "",
   "fortalezas_clave": [],
   "debilidades_clave": [],
   "factor_dominante": "",
@@ -511,6 +535,8 @@ OUTPUT JSON
 }
   `;
 };
+
+
 
 export const deriveHookGateStatus = (preFacts) => {
   const gate     = preFacts?.hook_gate;
@@ -579,7 +605,7 @@ export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => 
     'hard':    30,
   };
 
-  const baseCap = capPorPenalty[penaltyLevel] ?? 100;
+  const baseCap = capPorPenalty[penaltyLevel] ?? 100;  //historyFormatted
 
   const lento = (atomicas.cuts_per_10s ?? 0) < 2 &&
                 (atomicas.silence_duration_s ?? 0) > 8 &&
@@ -1878,22 +1904,24 @@ TU MODO DE OPERAR:
    Si detectás que está dando vueltas en el mismo problema, señalalo.
 `;
 
-    // ── Historial completo como contexto ──
-    const historyFormatted = newMessages
-      .slice(0, -1) // excluye el mensaje actual
-      .map(m => `${m.role === 'user' ? '👤 USUARIO' : '🤖 VIRAX'}: ${m.text}`)
-      .join('\n\n');
+    // Separá claramente historial de mensaje actual
+const history = newMessages.slice(0, -1); // todo menos el último
+const currentMessage = newMessages[newMessages.length - 1]; // solo el último
 
-    const fullPrompt = `
+const historyFormatted = history
+  .map(m => `${m.role === 'user' ? '👤 USUARIO' : '🤖 VIRAX'}: ${m.text}`)
+  .join('\n\n');
+
+const fullPrompt = `
 ${systemPrompt}
 
 ════════════════════════════════
-HISTORIAL DE CONVERSACIÓN:
+HISTORIAL:
 ${historyFormatted || '(primera interacción)'}
 ════════════════════════════════
 
 👤 USUARIO AHORA DICE:
-${userInput}
+${currentMessage.text}
 
 🤖 VIRAX RESPONDE:`;
 
