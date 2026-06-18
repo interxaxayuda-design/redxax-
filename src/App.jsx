@@ -270,6 +270,7 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
   "hook_confianza":      <0.0 a 1.0>
 }`;
 
+
 export const buildHookBrainPrompt = (industria, platform = 'all') => {
   const platformName = {
     tiktok: 'TikTok',
