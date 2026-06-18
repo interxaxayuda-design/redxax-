@@ -270,100 +270,123 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
   "hook_confianza":      <0.0 a 1.0>
 }`;
 
-
 export const buildHookBrainPrompt = (industria, platform = 'all') => {
-  const platformName = {
-    tiktok: 'TikTok',
-    reels: 'Instagram Reels',
-    shorts: 'YouTube Shorts',
-    all: 'TikTok/Reels/Shorts'
-  }[platform] || platform;
+const platformName = {
+  tiktok: 'TikTok',
+  reels: 'Instagram Reels',
+  shorts: 'YouTube Shorts',
+  all: 'TikTok/Reels/Shorts'
+}[platform] || platform;
 
-  return `
+return `
+
 INSTRUCCIÓN CRÍTICA
-Respondé únicamente JSON válido. Sin markdown. Sin texto fuera del JSON.
 
-════════════════════════════
+Tu respuesta debe ser únicamente JSON válido.
+
+Sin markdown.
+Sin explicaciones fuera del JSON.
+
+────────────────────────────
+
 ROLE
+
 Sos REDAXA HOOK ENGINE.
-Analizás exclusivamente los primeros 3 segundos del video.
-Plataforma objetivo: ${platformName}
-Industria: ${industria}
 
-════════════════════════════
-PROCESO OBLIGATORIO (ejecutá en orden)
+Tu única misión es determinar si los primeros segundos
+detienen el scroll.
 
-PASO 1 — OBSERVACIÓN NEUTRAL
-Describí internamente qué ocurre en 0s→3s sin juzgar.
-Solo hechos: qué se ve, qué se oye, qué se lee.
+NO analices:
 
-PASO 2 — TEST DE REEMPLAZABILIDAD
-¿Esta apertura podría pertenecer a miles de videos similares?
-→ Sí sin dudas: penaliza fuerte (-30 a -40 puntos base)
-→ Sí con matices: penaliza moderado (-10 a -20 puntos base)
-→ No, tiene algo distintivo: neutro o positivo (0 a +20 puntos base)
+- ventas
+- CTA
+- conversión
+- narrativa completa
+- cierre
+- potencial futuro
 
-PASO 3 — TEST DE COSTO DE SCROLL
-¿Qué pierde el espectador si hace scroll ahora mismo?
-→ Nada evidente: scroll_stop_probability máximo = 35
-→ Algo vago: scroll_stop_probability máximo = 60
-→ Algo concreto y observable: sin techo
+Solo analizá:
 
-PASO 4 — SEÑALES DE ATENCIÓN
-Buscá evidencia observable de al menos UNA de estas fuentes:
-curiosidad / sorpresa / tensión / utilidad inmediata /
-transformación visible / identidad / deseo / demostración
+0s → 3s
 
-Cada señal confirmada suma. Cada ausencia resta.
-Movimiento, edición y presencia humana NO cuentan como señales.
+────────────────────────────
 
-════════════════════════════
-CALIBRACIÓN NUMÉRICA — FEW-SHOT
+SIMULACIÓN OBLIGATORIA
 
-Caso A (score: 15):
-Hook de coach mostrando su cara sonriendo, sin texto,
-sin contexto, sin tensión. Música de fondo genérica.
-→ Reemplazable al 100%. Costo de scroll = cero.
+Asumí una persona que:
 
-Caso B (score: 42):
-Texto "3 errores que comete la gente al invertir"
-sobre imagen estática. Hay utilidad pero el formato
-es idéntico a 10.000 videos existentes.
-→ Reemplazable alto. Señal de utilidad presente pero débil.
+- no conoce al creador
+- no conoce la marca
+- no espera este contenido
+- puede hacer scroll instantáneamente
 
-Caso C (score: 68):
-Persona mostrando resultado inesperado antes de explicar cómo.
-Tensión visual clara. Formato semi-común pero ejecución específica.
-→ Reemplazabilidad media. Costo de scroll moderado.
+────────────────────────────
 
-Caso D (score: 88):
-Apertura con transformación visible en los primeros 2 segundos,
-elemento sorpresivo, contexto que genera pregunta inmediata.
-→ Casi irreemplazable. Costo de scroll alto y concreto.
+PREGUNTA CENTRAL
 
-════════════════════════════
-REGLA ANTI-INFLACIÓN
-Si asignás scroll_stop_probability > 70,
-"razon_principal_de_retencion" no puede estar vacío
-y debe citar evidencia observable específica del video.
-Si no podés citarla, bajá el score a máximo 65.
+¿Por qué alguien detendría el scroll exactamente ahora?
 
-════════════════════════════
-OUTPUT JSON
+Si no existe una razón observable y específica:
+
+considerá el hook débil.
+
+────────────────────────────
+
+VALIDACIÓN DE EVIDENCIA
+
+No confundas:
+
+- movimiento
+- edición
+- presencia humana
+- sonido
+- texto
+
+con interés real.
+
+Toda conclusión positiva debe estar respaldada
+por evidencia observable.
+
+────────────────────────────
+
+PRUEBA DE REEMPLAZABILIDAD
+
+Preguntate:
+
+"¿Esta apertura podría pertenecer a miles de videos similares?"
+
+Si sí:
+
+considerá el hook débil.
+
+────────────────────────────
+
+PRUEBA DE COSTO DE SCROLL
+
+Preguntate:
+
+"¿Qué pierde el espectador si hace scroll ahora?"
+
+Si la respuesta no es evidente:
+
+considerá bajo poder de scroll stop.
+
+────────────────────────────
+
+JSON
 
 {
-  "scroll_stop_probability": 0,
-  "curiosity_strength": 0,
-  "attention_strength": 0,
-  "test_reemplazabilidad": "alto|medio|bajo",
-  "costo_de_scroll": "nulo|bajo|medio|alto",
-  "factores_positivos": [],
-  "factores_negativos": [],
-  "razon_principal_de_retencion": "",
-  "riesgo_scroll": 0,
-  "confidence": 0
+"hook_funciona": false,
+"scroll_stop_strength": 0,
+"riesgo_scroll": 0,
+"razon_para_quedarse": "",
+"razon_para_hacer_scroll": "",
+"nivel_reemplazabilidad": 0,
+"velocidad_recompensa": 0,
+"confidence": 0
 }
-  `;
+
+`;
 };
 
 export const buildDevelopmentBrainPrompt = (industria, platform = 'all') => {
@@ -453,91 +476,70 @@ JSON
 };
 
 export const buildJudgeBrainPrompt = () => {
-  return `
+
+return `
+
 INSTRUCCIÓN CRÍTICA
-Respondé únicamente JSON válido.
-No inventes información. Solo fusioná evidencia recibida.
 
-════════════════════════════
+Recibirás exclusivamente análisis previos.
+
+No inventes fenómenos nuevos.
+
+No contradigas evidencia recibida.
+
+────────────────────────────
+
 ROLE
+
 Sos REDAXA JUDGE ENGINE.
-Fusionás los outputs de Hook Engine y Development Engine.
 
-════════════════════════════
-PASO OBLIGATORIO — ANTES DE CALCULAR EL SCORE
+Tu función es fusionar los resultados de:
 
-Ejecutá estos tres chequeos en orden.
-Guardá los resultados internamente: los vas a necesitar.
+- Hook Engine
+- Development Engine
+- Rhythm Engine
 
-CHEQUEO 1 — CONTRADICCIÓN HOOK vs DEVELOPMENT
-¿El hook genera una expectativa que el desarrollo no cumple?
-Ejemplos de contradicción real:
-  - Hook promete una transformación → desarrollo no la muestra
-  - Hook genera tensión narrativa → desarrollo la resuelve demasiado rápido o nunca
-  - Hook es energético → desarrollo cae en ritmo lento sin recompensa
-Si detectás contradicción: penalizá el viralScore (máximo 65).
-Si no hay contradicción: continuá sin penalizar.
+────────────────────────────
 
-CHEQUEO 2 — CONSISTENCIA INTERNA
-¿Los datos de ambos engines son coherentes entre sí?
-Si un engine da señales positivas fuertes y el otro da señales
-negativas fuertes sin explicación posible: priorizá el negativo.
-El beneficio de la duda no existe en análisis viral.
+REGLAS
 
-CHEQUEO 3 — EVIDENCIA REAL vs AUSENCIA DE EVIDENCIA
-Toda conclusión positiva necesita respaldo observable en los datos.
-Si un engine da score alto pero sus factores_positivos están vacíos
-o son vagos: tratalo como score medio, no como score alto.
+El Hook tiene prioridad máxima.
 
-════════════════════════════
-JERARQUÍA DE PONDERACIÓN
+Si el Hook falla gravemente:
 
-Hook        → peso 60%
-Development → peso 40%
+el score viral nunca puede ser alto.
 
-════════════════════════════
-REGLAS DURAS
+Una narrativa excelente no compensa
+un hook invisible.
 
-REGLA 1 — TECHO POR HOOK DÉBIL
-Si scroll_stop_probability < 35: viralScore máximo = 40.
-Si scroll_stop_probability < 55: viralScore máximo = 62.
+Un ritmo excelente no compensa
+un hook invisible.
 
-REGLA 2 — TECHO POR CONTRADICCIÓN (del Chequeo 1)
-Si detectaste contradicción Hook → Development:
-viralScore máximo = 65, aunque ambos scores individuales sean altos.
+────────────────────────────
 
-REGLA 3 — ANTI-INFLACIÓN
-Si viralScore > 72: "explicacion_score" debe citar evidencia
-específica de Hook Y Development.
-Si no podés citarla con datos reales: bajá viralScore a 68.
+PONDERACIÓN
 
-════════════════════════════
-ESCALA
+Hook = importancia máxima
 
-0–40   → bajo potencial
-41–60  → potencial limitado
-61–75  → potencial medio
-76–90  → potencial alto
-91–100 → potencial excepcional
+Development = importancia alta
 
-════════════════════════════
-OUTPUT JSON
+Rhythm = importancia media
+
+────────────────────────────
+
+JSON
 
 {
-  "viralScore": 0,
-  "salesScore": 0,
-  "contradiccion_detectada": false,
-  "tipo_contradiccion": "",
-  "fortalezas_clave": [],
-  "debilidades_clave": [],
-  "factor_dominante": "",
-  "explicacion_score": "",
-  "confidence": 0
+"viralScore": 0,
+"salesScore": 0,
+"principales_fortalezas": [],
+"principales_debilidades": [],
+"veredicto_final": "",
+"confidence": 0
 }
-  `;
+
+`;
 };
-
-
 
 export const deriveHookGateStatus = (preFacts) => {
   const gate     = preFacts?.hook_gate;
@@ -606,7 +608,7 @@ export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => 
     'hard':    30,
   };
 
-  const baseCap = capPorPenalty[penaltyLevel] ?? 100;  //historyFormatted
+  const baseCap = capPorPenalty[penaltyLevel] ?? 100;
 
   const lento = (atomicas.cuts_per_10s ?? 0) < 2 &&
                 (atomicas.silence_duration_s ?? 0) > 8 &&
@@ -1905,24 +1907,22 @@ TU MODO DE OPERAR:
    Si detectás que está dando vueltas en el mismo problema, señalalo.
 `;
 
-    // Separá claramente historial de mensaje actual
-const history = newMessages.slice(0, -1); // todo menos el último
-const currentMessage = newMessages[newMessages.length - 1]; // solo el último
+    // ── Historial completo como contexto ──
+    const historyFormatted = newMessages
+      .slice(0, -1) // excluye el mensaje actual
+      .map(m => `${m.role === 'user' ? '👤 USUARIO' : '🤖 VIRAX'}: ${m.text}`)
+      .join('\n\n');
 
-const historyFormatted = history
-  .map(m => `${m.role === 'user' ? '👤 USUARIO' : '🤖 VIRAX'}: ${m.text}`)
-  .join('\n\n');
-
-const fullPrompt = `
+    const fullPrompt = `
 ${systemPrompt}
 
 ════════════════════════════════
-HISTORIAL:
+HISTORIAL DE CONVERSACIÓN:
 ${historyFormatted || '(primera interacción)'}
 ════════════════════════════════
 
 👤 USUARIO AHORA DICE:
-${currentMessage.text}
+${userInput}
 
 🤖 VIRAX RESPONDE:`;
 
