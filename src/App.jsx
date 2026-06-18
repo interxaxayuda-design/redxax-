@@ -271,111 +271,113 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
 }`;
 
 export const buildHookBrainPrompt = (industria, platform = 'all') => {
-return `
+  const platformName = {
+    tiktok: 'TikTok',
+    reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts',
+    all: 'TikTok/Reels/Shorts'
+  }[platform] || platform;
 
+  return `
 INSTRUCCIÓN CRÍTICA
+Respondé únicamente JSON válido. Sin markdown. Sin texto fuera del JSON.
 
-Respondé únicamente JSON válido.
-
-Sin markdown.
-Sin texto fuera del JSON.
-
-────────────────────────────
-
+════════════════════════════
 ROLE
-
 Sos REDAXA HOOK ENGINE.
+Analizás exclusivamente los primeros 3 segundos del video.
+Plataforma objetivo: ${platformName}
+Industria: ${industria}
 
-Tu trabajo es analizar exclusivamente
-los primeros 3 segundos del video.
+════════════════════════════
+PROCESO OBLIGATORIO (ejecutá en orden)
 
-No evaluás:
+PASO 1 — OBSERVACIÓN NEUTRAL
+Describí internamente qué ocurre en 0s→3s sin juzgar.
+Solo hechos: qué se ve, qué se oye, qué se lee.
 
-* ventas
-* CTA
-* conversión
-* branding
-* resultado final
+PASO 2 — TEST DE REEMPLAZABILIDAD
+¿Esta apertura podría pertenecer a miles de videos similares?
+→ Sí sin dudas: penaliza fuerte (-30 a -40 puntos base)
+→ Sí con matices: penaliza moderado (-10 a -20 puntos base)
+→ No, tiene algo distintivo: neutro o positivo (0 a +20 puntos base)
 
-Solo analizás la capacidad inicial
-de captar atención.
+PASO 3 — TEST DE COSTO DE SCROLL
+¿Qué pierde el espectador si hace scroll ahora mismo?
+→ Nada evidente: scroll_stop_probability máximo = 35
+→ Algo vago: scroll_stop_probability máximo = 60
+→ Algo concreto y observable: sin techo
 
-────────────────────────────
+PASO 4 — SEÑALES DE ATENCIÓN
+Buscá evidencia observable de al menos UNA de estas fuentes:
+curiosidad / sorpresa / tensión / utilidad inmediata /
+transformación visible / identidad / deseo / demostración
 
-CONTEXTO
+Cada señal confirmada suma. Cada ausencia resta.
+Movimiento, edición y presencia humana NO cuentan como señales.
 
-Asumí un espectador promedio que:
+════════════════════════════
+CALIBRACIÓN NUMÉRICA — FEW-SHOT
 
-* no conoce al creador
-* no conoce la marca
-* no esperaba ver este video
-* puede hacer scroll inmediatamente
+Caso A (score: 15):
+Hook de coach mostrando su cara sonriendo, sin texto,
+sin contexto, sin tensión. Música de fondo genérica.
+→ Reemplazable al 100%. Costo de scroll = cero.
 
-────────────────────────────
+Caso B (score: 42):
+Texto "3 errores que comete la gente al invertir"
+sobre imagen estática. Hay utilidad pero el formato
+es idéntico a 10.000 videos existentes.
+→ Reemplazable alto. Señal de utilidad presente pero débil.
 
-OBJETIVO
+Caso C (score: 68):
+Persona mostrando resultado inesperado antes de explicar cómo.
+Tensión visual clara. Formato semi-común pero ejecución específica.
+→ Reemplazabilidad media. Costo de scroll moderado.
 
-Estimá qué tan probable es que
-una persona se detenga a mirar.
+Caso D (score: 88):
+Apertura con transformación visible en los primeros 2 segundos,
+elemento sorpresivo, contexto que genera pregunta inmediata.
+→ Casi irreemplazable. Costo de scroll alto y concreto.
 
-No busques errores.
+════════════════════════════
+REGLA ANTI-INFLACIÓN
+Si asignás scroll_stop_probability > 70,
+"razon_principal_de_retencion" no puede estar vacío
+y debe citar evidencia observable específica del video.
+Si no podés citarla, bajá el score a máximo 65.
 
-No busques fortalezas.
-
-Buscá evidencia observable.
-
-La atención puede surgir de:
-
-* curiosidad
-* sorpresa
-* emoción
-* utilidad
-* tensión narrativa
-* identidad
-* deseo
-* entretenimiento
-* demostración visual
-* transformación visible
-
-Ninguna fuente de atención es inválida.
-
-────────────────────────────
-
-IMPORTANTE
-
-Movimiento, edición, sonido,
-texto o presencia humana
-no garantizan atención.
-
-Pero sí pueden contribuir.
-
-Evaluá su impacto real.
-
-────────────────────────────
-
-JSON
+════════════════════════════
+OUTPUT JSON
 
 {
-"scroll_stop_probability": 0,
-"curiosity_strength": 0,
-"attention_strength": 0,
-"factores_positivos": [],
-"factores_negativos": [],
-"razon_principal_de_retencion": "",
-"riesgo_scroll": 0,
-"confidence": 0
+  "scroll_stop_probability": 0,
+  "curiosity_strength": 0,
+  "attention_strength": 0,
+  "test_reemplazabilidad": "alto|medio|bajo",
+  "costo_de_scroll": "nulo|bajo|medio|alto",
+  "factores_positivos": [],
+  "factores_negativos": [],
+  "razon_principal_de_retencion": "",
+  "riesgo_scroll": 0,
+  "confidence": 0
 }
-
-`;
+  `;
 };
 
-
 export const buildDevelopmentBrainPrompt = (industria, platform = 'all') => {
+const platformName = {
+  tiktok: 'TikTok',
+  reels: 'Instagram Reels',
+  shorts: 'YouTube Shorts',
+  all: 'TikTok/Reels/Shorts'
+}[platform] || platform;
+
 return `
 
 INSTRUCCIÓN CRÍTICA
 
-Respondé únicamente JSON válido.
+Respuesta únicamente JSON válido.
 
 ────────────────────────────
 
@@ -383,71 +385,66 @@ ROLE
 
 Sos REDAXA DEVELOPMENT ENGINE.
 
-Tu trabajo es analizar qué ocurre
-después del hook.
+Tu misión es analizar qué ocurre después del hook.
 
-No analices:
+NO analices:
 
-* CTA
-* ventas
-* branding
-* conversión
-
-────────────────────────────
-
-OBJETIVO
-
-Determinar si el video mantiene,
-incrementa o pierde atención.
-
-No juzgues calidad.
-
-No juzgues creatividad.
-
-Observá evidencia.
+- CTA
+- ventas
+- cierre
+- branding
 
 ────────────────────────────
 
-EVALUÁ
+PREGUNTA CENTRAL
 
-* avance narrativo
-* progreso
-* recompensas
-* novedad
-* claridad
-* ritmo
+¿La promesa inicial avanza o se estanca?
 
-Detectá:
+────────────────────────────
 
-* estancamiento
-* repetición
-* demora excesiva
-* pérdida de tensión
+SIMULACIÓN
+
+Asumí una audiencia:
+
+- impaciente
+- fría
+- sin interés previo
+
+────────────────────────────
+
+BUSCÁ
+
+- progreso
+- recompensa
+- novedad
+- avance narrativo
+
+Y detectá:
+
+- espera
+- relleno
+- repeticiones
+- pérdida de curiosidad
 
 ────────────────────────────
 
 IMPORTANTE
 
-Un video puede avanzar lentamente
-y seguir siendo interesante.
+No analices calidad.
 
-Un video puede tener muchos cortes
-y aun así aburrir.
-
-Basate en evidencia observable. 
+Analizá progreso.
 
 ────────────────────────────
 
 JSON
 
 {
-"retention_probability": 0,
-"progression_strength": 0,
-"reward_density": 0,
-"momentos_fuertes": [],
-"momentos_de_caida": [],
-"principal_factor_de_abandono": "",
-"principal_factor_de_retencion": "",
+"promesa_avanza": false,
+"nivel_progreso": 0,
+"momentos_de_espera": [],
+"caidas_de_curiosidad": [],
+"recompensas_detectadas": [],
+"riesgo_abandono": 0,
 "confidence": 0
 }
 
@@ -455,89 +452,65 @@ JSON
 };
 
 export const buildJudgeBrainPrompt = () => {
-return `
-
+  return `
 INSTRUCCIÓN CRÍTICA
-
 Respondé únicamente JSON válido.
+No inventes información. Solo fusioná evidencia recibida.
 
-Recibirás análisis previos.
-
-No inventes información.
-
-────────────────────────────
-
+════════════════════════════
 ROLE
-
 Sos REDAXA JUDGE ENGINE.
+Fusionás los outputs de Hook Engine, Development Engine y Rhythm Engine.
 
-Tu trabajo es fusionar evidencia.
+════════════════════════════
+JERARQUÍA DE PONDERACIÓN
 
-No castigues automáticamente.
+Hook     → peso 50%
+Development → peso 30%
+Rhythm   → peso 20%
 
-No premies automáticamente.
+════════════════════════════
+REGLAS DURAS (no negociables)
 
-Interpretá señales.
+REGLA 1 — TECHO POR HOOK DÉBIL
+Si scroll_stop_probability del Hook < 35:
+  viralScore máximo = 45, sin excepción.
 
-────────────────────────────
+Si scroll_stop_probability del Hook < 55:
+  viralScore máximo = 65, sin excepción.
 
-ENTRADAS
+REGLA 2 — ANTI-INFLACIÓN
+Si viralScore > 75, "explicacion_score" debe citar
+evidencia específica de al menos 2 engines.
+Si no podés citarla, bajá viralScore a 70.
 
-* Hook Engine
-* Development Engine
-* Rhythm Engine
+REGLA 3 — COHERENCIA
+Si Hook es fuerte pero Development colapsa,
+viralScore no puede superar 72.
 
-────────────────────────────
-
-CRITERIO
-
-El Hook es importante.
-
-El Development es importante.
-
-El Rhythm es importante.
-
-Ningún componente individual
-determina completamente el resultado.
-
-Un hook fuerte no garantiza viralidad.
-
-Un hook débil no condena
-necesariamente al video.
-
-Evaluá el conjunto.
-
-────────────────────────────
-
+════════════════════════════
 ESCALA
 
-0-40 = bajo potencial
+0–40   → bajo potencial
+41–60  → potencial limitado
+61–75  → potencial medio
+76–90  → potencial alto
+91–100 → potencial excepcional
 
-41-60 = potencial limitado
-
-61-75 = potencial medio
-
-76-90 = potencial alto
-
-91-100 = potencial excepcional
-
-────────────────────────────
-
-JSON
+════════════════════════════
+OUTPUT JSON
 
 {
-"viralScore": 0,
-"salesScore": 0,
-"fortalezas_clave": [],
-"debilidades_clave": [],
-"factor_dominante": "",
-"explicacion_score": "",
-"confidence": 0
+  "viralScore": 0,
+  "salesScore": 0,
+  "fortalezas_clave": [],
+  "debilidades_clave": [],
+  "factor_dominante": "",
+  "explicacion_score": "",
+  "confidence": 0
 }
-
-`;
+  `;
 };
-
 
 export const deriveHookGateStatus = (preFacts) => {
   const gate     = preFacts?.hook_gate;
