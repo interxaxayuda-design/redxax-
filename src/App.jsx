@@ -168,6 +168,8 @@ const limpiarJSON = (str) => {
   return str.replace(fence, '').replace(fenceClose, '').trim();
 };
 
+
+
 export const NICHE_MOTORS = {
   "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
   "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
@@ -352,19 +354,19 @@ Si no podés citarla, bajá el score a máximo 65.
 OUTPUT JSON
 
 {
-  "scroll_stop_probability": 0,
-  "curiosity_strength": 0,
-  "attention_strength": 0,
-  "test_reemplazabilidad": "alto|medio|bajo",
-  "costo_de_scroll": "nulo|bajo|medio|alto",
-  "factores_positivos": [],
-  "factores_negativos": [],
+  "scroll_stop_power":        "nulo|bajo|medio|alto|explosivo",
+  "curiosity_strength":       "nulo|bajo|medio|alto|explosivo",
+  "test_reemplazabilidad":    "alto|medio|bajo",
+  "costo_de_scroll":          "nulo|bajo|medio|alto",
+  "factores_positivos":       [],
+  "factores_negativos":       [],
   "razon_principal_de_retencion": "",
-  "riesgo_scroll": 0,
-  "confidence": 0
+  "riesgo_scroll":            "bajo|medio|alto|critico",
+  "confidence":               "baja|media|alta"
 }
   `;
 };
+
 
 export const buildDevelopmentBrainPrompt = (industria, platform = 'all') => {
 const platformName = {
@@ -437,19 +439,22 @@ Analizá progreso.
 
 ────────────────────────────
 
-JSON
+OUTPUT JSON
 
 {
-"promesa_avanza": false,
-"nivel_progreso": 0,
-"momentos_de_espera": [],
-"caidas_de_curiosidad": [],
-"recompensas_detectadas": [],
-"riesgo_abandono": 0,
-"confidence": 0
+  "promesa_avanza":              true,
+  "nivel_progreso":              "estancado|lento|sostenido|acelerado",
+  "descripcion_desarrollo":      "",
+  "momento_critico_abandono":    "",
+  "momentos_de_espera":          [],
+  "caidas_de_curiosidad":        [],
+  "recompensas_detectadas":      [],
+  "por_que_se_queda":            "",
+  "por_que_se_va":               "",
+  "riesgo_abandono":             "bajo|medio|alto|critico",
+  "confidence":                  "baja|media|alta"
 }
-
-`;
+  `;
 };
 
 export const buildJudgeBrainPrompt = () => {
@@ -521,22 +526,22 @@ ESCALA
 91–100 → potencial excepcional
 
 ════════════════════════════
-OUTPUT JSON
 
+OUTPUT JSON
 {
-  "viralScore": 0,
-  "salesScore": 0,
+  "potencial_viral":         "malo|puede_mejorar|bueno|excelente",
+  "potencial_ventas":        "malo|puede_mejorar|bueno|excelente",
   "contradiccion_detectada": false,
-  "tipo_contradiccion": "",
-  "fortalezas_clave": [],
-  "debilidades_clave": [],
-  "factor_dominante": "",
-  "explicacion_score": "",
-  "confidence": 0
+  "tipo_contradiccion":      "",
+  "fortalezas_clave":        [],
+  "debilidades_clave":       [],
+  "factor_dominante":        "",
+  "explicacion_score":       "",
+  "veredicto_final":         "",
+  "confidence":              "baja|media|alta"
 }
   `;
 };
-
 
 
 export const deriveHookGateStatus = (preFacts) => {
@@ -606,7 +611,7 @@ export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => 
     'hard':    30,
   };
 
-  const baseCap = capPorPenalty[penaltyLevel] ?? 100;  //historyFormatted
+  const baseCap = capPorPenalty[penaltyLevel] ?? 100;  //historyFormatted //getNivel
 
   const lento = (atomicas.cuts_per_10s ?? 0) < 2 &&
                 (atomicas.silence_duration_s ?? 0) > 8 &&
@@ -822,6 +827,32 @@ export const buildFlagsDeterministic = (flagsFromStrategy, preFacts, preHookType
     hook_descripcion_libre:    preFacts.hook_libre ?? null,
   };
 };
+
+const getNivel = (score) => {
+  if (score >= 90) return { label: 'Excelente ✦', cls: 'excelente' };
+  if (score >= 70) return { label: 'Bueno',        cls: 'bueno'     };
+  if (score >= 50) return { label: 'Puede Mejorar',cls: 'puede'     };
+  return               { label: 'Malo',            cls: 'malo'      };
+};
+
+const NivelBadge = ({ score, size = 'lg' }) => {
+  const nivel = getNivel(score);
+  const isExcelente = nivel.cls === 'excelente';
+  const padding = size === 'lg' ? 'px-5 py-2 text-[13px]' : 'px-3 py-1.5 text-[11px]';
+  return (
+    <span className={`virax-badge vb-${nivel.cls} ${padding}`}>
+      <span className="vb-shimmer" />
+      {isExcelente && <>
+        <span className="vb-spark" style={{ '--tx':'-8px','--ty':'-10px', top:'30%', left:'10%',  animation:'spark 2.1s 0.1s ease-in-out infinite' }} />
+        <span className="vb-spark" style={{ '--tx':'10px','--ty':'-12px', top:'20%', right:'15%', animation:'spark 2.1s 0.6s ease-in-out infinite' }} />
+        <span className="vb-spark" style={{ '--tx':'-6px','--ty':'8px',   bottom:'25%', left:'20%', animation:'spark 2.1s 1.1s ease-in-out infinite' }} />
+        <span className="vb-spark" style={{ '--tx':'8px', '--ty':'10px',  bottom:'20%', right:'10%',animation:'spark 2.1s 0.3s ease-in-out infinite' }} />
+      </>}
+      {nivel.label}
+    </span>
+  );
+};
+
 
 const ShinyCard = ({ children, className = '', tilt }) => {
   const sheenX = (((tilt?.x ?? 0) + 1) / 2) * 100;
@@ -2710,48 +2741,56 @@ ${currentMessage.text}
 
 {/* PHASE SCORES */}
 <div className="space-y-3">
-  {/* DUAL SCORE — Ventas + Viral */}
   {aiResult.salesScore && aiResult.viralScore && (() => {
-    const primero = objetivo === 'viral'
-      ? aiResult.viralScore
-      : aiResult.salesScore;
-    const segundo = objetivo === 'viral'
-      ? aiResult.salesScore
-      : aiResult.viralScore;
-    const colorPrimero = primero.score >= 70 ? 'text-green-400' : primero.score >= 50 ? 'text-yellow-400' : 'text-red-400';
-    const colorSegundo = segundo.score >= 70 ? 'text-green-400' : segundo.score >= 50 ? 'text-yellow-400' : 'text-red-400';
-    const borderPrimero = primero.score >= 70 ? 'border-green-500/40 bg-green-500/5' : primero.score >= 50 ? 'border-yellow-500/40 bg-yellow-500/5' : 'border-red-500/40 bg-red-500/5';
-    const borderSegundo = 'border-white/10 bg-white/[0.02]';
+    const primero = objetivo === 'viral' ? aiResult.viralScore : aiResult.salesScore;
+    const segundo = objetivo === 'viral' ? aiResult.salesScore : aiResult.viralScore;
+
+    const nivelPrimero = getNivel(primero.score);
+    const nivelSegundo = getNivel(segundo.score);
+    const nivelCombinado = getNivel(aiResult.potentialScore);
+
+    const borderPrimero =
+      nivelPrimero.cls === 'excelente' ? 'border-purple-500/40 bg-purple-500/5'  :
+      nivelPrimero.cls === 'bueno'     ? 'border-green-500/40  bg-green-500/5'   :
+      nivelPrimero.cls === 'puede'     ? 'border-yellow-500/40 bg-yellow-500/5'  :
+                                         'border-red-500/40    bg-red-500/5';
+
+    const barPrimero =
+      nivelPrimero.cls === 'excelente' ? 'from-purple-600 to-purple-400'  :
+      nivelPrimero.cls === 'bueno'     ? 'from-green-500  to-emerald-400' :
+      nivelPrimero.cls === 'puede'     ? 'from-yellow-500 to-amber-400'   :
+                                         'from-red-600    to-red-400';
+
+    const barSegundo =
+      nivelSegundo.cls === 'excelente' ? 'from-purple-600 to-purple-400'  :
+      nivelSegundo.cls === 'bueno'     ? 'from-green-500  to-emerald-400' :
+      nivelSegundo.cls === 'puede'     ? 'from-yellow-500 to-amber-400'   :
+                                         'from-red-600    to-red-400';
 
     return (
       <div className="space-y-3">
 
-        {/* Tarjeta primaria — grande */}
+        {/* Tarjeta primaria */}
         <ShinyCard tilt={tilt} className={`rounded-[2.5rem] border p-6 ${borderPrimero}`}>
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500">
-                  {objetivo === 'ambas' ? '⚡ Objetivo Principal' : '★ Tu Objetivo'}
-                </span>
-              </div>
-              <p className="text-base font-black italic uppercase tracking-tight text-white">
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex-1 min-w-0">
+              <span className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500">
+                {objetivo === 'ambas' ? '⚡ Objetivo Principal' : '★ Tu Objetivo'}
+              </span>
+              <p className="text-base font-black italic uppercase tracking-tight text-white mt-1">
                 {primero.titulo}
               </p>
               <p className="text-xs font-bold italic text-slate-400 mt-1 max-w-[180px] leading-relaxed">
                 {primero.verdict}
               </p>
             </div>
-            <span className={`text-6xl font-black italic tabular-nums ${colorPrimero}`}>
-              {primero.score}%
-            </span>
+            <NivelBadge score={primero.score} size="lg" />
           </div>
           <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
-            <div className={`h-full rounded-full transition-all duration-700 ${
-              primero.score >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-400' :
-              primero.score >= 50 ? 'bg-gradient-to-r from-yellow-500 to-amber-400' :
-              'bg-gradient-to-r from-red-600 to-red-400'
-            }`} style={{ width: `${primero.score}%` }} />
+            <div
+              className={`h-full rounded-full transition-all duration-700 bg-gradient-to-r ${barPrimero}`}
+              style={{ width: `${primero.score}%` }}
+            />
           </div>
           <p className="text-[11px] font-bold italic text-slate-400 leading-relaxed">
             {primero.razon_principal}
@@ -2764,9 +2803,9 @@ ${currentMessage.text}
           )}
         </ShinyCard>
 
-        {/* Tarjeta secundaria — más pequeña */}
-        <ShinyCard tilt={tilt} className={`rounded-[2rem] border p-5 ${borderSegundo}`}>
-          <div className="flex items-center justify-between mb-2">
+        {/* Tarjeta secundaria */}
+        <ShinyCard tilt={tilt} className="rounded-[2rem] border border-white/10 bg-white/[0.02] p-5">
+          <div className="flex items-center justify-between gap-3 mb-2">
             <div>
               <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1">
                 También medimos
@@ -2775,16 +2814,13 @@ ${currentMessage.text}
                 {segundo.titulo}
               </p>
             </div>
-            <span className={`text-3xl font-black italic tabular-nums ${colorSegundo}`}>
-              {segundo.score}%
-            </span>
+            <NivelBadge score={segundo.score} size="sm" />
           </div>
           <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
-            <div className={`h-full rounded-full transition-all duration-700 ${
-              segundo.score >= 70 ? 'bg-gradient-to-r from-green-500 to-emerald-400' :
-              segundo.score >= 50 ? 'bg-gradient-to-r from-yellow-500 to-amber-400' :
-              'bg-gradient-to-r from-red-600 to-red-400'
-            }`} style={{ width: `${segundo.score}%` }} />
+            <div
+              className={`h-full rounded-full transition-all duration-700 bg-gradient-to-r ${barSegundo}`}
+              style={{ width: `${segundo.score}%` }}
+            />
           </div>
           <p className="text-[10px] font-bold italic text-slate-500">{segundo.verdict}</p>
           {segundo.accion_clave && (
@@ -2794,15 +2830,17 @@ ${currentMessage.text}
           )}
         </ShinyCard>
 
-        {/* Score combinado — pequeño, abajo */}
+        {/* Score combinado */}
         <ShinyCard tilt={tilt} className="flex items-center justify-between bg-black/40 border border-white/10 rounded-[1.5rem] px-5 py-3">
-          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500">
-            Score Combinado · {aiResult.performanceScenario}
-          </p>
-          <span className={`text-2xl font-black italic tabular-nums ${
-            aiResult.potentialScore >= 70 ? 'text-green-400' :
-            aiResult.potentialScore >= 50 ? 'text-yellow-400' : 'text-red-400'
-          }`}>{aiResult.potentialScore}%</span>
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500">
+              Score Combinado
+            </p>
+            <p className="text-[9px] font-black italic uppercase tracking-[0.2em] text-slate-700 mt-0.5">
+              {aiResult.performanceScenario}
+            </p>
+          </div>
+          <NivelBadge score={aiResult.potentialScore} size="sm" />
         </ShinyCard>
 
         {/* ── FACTORES EXTERNOS ── */}
