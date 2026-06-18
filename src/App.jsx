@@ -270,123 +270,100 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
   "hook_confianza":      <0.0 a 1.0>
 }`;
 
+
 export const buildHookBrainPrompt = (industria, platform = 'all') => {
-const platformName = {
-  tiktok: 'TikTok',
-  reels: 'Instagram Reels',
-  shorts: 'YouTube Shorts',
-  all: 'TikTok/Reels/Shorts'
-}[platform] || platform;
+  const platformName = {
+    tiktok: 'TikTok',
+    reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts',
+    all: 'TikTok/Reels/Shorts'
+  }[platform] || platform;
 
-return `
-
+  return `
 INSTRUCCIÓN CRÍTICA
+Respondé únicamente JSON válido. Sin markdown. Sin texto fuera del JSON.
 
-Tu respuesta debe ser únicamente JSON válido.
-
-Sin markdown.
-Sin explicaciones fuera del JSON.
-
-────────────────────────────
-
+════════════════════════════
 ROLE
-
 Sos REDAXA HOOK ENGINE.
+Analizás exclusivamente los primeros 3 segundos del video.
+Plataforma objetivo: ${platformName}
+Industria: ${industria}
 
-Tu única misión es determinar si los primeros segundos
-detienen el scroll.
+════════════════════════════
+PROCESO OBLIGATORIO (ejecutá en orden)
 
-NO analices:
+PASO 1 — OBSERVACIÓN NEUTRAL
+Describí internamente qué ocurre en 0s→3s sin juzgar.
+Solo hechos: qué se ve, qué se oye, qué se lee.
 
-- ventas
-- CTA
-- conversión
-- narrativa completa
-- cierre
-- potencial futuro
+PASO 2 — TEST DE REEMPLAZABILIDAD
+¿Esta apertura podría pertenecer a miles de videos similares?
+→ Sí sin dudas: penaliza fuerte (-30 a -40 puntos base)
+→ Sí con matices: penaliza moderado (-10 a -20 puntos base)
+→ No, tiene algo distintivo: neutro o positivo (0 a +20 puntos base)
 
-Solo analizá:
+PASO 3 — TEST DE COSTO DE SCROLL
+¿Qué pierde el espectador si hace scroll ahora mismo?
+→ Nada evidente: scroll_stop_probability máximo = 35
+→ Algo vago: scroll_stop_probability máximo = 60
+→ Algo concreto y observable: sin techo
 
-0s → 3s
+PASO 4 — SEÑALES DE ATENCIÓN
+Buscá evidencia observable de al menos UNA de estas fuentes:
+curiosidad / sorpresa / tensión / utilidad inmediata /
+transformación visible / identidad / deseo / demostración
 
-────────────────────────────
+Cada señal confirmada suma. Cada ausencia resta.
+Movimiento, edición y presencia humana NO cuentan como señales.
 
-SIMULACIÓN OBLIGATORIA
+════════════════════════════
+CALIBRACIÓN NUMÉRICA — FEW-SHOT
 
-Asumí una persona que:
+Caso A (score: 15):
+Hook de coach mostrando su cara sonriendo, sin texto,
+sin contexto, sin tensión. Música de fondo genérica.
+→ Reemplazable al 100%. Costo de scroll = cero.
 
-- no conoce al creador
-- no conoce la marca
-- no espera este contenido
-- puede hacer scroll instantáneamente
+Caso B (score: 42):
+Texto "3 errores que comete la gente al invertir"
+sobre imagen estática. Hay utilidad pero el formato
+es idéntico a 10.000 videos existentes.
+→ Reemplazable alto. Señal de utilidad presente pero débil.
 
-────────────────────────────
+Caso C (score: 68):
+Persona mostrando resultado inesperado antes de explicar cómo.
+Tensión visual clara. Formato semi-común pero ejecución específica.
+→ Reemplazabilidad media. Costo de scroll moderado.
 
-PREGUNTA CENTRAL
+Caso D (score: 88):
+Apertura con transformación visible en los primeros 2 segundos,
+elemento sorpresivo, contexto que genera pregunta inmediata.
+→ Casi irreemplazable. Costo de scroll alto y concreto.
 
-¿Por qué alguien detendría el scroll exactamente ahora?
+════════════════════════════
+REGLA ANTI-INFLACIÓN
+Si asignás scroll_stop_probability > 70,
+"razon_principal_de_retencion" no puede estar vacío
+y debe citar evidencia observable específica del video.
+Si no podés citarla, bajá el score a máximo 65.
 
-Si no existe una razón observable y específica:
-
-considerá el hook débil.
-
-────────────────────────────
-
-VALIDACIÓN DE EVIDENCIA
-
-No confundas:
-
-- movimiento
-- edición
-- presencia humana
-- sonido
-- texto
-
-con interés real.
-
-Toda conclusión positiva debe estar respaldada
-por evidencia observable.
-
-────────────────────────────
-
-PRUEBA DE REEMPLAZABILIDAD
-
-Preguntate:
-
-"¿Esta apertura podría pertenecer a miles de videos similares?"
-
-Si sí:
-
-considerá el hook débil.
-
-────────────────────────────
-
-PRUEBA DE COSTO DE SCROLL
-
-Preguntate:
-
-"¿Qué pierde el espectador si hace scroll ahora?"
-
-Si la respuesta no es evidente:
-
-considerá bajo poder de scroll stop.
-
-────────────────────────────
-
-JSON
+════════════════════════════
+OUTPUT JSON
 
 {
-"hook_funciona": false,
-"scroll_stop_strength": 0,
-"riesgo_scroll": 0,
-"razon_para_quedarse": "",
-"razon_para_hacer_scroll": "",
-"nivel_reemplazabilidad": 0,
-"velocidad_recompensa": 0,
-"confidence": 0
+  "scroll_stop_probability": 0,
+  "curiosity_strength": 0,
+  "attention_strength": 0,
+  "test_reemplazabilidad": "alto|medio|bajo",
+  "costo_de_scroll": "nulo|bajo|medio|alto",
+  "factores_positivos": [],
+  "factores_negativos": [],
+  "razon_principal_de_retencion": "",
+  "riesgo_scroll": 0,
+  "confidence": 0
 }
-
-`;
+  `;
 };
 
 export const buildDevelopmentBrainPrompt = (industria, platform = 'all') => {
@@ -476,70 +453,91 @@ JSON
 };
 
 export const buildJudgeBrainPrompt = () => {
-
-return `
-
+  return `
 INSTRUCCIÓN CRÍTICA
+Respondé únicamente JSON válido.
+No inventes información. Solo fusioná evidencia recibida.
 
-Recibirás exclusivamente análisis previos.
-
-No inventes fenómenos nuevos.
-
-No contradigas evidencia recibida.
-
-────────────────────────────
-
+════════════════════════════
 ROLE
-
 Sos REDAXA JUDGE ENGINE.
+Fusionás los outputs de Hook Engine y Development Engine.
 
-Tu función es fusionar los resultados de:
+════════════════════════════
+PASO OBLIGATORIO — ANTES DE CALCULAR EL SCORE
 
-- Hook Engine
-- Development Engine
-- Rhythm Engine
+Ejecutá estos tres chequeos en orden.
+Guardá los resultados internamente: los vas a necesitar.
 
-────────────────────────────
+CHEQUEO 1 — CONTRADICCIÓN HOOK vs DEVELOPMENT
+¿El hook genera una expectativa que el desarrollo no cumple?
+Ejemplos de contradicción real:
+  - Hook promete una transformación → desarrollo no la muestra
+  - Hook genera tensión narrativa → desarrollo la resuelve demasiado rápido o nunca
+  - Hook es energético → desarrollo cae en ritmo lento sin recompensa
+Si detectás contradicción: penalizá el viralScore (máximo 65).
+Si no hay contradicción: continuá sin penalizar.
 
-REGLAS
+CHEQUEO 2 — CONSISTENCIA INTERNA
+¿Los datos de ambos engines son coherentes entre sí?
+Si un engine da señales positivas fuertes y el otro da señales
+negativas fuertes sin explicación posible: priorizá el negativo.
+El beneficio de la duda no existe en análisis viral.
 
-El Hook tiene prioridad máxima.
+CHEQUEO 3 — EVIDENCIA REAL vs AUSENCIA DE EVIDENCIA
+Toda conclusión positiva necesita respaldo observable en los datos.
+Si un engine da score alto pero sus factores_positivos están vacíos
+o son vagos: tratalo como score medio, no como score alto.
 
-Si el Hook falla gravemente:
+════════════════════════════
+JERARQUÍA DE PONDERACIÓN
 
-el score viral nunca puede ser alto.
+Hook        → peso 60%
+Development → peso 40%
 
-Una narrativa excelente no compensa
-un hook invisible.
+════════════════════════════
+REGLAS DURAS
 
-Un ritmo excelente no compensa
-un hook invisible.
+REGLA 1 — TECHO POR HOOK DÉBIL
+Si scroll_stop_probability < 35: viralScore máximo = 40.
+Si scroll_stop_probability < 55: viralScore máximo = 62.
 
-────────────────────────────
+REGLA 2 — TECHO POR CONTRADICCIÓN (del Chequeo 1)
+Si detectaste contradicción Hook → Development:
+viralScore máximo = 65, aunque ambos scores individuales sean altos.
 
-PONDERACIÓN
+REGLA 3 — ANTI-INFLACIÓN
+Si viralScore > 72: "explicacion_score" debe citar evidencia
+específica de Hook Y Development.
+Si no podés citarla con datos reales: bajá viralScore a 68.
 
-Hook = importancia máxima
+════════════════════════════
+ESCALA
 
-Development = importancia alta
+0–40   → bajo potencial
+41–60  → potencial limitado
+61–75  → potencial medio
+76–90  → potencial alto
+91–100 → potencial excepcional
 
-Rhythm = importancia media
-
-────────────────────────────
-
-JSON
+════════════════════════════
+OUTPUT JSON
 
 {
-"viralScore": 0,
-"salesScore": 0,
-"principales_fortalezas": [],
-"principales_debilidades": [],
-"veredicto_final": "",
-"confidence": 0
+  "viralScore": 0,
+  "salesScore": 0,
+  "contradiccion_detectada": false,
+  "tipo_contradiccion": "",
+  "fortalezas_clave": [],
+  "debilidades_clave": [],
+  "factor_dominante": "",
+  "explicacion_score": "",
+  "confidence": 0
 }
-
-`;
+  `;
 };
+
+
 
 export const deriveHookGateStatus = (preFacts) => {
   const gate     = preFacts?.hook_gate;
@@ -608,7 +606,7 @@ export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => 
     'hard':    30,
   };
 
-  const baseCap = capPorPenalty[penaltyLevel] ?? 100;
+  const baseCap = capPorPenalty[penaltyLevel] ?? 100;  //historyFormatted
 
   const lento = (atomicas.cuts_per_10s ?? 0) < 2 &&
                 (atomicas.silence_duration_s ?? 0) > 8 &&
@@ -1417,62 +1415,83 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
 
     // ── CALL 1A — Hook Brain ──────────────────────────────────
     // Ve el video — analiza SOLO 0s→3s
-    setStatusText("Analizando el hook...");
+    // ── CALL 1A — Hook Brain ──────────────────────────────────
+setStatusText("Analizando el hook...");
 
-    const { data: call1AData, error: call1AError } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text:            buildHookBrainPrompt(industria, platform),
-        systemPrompt:    'Respondé ÚNICAMENTE con JSON válido. Sin texto fuera del JSON.',
-        ...(sharedFileUri
-          ? { fileUri: sharedFileUri, fileName: sharedFileName }
-          : { storagePath, videoMimeType: mimeType }
-        ),
-        videoMimeType:   mimeType,
-        duration:        Math.round(duration),
-        maxOutputTokens: 1024,
-        expectsJson:     true,
-        temperature:     0.2,
-      }
-    });
+const hookPromptFinal = buildHookBrainPrompt(industria, platform);
 
-    if (call1AError) throw new Error(`CALL 1A (Hook Brain) falló: ${call1AError.message}`);
-    const hookScan = safeParseJSON(extractGeminiText(call1AData), 'hook-brain') || {};
-    console.log('[VIRAX] Hook Brain:', hookScan);
+console.group('%c[VIRAX] HOOK BRAIN — prompt enviado', 'color: #f472b6; font-weight: bold');
+console.log('%c¿Tiene descripción del video en el prompt?', 'color: #94a3b8', hookPromptFinal.includes('descripcion') ? '✅ SÍ' : '❌ NO — solo instrucciones');
+console.log('%cLongitud del prompt:', 'color: #94a3b8', hookPromptFinal.length, 'chars');
+console.log('%c¿Ve el video vía?', 'color: #94a3b8', sharedFileUri ? 'fileUri ✅' : 'storagePath ✅');
+console.log('%cPrompt completo:', 'color: #94a3b8', hookPromptFinal);
+console.groupEnd();
 
-    setAnalysisProgress(48);
+const { data: call1AData, error: call1AError } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    text:            hookPromptFinal,
+    systemPrompt:    'Respondé ÚNICAMENTE con JSON válido. Sin texto fuera del JSON.',
+    ...(sharedFileUri
+      ? { fileUri: sharedFileUri, fileName: sharedFileName }
+      : { storagePath, videoMimeType: mimeType }
+    ),
+    videoMimeType:   mimeType,
+    duration:        Math.round(duration),
+    maxOutputTokens: 1024,
+    expectsJson:     true,
+    temperature:     0.2,
+  }
+});
 
-    // ── CALL 1B — Development Brain ───────────────────────────
-    // Ve el video — analiza 3s en adelante
-    setStatusText("Analizando el desarrollo...");
+if (call1AError) throw new Error(`CALL 1A (Hook Brain) falló: ${call1AError.message}`);
+const hookScan = safeParseJSON(extractGeminiText(call1AData), 'hook-brain') || {};
+console.log('[VIRAX] Hook Brain resultado:', hookScan);
 
-    const { data: call1BData, error: call1BError } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text:            buildDevelopmentBrainPrompt(industria, platform),
-        systemPrompt:    'Respondé ÚNICAMENTE con JSON válido. Sin texto fuera del JSON.',
-        ...(sharedFileUri
-          ? { fileUri: sharedFileUri, fileName: sharedFileName }
-          : { storagePath, videoMimeType: mimeType }
-        ),
-        videoMimeType:   mimeType,
-        duration:        Math.round(duration),
-        maxOutputTokens: 1024,
-        expectsJson:     true,
-        temperature:     0.2,
-      }
-    });
+setAnalysisProgress(48);
 
-    if (call1BError) throw new Error(`CALL 1B (Development Brain) falló: ${call1BError.message}`);
-    const developmentScan = safeParseJSON(extractGeminiText(call1BData), 'development-brain') || {};
-    console.log('[VIRAX] Development Brain:', developmentScan);
+// ── CALL 1B — Development Brain ───────────────────────────
+setStatusText("Analizando el desarrollo...");
 
-    setAnalysisProgress(58);
+const devPromptFinal = buildDevelopmentBrainPrompt(industria, platform);
 
-    // ── CALL 1C — Judge Brain ─────────────────────────────────
-    // NO ve el video — fusiona Hook + Development y emite viralScore
-    setStatusText("Calculando veredicto...");
+console.group('%c[VIRAX] DEVELOPMENT BRAIN — prompt enviado', 'color: #60a5fa; font-weight: bold');
+console.log('%c¿Tiene descripción del video en el prompt?', 'color: #94a3b8', devPromptFinal.includes('descripcion') ? '✅ SÍ' : '❌ NO — solo instrucciones');
+console.log('%cLongitud del prompt:', 'color: #94a3b8', devPromptFinal.length, 'chars');
+console.log('%c¿Ve el video vía?', 'color: #94a3b8', sharedFileUri ? 'fileUri ✅' : 'storagePath ✅');
+console.log('%cPrompt completo:', 'color: #94a3b8', devPromptFinal);
+console.groupEnd();
 
-    const judgeBrainInput = `
+const { data: call1BData, error: call1BError } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    text:            devPromptFinal,
+    systemPrompt:    'Respondé ÚNICAMENTE con JSON válido. Sin texto fuera del JSON.',
+    ...(sharedFileUri
+      ? { fileUri: sharedFileUri, fileName: sharedFileName }
+      : { storagePath, videoMimeType: mimeType }
+    ),
+    videoMimeType:   mimeType,
+    duration:        Math.round(duration),
+    maxOutputTokens: 1024,
+    expectsJson:     true,
+    temperature:     0.2,
+  }
+});
+
+if (call1BError) throw new Error(`CALL 1B (Development Brain) falló: ${call1BError.message}`);
+const developmentScan = safeParseJSON(extractGeminiText(call1BData), 'development-brain') || {};
+console.log('[VIRAX] Development Brain resultado:', developmentScan);
+
+setAnalysisProgress(58);
+
+// ── CALL 1C — Judge Brain ─────────────────────────────────
+setStatusText("Calculando veredicto...");
+
+// ← REEMPLAZÁ ESTE BLOQUE por el nuevo
+const judgeBrainInput = `
 RESULTADOS A FUSIONAR:
+
+DESCRIPCIÓN DEL VIDEO (pre-classifier):
+${JSON.stringify(preFacts?.descripcion_completa ?? {}, null, 2)}
 
 HOOK ENGINE:
 ${JSON.stringify(hookScan, null, 2)}
@@ -1487,19 +1506,31 @@ HOOK GATE:
 ${JSON.stringify(preFacts?.hook_gate ?? {}, null, 2)}
 `;
 
-    const { data: call1CData, error: call1CError } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text:            buildJudgeBrainPrompt() + '\n\n' + judgeBrainInput,
-        systemPrompt:    'Respondé ÚNICAMENTE con JSON válido. Sin texto fuera del JSON.',
-        expectsJson:     true,
-        maxOutputTokens: 1024,
-        temperature:     0.1,
-      }
-    });
+const judgePromptFinal = buildJudgeBrainPrompt() + '\n\n' + judgeBrainInput;
 
-    if (call1CError) throw new Error(`CALL 1C (Judge Brain) falló: ${call1CError.message}`);
-    const judgeResult = safeParseJSON(extractGeminiText(call1CData), 'judge-brain') || {};
-    console.log('[VIRAX] Judge Brain:', judgeResult);
+console.group('%c[VIRAX] JUDGE BRAIN — prompt enviado', 'color: #a78bfa; font-weight: bold');
+console.log('%c¿Ve el video?', 'color: #94a3b8', '❌ NO — solo recibe outputs de Hook y Development');
+console.log('%cLongitud del prompt completo:', 'color: #94a3b8', judgePromptFinal.length, 'chars');
+console.log('%c— judgeBrainInput (lo que viene de los engines) —', 'color: #fbbf24');
+console.log(judgeBrainInput);
+console.log('%c¿El Judge recibe descripcion_completa del pre-classifier?', 'color: #94a3b8',
+  judgeBrainInput.includes('descripcion_completa') ? '✅ SÍ' : '❌ NO — el Judge no tiene descripción narrativa del video'
+);
+console.groupEnd();
+
+const { data: call1CData, error: call1CError } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    text:            judgePromptFinal,
+    systemPrompt:    'Respondé ÚNICAMENTE con JSON válido. Sin texto fuera del JSON.',
+    expectsJson:     true,
+    maxOutputTokens: 1024,
+    temperature:     0.1,
+  }
+});
+
+if (call1CError) throw new Error(`CALL 1C (Judge Brain) falló: ${call1CError.message}`);
+const judgeResult = safeParseJSON(extractGeminiText(call1CData), 'judge-brain') || {};
+console.log('[VIRAX] Judge Brain resultado:', judgeResult);
 
     setAnalysisProgress(65);
 
@@ -1907,22 +1938,24 @@ TU MODO DE OPERAR:
    Si detectás que está dando vueltas en el mismo problema, señalalo.
 `;
 
-    // ── Historial completo como contexto ──
-    const historyFormatted = newMessages
-      .slice(0, -1) // excluye el mensaje actual
-      .map(m => `${m.role === 'user' ? '👤 USUARIO' : '🤖 VIRAX'}: ${m.text}`)
-      .join('\n\n');
+    // Separá claramente historial de mensaje actual
+const history = newMessages.slice(0, -1); // todo menos el último
+const currentMessage = newMessages[newMessages.length - 1]; // solo el último
 
-    const fullPrompt = `
+const historyFormatted = history
+  .map(m => `${m.role === 'user' ? '👤 USUARIO' : '🤖 VIRAX'}: ${m.text}`)
+  .join('\n\n');
+
+const fullPrompt = `
 ${systemPrompt}
 
 ════════════════════════════════
-HISTORIAL DE CONVERSACIÓN:
+HISTORIAL:
 ${historyFormatted || '(primera interacción)'}
 ════════════════════════════════
 
 👤 USUARIO AHORA DICE:
-${userInput}
+${currentMessage.text}
 
 🤖 VIRAX RESPONDE:`;
 
