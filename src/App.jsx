@@ -382,7 +382,7 @@ export const deriveHookGateStatus = (preFacts) => {
     reason:       `retencion_confirmada: ${gate.elemento_que_retiene}`,
     waitPenalty
   };
-};
+};  //const scoringRaw = {
 
 export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => {
   const nicheCap = nicheConfig?.score_cap?.viralScore ?? 100;
@@ -1156,7 +1156,7 @@ const runDeepAnalysis = async () => {
 
   try {
 
-    // ── CALL 0 — Pre-classifier ───────────────────────────────
+    // ── CALL 0 — Pre-classifier ─────────────────────────────── const cognitiveScan = audienceAnalysis;
     setStatusText("Extrayendo señales del video...");
     setAnalysisProgress(15);
 
@@ -1278,9 +1278,24 @@ console.log('[VIRAX] Audience Prediction:', audienceAnalysis);
     setStatusText("Diagnosticando el video...");
     setAnalysisProgress(78);
 
-    const cognitiveScan = audienceAnalysis;
+    // ── JS — Gate + Cap ────────────────────────────────────── //verdict:      judgeResult?.veredicto_final  ?? '',
+const hookGate     = deriveHookGateStatus(preFacts);
+const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
 
-    const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
+const scoringRaw = {
+  viralScore: viralCapData.cap,
+  breakdown: {
+    causa_fracaso:   '—',
+    base_score:      viralCapData.cap,
+    cap_applied:     viralCapData.cap,
+    cap_reason:      viralCapData.reason,
+    penalty_applied: 0,
+  }
+};
+
+const cognitiveScan = audienceAnalysis;
+
+const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildStrategyBrainPrompt(
           preFacts,
@@ -1351,7 +1366,7 @@ console.log('[VIRAX] Audience Prediction:', audienceAnalysis);
         score:        scoringRaw.viralScore,
         titulo:       'Potencial Viral',
         breakdown:    scoringRaw.breakdown,
-        verdict:      judgeResult?.veredicto_final  ?? '',
+        verdict:       outputParsed.honestVerdict ?? '',
         accion_clave: outputParsed.roadmap?.[0]?.solucion ?? '',
       },
       salesScore: {
@@ -1363,7 +1378,7 @@ console.log('[VIRAX] Audience Prediction:', audienceAnalysis);
       scrollStopScore:  outputParsed.scrollStopScore  ?? { score: 0, verdict: '' },
       hookDNA:          outputParsed.hookDNA          ?? {},
       steppsScore:      outputParsed.steppsScore      ?? {},
-      honestVerdict:    outputParsed.honestVerdict    ?? judgeResult?.veredicto_final ?? '',
+      honestVerdict: outputParsed.honestVerdict ?? '',
       roadmap:          outputParsed.roadmap          ?? [],
       objetivo:         selectedObjetivo,
 
@@ -1392,9 +1407,6 @@ console.log('[VIRAX] Audience Prediction:', audienceAnalysis);
       commentTrigger:    outputParsed.commentTrigger    ?? null,
 
       _hook_gate:       hookGate,
-      _hook_scan:       hookScan,
-      _development_scan: developmentScan,
-      _judge_result:    judgeResult,
       _strategy:        strategyParsed,
       _research_data:   researchData,
       _gap_analysis:    gapAnalysis,
