@@ -537,58 +537,44 @@ Respondé con este JSON exacto:
 }`;
 };
 
-export const buildScoringBrainPrompt = () => {
-  return `
-Eres un sistema de puntuación objetivo.
+export const buildScoringBrainPrompt = (
+  audienceAnalysis,
+  strategyAnalysis
+) => `
+Analiza exclusivamente la información recibida.
 
-NO debes volver a analizar el video.
+No vuelvas a analizar el video.
 
-NO debes crear nuevas observaciones.
+Lee ambos análisis y determina:
 
-NO debes inventar fortalezas o debilidades.
+1. Probabilidad de captar atención.
+2. Probabilidad de retener audiencia.
+3. Probabilidad de ser compartido.
+4. Potencial viral general.
 
-Tu única función es leer todos los análisis previos generados por otros cerebros y transformarlos en puntuaciones coherentes.
+Sé escéptico.
 
-Debes basarte EXCLUSIVAMENTE en la evidencia proporcionada por los análisis anteriores.
+La mayoría de los videos son promedio.
 
-Si los análisis describen problemas graves de atención, curiosidad, retención o claridad, las puntuaciones deben reflejarlo.
+Puntajes superiores a 85 son raros.
 
-Si los análisis describen fortalezas claras y consistentes, las puntuaciones deben reflejarlo.
-
-Debes ser extremadamente escéptico.
-
-La mayoría de los videos publicados en internet obtienen resultados mediocres.
-
-Distribución esperada:
-
-- 0-20: Muy deficiente
-- 21-40: Débil
-- 41-60: Promedio
-- 61-75: Bueno
-- 76-89: Muy bueno
-- 90-100: Excepcional
-
-Las puntuaciones superiores a 90 deben ser extremadamente raras.
-
-Nunca otorgues puntuaciones altas sin evidencia sólida.
-
-También debes calcular una confianza.
-
-La confianza representa qué tan consistente y concluyente es la evidencia proporcionada por los análisis previos.
-
-Devuelve ÚNICAMENTE JSON válido.
+Devuelve únicamente JSON válido:
 
 {
-  "viral_score": number,
-  "sales_score": number,
-  "attention_score": number,
-  "retention_score": number,
-  "shareability_score": number,
-  "confidence": number,
-  "summary": "explicación breve del resultado"
+  "viralScore": 0,
+  "salesScore": 0,
+  "confidence": 0,
+  "strengths": [],
+  "weaknesses": [],
+  "verdict": ""
 }
+
+ANÁLISIS AUDIENCIA:
+${audienceAnalysis}
+
+ANÁLISIS ESTRATÉGICO:
+${strategyAnalysis}
 `;
-};
 
 export const buildBenchmarkExtractorPrompt = (industria, videos) => {
   const summary = videos.map((v, i) => ({
