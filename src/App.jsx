@@ -538,43 +538,69 @@ Respondé con este JSON exacto:
 };
 
 export const buildScoringBrainPrompt = (
-  audienceAnalysis,
-  strategyAnalysis
-) => `
-Analiza exclusivamente la información recibida.
+  preFacts,
+  strategyAnalysis,
+  audienceAnalysis,   // cognitiveScan — el texto libre de CALL 1
+  failureSystems,     // {} en tu caso, está bien
+  scoringRaw,
+  viralCapData,
+  platform,
+  objetivo,
+  industria,
+  nicheConfig,
+  hookGate
+) => {
+  const capInfo = viralCapData
+    ? `CAP VIRAL DETERMINÍSTICO: ${viralCapData.cap}/100 (${viralCapData.reason})`
+    : 'Sin cap aplicado';
 
-No vuelvas a analizar el video.
+  const gateInfo = hookGate
+    ? `HOOK GATE: ${hookGate.passed ? 'PASA' : 'MUERTO'} | Penalty: ${hookGate.penaltyLevel} | ${hookGate.reason}`
+    : '';
 
-Lee ambos análisis y determina:
+  return `
+Eres un sistema de scoring final. Tenés todos los análisis previos. Tu trabajo es integrarlos y producir el reporte.
 
-1. Probabilidad de captar atención.
-2. Probabilidad de retener audiencia.
-3. Probabilidad de ser compartido.
-4. Potencial viral general.
+PLATAFORMA: ${platform} | OBJETIVO: ${objetivo} | INDUSTRIA: ${industria}
+${capInfo}
+${gateInfo}
 
-Sé escéptico.
+SEÑALES TÉCNICAS DEL VIDEO (pre-classifier):
+${JSON.stringify(preFacts, null, 2)}
 
-La mayoría de los videos son promedio.
-
-Puntajes superiores a 85 son raros.
-
-Devuelve únicamente JSON válido:
-
-{
-  "viralScore": 0,
-  "salesScore": 0,
-  "confidence": 0,
-  "strengths": [],
-  "weaknesses": [],
-  "verdict": ""
-}
-
-ANÁLISIS AUDIENCIA:
+ANÁLISIS DE AUDIENCIA (predicción de retención real):
 ${audienceAnalysis}
 
-ANÁLISIS ESTRATÉGICO:
+DIAGNÓSTICO ESTRATÉGICO:
 ${strategyAnalysis}
-`;
+
+SCORING BASE:
+viralScore cap: ${scoringRaw?.viralScore ?? '?'}/100
+
+REGLAS:
+- viralScore NO puede superar ${viralCapData?.cap ?? 100}
+- Si hookGate.passed === false y penaltyLevel === 'hard', viralScore máximo 30
+- salesScore se evalúa independiente del cap viral
+- Todos los campos del JSON deben estar completos — nunca null en campos críticos
+
+Devolvé únicamente JSON válido con esta estructura:
+{
+  "viralScore": { "score": 0, "verdict": "", "accion_clave": "" },
+  "salesScore": { "score": 0, "verdict": "", "accion_clave": "" },
+  "scrollStopScore": { "score": 0, "faceDetected": false, "textOnScreen": false, "contrastLevel": "bajo", "emotionVisible": "ninguna", "emotionIntensity": 0, "verdict": "" },
+  "hookDNA": { "strength": 0, "pattern": "", "missingElement": "", "optimizedHook": "" },
+  "steppsScore": { "socialCurrency": 0, "triggers": 0, "emotion": 0, "public": 0, "practicalValue": 0, "stories": 0, "viralCoefficient": 0.0, "dominantFactor": "", "weakestFactor": "", "shareMotivation": "" },
+  "honestVerdict": "",
+  "roadmap": [{ "problema": "", "solucion": "", "resultado": "", "impacto": "ALTO" }],
+  "vision": { "niche": "", "type": "", "audience": "", "promise": "" },
+  "platformScores": { "tiktok": { "score": 0, "verdict": "", "topTip": "" }, "reels": { "score": 0, "verdict": "", "topTip": "" }, "shorts": { "score": 0, "verdict": "", "topTip": "" } },
+  "retentionData": { "at3s": "", "at10s": "", "final": "" },
+  "retentionCurve": [],
+  "viewsPrediction": { "scenario_low": "", "scenario_mid": "", "scenario_high": "", "probability_viral": "" },
+  "firstHourStrategy": { "optimalPostTime": "", "firstActionAfterPost": "", "commentSeed": "", "engagementBoost": "" },
+  "commentTrigger": { "probability": 0, "triggerType": "", "suggestedCTA": "" }
+}`;
+};
 
 export const buildBenchmarkExtractorPrompt = (industria, videos) => {
   const summary = videos.map((v, i) => ({
