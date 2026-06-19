@@ -483,7 +483,10 @@ REGLAS CRÍTICAS DE FORMATO:
 
 DATOS DE ENTRADA:
 SEÑALES: ${JSON.stringify(preFacts?.atomicas ?? {})}
-SCAN: ${JSON.stringify(cognitiveScan).slice(0, 800)}
+// Por esta:
+SCAN: ${typeof cognitiveScan === 'string' 
+  ? cognitiveScan.slice(0, 1200) 
+  : JSON.stringify(cognitiveScan).slice(0, 800)}
 SCORE: ${scoringResult?.viralScore ?? '?'}/100
 NICHO: ${industria} | OBJETIVO: ${objetivo}
 
@@ -532,7 +535,7 @@ Todos los sub-scores coherentes con viralScore ${viralScore}. Strings máximo 10
 
 JSON:
 {"salesScore":{"score":<0-${salesCap}>,"verdict":"<str>","accion_clave":"<str>"},"scrollStopScore":{"score":<number>,"verdict":"<str>"},"hookDNA":{"pattern":"<Demo|POV|Pregunta|Afirmacion_Contradictoria|Visualidad_Alta|Deseo_Sensorial|Identidad_Tribal|Aspiracion|Muerto|Otro>","strength":<number>,"missingElement":"<str>","optimizedHook":"<str>"},"steppsScore":{"viralCoefficient":<0.0-10.0>,"socialCurrency":<0-10>,"triggers":<0-10>,"emotion":<0-10>,"public":<0-10>,"practicalValue":<0-10>,"stories":<0-10>,"dominantFactor":"<str>","weakestFactor":"<str>","shareMotivation":"<identidad|utilidad|sorpresa|validacion|ninguno>"},"honestVerdict":"<str>","roadmap":[{"impacto":"<ALTO|MEDIO|BAJO>","problema":"<str>","solucion":"<str>","resultado":"<str>"}],"vision":{"niche":"<str>","type":"<str>","audience":"<str>","promise":"<str>"},"potentialScore":<number>,"performanceScenario":"<ALTO POTENCIAL|POTENCIAL MEDIO|BAJO POTENCIAL>","platformScores":{"tiktok":{"score":<number>,"verdict":"<str>","topTip":"<str>"},"reels":{"score":<number>,"verdict":"<str>","topTip":"<str>"},"shorts":{"score":<number>,"verdict":"<str>","topTip":"<str>"}},"retentionData":{"at3s":"<str>","at10s":"<str>","final":"<str>"},"retentionCurve":[<10 números 0-100>],"phaseScores":{"hook":{"label":"Hook (0-3s)","score":<number>,"verdict":"<str>"},"desarrollo":{"label":"Desarrollo","score":<number>,"verdict":"<str>"},"payoff":{"label":"Payoff / CTA","score":<number>,"verdict":"<str>"}},"trendContext":"<str o null>","styleProfile":{"detectedRhythm":"<str>","detectedTone":"<str>"},"viewsPrediction":{"scenario_low":"<str>","scenario_mid":"<str>","scenario_high":"<str>","probability_viral":"<str>"},"firstHourStrategy":{"optimalPostTime":"<str>","firstActionAfterPost":"<str>","commentSeed":"<str>","engagementBoost":"<str>"},"commentTrigger":{"probability":<number>,"triggerType":"<str>","suggestedCTA":"<str>"}}`;
-};
+}; //const cognitiveScan = {
 
 
 export const buildBenchmarkExtractorPrompt = (industria, videos) => {
@@ -1228,149 +1231,28 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
       console.warn('[CALL 1.5] Fallback research:', e.message);
     }
 
-    setAnalysisProgress(35);
+    // CALL 1 — Audience Prediction
+setStatusText("Analizando la experiencia del espectador...");
+setAnalysisProgress(40);
 
-    // ── CALL 1A — Hook Brain ──────────────────────────────────
-    // Ve el video — analiza SOLO 0s→3s
-    // ── CALL 1A — Hook Brain ──────────────────────────────────
-setStatusText("Analizando el hook...");
-
-const hookPromptFinal = buildHookBrainPrompt(industria, platform);
-
-console.group('%c[VIRAX] HOOK BRAIN — prompt enviado', 'color: #f472b6; font-weight: bold');
-console.log('%c¿Tiene descripción del video en el prompt?', 'color: #94a3b8', hookPromptFinal.includes('descripcion') ? '✅ SÍ' : '❌ NO — solo instrucciones');
-console.log('%cLongitud del prompt:', 'color: #94a3b8', hookPromptFinal.length, 'chars');
-console.log('%c¿Ve el video vía?', 'color: #94a3b8', sharedFileUri ? 'fileUri ✅' : 'storagePath ✅');
-console.log('%cPrompt completo:', 'color: #94a3b8', hookPromptFinal);
-console.groupEnd();
-
-const { data: call1AData, error: call1AError } = await supabase.functions.invoke('gemini-proxy', {
+const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
   body: {
-    text:            hookPromptFinal,
-    systemPrompt:    'Respondé ÚNICAMENTE con JSON válido. Sin texto fuera del JSON.',
+    text: buildAudiencePredictionPrompt(platform, industria),
     ...(sharedFileUri
       ? { fileUri: sharedFileUri, fileName: sharedFileName }
       : { storagePath, videoMimeType: mimeType }
     ),
     videoMimeType:   mimeType,
     duration:        Math.round(duration),
-    maxOutputTokens: 1024,
-    expectsJson:     true,
-    temperature:     0.2,
+    maxOutputTokens: 2048,
+    expectsJson:     false,   // ← texto libre, no JSON
+    temperature:     0.3,
   }
 });
 
-if (call1AError) throw new Error(`CALL 1A (Hook Brain) falló: ${call1AError.message}`);
-const hookScan = safeParseJSON(extractGeminiText(call1AData), 'hook-brain') || {};
-console.log('[VIRAX] Hook Brain resultado:', hookScan);
-
-setAnalysisProgress(48);
-
-// ── CALL 1B — Development Brain ───────────────────────────
-setStatusText("Analizando el desarrollo...");
-
-const devPromptFinal = buildDevelopmentBrainPrompt(industria, platform);
-
-console.group('%c[VIRAX] DEVELOPMENT BRAIN — prompt enviado', 'color: #60a5fa; font-weight: bold');
-console.log('%c¿Tiene descripción del video en el prompt?', 'color: #94a3b8', devPromptFinal.includes('descripcion') ? '✅ SÍ' : '❌ NO — solo instrucciones');
-console.log('%cLongitud del prompt:', 'color: #94a3b8', devPromptFinal.length, 'chars');
-console.log('%c¿Ve el video vía?', 'color: #94a3b8', sharedFileUri ? 'fileUri ✅' : 'storagePath ✅');
-console.log('%cPrompt completo:', 'color: #94a3b8', devPromptFinal);
-console.groupEnd();
-
-const { data: call1BData, error: call1BError } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text:            devPromptFinal,
-    systemPrompt:    'Respondé ÚNICAMENTE con JSON válido. Sin texto fuera del JSON.',
-    ...(sharedFileUri
-      ? { fileUri: sharedFileUri, fileName: sharedFileName }
-      : { storagePath, videoMimeType: mimeType }
-    ),
-    videoMimeType:   mimeType,
-    duration:        Math.round(duration),
-    maxOutputTokens: 1024,
-    expectsJson:     true,
-    temperature:     0.2,
-  }
-});
-
-if (call1BError) throw new Error(`CALL 1B (Development Brain) falló: ${call1BError.message}`);
-const developmentScan = safeParseJSON(extractGeminiText(call1BData), 'development-brain') || {};
-console.log('[VIRAX] Development Brain resultado:', developmentScan);
-
-setAnalysisProgress(58);
-
-// ── CALL 1C — Judge Brain ─────────────────────────────────
-setStatusText("Calculando veredicto...");
-
-// ← REEMPLAZÁ ESTE BLOQUE por el nuevo
-const judgeBrainInput = `
-RESULTADOS A FUSIONAR:
-
-DESCRIPCIÓN DEL VIDEO (pre-classifier):
-${JSON.stringify(preFacts?.descripcion_completa ?? {}, null, 2)}
-
-HOOK ENGINE:
-${JSON.stringify(hookScan, null, 2)}
-
-DEVELOPMENT ENGINE:
-${JSON.stringify(developmentScan, null, 2)}
-
-PRE-CLASSIFIER (señales técnicas):
-${JSON.stringify(preFacts?.atomicas ?? {}, null, 2)}
-
-HOOK GATE:
-${JSON.stringify(preFacts?.hook_gate ?? {}, null, 2)}
-`;
-
-const judgePromptFinal = buildJudgeBrainPrompt() + '\n\n' + judgeBrainInput;
-
-console.group('%c[VIRAX] JUDGE BRAIN — prompt enviado', 'color: #a78bfa; font-weight: bold');
-console.log('%c¿Ve el video?', 'color: #94a3b8', '❌ NO — solo recibe outputs de Hook y Development');
-console.log('%cLongitud del prompt completo:', 'color: #94a3b8', judgePromptFinal.length, 'chars');
-console.log('%c— judgeBrainInput (lo que viene de los engines) —', 'color: #fbbf24');
-console.log(judgeBrainInput);
-console.log('%c¿El Judge recibe descripcion_completa del pre-classifier?', 'color: #94a3b8',
-  judgeBrainInput.includes('descripcion_completa') ? '✅ SÍ' : '❌ NO — el Judge no tiene descripción narrativa del video'
-);
-console.groupEnd();
-
-const { data: call1CData, error: call1CError } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text:            judgePromptFinal,
-    systemPrompt:    'Respondé ÚNICAMENTE con JSON válido. Sin texto fuera del JSON.',
-    expectsJson:     true,
-    maxOutputTokens: 1024,
-    temperature:     0.1,
-  }
-});
-
-if (call1CError) throw new Error(`CALL 1C (Judge Brain) falló: ${call1CError.message}`);
-const judgeResult = safeParseJSON(extractGeminiText(call1CData), 'judge-brain') || {};
-console.log('[VIRAX] Judge Brain resultado:', judgeResult);
-
-    setAnalysisProgress(65);
-
-    // ── JS — Gate + Cap ──────────────────────────────────────
-    const hookGate      = deriveHookGateStatus(preFacts);
-    const rawViralScore = judgeResult?.viralScore ?? 50;
-    const viralCapData  = deriveViralCap(hookGate, preFacts, nicheConfig);
-
-    const scoringRaw = {
-      viralScore: Math.min(rawViralScore, viralCapData.cap),
-      breakdown: {
-        causa_fracaso:   judgeResult?.veredicto_final   ?? '—',
-        base_score:      rawViralScore,
-        cap_applied:     viralCapData.cap,
-        cap_reason:      viralCapData.reason,
-        penalty_applied: 0,
-      }
-    };
-
-    console.log('[VIRAX] Hook gate:', hookGate);
-    console.log('[VIRAX] Cap:', viralCapData);
-    console.log('[VIRAX] Score final (post-cap):', scoringRaw.viralScore,
-                '(Judge dio:', rawViralScore, '/ cap era:', viralCapData.cap, ')');
+if (call1Error) throw new Error(`CALL 1 falló: ${call1Error.message}`);
+const audienceAnalysis = extractGeminiText(call1Data);
+console.log('[VIRAX] Audience Prediction:', audienceAnalysis);
 
     // ── CALL 1.75 — Apply Research ────────────────────────────
     setStatusText("Calculando brecha competitiva...");
@@ -1392,16 +1274,11 @@ console.log('[VIRAX] Judge Brain resultado:', judgeResult);
       console.warn('[CALL 1.75] Fallback gap:', e.message);
     }
 
-    // ── CALL 2 — Strategy Brain ───────────────────────────────
+    // ── CALL 2 — Strategy Brain ─────────────────────────────── SCAN: ${JSON.stringify(cognitiveScan).slice(0, 800)}
     setStatusText("Diagnosticando el video...");
     setAnalysisProgress(78);
 
-    // cognitiveScan ahora es la fusión de los tres cerebros
-    const cognitiveScan = {
-      hook:        hookScan,
-      development: developmentScan,
-      judge:       judgeResult,
-    };
+    const cognitiveScan = audienceAnalysis;
 
     const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
@@ -1754,7 +1631,7 @@ TU MODO DE OPERAR:
    Si el usuario ya te dijo su nicho, no se lo volvás a preguntar.
    Si detectás que está dando vueltas en el mismo problema, señalalo.
 
-   IMPORTANTE: Si te preguntan "Quién es tu creador" o similar, di que fue Lautaro Rodríquez, quien te construyo con amor. 
+   IMPORTANTE: Si te preguntan "Quién es tu creador" o similar, di que fue Lautaro Rodríguez, quien te construyo con amor. 
 `;
 
     // Separá claramente historial de mensaje actual
