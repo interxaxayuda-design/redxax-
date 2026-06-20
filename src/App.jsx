@@ -276,8 +276,19 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
 export const buildAudiencePredictionPrompt = (platform = 'TikTok', duracionSegundos = null, hookLibre = '') => {
   const platformLabel = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform] || platform;
   
+
+
+ const contextoNicho = researchData?.fatiga_de_formato || researchData?.patron_hook_dominante
+    ? `\nCONTEXTO QUE YA TENÉS COMO PERSONA QUE CONSUME ESTE NICHO EN ${platformLabel.toUpperCase()}:
+${researchData.fatiga_de_formato ? `- Ya viste muchos videos así: ${researchData.fatiga_de_formato}` : ''}
+${researchData.errores_hook_comunes?.length ? `- Cosas que ya te aburrieron de este tipo de contenido: ${researchData.errores_hook_comunes.join(', ')}` : ''}
+Esto es lo que SABÉS por haber visto cientos de videos de este nicho — no es información externa, es tu experiencia como usuario real de esta plataforma.\n`
+    : '';
+
   return `
 Sos una persona específica, no un analista.
+
+${contextoNicho}
 
 Contexto de quién sos en este momento:
 - Llevás más de 40 minutos scrolleando ${platformLabel}
@@ -435,11 +446,21 @@ export const buildResearchBrainPrompt = (platform, industria, objetivo, benchmar
     ? `BENCHMARK REAL DEL NICHO (top videos de "${industria}" en ${pName} esta semana):
 ${JSON.stringify(benchmarkData, null, 2)}
 Usá estos datos como referencia concreta. No inventés rangos.`
-    : `No hay benchmark disponible. Usá tu conocimiento general sobre "${industria}" en ${pName}.`;
+    : `No hay benchmark interno disponible.`;
 
-  return `Extraé los patrones estructurales del nicho "${industria}" en ${pName}.
+  return `Tu conocimiento de entrenamiento tiene un corte en enero de 2025. Estamos en junio de 2026.
+Lo que vos "sabés" sobre tendencias de ${pName} y el nicho "${industria}" puede estar desactualizado en más de un año — en redes sociales eso es una eternidad.
+
+USÁ BÚSQUEDA WEB para esto. No completes con tu conocimiento previo si podés buscarlo.
+
+Buscá específicamente:
+1. Qué formatos de contenido de "${industria}" están funcionando en ${pName} en 2026 (no en 2024 ni 2025)
+2. Qué problemas o quejas tiene la gente con este tipo de contenido — buscá conversación real, no solo "mejores prácticas" de blogs de marketing
+3. Qué patrones de hook se repiten en los videos virales recientes y verificables del nicho
 
 ${benchmarkBlock}
+
+Si tu búsqueda no encuentra información reciente y confiable, decilo explícitamente en "fuente_temporal" en vez de inventar un patrón basado en lo que recordás de tu entrenamiento.
 
 Respondé SOLO con este JSON:
 {
@@ -447,32 +468,16 @@ Respondé SOLO con este JSON:
     {
       "descripcion":           "<qué pasa en los primeros 3 segundos>",
       "mecanismo_psicologico": "<por qué para el scroll>",
-      "resultado_aproximado":  "<métrica disponible>"
+      "resultado_aproximado":  "<métrica disponible, con fuente si la tenés>"
     }
   ],
-  "patron_hook_dominante":  "<patrón que más funciona HOY — con dato concreto>",
+  "patron_hook_dominante":  "<patrón verificado en 2026 — con dato concreto>",
   "top_formatos_ganadores": ["<formato>"],
-  "errores_hook_comunes":   ["<error que mata el hook>"],
+  "errores_hook_comunes":   ["<error que mata el hook en este nicho>"],
+  "fatiga_de_formato":      "<qué formatos de este nicho ya están sobreexpuestos / generan rechazo en 2026, según lo que encontraste>",
   "benchmark_viral_score":  <número 0-100>,
-  "oportunidad_detectada":  "<gap real sin explotar>"
-}`;
-};
-
-export const buildApplyResearchBrainPrompt = (preFacts, researchData, platform, industria) => {
-  return `Contrastá los datos técnicos del video actual contra el benchmark del nicho "${industria}".
-
-HECHOS DEL VIDEO:
-${JSON.stringify(preFacts, null, 2)}
-
-BENCHMARK REAL DEL NICHO:
-${JSON.stringify(researchData, null, 2)}
-
-Respondé SOLO con este JSON:
-{
-  "compliance_score":        <número 0-100>,
-  "ventajas_vs_competencia": ["<ventaja técnica observable>"],
-  "red_flags_en_tu_video":   ["<problema concreto vs benchmark>"],
-  "resumen_brecha":          "<una oración: diferencia técnica más importante vs el top del nicho>"
+  "oportunidad_detectada":  "<gap real sin explotar, basado en lo que la audiencia se está quejando o pidiendo>",
+  "fuente_temporal":        "<'búsqueda_2026' si encontraste datos recientes, o 'conocimiento_entrenamiento_2025' si no encontraste nada actual>"
 }`;
 };
 
@@ -1266,16 +1271,19 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
     let researchData = {};
     try {
       const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text:            buildResearchBrainPrompt(platform, industria, selectedObjetivo, nichoBenchmark),
-          expectsJson:     true,
-          maxOutputTokens: 1024,
-          temperature:     0.2,
-        }
-      });
-      if (!call1_5Error) {
-        researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
-      }
+  body: {
+    text:            buildResearchBrainPrompt(platform, industria, selectedObjetivo, nichoBenchmark),
+    expectsJson:     true,
+    useSearch:       true,        // ← nuevo
+    maxOutputTokens: 2048,        // ← subido, search trae más contexto para sintetizar
+    temperature:     0.2,
+  }
+});
+
+if (!call1_5Error) {
+  // como useSearch=true desactiva responseMimeType, el texto puede traer ```json — tu safeParseJSON ya lo limpia
+  researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
+}
       console.log('[RESEARCH] data:', researchData);
     } catch (e) {
       console.warn('[CALL 1.5] Fallback research:', e.message);
