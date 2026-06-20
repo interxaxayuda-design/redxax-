@@ -894,6 +894,113 @@ export const buildFlagsDeterministic = (flagsFromStrategy, preFacts, preHookType
   };
 };
 
+// ============================================================
+// SILICON AUDIENCE — Extractor de eventos desde preFacts
+// ============================================================
+export const extractEventosFromPreFacts = (preFacts, videoDescription) => {
+  const eventos = [];
+  const atomicas = preFacts?.atomicas ?? {};
+
+  eventos.push({
+    segundo:     0,
+    tipo:        preFacts?.logo_en_s0 ? 'logo'
+                 : preFacts?.imagen_alto_impacto ? 'hook_visual'
+                 : preFacts?.pregunta_al_espectador ? 'hook_pregunta'
+                 : 'apertura',
+    descripcion: preFacts?.hook_libre ?? 'Frame inicial del video',
+    señal:       preFacts?.hook_type_detectado ?? 'desconocido',
+  });
+
+  if (atomicas.audio_in_first_second !== undefined) {
+    eventos.push({
+      segundo:     1,
+      tipo:        atomicas.audio_in_first_second ? 'audio_hook' : 'silencio',
+      descripcion: atomicas.audio_in_first_second
+        ? 'Audio presente desde el inicio'
+        : 'Sin audio en el primer segundo',
+      señal:       atomicas.audio_in_first_second ? 'positivo' : 'neutro',
+    });
+  }
+
+  if (atomicas.payoff_second) {
+    eventos.push({
+      segundo:     atomicas.payoff_second,
+      tipo:        'payoff',
+      descripcion: 'Momento de mayor densidad de información o revelación',
+      señal:       atomicas.payoff_second <= 5 ? 'positivo'
+                   : atomicas.payoff_second <= 10 ? 'neutro'
+                   : 'riesgo',
+    });
+  }
+
+  if (atomicas.rehook_present) {
+    eventos.push({
+      segundo:     Math.round((atomicas.duration_total_s ?? 30) * 0.4),
+      tipo:        'rehook',
+      descripcion: 'Re-enganche a mitad del video',
+      señal:       'positivo',
+    });
+  }
+
+  eventos.push({
+    segundo:     -1,
+    tipo:        'contexto_narrativo',
+    descripcion: typeof videoDescription === 'string'
+      ? videoDescription.slice(0, 600)
+      : JSON.stringify(videoDescription).slice(0, 600),
+    señal:       'informativo',
+  });
+
+  return eventos;
+};
+
+// ============================================================
+// SILICON AUDIENCE — Curva de retención desde simulación
+// ============================================================
+export const calcularCurvaRetencionSilicon = (simulacion, duracionSegundos) => {
+  if (!simulacion?.simulacion?.length) return [];
+  const perfiles = simulacion.simulacion;
+  const total    = perfiles.length;
+
+  return Array.from({ length: Math.ceil(duracionSegundos) }, (_, s) => {
+    const quedaron = perfiles.filter(p => {
+      if (p.completo) return true;
+      const primerAbandono = p.eventos_atencion?.find(e => e.decision === 'ABANDONA');
+      const abandonoSegundo = primerAbandono?.segundo ?? null;
+      if (abandonoSegundo === null) return true;
+      return abandonoSegundo > s;
+    }).length;
+    return Math.round((quedaron / total) * 100);
+  });
+};
+
+// ============================================================
+// SILICON AUDIENCE — Summary para el resultado final
+// ============================================================
+export const buildSiliconSummary = (simulacion, predictionMarket) => {
+  if (!simulacion?.simulacion?.length) return null;
+  const perfiles     = simulacion.simulacion;
+  const total        = perfiles.length;
+  const completaron  = perfiles.filter(p => p.completo).length;
+  const compartieron = perfiles.filter(p => p.compartio).length;
+  const guardaron    = perfiles.filter(p => p.guardó).length;
+
+  return {
+    tasa_completado:      Math.round((completaron  / total) * 100),
+    tasa_compartido:      Math.round((compartieron / total) * 100),
+    tasa_guardado:        Math.round((guardaron    / total) * 100),
+    segundo_peligroso:    simulacion.segundo_mas_peligroso     ?? null,
+    evento_retiene:       simulacion.evento_que_mas_retiene    ?? '',
+    evento_expulsa:       simulacion.evento_que_mas_expulsa    ?? '',
+    patron_abandono:      simulacion.patron_abandono           ?? '',
+    patron_retencion:     simulacion.patron_retencion          ?? '',
+    retencion_por_perfil: predictionMarket?.retencion_por_perfil ?? {},
+    probabilidad_viral:   predictionMarket?.probabilidad_viral ?? null,
+    confianza:            predictionMarket?.confianza_prediccion ?? 'baja',
+    detalle_perfiles:     perfiles,
+  };
+};
+
 const getNivel = (score) => {
   if (score >= 90) return { label: 'Excelente ✦', cls: 'excelente' };
   if (score >= 70) return { label: 'Bueno',        cls: 'bueno'     };
