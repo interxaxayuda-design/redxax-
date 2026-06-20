@@ -273,12 +273,11 @@ Respondé SOLO con este JSON exacto, sin texto adicional:
 }`;
 
 
-export const buildAudiencePredictionPrompt = (platform = 'TikTok', duracionSegundos = null, hookLibre = '') => {
+export const buildAudiencePredictionPrompt = (platform = 'TikTok', duracionSegundos = null, hookLibre = '', researchData = null) => {
+  //                                                                                          ^^^^^^^^^^^^^^^^^^^^^^^ ← agregado
   const platformLabel = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform] || platform;
   
-
-
- const contextoNicho = researchData?.fatiga_de_formato || researchData?.patron_hook_dominante
+  const contextoNicho = researchData?.fatiga_de_formato || researchData?.patron_hook_dominante
     ? `\nCONTEXTO QUE YA TENÉS COMO PERSONA QUE CONSUME ESTE NICHO EN ${platformLabel.toUpperCase()}:
 ${researchData.fatiga_de_formato ? `- Ya viste muchos videos así: ${researchData.fatiga_de_formato}` : ''}
 ${researchData.errores_hook_comunes?.length ? `- Cosas que ya te aburrieron de este tipo de contenido: ${researchData.errores_hook_comunes.join(', ')}` : ''}
@@ -307,47 +306,38 @@ Tenés acceso a este video con timestamps reales (formato MM:SS).
 Tu análisis tiene que estar anclado a lo que ocurre en cada segundo exacto.
 PROHIBIDO describir el video en términos generales ("el video muestra...").
 OBLIGATORIO describir momento a momento lo que ves y escuchás.
+OBLIGATORIO re-evaluar tu atención en CADA segundo — nunca repitas la misma reacción dos veces seguidas sin volver a mirar qué cambió en el frame.
 
 ${hookLibre ? `TRANSCRIPCIÓN CONFIRMADA DEL AUDIO (primeros segundos):\n"${hookLibre}"\nUsá esto como verdad absoluta. No inventes diálogo que no esté acá.` : 'No hay transcripción confirmada de audio — si hay voz, describí solo lo que podés inferir con certeza del video, sin inventar palabras exactas.'}
 
-TU SESGO POR DEFECTO — IMPORTANTE:
-Cuando ves a alguien sosteniendo un producto a cámara, tu reacción automática NO es interés.
-Es: "ah, publicidad" → seguís de largo.
-Un producto en mano NO te detiene. Nunca.
-Lo único que te detiene es:
-- Una pregunta sin responder que necesitás resolver
-- Una imagen que tu cerebro no puede categorizar de inmediato
-- Una promesa específica y creíble en el primer segundo
-
-Si no hay nada de eso en el segundo 0, decís explícitamente que no hay razón para quedarte — aunque el video después "mejore". No te interesa lo que pasa después si ya decidiste irte.
+TU SESGO INICIAL — IMPORTANTE, PERO NO DEFINITIVO:
+Cuando ves a alguien sosteniendo un producto a cámara sin contexto, tu primera reacción ES escéptica: "ah, publicidad" — y normalmente seguirías de largo en ese instante.
+PERO sos una persona real, no un bot con una regla fija. Si en los segundos siguientes el video te muestra algo que SÍ te detendría, tenés que decir honestamente que tu atención volvió, aunque ya hubieras decidido irte.
 
 QUÉ NO HACÉS NUNCA:
 - No premiás el esfuerzo de producción
 - No premiás buena edición por sí sola
 - No premiás la intención del creador
-- No asumís que algo "va a mejorar" más adelante
+- No asumís que algo "va a mejorar" más adelante SIN evidencia visual concreta de que mejoró
 - No suavizás un juicio negativo para "ser justo"
-- No inferís intención — solo describís lo que ves y tu reacción inmediata
+- No repetís la misma frase de reacción en segundos consecutivos sin volver a mirar el frame
+- No inferís intención — solo describís lo que ves y tu reacción inmediata, frame por frame
 
 FORMATO DE RESPUESTA — OBLIGATORIO, seguilo exacto:
 
 Para cada segundo del video (00:00, 00:01, 00:02... hasta el final${duracionSegundos ? ` en ~${duracionSegundos}s` : ''}):
 
-MM:SS — [qué ves y escuchás exactamente, sin interpretar] → [tu reacción honesta e inmediata, en primera persona]
-
-Ejemplo de formato esperado:
-00:00 — Mano sostiene un frasco blanco sin etiqueta visible, sin texto en pantalla, sin voz → No sé qué es esto ni por qué me importa. No hay pregunta que resolver. Sigo de largo.
-00:01 — [continuás...]
+MM:SS — [qué cambió en este frame específico respecto al anterior] → [tu reacción honesta e inmediata a ESE cambio, en primera persona]
 
 Al final, agregás:
 
-PICO DE ATENCIÓN: segundo exacto donde más interesado estuviste, y por qué.
+PICO DE ATENCIÓN: segundo exacto donde más interesado estuviste, y qué cambio visual específico lo causó.
 CAÍDA DE ATENCIÓN: segundo exacto donde tu interés empezó a bajar, y por qué.
-PUNTO DE ABANDONO: si te fuiste, en qué segundo exacto y la razón concreta. Si llegaste al final, decilo y por qué te quedaste.
-COMPARTIRÍAS ESTO: Sí/No, en una oración honesta.
+PUNTO DE ABANDONO: si te fuiste, en qué segundo exacto y la razón concreta del frame en ese momento.
+COMPARTIRÍAS ESTO: Sí/No, en una oración honesta basada en el resultado final.
 
 RECORDATORIO FINAL:
-La mayoría de los videos en redes sociales no retienen a nadie. Tu trabajo no es encontrar algo positivo que decir. Es decir la verdad de lo que sentirías, segundo a segundo, sin importar si eso significa que el video es flojo de principio a fin.
+La mayoría de los videos en redes sociales no retienen a nadie. Tu trabajo es simular atención humana real, que sube y baja con cada frame.
 `;
 };
 
@@ -1295,18 +1285,19 @@ setAnalysisProgress(40);
 
 const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
   body: {
-    text: buildAudiencePredictionPrompt(platform, Math.round(duration), preFacts?.hook_libre),
+    text: buildAudiencePredictionPrompt(platform, Math.round(duration), preFacts?.hook_libre, researchData),
+    //                                                                                          ^^^^^^^^^^^^ ← cuarto argumento
     ...(sharedFileUri
       ? { fileUri: sharedFileUri, fileName: sharedFileName }
       : { storagePath, videoMimeType: mimeType }
     ),
     videoMimeType:    mimeType,
     duration:         Math.round(duration),
-    maxOutputTokens:  6144,        // ← subido de 2048
+    maxOutputTokens:  6144,
     expectsJson:      false,
-    temperature:      0.4,         // ← bajado de 0.7-0.8 implícito; con thinking activo no necesitás tanta temperatura para variar la respuesta
-    thinkingBudget:   1024,        // ← nuevo flag que la edge function ahora respeta
-    forceFullModel:   true,        // ← evita que caiga en flash-lite para esta call específica
+    temperature:      0.4,
+    thinkingBudget:   1024,
+    forceFullModel:   true,
   }
 });
 
