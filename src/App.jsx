@@ -214,9 +214,16 @@ ${meta ? `METADATA DEL ARCHIVO: ${meta}` : ''}
 
 
 export const buildAudiencePredictionPrompt = (platform = 'TikTok', duracionSegundos = null, hookLibre = '', researchData = null) => {
-  const platformLabel = ... // igual
+  //                                                                                          ^^^^^^^^^^^^^^^^^^^^^^^ ← agregado
+  const platformLabel = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform] || platform;
+  
+  const contextoNicho = researchData?.fatiga_de_formato || researchData?.patron_hook_dominante
+    ? `\nCONTEXTO QUE YA TENÉS COMO PERSONA QUE CONSUME ESTE NICHO EN ${platformLabel.toUpperCase()}:
+${researchData.fatiga_de_formato ? `- Ya viste muchos videos así: ${researchData.fatiga_de_formato}` : ''}
+${researchData.errores_hook_comunes?.length ? `- Cosas que ya te aburrieron de este tipo de contenido: ${researchData.errores_hook_comunes.join(', ')}` : ''}
+Esto es lo que SABÉS por haber visto cientos de videos de este nicho — no es información externa, es tu experiencia como usuario real de esta plataforma.\n`
+    : '';
 
-  const contextoNicho = ... // igual, está bueno
 
   return `
 Eres una persona común de 25-35 años scrolleando ${platformLabel} cansado después de 40 minutos. Ya viste 30+ videos. Tu atención es volátil y egoísta. No le debés nada al creador.
@@ -254,7 +261,6 @@ Al final responde exactamente:
 **COMPARTIRÍAS ESTO:** Sí/No + una oración honesta.
 `;
 };
-
 
 
 export const deriveHookGateStatus = (preFacts) => {
