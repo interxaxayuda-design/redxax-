@@ -205,11 +205,46 @@ Describí:
 - Cuándo ocurre el primer cambio visual significativo
 - Cuándo ocurre el momento de mayor densidad de información
 
-DESCRIBI ABSOLUTAMENTE TODO
-
-No describas lo que "podría significar". No describas intención. No describas emoción.
-Solo lo que existe.
 ${meta ? `METADATA DEL ARCHIVO: ${meta}` : ''}
+
+FORMATO DE RESPUESTA — CRÍTICO:
+Tu respuesta completa tiene que ser ÚNICAMENTE el objeto JSON de abajo.
+PROHIBIDO escribir texto introductorio como "Aquí tienes..." o similar.
+Tu primer carácter tiene que ser { y tu último carácter tiene que ser }.
+
+{
+  "descripcion_raw": "<descripción segundo a segundo, todo en este campo>",
+  "industria": "<nicho o industria detectada, ej: producto_fisico, estetica, educacion>",
+  "palanca_psicologica": "<palanca dominante detectada>",
+  "hook_type_detectado": "<tipo de hook: explosivo | bait_con_puente | apertura_informativa | muerto | debil>",
+  "hook_confianza": <número 0.0 a 1.0>,
+  "logo_en_s0": <true | false>,
+  "audio_desde_s0": <true | false>,
+  "pregunta_al_espectador": <true | false>,
+  "afirmacion_contradictoria": <true | false>,
+  "imagen_alto_impacto": <true | false>,
+  "producto_en_s0": <true | false>,
+  "producto_en_accion_s0": <true | false>,
+  "transformacion_visible": <true | false>,
+  "tiene_rehook": <true | false>,
+  "es_slideshow_imagenes": <true | false>,
+  "duracion_estimada_segundos": <número>,
+  "atomicas": {
+    "silence_duration_s": <número>,
+    "duration_total_s": <número>,
+    "cuts_per_10s": <número>,
+    "motion_intensity": <número 0.0 a 1.0>,
+    "audio_in_first_second": <true | false>,
+    "payoff_second": <número>,
+    "rehook_present": <true | false>,
+    "average_shot_duration_s": <número>
+  },
+  "hook_gate": {
+    "veredicto_gate": "<VIVO | MUERTO>",
+    "elemento_que_retiene": "<qué retiene al espectador o null>",
+    "pregunta_activa_en_espectador": "<pregunta implícita que queda abierta o null>"
+  }
+}
 `;
 
 
@@ -1062,7 +1097,7 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
     videoMimeType: mimeType,
     duration: Math.round(duration),
     maxOutputTokens: 1500,
-    expectsJson: true,
+    expectsJson: false,
     temperature: 0,
   }
 });
