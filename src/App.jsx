@@ -247,6 +247,276 @@ Tu primer carácter tiene que ser { y tu último carácter tiene que ser }.
 }
 `;
 
+// ============================================================
+// SILICON AUDIENCE — Perfiles conductuales (constante, sin call)
+// ============================================================
+export const SILICON_PROFILES = [
+  {
+    id: 'impaciente',
+    descripcion: 'Consume 150+ videos por día. Dedo listo para deslizar desde el frame 0.',
+    psicologia: {
+      impatience:               0.95,
+      curiosity_threshold:      0.85,
+      tolerance_to_confusion:   0.05,
+      tolerance_to_ads:         0.02,
+      receptivity_to_purchase:  0.15,
+    },
+    contexto: 'Scrollea en automático, sin intención de comprar ni aprender. Solo busca entretenimiento inmediato.',
+    retiene_si: 'Algo visualmente disruptivo o pregunta abierta aparece en el frame 0 o 1.',
+    abandona_si: 'Cara hablando sin contexto, logo, música corporativa, intro con texto estático.',
+    volumen: 'sin_audio',
+  },
+  {
+    id: 'promedio',
+    descripcion: 'Scrollea con moderación. Da una oportunidad si algo lo toca en los primeros 3 eventos.',
+    psicologia: {
+      impatience:               0.55,
+      curiosity_threshold:      0.50,
+      tolerance_to_confusion:   0.35,
+      tolerance_to_ads:         0.30,
+      receptivity_to_purchase:  0.40,
+    },
+    contexto: 'Está en modo pasivo. No busca nada específico pero está abierto si algo resuena.',
+    retiene_si: 'Promesa clara con resultado concreto. Emoción reconocible antes del evento 3.',
+    abandona_si: 'Intro lenta, sensación de "ya vi algo igual", ausencia de gancho claro.',
+    volumen: 'con_audio',
+  },
+  {
+    id: 'nicho',
+    descripcion: 'Conoce el tema a fondo. Busca algo nuevo, diferente o mejor que lo que ya consumió.',
+    psicologia: {
+      impatience:               0.40,
+      curiosity_threshold:      0.30,
+      tolerance_to_confusion:   0.60,
+      tolerance_to_ads:         0.45,
+      receptivity_to_purchase:  0.75,
+    },
+    contexto: 'Ya vio cientos de videos de este nicho. Detecta inmediatamente si es genérico.',
+    retiene_si: 'Ángulo diferente al estándar del nicho, dato que no sabía, demostración real verificable.',
+    abandona_si: 'Contenido genérico que ya circula, promesas sin prueba, formato sobreusado en el nicho.',
+    volumen: 'con_audio',
+  },
+  {
+    id: 'esceptico',
+    descripcion: 'Detecta al instante si algo es publicidad disfrazada o promesa vacía.',
+    psicologia: {
+      impatience:               0.80,
+      curiosity_threshold:      0.90,
+      tolerance_to_confusion:   0.10,
+      tolerance_to_ads:         0.01,
+      receptivity_to_purchase:  0.05,
+    },
+    contexto: 'Fue quemado por contenido de ventas antes. Su filtro de bullshit está al máximo.',
+    retiene_si: 'Evidencia concreta, resultado real con prueba visible, lenguaje sin hipérbole.',
+    abandona_si: 'Logo, producto en mano sin demo, música de fondo "inspiracional", cualquier señal de ad.',
+    volumen: 'sin_audio',
+  },
+  {
+    id: 'comprador',
+    descripcion: 'Está buscando activamente resolver algo. Receptivo pero evaluando con criterio.',
+    psicologia: {
+      impatience:               0.35,
+      curiosity_threshold:      0.40,
+      tolerance_to_confusion:   0.50,
+      tolerance_to_ads:         0.55,
+      receptivity_to_purchase:  0.90,
+    },
+    contexto: 'Tiene un problema concreto sin resolver. Si este video promete solucionarlo, presta atención.',
+    retiene_si: 'Solución clara a un dolor reconocible, precio o acceso visible, CTA concreto.',
+    abandona_si: 'No entiende qué se vende, CTA confuso o inexistente, promesa sin especificidad.',
+    volumen: 'con_audio',
+  },
+];
+
+// ============================================================
+// SILICON AUDIENCE — CALL 1B: Simulación con eventos
+// ============================================================
+export const buildSiliconAudiencePrompt = (
+  eventos,
+  marketState,
+  platform,
+  industria,
+  duracionSegundos
+) => {
+  const pName = {
+    tiktok: 'TikTok', reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
+  }[platform] || platform;
+
+  const perfilesStr = SILICON_PROFILES.map(p => `
+PERFIL: ${p.id.toUpperCase()}
+Descripción: ${p.descripcion}
+Contexto: ${p.contexto}
+Psicología:
+  - Impaciencia:            ${p.psicologia.impatience} (0=paciente, 1=abandona ante cualquier duda)
+  - Umbral de curiosidad:   ${p.psicologia.curiosity_threshold} (qué tan fuerte tiene que ser el hook)
+  - Tolerancia confusión:   ${p.psicologia.tolerance_to_confusion}
+  - Tolerancia a ads:       ${p.psicologia.tolerance_to_ads} (0.01=detecta cualquier señal comercial)
+  - Receptividad de compra: ${p.psicologia.receptivity_to_purchase}
+Retiene si: ${p.retiene_si}
+Abandona si: ${p.abandona_si}
+Volumen: ${p.volumen}`
+  ).join('\n---');
+
+  return `Sos un motor de simulación de audiencia para ${pName}.
+
+Tu trabajo: leer los eventos objetivos del video y simular cómo reacciona cada uno de los 5 perfiles.
+
+════════════════════════════════
+EVENTOS OBJETIVOS DEL VIDEO (extraídos por el Observador):
+${JSON.stringify(eventos, null, 2)}
+
+DURACIÓN TOTAL: ${duracionSegundos}s
+NICHO: ${industria}
+PLATAFORMA: ${pName}
+════════════════════════════════
+
+ESTADO DEL MERCADO EN 2026:
+${JSON.stringify(marketState, null, 2)}
+════════════════════════════════
+
+LOS 5 PERFILES:
+${perfilesStr}
+════════════════════════════════
+
+REGLAS CRÍTICAS — LEELAS ANTES DE RESPONDER:
+
+1. NO hacés timeline segundo a segundo. Reportás SOLO los eventos donde la atención cambia.
+
+2. La decisión de cada perfil es BINARIA en cada evento: SIGUE o ABANDONA.
+   No hay "casi se va" sin resolución. Si duda, la psicología del perfil decide.
+
+3. Los escalares de psicología son literales:
+   - tolerance_to_ads: 0.01 significa que el escéptico abandona ante CUALQUIER señal comercial.
+   - impatience: 0.95 significa que el impaciente necesita recompensa en el primer o segundo evento.
+   - Si el primer evento no supera el curiosity_threshold del perfil, ese perfil abandona.
+
+4. MARKET STATE importa tanto como el video:
+   Si el formato está en audience_fatigue, incluso un perfil "nicho" lo detecta y penaliza.
+   Si el formato está en currently_rewarded, suma a la retención.
+
+5. PERFILES SIN AUDIO: impaciente y escéptico tienen volumen "sin_audio".
+   Para ellos, cualquier hook basado en voz NO EXISTE. Solo reaccionan a lo visual.
+
+6. SÉ INDIFERENTE, no cruel. La audiencia real no odia los videos — simplemente
+   no les regala atención si no hay razón concreta para hacerlo.
+
+7. La tasa de completado realista en ${pName} para contenido de ${industria} es
+   entre 20% y 40%. Si todos los perfiles completan, revisá tu simulación.
+
+FORMATO DE RESPUESTA — ÚNICAMENTE este JSON, sin texto antes ni después, sin \`\`\`json:
+{
+  "simulacion": [
+    {
+      "perfil_id": "impaciente",
+      "decision_final": "RETUVO | ABANDONÓ",
+      "abandono_en_evento": number | null,
+      "completo": boolean,
+      "compartio": boolean,
+      "guardó": boolean,
+      "comentaria": boolean,
+      "eventos_atencion": [
+        {
+          "evento_index": number,
+          "segundo": number,
+          "decision": "SIGUE | ABANDONA",
+          "razon": "string corta — qué del evento disparó esta decisión para este perfil específico"
+        }
+      ],
+      "razon_final": "string — una oración honesta e indiferente explicando el resultado"
+    }
+  ],
+  "segundo_mas_peligroso": number,
+  "evento_que_mas_retiene": "string",
+  "evento_que_mas_expulsa": "string",
+  "patron_abandono": "string",
+  "patron_retencion": "string"
+}`;
+};
+
+// ============================================================
+// PREDICTION MARKET — CALL 2: apuesta calibrada
+// ============================================================
+export const buildPredictionMarketPrompt = (
+  simulacionSilicon,
+  eventos,
+  marketState,
+  platform,
+  industria,
+  viralCapData,
+  hookGate
+) => {
+  const pName = {
+    tiktok: 'TikTok', reels: 'Instagram Reels',
+    shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts',
+  }[platform] || platform;
+
+  const resumenSimulacion = simulacionSilicon.simulacion.map(p =>
+    `${p.perfil_id.toUpperCase()}: ${p.decision_final} | completo: ${p.completo} | compartió: ${p.compartio} | razon: ${p.razon_final}`
+  ).join('\n');
+
+  return `Sos un Prediction Market especializado en comportamiento de contenido en ${pName}.
+
+Recibís los resultados de una simulación de audiencia de 5 perfiles conductuales
+y tenés que hacer UNA apuesta calibrada: ¿este video supera al contenido promedio
+del nicho "${industria}" en ${pName}?
+
+════════════════════════════════
+RESULTADO DE LA SIMULACIÓN:
+${resumenSimulacion}
+
+Segundo más peligroso: s${simulacionSilicon.segundo_mas_peligroso ?? '—'}
+Evento que más retiene: ${simulacionSilicon.evento_que_mas_retiene}
+Evento que más expulsa: ${simulacionSilicon.evento_que_mas_expulsa}
+Patrón abandono: ${simulacionSilicon.patron_abandono}
+Patrón retención: ${simulacionSilicon.patron_retencion}
+════════════════════════════════
+
+ESTADO DEL MERCADO:
+${JSON.stringify(marketState, null, 2)}
+════════════════════════════════
+
+CAP VIRAL DETERMINÍSTICO (calculado por JS, no negociable):
+${viralCapData ? `Máximo: ${viralCapData.cap}/100 — Razón: ${viralCapData.reason}` : 'Sin cap'}
+
+HOOK GATE: ${hookGate ? `${hookGate.passed ? 'PASA' : 'MUERTO'} | ${hookGate.penaltyLevel} | ${hookGate.reason}` : '—'}
+════════════════════════════════
+
+INSTRUCCIONES:
+
+1. Calculá la probabilidad de retención por perfil basándote en su resultado.
+   - RETUVO + completo = retención alta
+   - RETUVO + no completo = retención media
+   - ABANDONÓ temprano = retención baja
+
+2. La probabilidad_viral es tu apuesta de que este video entre al top 15%
+   del nicho en ${pName} en los próximos 7 días. Sé conservador — la mayoría no llega.
+
+3. Los scores tienen que ser CONSISTENTES con el cap viral.
+   viralScore no puede superar ${viralCapData?.cap ?? 100}.
+
+4. No inflés los scores. Un video con 3/5 perfiles abandonando
+   no puede tener viralScore > 45.
+
+FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después, sin \`\`\`json:
+{
+  "retencion_por_perfil": {
+    "impaciente":  { "retencion_pct": number, "razon": "string" },
+    "promedio":    { "retencion_pct": number, "razon": "string" },
+    "nicho":       { "retencion_pct": number, "razon": "string" },
+    "esceptico":   { "retencion_pct": number, "razon": "string" },
+    "comprador":   { "retencion_pct": number, "razon": "string" }
+  },
+  "probabilidad_viral": number,
+  "viralScore":  number,
+  "salesScore":  number,
+  "confianza_prediccion": "alta | media | baja",
+  "razon_principal_score": "string — una oración explicando el score",
+  "accion_clave_viral":  "string — una acción concreta para subir el viralScore",
+  "accion_clave_ventas": "string — una acción concreta para subir el salesScore"
+}`;
+};
+
 
 export const buildAudiencePredictionPrompt = (platform = 'TikTok', duracionSegundos = null, hookLibre = '', researchData = null) => {
   //                                                                                          ^^^^^^^^^^^^^^^^^^^^^^^ ← agregado
@@ -1167,8 +1437,7 @@ const runDeepAnalysis = async () => {
     setStatusText("Observando el video...");
     setAnalysisProgress(15);
 
-    // Reutilizamos preFacts de la calibración si ya existen
-    let preFacts = videoMeta?.preFacts || {};
+    let preFacts         = videoMeta?.preFacts || {};
     let videoDescription = '';
 
     if (!preFacts || Object.keys(preFacts).length === 0) {
@@ -1193,7 +1462,6 @@ const runDeepAnalysis = async () => {
       console.log('[VIRAX] Descripción del video:', videoDescription);
 
     } else {
-      // Ya tenemos descripción de la fase de calibración
       videoDescription = preFacts?.descripcion_raw ?? JSON.stringify(preFacts);
       console.log('[VIRAX] Reutilizando descripción de calibración ✅');
     }
@@ -1238,60 +1506,178 @@ const runDeepAnalysis = async () => {
 
     setAnalysisProgress(40);
 
-    // ── CALL 1 — Simulación de audiencia ─────────────────────
-    setStatusText("Simulando la experiencia del espectador...");
-
-    const { data: call1Data, error: call1Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildAudiencePredictionPrompt(
-          platform,
-          Math.round(duration),
-          videoDescription,  // ← ahora recibe la descripción pura de CALL 0
-          researchData
-        ),
-        ...(sharedFileUri
-          ? { fileUri: sharedFileUri, fileName: sharedFileName }
-          : { storagePath, videoMimeType: mimeType }
-        ),
-        videoMimeType:   mimeType,
-        duration:        Math.round(duration),
-        maxOutputTokens: 6144,
-        expectsJson:     false,
-        temperature:     0.4,
-        thinkingBudget:  1024,
-        forceFullModel:  true,
-      }
-    });
-
-    if (call1Error) throw new Error(`CALL 1 falló: ${call1Error.message}`);
-    const audienceAnalysis = extractGeminiText(call1Data);
-    console.log('[VIRAX] Audience Analysis:', audienceAnalysis);
-
-    setAnalysisProgress(70);
-
     // ── JS — Gate + Cap determinístico ───────────────────────
-    // Estos caps se calculan desde señales observables
-    // y actúan como TECHO, no como valor de partida
+    // Se calcula ANTES de Silicon Audience para pasarlo al Prediction Market
     const hookGate     = deriveHookGateStatus(preFacts);
     const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
 
     console.log('[VIRAX] Hook gate:', hookGate);
     console.log('[VIRAX] Viral cap:', viralCapData);
 
+    // ── CALL 1B — Silicon Audience ────────────────────────────
+    setStatusText("Simulando 5 perfiles de audiencia...");
+
+    // Eventos estructurados desde preFacts — sin call extra, sin video
+    const eventosVideo = extractEventosFromPreFacts(preFacts, videoDescription);
+
+    // Market state desde researchData que ya tenemos
+    const marketState = {
+      novelty_level:      researchData?.fatiga_de_formato ? 'saturado' : 'normal',
+      audience_fatigue:   researchData?.errores_hook_comunes   ?? [],
+      currently_rewarded: researchData?.top_formatos_ganadores ?? [],
+      patron_dominante:   researchData?.patron_hook_dominante  ?? '',
+      oportunidad:        researchData?.oportunidad_detectada  ?? '',
+    };
+
+    let audienceSimulation = null;
+    let audienceAnalysis   = '';
+
+    try {
+      const { data: call1bData, error: call1bError } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildSiliconAudiencePrompt(
+            eventosVideo,
+            marketState,
+            platform,
+            industria,
+            Math.round(duration)
+          ),
+          expectsJson:     true,
+          maxOutputTokens: 4096,
+          temperature:     0.3,
+          // Sin thinkingBudget — contraproducente para simulación conductual
+          // Sin video — los perfiles reaccionan a eventos, no al video crudo
+        }
+      });
+
+      if (!call1bError) {
+        audienceSimulation = safeParseJSON(extractGeminiText(call1bData), 'silicon-audience');
+        console.log('[SILICON AUDIENCE] Simulación:', audienceSimulation);
+      } else {
+        console.warn('[CALL 1B] Error:', call1bError.message);
+      }
+    } catch (e) {
+      console.warn('[CALL 1B] Excepción:', e.message);
+    }
+
+    setAnalysisProgress(55);
+
+    // ── CALL 2 — Prediction Market ────────────────────────────
+    setStatusText("Calculando predicción de mercado...");
+
+    let predictionMarket = null;
+
+    if (audienceSimulation?.simulacion?.length) {
+      try {
+        const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
+          body: {
+            text: buildPredictionMarketPrompt(
+              audienceSimulation,
+              eventosVideo,
+              marketState,
+              platform,
+              industria,
+              viralCapData,
+              hookGate
+            ),
+            expectsJson:     true,
+            maxOutputTokens: 1500,
+            temperature:     0.2,
+          }
+        });
+
+        if (!call2Error) {
+          predictionMarket = safeParseJSON(extractGeminiText(call2Data), 'prediction-market');
+          console.log('[PREDICTION MARKET]', predictionMarket);
+        } else {
+          console.warn('[CALL 2] Error:', call2Error.message);
+        }
+      } catch (e) {
+        console.warn('[CALL 2] Excepción:', e.message);
+      }
+    }
+
+    setAnalysisProgress(65);
+
+    // ── Armar audienceAnalysis como string para CALL 3 ────────
+    if (audienceSimulation && predictionMarket) {
+      const summary = buildSiliconSummary(audienceSimulation, predictionMarket);
+      audienceAnalysis = `
+SILICON AUDIENCE — 5 PERFILES CONDUCTUALES:
+
+Tasa de completado:    ${summary.tasa_completado}% (${Math.round(summary.tasa_completado / 20)}/5 perfiles)
+Tasa de compartido:    ${summary.tasa_compartido}%
+Tasa de guardado:      ${summary.tasa_guardado}%
+Segundo más peligroso: s${summary.segundo_peligroso ?? '—'}
+Evento que retiene:    ${summary.evento_retiene}
+Evento que expulsa:    ${summary.evento_expulsa}
+
+RETENCIÓN POR PERFIL:
+${Object.entries(summary.retencion_por_perfil).map(([k, v]) =>
+  `  ${k.padEnd(12)}: ${v.retencion_pct}% — ${v.razon}`
+).join('\n')}
+
+PREDICTION MARKET:
+  Probabilidad viral:  ${predictionMarket.probabilidad_viral}%
+  Confianza:           ${predictionMarket.confianza_prediccion}
+  viralScore:          ${predictionMarket.viralScore}
+  salesScore:          ${predictionMarket.salesScore}
+  Razón:               ${predictionMarket.razon_principal_score}
+
+PATRONES:
+  Abandono:   ${summary.patron_abandono}
+  Retención:  ${summary.patron_retencion}
+
+DETALLE POR PERFIL:
+${(summary.detalle_perfiles || []).map(p =>
+  `  ${p.perfil_id.padEnd(12)}: ${p.decision_final} | completo: ${p.completo} | compartió: ${p.compartio} | ${p.razon_final}`
+).join('\n')}
+      `.trim();
+
+    } else {
+      // ── Fallback al prompt original si Silicon Audience falló ──
+      console.warn('[SILICON AUDIENCE] Fallback a buildAudiencePredictionPrompt');
+      const { data: call1FallbackData, error: call1FallbackError } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildAudiencePredictionPrompt(
+            platform,
+            Math.round(duration),
+            videoDescription,
+            researchData
+          ),
+          ...(sharedFileUri
+            ? { fileUri: sharedFileUri, fileName: sharedFileName }
+            : { storagePath, videoMimeType: mimeType }
+          ),
+          videoMimeType:   mimeType,
+          duration:        Math.round(duration),
+          maxOutputTokens: 6144,
+          expectsJson:     false,
+          temperature:     0.4,
+          thinkingBudget:  1024,
+          forceFullModel:  true,
+        }
+      });
+      if (call1FallbackError) throw new Error(`Fallback CALL 1 falló: ${call1FallbackError.message}`);
+      audienceAnalysis = extractGeminiText(call1FallbackData);
+    }
+
+    console.log('[VIRAX] Audience Analysis final:', audienceAnalysis);
+    setAnalysisProgress(70);
+
     setAnalysisProgress(78);
 
     // ── CALL 3 — Scoring final ────────────────────────────────
-    // CALL 2 (Strategy) eliminado — CALL 3 recibe todo directamente
     setStatusText("Generando reporte final...");
 
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildScoringBrainPrompt(
-          videoDescription,    // descripción pura del video (antes era preFacts JSON)
-          audienceAnalysis,    // simulación de audiencia completa sin truncar
-          researchData,        // benchmark del nicho
-          viralCapData,        // cap como techo
-          hookGate,            // veredicto del gate
+          videoDescription,
+          audienceAnalysis,
+          researchData,
+          viralCapData,
+          hookGate,
           platform,
           selectedObjetivo,
           industria,
@@ -1323,25 +1709,29 @@ const runDeepAnalysis = async () => {
     });
 
     // ── Ensamblado final ──────────────────────────────────────
-    // viralScore: Gemini da el score, el cap actúa como techo
-    const viralScoreFinal = Math.min(
-      outputParsed.viralScore?.score ?? 0,
-      viralCapData.cap
-    );
+    // Prediction Market da la base, CALL 3 puede refinar, cap es el techo
+    const viralScoreBase  = predictionMarket?.viralScore
+      ?? outputParsed.viralScore?.score
+      ?? 0;
+    const viralScoreFinal = Math.min(viralScoreBase, viralCapData.cap);
+
+    const salesScoreFinal = predictionMarket?.salesScore
+      ?? outputParsed.salesScore?.score
+      ?? 0;
 
     const finalResult = {
       viralScore: {
         score:        viralScoreFinal,
         titulo:       'Potencial Viral',
-        verdict:      outputParsed.viralScore?.verdict      ?? '',
-        accion_clave: outputParsed.viralScore?.accion_clave ?? '',
+        verdict:      outputParsed.viralScore?.verdict      ?? predictionMarket?.razon_principal_score ?? '',
+        accion_clave: outputParsed.viralScore?.accion_clave ?? predictionMarket?.accion_clave_viral    ?? '',
         cap_reason:   viralCapData.reason,
       },
       salesScore: {
-        score:        outputParsed.salesScore?.score        ?? 0,
+        score:        salesScoreFinal,
         titulo:       'Potencial de Ventas',
-        verdict:      outputParsed.salesScore?.verdict      ?? '',
-        accion_clave: outputParsed.salesScore?.accion_clave ?? '',
+        verdict:      outputParsed.salesScore?.verdict      ?? predictionMarket?.razon_principal_score ?? '',
+        accion_clave: outputParsed.salesScore?.accion_clave ?? predictionMarket?.accion_clave_ventas   ?? '',
       },
       scrollStopScore:  outputParsed.scrollStopScore  ?? { score: 0, verdict: '' },
       hookDNA:          outputParsed.hookDNA          ?? {},
@@ -1358,7 +1748,7 @@ const runDeepAnalysis = async () => {
       },
 
       potentialScore: Math.round(
-        (viralScoreFinal + (outputParsed.salesScore?.score ?? 0)) / 2
+        (viralScoreFinal + salesScoreFinal) / 2
       ),
       performanceScenario: viralScoreFinal >= 70 ? 'ALTO POTENCIAL'
                          : viralScoreFinal >= 45 ? 'POTENCIAL MEDIO'
@@ -1366,23 +1756,34 @@ const runDeepAnalysis = async () => {
 
       platformScores:    outputParsed.platformScores    ?? null,
       retentionData:     outputParsed.retentionData     ?? null,
-      retentionCurve:    outputParsed.retentionCurve    ?? null,
+
+      // Curva calculada desde comportamiento real de perfiles, no inventada por Gemini
+      retentionCurve: audienceSimulation
+        ? calcularCurvaRetencionSilicon(audienceSimulation, Math.round(duration))
+        : (outputParsed.retentionCurve ?? null),
+
       viewsPrediction:   outputParsed.viewsPrediction   ?? null,
       firstHourStrategy: outputParsed.firstHourStrategy ?? null,
       commentTrigger:    outputParsed.commentTrigger    ?? null,
 
-      // Debug
-      _hook_gate:      hookGate,
-      _viral_cap:      viralCapData,
-      _research_data:  researchData,
-      _video_desc:     videoDescription,
+      // Debug + Silicon Audience
+      _hook_gate:         hookGate,
+      _viral_cap:         viralCapData,
+      _research_data:     researchData,
+      _video_desc:        videoDescription,
+      _silicon_summary:   audienceSimulation
+        ? buildSiliconSummary(audienceSimulation, predictionMarket)
+        : null,
+      _prediction_market: predictionMarket ?? null,
+      _eventos_video:     eventosVideo,
+      _market_state:      marketState,
     };
 
     setAiResult(finalResult);
     setCompletedSteps([]);
     setChatMessages([{
       role: 'bot',
-      text: `Análisis completado. Viral: ${viralScoreFinal}/100 | Ventas: ${finalResult.salesScore?.score ?? '—'}/100. ¿Qué sección repasamos primero?`
+      text: `Análisis completado. Viral: ${viralScoreFinal}/100 | Ventas: ${salesScoreFinal}/100. ¿Qué sección repasamos primero?`
     }]);
 
     setAnalysisProgress(100);
