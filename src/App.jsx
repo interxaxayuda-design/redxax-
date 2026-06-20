@@ -2386,104 +2386,417 @@ ${currentMessage.text}
     const primero = objetivo === 'viral' ? aiResult.viralScore : aiResult.salesScore;
     const segundo = objetivo === 'viral' ? aiResult.salesScore : aiResult.viralScore;
 
-    const nivelPrimero = getNivel(primero.score);
-    const nivelSegundo = getNivel(segundo.score);
-    const nivelCombinado = getNivel(aiResult.potentialScore);
+    const colorPrimero = (() => {
+      const s = primero.score;
+      if (s >= 70) return {
+        aurora: 'rgba(120,80,255,0.18), rgba(80,50,200,0.08), rgba(200,80,255,0.12)',
+        topEdge: 'rgba(180,140,255,0.8)',
+        border: 'rgba(130,100,255,0.25)',
+        bg: '#0d0b1e',
+        chip: { bg: 'rgba(160,120,255,0.15)', border: 'rgba(160,120,255,0.3)', color: '#c4a8ff', dot: '#a78bfa' },
+        fill: 'linear-gradient(90deg,#7c3aed,#a855f7,#e879f9)',
+        fillGlow: 'rgba(168,85,247,0.5)',
+        dotGlow: 'rgba(232,121,249,0.8)',
+        dotColor: '#e879f9',
+        accionBg: 'rgba(120,80,255,0.12)',
+        accionBorder: 'rgba(130,90,255,0.25)',
+        accionColor: 'rgba(210,190,255,0.8)',
+        arrowColor: '#a78bfa',
+        titleColor: '#f0eaff',
+        verdictColor: 'rgba(200,180,255,0.6)',
+        arc1: '#7c3aed', arc2: '#e879f9',
+        numColor: '#e0d4ff',
+        denColor: 'rgba(180,160,255,0.5)',
+      };
+      if (s >= 45) return {
+        aurora: 'rgba(200,160,30,0.15), rgba(180,120,20,0.06), rgba(240,180,30,0.10)',
+        topEdge: 'rgba(255,210,80,0.7)',
+        border: 'rgba(200,160,40,0.25)',
+        bg: '#131008',
+        chip: { bg: 'rgba(200,160,40,0.15)', border: 'rgba(200,160,40,0.3)', color: '#fcd34d', dot: '#fbbf24' },
+        fill: 'linear-gradient(90deg,#b45309,#d97706,#fbbf24)',
+        fillGlow: 'rgba(251,191,36,0.4)',
+        dotGlow: 'rgba(252,211,77,0.8)',
+        dotColor: '#fcd34d',
+        accionBg: 'rgba(180,130,20,0.12)',
+        accionBorder: 'rgba(200,160,40,0.25)',
+        accionColor: 'rgba(255,230,160,0.8)',
+        arrowColor: '#fbbf24',
+        titleColor: '#fff8e0',
+        verdictColor: 'rgba(255,220,140,0.6)',
+        arc1: '#b45309', arc2: '#fbbf24',
+        numColor: '#fff0c0',
+        denColor: 'rgba(255,200,80,0.5)',
+      };
+      return {
+        aurora: 'rgba(200,40,40,0.15), rgba(160,20,20,0.06), rgba(220,60,60,0.10)',
+        topEdge: 'rgba(255,120,120,0.7)',
+        border: 'rgba(200,60,60,0.25)',
+        bg: '#130808',
+        chip: { bg: 'rgba(200,60,60,0.15)', border: 'rgba(200,60,60,0.3)', color: '#fca5a5', dot: '#f87171' },
+        fill: 'linear-gradient(90deg,#991b1b,#dc2626,#f87171)',
+        fillGlow: 'rgba(248,113,113,0.4)',
+        dotGlow: 'rgba(252,165,165,0.8)',
+        dotColor: '#fca5a5',
+        accionBg: 'rgba(180,30,30,0.12)',
+        accionBorder: 'rgba(200,60,60,0.25)',
+        accionColor: 'rgba(255,190,190,0.8)',
+        arrowColor: '#f87171',
+        titleColor: '#ffe0e0',
+        verdictColor: 'rgba(255,180,180,0.6)',
+        arc1: '#991b1b', arc2: '#f87171',
+        numColor: '#ffe0e0',
+        denColor: 'rgba(255,150,150,0.5)',
+      };
+    })();
 
-    const borderPrimero =
-      nivelPrimero.cls === 'excelente' ? 'border-purple-500/40 bg-purple-500/5'  :
-      nivelPrimero.cls === 'bueno'     ? 'border-green-500/40  bg-green-500/5'   :
-      nivelPrimero.cls === 'puede'     ? 'border-yellow-500/40 bg-yellow-500/5'  :
-                                         'border-red-500/40    bg-red-500/5';
-
-    const barPrimero =
-      nivelPrimero.cls === 'excelente' ? 'from-purple-600 to-purple-400'  :
-      nivelPrimero.cls === 'bueno'     ? 'from-green-500  to-emerald-400' :
-      nivelPrimero.cls === 'puede'     ? 'from-yellow-500 to-amber-400'   :
-                                         'from-red-600    to-red-400';
-
-    const barSegundo =
-      nivelSegundo.cls === 'excelente' ? 'from-purple-600 to-purple-400'  :
-      nivelSegundo.cls === 'bueno'     ? 'from-green-500  to-emerald-400' :
-      nivelSegundo.cls === 'puede'     ? 'from-yellow-500 to-amber-400'   :
-                                         'from-red-600    to-red-400';
+    const colorSegundo = segundo.score >= 70
+      ? { fill: 'linear-gradient(90deg,#16a34a,#22c55e,#4ade80)', glow: 'rgba(74,222,128,0.4)', dot: '#4ade80', dotGlow: 'rgba(74,222,128,0.7)', bg: '#0a1a12', border: 'rgba(40,180,100,0.2)', topEdge: 'rgba(80,220,130,0.6)', numColor: '#4ade80', titleColor: '#d4f5e4', subColor: 'rgba(120,220,160,0.5)', hintColor: 'rgba(120,220,160,0.5)', accionColor: 'rgba(140,240,180,0.65)', badgeBg: 'rgba(30,160,80,0.15)', badgeBorder: 'rgba(50,200,100,0.3)', aurora: 'rgba(30,180,80,0.1), rgba(20,140,60,0.04), rgba(50,200,100,0.08)' }
+      : segundo.score >= 45
+      ? { fill: 'linear-gradient(90deg,#b45309,#d97706,#fbbf24)', glow: 'rgba(251,191,36,0.4)', dot: '#fcd34d', dotGlow: 'rgba(252,211,77,0.7)', bg: '#131008', border: 'rgba(200,160,40,0.2)', topEdge: 'rgba(255,210,80,0.6)', numColor: '#fcd34d', titleColor: '#fff8e0', subColor: 'rgba(255,210,120,0.5)', hintColor: 'rgba(255,210,120,0.5)', accionColor: 'rgba(255,230,160,0.65)', badgeBg: 'rgba(180,130,20,0.15)', badgeBorder: 'rgba(200,160,40,0.3)', aurora: 'rgba(200,160,30,0.1), rgba(180,120,20,0.04), rgba(240,180,30,0.08)' }
+      : { fill: 'linear-gradient(90deg,#991b1b,#dc2626,#f87171)', glow: 'rgba(248,113,113,0.4)', dot: '#fca5a5', dotGlow: 'rgba(252,165,165,0.7)', bg: '#130808', border: 'rgba(200,60,60,0.2)', topEdge: 'rgba(255,120,120,0.6)', numColor: '#fca5a5', titleColor: '#ffe0e0', subColor: 'rgba(255,150,150,0.5)', hintColor: 'rgba(255,150,150,0.5)', accionColor: 'rgba(255,190,190,0.65)', badgeBg: 'rgba(180,30,30,0.15)', badgeBorder: 'rgba(200,60,60,0.3)', aurora: 'rgba(200,40,40,0.1), rgba(160,20,20,0.04), rgba(220,60,60,0.08)' };
 
     return (
       <div className="space-y-3">
+        <style>{`
+          @keyframes virax-aurora {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          @keyframes virax-shimmer-sweep {
+            0%   { transform: translateX(-100%) skewX(-15deg); opacity: 0; }
+            40%  { opacity: 1; }
+            100% { transform: translateX(300%) skewX(-15deg); opacity: 0; }
+          }
+          @keyframes virax-pulse-ring {
+            0%   { transform: scale(1);   opacity: 0.5; }
+            100% { transform: scale(1.7); opacity: 0; }
+          }
+          @keyframes virax-bar-enter {
+            from { width: 0; }
+          }
+          @keyframes virax-float-dot {
+            0%, 100% { transform: translateY(0px); }
+            50%       { transform: translateY(-3px); }
+          }
+          .virax-card-primary {
+            position: relative;
+            border-radius: 22px;
+            padding: 20px 20px 18px;
+            overflow: hidden;
+          }
+          .virax-card-primary .virax-aurora-layer {
+            position: absolute;
+            inset: 0;
+            background-size: 300% 300%;
+            animation: virax-aurora 6s ease infinite;
+          }
+          .virax-card-primary .virax-top-edge {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+          }
+          .virax-shimmer-wrap {
+            position: absolute;
+            inset: 0;
+            border-radius: 22px;
+            overflow: hidden;
+            pointer-events: none;
+          }
+          .virax-shimmer-wrap::after {
+            content: '';
+            position: absolute;
+            top: -100%; left: -60%;
+            width: 40%; height: 300%;
+            background: linear-gradient(105deg, transparent, rgba(255,255,255,0.06), transparent);
+            animation: virax-shimmer-sweep 4.5s ease-in-out 1.5s infinite;
+          }
+          .virax-inner { position: relative; z-index: 1; }
+          .virax-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 3px 10px;
+            border-radius: 100px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+          }
+          .virax-chip-dot {
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            animation: virax-float-dot 2s ease-in-out infinite;
+          }
+          .virax-track {
+            height: 5px;
+            border-radius: 100px;
+            background: rgba(255,255,255,0.07);
+            overflow: visible;
+            position: relative;
+          }
+          .virax-track-fill {
+            height: 100%;
+            border-radius: 100px;
+            position: relative;
+            animation: virax-bar-enter 1s cubic-bezier(0.22,1,0.36,1) forwards;
+          }
+          .virax-card-secondary {
+            position: relative;
+            border-radius: 18px;
+            padding: 16px 18px;
+            overflow: hidden;
+          }
+          .virax-card-secondary .virax-aurora-layer {
+            position: absolute;
+            inset: 0;
+            background-size: 300% 300%;
+            animation: virax-aurora 8s ease 2s infinite;
+          }
+          .virax-card-secondary .virax-top-edge {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+          }
+          .virax-track-secondary {
+            height: 4px;
+            border-radius: 100px;
+            background: rgba(255,255,255,0.06);
+            overflow: visible;
+            position: relative;
+            z-index: 1;
+          }
+          .virax-track-fill-secondary {
+            height: 100%;
+            border-radius: 100px;
+            position: relative;
+            animation: virax-bar-enter 1.1s 0.2s cubic-bezier(0.22,1,0.36,1) both;
+          }
+          .virax-card-combined {
+            position: relative;
+            border-radius: 16px;
+            padding: 13px 18px;
+            overflow: hidden;
+            background: #0e0e14;
+            border: 0.5px solid rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          }
+          .virax-card-combined::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(120,80,255,0.06) 0%, rgba(30,160,80,0.04) 100%);
+          }
+          .virax-ring {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1px solid rgba(168,85,247,0.3);
+            animation: virax-pulse-ring 2.5s ease-out infinite;
+          }
+          .virax-ring:nth-child(2) { animation-delay: 0.8s; }
+          .virax-gradient-text {
+            background: linear-gradient(135deg, #a855f7, #4ade80);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+          }
+        `}</style>
 
-        {/* Tarjeta primaria */}
-        <ShinyCard tilt={tilt} className={`rounded-[2.5rem] border p-6 ${borderPrimero}`}>
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div className="flex-1 min-w-0">
-              <span className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500">
-                {objetivo === 'ambas' ? '⚡ Objetivo Principal' : '★ Tu Objetivo'}
-              </span>
-              <p className="text-base font-black italic uppercase tracking-tight text-white mt-1">
-                {primero.titulo}
-              </p>
-              <p className="text-xs font-bold italic text-slate-400 mt-1 max-w-[180px] leading-relaxed">
-                {primero.verdict}
-              </p>
-            </div>
-            <NivelBadge score={primero.score} size="lg" />
-          </div>
-          <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
+        {/* ── CARD PRIMARIA ── */}
+        <div
+          className="virax-card-primary"
+          style={{ background: colorPrimero.bg, border: `1px solid ${colorPrimero.border}` }}
+        >
+          <div
+            className="virax-aurora-layer"
+            style={{ background: `linear-gradient(135deg, ${colorPrimero.aurora})` }}
+          />
+          <div
+            className="virax-top-edge"
+            style={{ background: `linear-gradient(90deg, transparent, ${colorPrimero.topEdge}, transparent)` }}
+          />
+          <div className="virax-shimmer-wrap" />
+          <div className="virax-inner">
             <div
-              className={`h-full rounded-full transition-all duration-700 bg-gradient-to-r ${barPrimero}`}
-              style={{ width: `${primero.score}%` }}
-            />
-          </div>
-          <p className="text-[11px] font-bold italic text-slate-400 leading-relaxed">
-            {primero.razon_principal}
-          </p>
-          {primero.accion_clave && (
-            <div className="mt-3 flex items-start gap-2 bg-white/5 border border-white/10 rounded-[1rem] p-3">
-              <span className="text-xs">→</span>
-              <p className="text-[11px] font-black italic text-white">{primero.accion_clave}</p>
+              className="virax-chip"
+              style={{ background: colorPrimero.chip.bg, border: `0.5px solid ${colorPrimero.chip.border}`, color: colorPrimero.chip.color }}
+            >
+              <span className="virax-chip-dot" style={{ background: colorPrimero.chip.dot }} />
+              {objetivo === 'ambas' ? 'Objetivo Principal' : 'Tu Objetivo'}
             </div>
-          )}
-        </ShinyCard>
 
-        {/* Tarjeta secundaria */}
-        <ShinyCard tilt={tilt} className="rounded-[2rem] border border-white/10 bg-white/[0.02] p-5">
-          <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-[18px] font-black italic tracking-tight leading-tight" style={{ color: colorPrimero.titleColor }}>
+                  {primero.titulo}
+                </p>
+                <p className="text-[12px] font-bold italic mt-1 leading-relaxed max-w-[185px]" style={{ color: colorPrimero.verdictColor }}>
+                  {primero.verdict}
+                </p>
+              </div>
+              <div className="relative flex-shrink-0" style={{ width: 62, height: 62 }}>
+                <canvas
+                  id={`virax-arc-${objetivo}`}
+                  width={62}
+                  height={62}
+                  ref={(canvas) => {
+                    if (!canvas) return;
+                    const ctx = canvas.getContext('2d');
+                    const cx = 31, cy = 31, r = 26, lw = 4;
+                    const start = -Math.PI / 2;
+                    const end = start + (2 * Math.PI * primero.score / 100);
+                    ctx.clearRect(0, 0, 62, 62);
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+                    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
+                    ctx.lineWidth = lw;
+                    ctx.stroke();
+                    const grad = ctx.createLinearGradient(5, 5, 57, 57);
+                    grad.addColorStop(0, colorPrimero.arc1);
+                    grad.addColorStop(1, colorPrimero.arc2);
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, r, start, end);
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth = lw;
+                    ctx.lineCap = 'round';
+                    ctx.shadowColor = colorPrimero.arc2;
+                    ctx.shadowBlur = 8;
+                    ctx.stroke();
+                  }}
+                  style={{ position: 'absolute', inset: 0 }}
+                />
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-[22px] font-black italic leading-none" style={{ color: colorPrimero.numColor }}>
+                    {primero.score}
+                  </span>
+                  <span className="text-[10px] font-bold" style={{ color: colorPrimero.denColor }}>/100</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <div className="flex justify-between mb-[5px]">
+                <span className="text-[10px] font-black uppercase tracking-[0.07em]" style={{ color: colorPrimero.verdictColor }}>Potencia</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.07em]" style={{ color: colorPrimero.verdictColor }}>{primero.score}%</span>
+              </div>
+              <div className="virax-track">
+                <div
+                  className="virax-track-fill"
+                  style={{
+                    width: `${primero.score}%`,
+                    background: colorPrimero.fill,
+                    boxShadow: `0 0 12px ${colorPrimero.fillGlow}`,
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute', right: -1, top: '50%', transform: 'translateY(-50%)',
+                    width: 9, height: 9, borderRadius: '50%',
+                    background: colorPrimero.dotColor,
+                    boxShadow: `0 0 8px ${colorPrimero.dotGlow}, 0 0 16px ${colorPrimero.fillGlow}`,
+                  }} />
+                </div>
+              </div>
+            </div>
+
+            {primero.accion_clave && (
+              <div
+                className="flex items-start gap-2 rounded-[14px] p-[10px_13px] text-[12px] leading-relaxed"
+                style={{ background: colorPrimero.accionBg, border: `0.5px solid ${colorPrimero.accionBorder}`, color: colorPrimero.accionColor }}
+              >
+                <span className="flex-shrink-0 text-[14px] mt-[1px]" style={{ color: colorPrimero.arrowColor }}>→</span>
+                {primero.accion_clave}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* ── CARD SECUNDARIA ── */}
+        <div
+          className="virax-card-secondary"
+          style={{ background: colorSegundo.bg, border: `1px solid ${colorSegundo.border}` }}
+        >
+          <div
+            className="virax-aurora-layer"
+            style={{ background: `linear-gradient(135deg, ${colorSegundo.aurora})` }}
+          />
+          <div
+            className="virax-top-edge"
+            style={{ background: `linear-gradient(90deg, transparent, ${colorSegundo.topEdge}, transparent)` }}
+          />
+          <div className="flex items-center justify-between gap-3 mb-[10px]" style={{ position: 'relative', zIndex: 1 }}>
             <div>
-              <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1">
+              <p className="text-[10px] font-black uppercase tracking-[0.07em] mb-[3px]" style={{ color: colorSegundo.subColor }}>
                 También medimos
               </p>
-              <p className="text-sm font-black italic uppercase tracking-tight text-slate-300">
+              <p className="text-[15px] font-black italic tracking-tight" style={{ color: colorSegundo.titleColor }}>
                 {segundo.titulo}
               </p>
             </div>
-            <NivelBadge score={segundo.score} size="sm" />
-          </div>
-          <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
             <div
-              className={`h-full rounded-full transition-all duration-700 bg-gradient-to-r ${barSegundo}`}
-              style={{ width: `${segundo.score}%` }}
-            />
+              className="flex items-baseline gap-[2px] px-3 py-[5px] rounded-full flex-shrink-0"
+              style={{ background: colorSegundo.badgeBg, border: `0.5px solid ${colorSegundo.badgeBorder}` }}
+            >
+              <span className="text-[20px] font-black italic leading-none" style={{ color: colorSegundo.numColor }}>{segundo.score}</span>
+              <span className="text-[10px] font-bold" style={{ color: colorSegundo.subColor }}>/100</span>
+            </div>
           </div>
-          <p className="text-[10px] font-bold italic text-slate-500">{segundo.verdict}</p>
+          <div className="virax-track-secondary">
+            <div
+              className="virax-track-fill-secondary"
+              style={{
+                width: `${segundo.score}%`,
+                background: colorSegundo.fill,
+                boxShadow: `0 0 10px ${colorSegundo.glow}`,
+              }}
+            >
+              <div style={{
+                position: 'absolute', right: -1, top: '50%', transform: 'translateY(-50%)',
+                width: 8, height: 8, borderRadius: '50%',
+                background: colorSegundo.dot,
+                boxShadow: `0 0 8px ${colorSegundo.dotGlow}`,
+              }} />
+            </div>
+          </div>
+          {segundo.verdict && (
+            <p className="text-[11px] font-bold italic mt-2 leading-relaxed" style={{ color: colorSegundo.hintColor, position: 'relative', zIndex: 1 }}>
+              {segundo.verdict}
+            </p>
+          )}
           {segundo.accion_clave && (
-            <p className="text-[10px] font-bold italic text-slate-400 mt-2">
+            <p className="text-[11px] font-bold italic mt-[5px]" style={{ color: colorSegundo.accionColor, position: 'relative', zIndex: 1 }}>
               → {segundo.accion_clave}
             </p>
           )}
-        </ShinyCard>
+        </div>
 
-        {/* Score combinado */}
-        <ShinyCard tilt={tilt} className="flex items-center justify-between bg-black/40 border border-white/10 rounded-[1.5rem] px-5 py-3">
-          <div>
-            <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-500">
-              Score Combinado
+        {/* ── CARD COMBINADA ── */}
+        <div className="virax-card-combined">
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <p className="text-[10px] font-black uppercase tracking-[0.08em]" style={{ color: 'rgba(200,200,220,0.4)' }}>
+              Score combinado
             </p>
-            <p className="text-[9px] font-black italic uppercase tracking-[0.2em] text-slate-700 mt-0.5">
+            <p className="text-[11px] font-bold italic mt-[2px]" style={{ color: 'rgba(200,200,220,0.25)', letterSpacing: '0.04em' }}>
               {aiResult.performanceScenario}
             </p>
           </div>
-          <NivelBadge score={aiResult.potentialScore} size="sm" />
-        </ShinyCard>
+          <div className="flex items-baseline gap-[3px]" style={{ position: 'relative', zIndex: 1 }}>
+            <span className="text-[30px] font-black italic leading-none virax-gradient-text">
+              {aiResult.potentialScore}
+            </span>
+            <span className="text-[13px] font-bold" style={{ color: 'rgba(200,200,220,0.25)' }}>/100</span>
+          </div>
+          <div style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', width: 36, height: 36, pointerEvents: 'none' }}>
+            <div className="virax-ring" />
+            <div className="virax-ring" />
+          </div>
+        </div>
 
+      
         {/* ── FACTORES EXTERNOS ── */}
         <ShinyCard tilt={tilt} className="bg-yellow-500/[0.03] border border-yellow-500/20 rounded-[2.5rem] p-6">
           <div className="flex items-center gap-2 mb-4">
