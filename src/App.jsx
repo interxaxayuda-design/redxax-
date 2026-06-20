@@ -439,20 +439,27 @@ Usá estos datos como referencia concreta. No inventés rangos.`
     : `No hay benchmark interno disponible.`;
 
   return `Tu conocimiento de entrenamiento tiene un corte en enero de 2025. Estamos en junio de 2026.
-Lo que vos "sabés" sobre tendencias de ${pName} y el nicho "${industria}" puede estar desactualizado en más de un año — en redes sociales eso es una eternidad.
+Lo que vos "sabés" sobre tendencias de ${pName} y el nicho "${industria}" puede estar desactualizado en más de un año.
 
 USÁ BÚSQUEDA WEB para esto. No completes con tu conocimiento previo si podés buscarlo.
 
 Buscá específicamente:
-1. Qué formatos de contenido de "${industria}" están funcionando en ${pName} en 2026 (no en 2024 ni 2025)
-2. Qué problemas o quejas tiene la gente con este tipo de contenido — buscá conversación real, no solo "mejores prácticas" de blogs de marketing
-3. Qué patrones de hook se repiten en los videos virales recientes y verificables del nicho
+1. Qué formatos de contenido de "${industria}" están funcionando en ${pName} en 2026
+2. Qué problemas o quejas tiene la gente con este tipo de contenido
+3. Qué patrones de hook se repiten en videos virales recientes y verificables del nicho
 
 ${benchmarkBlock}
 
-Si tu búsqueda no encuentra información reciente y confiable, decilo explícitamente en "fuente_temporal" en vez de inventar un patrón basado en lo que recordás de tu entrenamiento.
+Si tu búsqueda no encuentra información reciente y confiable, decilo en "fuente_temporal".
 
-Respondé SOLO con este JSON:
+FORMATO DE RESPUESTA — CRÍTICO, LEÉ ESTO DOS VECES:
+Tu respuesta completa tiene que ser ÚNICAMENTE el objeto JSON de abajo.
+PROHIBIDO escribir "Aquí tienes...", "Basándome en mi búsqueda...", o cualquier texto antes del JSON.
+PROHIBIDO agregar explicaciones después del JSON.
+PROHIBIDO usar \`\`\`json o \`\`\` para envolver la respuesta.
+Tu primer carácter tiene que ser { y tu último carácter tiene que ser }.
+Usá la información que encontraste en tu búsqueda para RELLENAR los valores del JSON — no la describas en prosa aparte.
+
 {
   "hooks_virales_reales": [
     {
@@ -464,10 +471,32 @@ Respondé SOLO con este JSON:
   "patron_hook_dominante":  "<patrón verificado en 2026 — con dato concreto>",
   "top_formatos_ganadores": ["<formato>"],
   "errores_hook_comunes":   ["<error que mata el hook en este nicho>"],
-  "fatiga_de_formato":      "<qué formatos de este nicho ya están sobreexpuestos / generan rechazo en 2026, según lo que encontraste>",
+  "fatiga_de_formato":      "<qué formatos de este nicho ya están sobreexpuestos en 2026>",
   "benchmark_viral_score":  <número 0-100>,
-  "oportunidad_detectada":  "<gap real sin explotar, basado en lo que la audiencia se está quejando o pidiendo>",
+  "oportunidad_detectada":  "<gap real sin explotar>",
   "fuente_temporal":        "<'búsqueda_2026' si encontraste datos recientes, o 'conocimiento_entrenamiento_2025' si no encontraste nada actual>"
+}`;
+};
+
+export const buildApplyResearchBrainPrompt = (preFacts, researchData, platform, industria) => {
+  return `Contrastá los datos técnicos del video actual contra el benchmark del nicho "${industria}".
+
+HECHOS DEL VIDEO:
+${JSON.stringify(preFacts, null, 2)}
+
+BENCHMARK REAL DEL NICHO (de búsqueda 2026):
+${JSON.stringify(researchData, null, 2)}
+
+FORMATO DE RESPUESTA — CRÍTICO:
+Tu respuesta completa tiene que ser ÚNICAMENTE el objeto JSON de abajo.
+PROHIBIDO texto antes o después del JSON.
+PROHIBIDO \`\`\`json o \`\`\`.
+
+{
+  "compliance_score":        <número 0-100, qué tan alineado está el video con lo que funciona en el nicho>,
+  "ventajas_vs_competencia": ["<ventaja técnica observable, max 12 palabras>"],
+  "red_flags_en_tu_video":   ["<problema concreto vs benchmark, max 12 palabras>"],
+  "resumen_brecha":          "<una oración: diferencia técnica más importante vs el top del nicho>"
 }`;
 };
 
