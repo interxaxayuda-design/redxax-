@@ -262,8 +262,22 @@ FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
 
 // ── SILICON AUDIENCE — Perfiles conductuales ──────────────────
 export const SILICON_PROFILES = [
+  // ── PESO: 2x — representa al 60-70% del FYP real ──
+  {
+    id: 'curioso_aleatorio',
+    peso: 2,  // ← cuenta doble en el score final
+    descripcion: 'No buscó este contenido. El algoritmo se lo mostró entre un video de gatitos y uno de Minecraft.',
+    psicologia: { impatience: 0.70, curiosity_threshold: 0.60, tolerance_to_confusion: 0.25, tolerance_to_ads: 0.15, receptivity_to_purchase: 0.20 },
+    contexto: 'No tiene contexto previo del nicho. Decide en 1-2 segundos si algo le llama la atención por razones puramente visuales o emocionales, no racionales.',
+    retiene_si: 'Algo visualmente raro, gracioso, sorprendente o emocionalmente intenso que no requiere contexto previo para entenderse.',
+    abandona_si: 'Cualquier señal de que necesita saber algo del nicho para entender qué está pasando. Jerga del nicho en los primeros segundos. Cara hablando sin contexto visual.',
+    volumen: 'sin_audio',
+  },
+
+  // ── PESO: 1x ──
   {
     id: 'impaciente',
+    peso: 1,
     descripcion: 'Consume 150+ videos por día. Dedo listo para deslizar desde el frame 0.',
     psicologia: { impatience: 0.95, curiosity_threshold: 0.85, tolerance_to_confusion: 0.05, tolerance_to_ads: 0.02, receptivity_to_purchase: 0.15 },
     contexto: 'Scrollea en automático. Solo busca entretenimiento inmediato.',
@@ -273,6 +287,7 @@ export const SILICON_PROFILES = [
   },
   {
     id: 'promedio',
+    peso: 1,
     descripcion: 'Scrollea con moderación. Da una oportunidad si algo lo toca en los primeros 3 eventos.',
     psicologia: { impatience: 0.55, curiosity_threshold: 0.50, tolerance_to_confusion: 0.35, tolerance_to_ads: 0.30, receptivity_to_purchase: 0.40 },
     contexto: 'Modo pasivo. Abierto si algo resuena.',
@@ -282,6 +297,7 @@ export const SILICON_PROFILES = [
   },
   {
     id: 'nicho',
+    peso: 1,
     descripcion: 'Conoce el tema. Busca algo nuevo o diferente a lo que ya consumió.',
     psicologia: { impatience: 0.40, curiosity_threshold: 0.30, tolerance_to_confusion: 0.60, tolerance_to_ads: 0.45, receptivity_to_purchase: 0.75 },
     contexto: 'Ya vio cientos de videos del nicho. Detecta genérico al instante.',
@@ -291,6 +307,7 @@ export const SILICON_PROFILES = [
   },
   {
     id: 'esceptico',
+    peso: 1,
     descripcion: 'Detecta al instante publicidad disfrazada o promesa vacía.',
     psicologia: { impatience: 0.80, curiosity_threshold: 0.90, tolerance_to_confusion: 0.10, tolerance_to_ads: 0.01, receptivity_to_purchase: 0.05 },
     contexto: 'Filtro de bullshit al máximo. Fue quemado antes.',
@@ -300,6 +317,7 @@ export const SILICON_PROFILES = [
   },
   {
     id: 'comprador',
+    peso: 1,
     descripcion: 'Busca activamente resolver algo. Receptivo pero evaluando.',
     psicologia: { impatience: 0.35, curiosity_threshold: 0.40, tolerance_to_confusion: 0.50, tolerance_to_ads: 0.55, receptivity_to_purchase: 0.90 },
     contexto: 'Tiene un problema sin resolver. Si el video promete solucionarlo, presta atención.',
@@ -1096,7 +1114,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     console.log('[VIRAX] Video subido:', storagePath);
 
     setStatusText("Extrayendo señales del video...");
-    setAnalysisProgress(18);
+    setAnalysisProgress(18);s
 
    // En runNeuralAnalysis, reemplazá el bloque CALL 0:
 const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
