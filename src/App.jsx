@@ -435,7 +435,6 @@ FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
 }`;
 };
 
-// ── CALL 3 — Scoring Brain ────────────────────────────────────
 export const buildScoringBrainPrompt = (
   videoDescription,
   audienceAnalysis,
@@ -463,10 +462,33 @@ ${audienceAnalysis}
 BENCHMARK DEL NICHO:
 ${JSON.stringify(researchData)}
 
-REGLAS:
+REGLAS CRÍTICAS — LEELAS ANTES DE CALCULAR CUALQUIER SCORE:
+
+── REGLAS PARA viralScore ──
+El viralScore evalúa SOLO señales técnicas de retención. La palanca psicológica NO lo afecta.
+- Sin audio en video > 10s = viralScore máximo 35, sin excepción
+- Slideshow de imágenes sin voz = viralScore máximo 30
+- Hook muerto o sin elemento de retención en s0-s2 = penalización severa
+- El contexto del nicho o la palanca psicológica NO justifican ausencia de audio ni hook débil
 - viralScore NO puede superar ${viralCapData?.cap ?? 100}
-- hookGate MUERTO + penaltyLevel hard = viralScore máx 30
+- hookGate MUERTO + penaltyLevel hard = viralScore máximo 30
+
+── REGLAS PARA salesScore ──
+El salesScore SÍ considera la palanca psicológica y el nicho.
+- Un video de transformación sin audio puede tener salesScore razonable si la visual es convincente
+- Evaluá si el formato elegido es coherente con el objetivo de conversión
 - salesScore se evalúa independiente del cap viral
+
+── REGLA ANTI-BENEVOLENCIA ──
+Si el video tiene problemas técnicos graves (sin audio, slideshow, hook muerto):
+- Nombralos explícitamente en honestVerdict
+- No los suavices por la palanca psicológica ni por el nicho
+- Un video de "antes/después" sin audio sigue siendo un video sin audio
+
+── REGLA DE CONSISTENCIA ──
+Si Silicon Audience muestra que 3/6 perfiles abandonaron, viralScore no puede ser > 45.
+Si el impaciente y el curioso_aleatorio abandonaron, el video no tiene alcance orgánico masivo.
+
 - Nunca null en campos críticos
 
 FORMATO — ÚNICAMENTE este JSON:
@@ -519,13 +541,22 @@ export const deriveHookGateStatus = (preFacts) => {
   return { passed: true, penaltyLevel: waitPenalty ? 'minimal' : 'none', reason: `retencion_confirmada: ${gate.elemento_que_retiene}`, waitPenalty };
 };
 
-// ── JS — Viral Cap ────────────────────────────────────────────
 export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => {
   const nicheCap     = nicheConfig?.score_cap?.viralScore ?? 100;
   const atomicas     = preFacts?.atomicas ?? {};
   const penaltyLevel = hookGateStatus?.penaltyLevel ?? 'none';
   const capPorPenalty = { none: 100, minimal: 80, medium: 55, soft: 55, hard: 30 };
   const baseCap = capPorPenalty[penaltyLevel] ?? 100;
+
+  // ── Slideshow sin audio — cap duro independiente de la palanca ──
+  const esSlideshow = preFacts?.es_slideshow_imagenes === true;
+  const sinAudio    = !atomicas.audio_in_first_second && (atomicas.silence_duration_s ?? 0) > 5;
+
+  if (esSlideshow && sinAudio)
+    return { cap: Math.min(nicheCap, 28, baseCap), reason: 'slideshow_sin_audio — formato sin retención algorítmica' };
+
+  if (sinAudio && (atomicas.duration_total_s ?? 0) > 10)
+    return { cap: Math.min(nicheCap, 35, baseCap), reason: 'video_sin_audio — retención nativa imposible sin gancho sonoro' };
 
   const lento = (atomicas.cuts_per_10s ?? 0) < 2 && (atomicas.silence_duration_s ?? 0) > 8 && (atomicas.average_shot_duration_s ?? 0) > 6;
   if (lento) return { cap: Math.min(nicheCap, 40, baseCap), reason: 'video_lento_extremo_sin_audio' };
