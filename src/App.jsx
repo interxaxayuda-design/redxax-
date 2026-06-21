@@ -2406,23 +2406,27 @@ ${currentMessage.text}
             </div>
           </div>
 
-          {/* Palanca DETECTADA — read-only */}
-          <div className="group flex flex-col space-y-2 p-5 rounded-[2rem] border border-white/[0.07] bg-white/[0.02]">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                Palanca detectada en el video
-              </label>
-              <span className="text-[9px] font-bold text-green-400 bg-green-500/10 px-2 py-0.5 rounded-full">
-                Fija · base del score 🔒
-              </span>
-            </div>
-            <p className="text-lg text-white font-bold italic">
-              {videoMeta?.palanca_detectada || perception?.palanca_psicologica || '—'}
-            </p>
-            <p className="text-[9px] text-slate-600 italic">
-              La IA detectó esto directamente en el video. El score siempre se calcula sobre esta palanca.
-            </p>
-          </div>
+          {/* Palanca DETECTADA — editable */}
+<div className="group flex flex-col space-y-3 p-5 rounded-[2rem] border border-white/[0.07] bg-white/[0.02] hover:border-purple-500/20 transition-all duration-300">
+  <div className="flex justify-between items-center">
+    <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 group-hover:text-purple-400 transition-colors">
+      Palanca detectada en el video (Hacé clic para editar)
+    </label>
+    <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
+      Editable 📝
+    </span>
+  </div>
+  <textarea
+    rows={2}
+    value={videoMeta?.palanca_detectada || perception?.palanca_psicologica || ''}
+    onChange={(e) => {
+      setPerception({ ...perception, palanca_psicologica: e.target.value });
+      setVideoMeta({ ...videoMeta, palanca_detectada: e.target.value });
+    }}
+    placeholder="Ej. Transformación, Escasez, Curiosidad..."
+    className="bg-transparent text-lg text-white font-bold outline-none border-b border-white/10 focus:border-purple-500 pb-1 transition-colors w-full resize-none break-words whitespace-pre-wrap leading-relaxed"
+  />
+</div>
 
           {/* Palanca OBJETIVO — editable, solo para gap analysis */}
           <div className="group flex flex-col space-y-3 p-5 rounded-[2rem] border border-white/[0.07] bg-white/[0.02] hover:border-purple-500/20 transition-all duration-300">
