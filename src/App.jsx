@@ -327,8 +327,7 @@ export const SILICON_PROFILES = [
   },
 ];
 
-// ── CALL 1B — Silicon Audience ────────────────────────────────
-export const buildSiliconAudiencePrompt = (eventos, marketState, platform, industria, duracionSegundos) => {
+export const buildSiliconAudiencePrompt = (eventos, marketState, platform, duracionSegundos) => {
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform] || platform;
 
   const perfilesStr = SILICON_PROFILES.map(p =>
@@ -343,10 +342,13 @@ Volumen: ${p.volumen}`
 
   return `Motor de simulación de audiencia para ${pName}.
 
+Los perfiles no saben nada del nicho ni del producto. Solo reaccionan a señales
+visuales, sonoras y narrativas — exactamente como lo haría un usuario real en el FYP.
+
 EVENTOS DEL VIDEO:
 ${JSON.stringify(eventos, null, 2)}
 
-DURACIÓN: ${duracionSegundos}s | NICHO: ${industria}
+DURACIÓN: ${duracionSegundos}s
 
 ESTADO DEL MERCADO 2026:
 ${JSON.stringify(marketState, null, 2)}
@@ -362,6 +364,7 @@ REGLAS:
 5. Perfiles sin_audio no reaccionan a hooks de voz — solo a lo visual.
 6. Sé indiferente, no cruel. La audiencia no regala atención sin razón.
 7. Tasa de completado realista en ${pName}: 20–40%. Si todos completan, revisá.
+8. Los perfiles NO saben qué nicho es. Reaccionan a lo que VEN y ESCUCHAN, no a lo que el creador intenta vender.
 
 FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
 {
@@ -447,51 +450,74 @@ export const buildScoringBrainPrompt = (
   nicheConfig,
   duracionSegundos
 ) => `
-Sistema de scoring final. Integrá todos los análisis y producí el reporte.
+Sos un sistema de scoring en dos fases estrictamente separadas.
+Ejecutalas en orden. Los scores de Fase 1 son INMUTABLES — Fase 2 no los toca.
 
-PLATAFORMA: ${platform} | OBJETIVO: ${objetivo} | INDUSTRIA: ${industria} | DURACIÓN: ${duracionSegundos}s
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FASE 1 — SCORING CIEGO (sin nicho, sin palanca, sin objetivo)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Calculá viralScore, salesScore, scrollStopScore, hookDNA, steppsScore,
+platformScores, retentionData, retentionCurve, viewsPrediction y commentTrigger
+usando ÚNICAMENTE lo que está en esta fase.
+Cualquier dato de nicho, palanca, industria u objetivo NO EXISTE todavía.
+
+PLATAFORMA: ${platform} | DURACIÓN: ${duracionSegundos}s
 CAP VIRAL: ${viralCapData ? `${viralCapData.cap}/100 — ${viralCapData.reason}` : 'sin cap'}
 HOOK GATE: ${hookGate ? `${hookGate.passed ? 'PASA' : 'MUERTO'} | ${hookGate.penaltyLevel} | ${hookGate.reason}` : '—'}
-
-DESCRIPCIÓN DEL VIDEO:
-${videoDescription}
 
 SILICON AUDIENCE + PREDICTION MARKET:
 ${audienceAnalysis}
 
-BENCHMARK DEL NICHO:
-${JSON.stringify(researchData)}
-
-REGLAS CRÍTICAS — LEELAS ANTES DE CALCULAR CUALQUIER SCORE:
-
 ── REGLAS PARA viralScore ──
-El viralScore evalúa SOLO señales técnicas de retención. La palanca psicológica NO lo afecta.
+Evalúa SOLO señales técnicas de retención. Nicho y palanca no existen en esta fase.
 - Sin audio en video > 10s = viralScore máximo 35, sin excepción
 - Slideshow de imágenes sin voz = viralScore máximo 30
 - Hook muerto o sin elemento de retención en s0-s2 = penalización severa
-- El contexto del nicho o la palanca psicológica NO justifican ausencia de audio ni hook débil
 - viralScore NO puede superar ${viralCapData?.cap ?? 100}
 - hookGate MUERTO + penaltyLevel hard = viralScore máximo 30
+- Si 3/6 perfiles abandonaron = viralScore máximo 45
+- Si impaciente y curioso_aleatorio abandonaron = sin alcance orgánico masivo
 
 ── REGLAS PARA salesScore ──
-El salesScore SÍ considera la palanca psicológica y el nicho.
-- Un video de transformación sin audio puede tener salesScore razonable si la visual es convincente
-- Evaluá si el formato elegido es coherente con el objetivo de conversión
+Evalúa señales de intención de compra visibles en el video: demo del producto,
+CTA explícito, prueba social, claridad de la propuesta. Sin contexto de nicho.
 - salesScore se evalúa independiente del cap viral
+- No compensés ausencia de audio o hook débil por "la palanca lo justifica"
 
 ── REGLA ANTI-BENEVOLENCIA ──
-Si el video tiene problemas técnicos graves (sin audio, slideshow, hook muerto):
-- Nombralos explícitamente en honestVerdict
-- No los suavices por la palanca psicológica ni por el nicho
-- Un video de "antes/después" sin audio sigue siendo un video sin audio
+Si hay problemas técnicos graves (sin audio, slideshow, hook muerto):
+nombralos con precisión en los verdicts. No los suavices.
+Un video sin audio es un video sin audio, independientemente de lo que muestre.
 
-── REGLA DE CONSISTENCIA ──
-Si Silicon Audience muestra que 3/6 perfiles abandonaron, viralScore no puede ser > 45.
-Si el impaciente y el curioso_aleatorio abandonaron, el video no tiene alcance orgánico masivo.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FASE 2 — VEREDICTO CONTEXTUAL (recién acá usás nicho y palanca)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Los scores calculados en Fase 1 son fijos. No los modificás.
+Esta fase produce ÚNICAMENTE: honestVerdict, roadmap y vision.
 
-- Nunca null en campos críticos
+Respondé a esta pregunta:
+"Dado el score que ya calculé, ¿qué tiene que cambiar en este video
+para lograr [${objetivo}] en el nicho [${industria}]?"
 
-FORMATO — ÚNICAMENTE este JSON:
+OBJETIVO DEL CREADOR: ${objetivo}
+INDUSTRIA: ${industria}
+PALANCA QUE QUIERE ACTIVAR: ${nicheConfig?.motor ?? '—'}
+DESCRIPCIÓN DEL VIDEO: ${videoDescription}
+BENCHMARK DEL NICHO: ${JSON.stringify(researchData)}
+
+El honestVerdict debe:
+- Nombrar los problemas técnicos detectados en Fase 1 sin suavizarlos
+- Conectarlos con el objetivo del creador ("tu hook está muerto, y para vender X eso es fatal porque...")
+- Ser accionable: qué cambiar primero y por qué
+
+El roadmap debe:
+- Ordenarse por impacto real, no por facilidad
+- Cada paso debe conectar el problema técnico con la consecuencia comercial
+- Nunca inventar problemas que no surgieron en Fase 1
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 {
   "viralScore":     { "score": 0, "verdict": "", "accion_clave": "" },
   "salesScore":     { "score": 0, "verdict": "", "accion_clave": "" },
