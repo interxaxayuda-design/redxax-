@@ -277,7 +277,7 @@ export const SILICON_PROFILES = [
   // ── PESO: 1x ── /s
   {
     id: 'impaciente',
-    peso: 2,
+    peso: 1,
     descripcion: 'Consume 150+ videos por día. Dedo listo para deslizar desde el frame 0.',
     psicologia: { impatience: 0.95, curiosity_threshold: 0.85, tolerance_to_confusion: 0.05, tolerance_to_ads: 0.02, receptivity_to_purchase: 0.15 },
     contexto: 'Scrollea en automático. Solo busca entretenimiento inmediato.',
@@ -307,7 +307,7 @@ export const SILICON_PROFILES = [
   },
   {
     id: 'esceptico',
-    peso: 2,
+    peso: 1,
     descripcion: 'Detecta al instante publicidad disfrazada o promesa vacía.',
     psicologia: { impatience: 0.80, curiosity_threshold: 0.90, tolerance_to_confusion: 0.10, tolerance_to_ads: 0.01, receptivity_to_purchase: 0.05 },
     contexto: 'Filtro de bullshit al máximo. Fue quemado antes.',
