@@ -274,7 +274,7 @@ export const SILICON_PROFILES = [
     volumen: 'sin_audio',
   },
 
-  // ── PESO: 1x ──
+  // ── PESO: 1x ── /s
   {
     id: 'impaciente',
     peso: 1,
@@ -1114,7 +1114,7 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
     console.log('[VIRAX] Video subido:', storagePath);
 
     setStatusText("Extrayendo señales del video...");
-    setAnalysisProgress(18);s
+    setAnalysisProgress(18);
 
    // En runNeuralAnalysis, reemplazá el bloque CALL 0:
 const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
