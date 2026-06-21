@@ -187,19 +187,10 @@ export const buildPreClassifierPrompt = () => `
 Sos una cámara inteligente. Sin opiniones. Sin expectativas.
 Describí exactamente lo que existe en este video.
 
-Describí:
-- Qué se ve en el frame 0 exacto
-- Qué se escucha en el primer segundo
-- Cómo cambia la imagen (cortes, ritmo, movimiento)
-- Qué texto aparece en pantalla y cuándo
-- Qué dice el audio, palabra por palabra si hay voz
-- Cuándo ocurre el primer cambio visual significativo
-- Cuándo ocurre el momento de mayor densidad de información
-
 FORMATO — responde ÚNICAMENTE este JSON, sin texto antes ni después:
 {
-  "descripcion_raw": "<descripción segundo a segundo>",
-  "industria": "<nicho detectado: producto_fisico | estetica | educacion | inmobiliaria | app_saas | comida_restaurante | musica_artista>",
+  "descripcion_raw": "<descripción técnica del video — usá solo comillas simples adentro, nunca comillas dobles>",
+  "industria": "<producto_fisico | estetica | educacion | inmobiliaria | app_saas | comida_restaurante | musica_artista>",
   "palanca_psicologica": "<palanca dominante detectada>",
   "hook_type_detectado": "<explosivo | bait_con_puente | apertura_informativa | muerto | debil>",
   "hook_confianza": <0.0 a 1.0>,
@@ -229,7 +220,14 @@ FORMATO — responde ÚNICAMENTE este JSON, sin texto antes ni después:
     "elemento_que_retiene": "<string o null>",
     "pregunta_activa_en_espectador": "<string o null>"
   }
-}`;
+}
+
+REGLAS CRÍTICAS PARA descripcion_raw:
+- Máximo 800 caracteres
+- Usá SOLO comillas simples si necesitás citar algo — NUNCA comillas dobles adentro del string
+- Sin saltos de línea — todo en una sola línea continua
+- Formato: [s0: frame inicial] [s1-s3: hook] [s4-s10: desarrollo] [payoff: segundo X] [cierre: descripción]
+`;
 
 // ── CALL 1.5 — Research Brain ─────────────────────────────────
 export const buildResearchBrainPrompt = (platform, industria, objetivo, benchmarkData = null) => {
@@ -1108,7 +1106,7 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
     videoMimeType: mimeType,
     duration: Math.round(duration),
     maxOutputTokens: 1500,
-    expectsJson: false,
+    expectsJson: true,
     temperature: 0,
   }
 });
