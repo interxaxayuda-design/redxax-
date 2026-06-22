@@ -1505,7 +1505,7 @@ ${(summary.detalle_perfiles || []).map(p =>
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildScoringBrainPrompt(
-          videoDescriptionParaScoring,  // ← limpia, sin palanca
+           videoDescription,  // ← ya está limpia desde el bloque else
           audienceAnalysis,
           researchData,
           viralCapData,
