@@ -1223,6 +1223,7 @@ if (call0Error) {
   }
 };
 
+//videoDescription
 
 const runDeepAnalysis = async () => {
   if (!videoMeta || !perception) {
@@ -1275,10 +1276,27 @@ const runDeepAnalysis = async () => {
       videoDescription = extractGeminiText(call0Data);
       console.log('[VIRAX] Descripción del video:', videoDescription);
 
-    } else {
-      videoDescription = preFacts?.descripcion_raw ?? JSON.stringify(preFacts);
-      console.log('[VIRAX] Reutilizando descripción de calibración ✅');
-    }
+    // ── DESPUÉS ──
+} else {
+  // Usamos descripcion_raw si existe — es texto puro sin palanca
+  // Si no, armamos un JSON solo con señales técnicas, sin palanca ni industria
+  videoDescription = preFacts?.descripcion_raw ?? JSON.stringify({
+    hook_type_detectado:        preFacts?.hook_type_detectado,
+    hook_confianza:             preFacts?.hook_confianza,
+    logo_en_s0:                 preFacts?.logo_en_s0,
+    audio_desde_s0:             preFacts?.audio_desde_s0,
+    imagen_alto_impacto:        preFacts?.imagen_alto_impacto,
+    producto_en_s0:             preFacts?.producto_en_s0,
+    producto_en_accion_s0:      preFacts?.producto_en_accion_s0,
+    transformacion_visible:     preFacts?.transformacion_visible,
+    tiene_rehook:               preFacts?.tiene_rehook,
+    es_slideshow_imagenes:      preFacts?.es_slideshow_imagenes,
+    duracion_estimada_segundos: preFacts?.duracion_estimada_segundos,
+    atomicas:                   preFacts?.atomicas,
+    hook_gate:                  preFacts?.hook_gate,
+  });
+  console.log('[VIRAX] Reutilizando descripción de calibración ✅');
+}
 
     setAnalysisProgress(25);
 
@@ -1487,7 +1505,7 @@ ${(summary.detalle_perfiles || []).map(p =>
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildScoringBrainPrompt(
-          videoDescription,
+          videoDescriptionParaScoring,  // ← limpia, sin palanca
           audienceAnalysis,
           researchData,
           viralCapData,
