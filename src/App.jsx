@@ -455,7 +455,7 @@ export const buildScoringBrainPrompt = (
   platform,
   objetivo,
   industria,
-  nicheConfig,
+  palancaObjetivo,
   duracionSegundos
 ) => `
 Sos un sistema de scoring en dos fases estrictamente separadas.
@@ -509,7 +509,7 @@ para lograr [${objetivo}] en el nicho [${industria}]?"
 
 OBJETIVO DEL CREADOR: ${objetivo}
 INDUSTRIA: ${industria}
-PALANCA QUE QUIERE ACTIVAR: ${nicheConfig?.motor ?? '—'}
+PALANCA QUE QUIERE ACTIVAR: ${palancaObjetivo}
 DESCRIPCIÓN DEL VIDEO: ${videoDescription}
 BENCHMARK DEL NICHO: ${JSON.stringify(researchData)}
 
@@ -1513,17 +1513,17 @@ ${(summary.detalle_perfiles || []).map(p =>
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildScoringBrainPrompt(
-           videoDescription,  // ← ya está limpia desde el bloque else
-          audienceAnalysis,
-          researchData,
-          viralCapData,
-          hookGate,
-          platform,
-          selectedObjetivo,
-          industria,
-          nicheConfig,
-          Math.round(duration)
-        ),
+  videoDescription,
+  audienceAnalysis,
+  researchData,
+  viralCapData,
+  hookGate,
+  platform,
+  selectedObjetivo,
+  industria,
+  perception?.palanca_psicologica ?? '—',  // ← reemplaza nicheConfig
+  Math.round(duration)
+),
         ...(sharedFileUri
           ? { fileUri: sharedFileUri, fileName: sharedFileName }
           : { storagePath, videoMimeType: mimeType }
