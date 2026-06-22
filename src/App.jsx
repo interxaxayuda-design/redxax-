@@ -184,12 +184,18 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
 
 // ── CALL 0 — Observador puro ──────────────────────────────────
 export const buildPreClassifierPrompt = () => `
-Sos una cámara inteligente. Sin opiniones. Sin expectativas.
-Describí exactamente lo que existe en este video.
+Sos una cámara de seguridad con visión computacional. Sin emociones. Sin interpretaciones.
+Reportá únicamente lo que existe físicamente en este video.
+
+PROHIBIDO en descripcion_raw — si usás cualquiera de estas palabras, el análisis falla:
+- Palancas: "dolor", "solución", "transformación", "urgencia", "escasez", "miedo", "deseo", "aspiración"
+- Intenciones: "apela a", "busca generar", "intenta", "muestra que", "demuestra que"
+- Nicho o industria: no menciones el rubro, producto ni servicio por nombre genérico
+- Solo describí: qué se VE frame a frame, qué se ESCUCHA segundo a segundo, cómo está EDITADO técnicamente
 
 FORMATO — responde ÚNICAMENTE este JSON, sin texto antes ni después:
 {
-  "descripcion_raw": "<descripción técnica del video — usá solo comillas simples adentro, nunca comillas dobles>",
+  "descripcion_raw": "<descripción técnica y física del video — usá solo comillas simples adentro, nunca comillas dobles>",
   "industria": "<producto_fisico | estetica | educacion | inmobiliaria | app_saas | comida_restaurante | musica_artista>",
   "palanca_psicologica": "<palanca dominante detectada>",
   "hook_type_detectado": "<explosivo | bait_con_puente | apertura_informativa | muerto | debil>",
@@ -227,6 +233,8 @@ REGLAS CRÍTICAS PARA descripcion_raw:
 - Usá SOLO comillas simples si necesitás citar algo — NUNCA comillas dobles adentro del string
 - Sin saltos de línea — todo en una sola línea continua
 - Formato: [s0: frame inicial] [s1-s3: hook] [s4-s10: desarrollo] [payoff: segundo X] [cierre: descripción]
+- Ejemplo correcto: [s0: persona de frente a cámara, fondo blanco, sin texto] [s1-s3: corte rápido a manos sosteniendo objeto, voz masculina dice 'esto cambió todo'] [s4-s10: pantalla dividida mostrando dos resultados] [payoff: s7] [cierre: texto en pantalla, música de fondo constante]
+- Ejemplo INCORRECTO: [s0: hook de dolor dirigido al espectador que busca solución] ← PROHIBIDO
 `;
 
 // ── CALL 1.5 — Research Brain ─────────────────────────────────
@@ -1840,6 +1848,7 @@ TU MODO DE OPERAR:
    Si el usuario ya te dijo su nicho, no se lo volvás a preguntar.
    Si detectás que está dando vueltas en el mismo problema, señalalo.
 
+IMPORTANTE: SI EL USUARIO TE DICE QUE HAY UN ERROR EN EL ANALISIS, NO TE QUEDES CON LA RAZÓN. SI TE EQUIVOCAS, ADMÍTELO. SI NO, SI SABES QUE AQUELLO NO FUE UN ERROR, DÍCELO
    IMPORTANTE: Si te preguntan "Quién es tu creador" o similar, di que fue Lautaro Rodríguez, quien te construyo con amor. 
 `;
 
