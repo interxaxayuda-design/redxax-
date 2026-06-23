@@ -509,7 +509,7 @@ para lograr [${objetivo}] en el nicho [${industria}]?"
 
 OBJETIVO DEL CREADOR: ${objetivo}
 INDUSTRIA: ${industria}
-PALANCA QUE QUIERE ACTIVAR: ${palancaObjetivo}
+PALANCA QUE QUIERE ACTIVAR: (definida por el creador en el chat)
 DESCRIPCIÓN DEL VIDEO: ${videoDescription}
 BENCHMARK DEL NICHO: ${JSON.stringify(researchData)}
 
@@ -1137,8 +1137,7 @@ const stripFlags = (strategyText) =>
 //   6. viralCapData sigue aplicando el cap como TECHO (esto se mantiene)
 //   7. researchData pasado a buildCognitiveScanPrompt para calibración
 //   8. Log mejorado para debugging
-// ============================================================
-
+// ===========================================================
 const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
   if (videoFile.size > 45 * 1024 * 1024) {
     alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB.`);
@@ -1521,7 +1520,7 @@ ${(summary.detalle_perfiles || []).map(p =>
   platform,
   selectedObjetivo,
   industria,
-  perception?.palanca_psicologica ?? '—',  // ← reemplaza nicheConfig
+'—',  // palancaObjetivo eliminado — no contamina el scoring base
   Math.round(duration)
 ),
         ...(sharedFileUri
@@ -1849,7 +1848,7 @@ TU MODO DE OPERAR:
    Si detectás que está dando vueltas en el mismo problema, señalalo.
 
 IMPORTANTE: SI EL USUARIO TE DICE QUE HAY UN ERROR EN EL ANALISIS, NO TE QUEDES CON LA RAZÓN. SI TE EQUIVOCAS, ADMÍTELO. SI NO, SI SABES QUE AQUELLO NO FUE UN ERROR, DÍCELO
-   IMPORTANTE: Si te preguntan "Quién es tu creador" o similar, di que fue Lautaro Rodríguez, quien te construyo con amor. 
+   IMPORTANTE: Si te preguntan "Quién es tu creador" o similar, di que fue Lautaro Rodríguez, quien te construyo implementandote las mejores habilidades. 
 `;
 
     // Separá claramente historial de mensaje actual
@@ -2455,48 +2454,6 @@ ${currentMessage.text}
   />
 </div>
 
-          {/* Palanca OBJETIVO — editable, solo para gap analysis */}
-          <div className="group flex flex-col space-y-3 p-5 rounded-[2rem] border border-white/[0.07] bg-white/[0.02] hover:border-purple-500/20 transition-all duration-300">
-            <div className="flex justify-between items-center">
-              <div className="flex flex-col gap-1">
-                <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 group-hover:text-purple-400 transition-colors">
-                  Tu objetivo de conversión (opcional)
-                </label>
-                <p className="text-[9px] italic text-slate-600">
-                  Solo afecta el análisis de brecha — no cambia el score base
-                </p>
-              </div>
-              <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
-                Editable 📝
-              </span>
-            </div>
-            <textarea
-              rows={2}
-              value={perception?.palanca_psicologica || ''}
-              onChange={(e) => setPerception({...perception, palanca_psicologica: e.target.value})}
-              placeholder="Ej. Quiero que sienta urgencia de comprar..."
-              className="bg-transparent text-lg text-white font-bold outline-none border-b border-white/10 focus:border-purple-500 pb-1 transition-colors w-full resize-none break-words whitespace-pre-wrap leading-relaxed"
-            />
-            <div className="pt-1">
-              <p className="text-[9px] font-bold text-slate-600 uppercase tracking-wider mb-2">Objetivos rápidos:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {STANDARD_PALANCAS.map((palanca) => (
-                  <button
-                    key={palanca}
-                    type="button"
-                    onClick={() => setPerception({...perception, palanca_psicologica: palanca})}
-                    className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all ${
-                      perception?.palanca_psicologica === palanca
-                        ? 'bg-purple-500/20 border border-purple-500/40 text-purple-300'
-                        : 'bg-white/[0.02] border border-white/[0.05] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200'
-                    }`}
-                  >
-                    {palanca}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
 
         </div>
 
@@ -2519,7 +2476,7 @@ ${currentMessage.text}
 
       </div>
     </div>
-  );
+  ); //PALANCA QUE QUIERE ACTIVAR: ${palancaObjetivo}
 })()}
 
         {/* ── SCRIPT INPUT ── */}
