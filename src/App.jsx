@@ -182,26 +182,90 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
   "musica_artista":     { retention: 1.3, tension: 0.8, payoff: 0.9, clarity: 0.7, trust: 0.8 },
 };
 
-// ── CALL 0 — Observador puro ──────────────────────────────────
 export const buildPreClassifierPrompt = () => `
-Sos una cámara de seguridad con visión computacional. Sin emociones. Sin interpretaciones.
-Reportá únicamente lo que existe físicamente en este video.
+Sos una cámara de seguridad con visión computacional y análisis de audio profesional.
+Sin emociones. Sin interpretaciones de intención. Solo reportás lo que existe físicamente.
 
-PROHIBIDO en descripcion_raw — si usás cualquiera de estas palabras, el análisis falla:
+PROHIBIDO en descripcion_raw:
 - Palancas: "dolor", "solución", "transformación", "urgencia", "escasez", "miedo", "deseo", "aspiración"
 - Intenciones: "apela a", "busca generar", "intenta", "muestra que", "demuestra que"
-- Nicho o industria: no menciones el rubro, producto ni servicio por nombre genérico
-- Solo describí: qué se VE frame a frame, qué se ESCUCHA segundo a segundo, cómo está EDITADO técnicamente
+- Nicho o industria por nombre genérico
 
 FORMATO — responde ÚNICAMENTE este JSON, sin texto antes ni después:
 {
-  "descripcion_raw": "<descripción técnica y física del video — usá solo comillas simples adentro, nunca comillas dobles>",
+  "descripcion_raw": "<descripción técnica frame a frame — solo comillas simples adentro, sin saltos de línea, máx 800 chars. Formato: [s0: ...] [s1-s3: ...] [s4-s10: ...] [payoff: sX] [cierre: ...]>",
+
   "industria": "<producto_fisico | estetica | educacion | inmobiliaria | app_saas | comida_restaurante | musica_artista>",
   "palanca_psicologica": "<palanca dominante detectada>",
+
+  "voz": {
+    "presente": <true|false>,
+    "genero_percibido": "<masculino | femenino | neutro | no_aplica>",
+    "tono": "<energico | calmo | urgente | conversacional | corporativo | no_aplica>",
+    "ritmo": "<rapido | moderado | lento | no_aplica>",
+    "claridad": "<alta | media | baja | no_aplica>",
+    "idioma": "<es | en | otro | no_aplica>",
+    "off_o_en_camara": "<en_camara | off | mixto | no_aplica>"
+  },
+
+  "audio": {
+    "musica_presente": <true|false>,
+    "tipo_musica": "<trap | pop | electronica | acustica | corporativa | silencio | otro>",
+    "volumen_musica_vs_voz": "<musica_domina | equilibrado | voz_domina | solo_musica | solo_voz | silencio>",
+    "sonido_ambiente": <true|false>,
+    "efectos_sonoros": <true|false>,
+    "audio_desde_s0": <true|false>
+  },
+
+  "formato_visual": {
+    "tipo": "<talking_head | broll_con_voz | screencast | slideshow | demo_producto | ugc | animacion | texto_animado | mixto>",
+    "camara": "<fija | handheld | tripode | multiple_angulos>",
+    "orientacion": "<vertical | horizontal | cuadrado>",
+    "aspect_ratio_detectado": "<9:16 | 16:9 | 1:1 | otro>"
+  },
+
+  "edicion": {
+    "ritmo_cortes": "<muy_rapido | rapido | moderado | lento | sin_cortes>",
+    "tipo_transiciones": "<corte_directo | zoom | fade | wipe | ninguna>",
+    "texto_en_pantalla": <true|false>,
+    "estilo_subtitulos": "<karaoke | bloque | ninguno>",
+    "posicion_texto": "<superior | centro | inferior | no_aplica>",
+    "efectos_visuales": <true|false>,
+    "zoom_in_out": <true|false>
+  },
+
+  "lenguaje_corporal": {
+    "contacto_visual_camara": "<directo | ocasional | ninguno | no_aplica>",
+    "expresion_facial_dominante": "<neutral | entusiasta | seria | sorprendida | no_aplica>",
+    "gestos_manos": "<activos | moderados | ninguno | no_aplica>",
+    "postura": "<frontal | perfil | espalda | no_aplica>"
+  },
+
+  "entorno": {
+    "interior_exterior": "<interior | exterior | mixto | no_aplica>",
+    "fondo": "<limpio | caótico | natural | croma | no_aplica>",
+    "iluminacion": "<profesional | natural | baja | sobreexpuesta>",
+    "produccion_percibida": "<alta | media | baja | ugc_raw>"
+  },
+
+  "producto_servicio": {
+    "visible_en_video": <true|false>,
+    "en_uso_o_en_mano": "<en_uso | en_mano | solo_resultado | ausente>",
+    "antes_despues_presente": <true|false>,
+    "precio_visible": <true|false>,
+    "marca_visible": <true|false>
+  },
+
+  "cta": {
+    "presente": <true|false>,
+    "tipo": "<verbal | texto_pantalla | ambos | ninguno>",
+    "momento": "<inicio | medio | final | no_aplica>",
+    "claridad": "<explicito | implicito | ninguno>"
+  },
+
   "hook_type_detectado": "<explosivo | bait_con_puente | apertura_informativa | muerto | debil>",
   "hook_confianza": <0.0 a 1.0>,
   "logo_en_s0": <true|false>,
-  "audio_desde_s0": <true|false>,
   "pregunta_al_espectador": <true|false>,
   "afirmacion_contradictoria": <true|false>,
   "imagen_alto_impacto": <true|false>,
@@ -211,6 +275,7 @@ FORMATO — responde ÚNICAMENTE este JSON, sin texto antes ni después:
   "tiene_rehook": <true|false>,
   "es_slideshow_imagenes": <true|false>,
   "duracion_estimada_segundos": <número>,
+
   "atomicas": {
     "silence_duration_s": <número>,
     "duration_total_s": <número>,
@@ -221,20 +286,13 @@ FORMATO — responde ÚNICAMENTE este JSON, sin texto antes ni después:
     "rehook_present": <true|false>,
     "average_shot_duration_s": <número>
   },
+
   "hook_gate": {
     "veredicto_gate": "<VIVO|MUERTO>",
     "elemento_que_retiene": "<string o null>",
     "pregunta_activa_en_espectador": "<string o null>"
   }
 }
-
-REGLAS CRÍTICAS PARA descripcion_raw:
-- Máximo 800 caracteres
-- Usá SOLO comillas simples si necesitás citar algo — NUNCA comillas dobles adentro del string
-- Sin saltos de línea — todo en una sola línea continua
-- Formato: [s0: frame inicial] [s1-s3: hook] [s4-s10: desarrollo] [payoff: segundo X] [cierre: descripción]
-- Ejemplo correcto: [s0: persona de frente a cámara, fondo blanco, sin texto] [s1-s3: corte rápido a manos sosteniendo objeto, voz masculina dice 'esto cambió todo'] [s4-s10: pantalla dividida mostrando dos resultados] [payoff: s7] [cierre: texto en pantalla, música de fondo constante]
-- Ejemplo INCORRECTO: [s0: hook de dolor dirigido al espectador que busca solución] ← PROHIBIDO
 `;
 
 // ── CALL 1.5 — Research Brain ─────────────────────────────────
@@ -598,28 +656,152 @@ export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => 
   return { cap: Math.min(nicheCap, baseCap), reason: penaltyLevel === 'none' ? 'sin_penalizacion' : `penalizacion_${penaltyLevel}: ${hookGateStatus?.reason ?? ''}` };
 };
 
-// ── JS — Silicon Audience utils ───────────────────────────────
 export const extractEventosFromPreFacts = (preFacts, videoDescription) => {
   const atomicas = preFacts?.atomicas ?? {};
-  const eventos  = [];
+  const voz      = preFacts?.voz      ?? {};
+  const audio    = preFacts?.audio    ?? {};
+  const edicion  = preFacts?.edicion  ?? {};
+  const entorno  = preFacts?.entorno  ?? {};
+  const producto = preFacts?.producto_servicio ?? {};
+  const cta      = preFacts?.cta      ?? {};
+  const lb       = preFacts?.lenguaje_corporal ?? {};
+  const formato  = preFacts?.formato_visual   ?? {};
+
+  const eventos = [];
+
+  // ── s0: Frame inicial ──────────────────────────────────────
+  const s0Tipo = preFacts?.logo_en_s0        ? 'logo'
+    : preFacts?.imagen_alto_impacto           ? 'hook_visual'
+    : preFacts?.pregunta_al_espectador        ? 'hook_pregunta'
+    : preFacts?.afirmacion_contradictoria     ? 'hook_contradictorio'
+    : preFacts?.producto_en_accion_s0         ? 'demo_inmediata'
+    : 'apertura';
+
+  const s0Desc = [
+    `Frame inicial — tipo: ${s0Tipo}`,
+    formato.tipo         ? `formato: ${formato.tipo}`              : null,
+    entorno.produccion_percibida ? `producción: ${entorno.produccion_percibida}` : null,
+    entorno.fondo        ? `fondo: ${entorno.fondo}`               : null,
+    entorno.iluminacion  ? `luz: ${entorno.iluminacion}`           : null,
+    lb.expresion_facial_dominante && lb.expresion_facial_dominante !== 'no_aplica'
+      ? `expresión: ${lb.expresion_facial_dominante}`              : null,
+    lb.contacto_visual_camara && lb.contacto_visual_camara !== 'no_aplica'
+      ? `contacto visual: ${lb.contacto_visual_camara}`            : null,
+  ].filter(Boolean).join(' | ');
 
   eventos.push({
     segundo:     0,
-    tipo:        preFacts?.logo_en_s0 ? 'logo' : preFacts?.imagen_alto_impacto ? 'hook_visual' : preFacts?.pregunta_al_espectador ? 'hook_pregunta' : 'apertura',
-    descripcion: preFacts?.hook_libre ?? 'Frame inicial del video',
-    señal:       preFacts?.hook_type_detectado ?? 'desconocido',
+    tipo:        s0Tipo,
+    descripcion: s0Desc,
+    señal:       preFacts?.logo_en_s0 ? 'negativo' : preFacts?.imagen_alto_impacto ? 'positivo' : 'neutro',
   });
 
-  if (atomicas.audio_in_first_second !== undefined)
-    eventos.push({ segundo: 1, tipo: atomicas.audio_in_first_second ? 'audio_hook' : 'silencio', descripcion: atomicas.audio_in_first_second ? 'Audio desde el inicio' : 'Sin audio en s1', señal: atomicas.audio_in_first_second ? 'positivo' : 'neutro' });
+  // ── s0–s1: Audio ──────────────────────────────────────────
+  if (audio.audio_desde_s0 !== undefined || voz.presente !== undefined) {
+    const audioDesc = [
+      audio.audio_desde_s0 ? 'audio desde s0' : 'sin audio en s0',
+      voz.presente         ? `voz ${voz.genero_percibido} — tono ${voz.tono} — ritmo ${voz.ritmo}` : 'sin voz',
+      audio.musica_presente
+        ? `música: ${audio.tipo_musica} (${audio.volumen_musica_vs_voz})`
+        : 'sin música',
+      audio.efectos_sonoros ? 'con efectos sonoros' : null,
+    ].filter(Boolean).join(' | ');
 
-  if (atomicas.payoff_second)
-    eventos.push({ segundo: atomicas.payoff_second, tipo: 'payoff', descripcion: 'Momento de mayor densidad', señal: atomicas.payoff_second <= 5 ? 'positivo' : atomicas.payoff_second <= 10 ? 'neutro' : 'riesgo' });
+    eventos.push({
+      segundo:     1,
+      tipo:        audio.audio_desde_s0 ? 'audio_hook' : 'silencio',
+      descripcion: audioDesc,
+      señal:       audio.audio_desde_s0 && voz.presente ? 'positivo'
+                 : audio.audio_desde_s0                 ? 'neutro'
+                 :                                         'negativo',
+    });
+  }
 
-  if (atomicas.rehook_present)
-    eventos.push({ segundo: Math.round((atomicas.duration_total_s ?? 30) * 0.4), tipo: 'rehook', descripcion: 'Re-enganche a mitad del video', señal: 'positivo' });
+  // ── Edición: ritmo visual ──────────────────────────────────
+  if (edicion.ritmo_cortes) {
+    eventos.push({
+      segundo:     2,
+      tipo:        'ritmo_edicion',
+      descripcion: [
+        `cortes: ${edicion.ritmo_cortes}`,
+        edicion.texto_en_pantalla ? `subtítulos: ${edicion.estilo_subtitulos}` : 'sin texto',
+        edicion.efectos_visuales  ? 'efectos visuales presentes'               : null,
+        edicion.zoom_in_out       ? 'zoom dinámico activo'                     : null,
+        `transiciones: ${edicion.tipo_transiciones}`,
+      ].filter(Boolean).join(' | '),
+      señal: edicion.ritmo_cortes === 'muy_rapido' || edicion.ritmo_cortes === 'rapido' ? 'positivo'
+           : edicion.ritmo_cortes === 'sin_cortes'                                       ? 'negativo'
+           :                                                                               'neutro',
+    });
+  }
 
-  eventos.push({ segundo: -1, tipo: 'contexto_narrativo', descripcion: (typeof videoDescription === 'string' ? videoDescription : JSON.stringify(videoDescription)).slice(0, 600), señal: 'informativo' });
+  // ── Payoff ────────────────────────────────────────────────
+  if (atomicas.payoff_second) {
+    const payoffDesc = [
+      `payoff en s${atomicas.payoff_second}`,
+      producto.antes_despues_presente ? 'antes/después visible' : null,
+      producto.visible_en_video
+        ? `producto ${producto.en_uso_o_en_mano}`                  : null,
+    ].filter(Boolean).join(' | ');
+
+    eventos.push({
+      segundo:     atomicas.payoff_second,
+      tipo:        'payoff',
+      descripcion: payoffDesc,
+      señal:       atomicas.payoff_second <= 5  ? 'positivo'
+                 : atomicas.payoff_second <= 10 ? 'neutro'
+                 :                                'riesgo',
+    });
+  }
+
+  // ── Rehook ────────────────────────────────────────────────
+  if (atomicas.rehook_present) {
+    eventos.push({
+      segundo:     Math.round((atomicas.duration_total_s ?? 30) * 0.4),
+      tipo:        'rehook',
+      descripcion: 'Re-enganche a mitad del video',
+      señal:       'positivo',
+    });
+  }
+
+  // ── CTA ───────────────────────────────────────────────────
+  if (cta.presente) {
+    const duracion = atomicas.duration_total_s ?? 30;
+    const ctaSegundo = cta.momento === 'inicio' ? 2
+                     : cta.momento === 'medio'  ? Math.round(duracion * 0.5)
+                     :                            Math.round(duracion * 0.9);
+    eventos.push({
+      segundo:     ctaSegundo,
+      tipo:        'cta',
+      descripcion: `CTA ${cta.claridad} — ${cta.tipo} — momento: ${cta.momento}`,
+      señal:       cta.claridad === 'explicito' ? 'positivo' : 'neutro',
+    });
+  }
+
+  // ── Lenguaje corporal notable ─────────────────────────────
+  if (lb.gestos_manos === 'activos' || lb.contacto_visual_camara === 'directo') {
+    eventos.push({
+      segundo:     3,
+      tipo:        'lenguaje_corporal',
+      descripcion: [
+        lb.contacto_visual_camara === 'directo' ? 'contacto visual directo con cámara' : null,
+        lb.gestos_manos === 'activos'           ? 'gestos de manos activos'            : null,
+        lb.postura !== 'no_aplica'              ? `postura: ${lb.postura}`             : null,
+      ].filter(Boolean).join(' | '),
+      señal: 'positivo',
+    });
+  }
+
+  // ── Contexto narrativo completo ───────────────────────────
+  eventos.push({
+    segundo:     -1,
+    tipo:        'contexto_narrativo',
+    descripcion: (typeof videoDescription === 'string'
+      ? videoDescription
+      : JSON.stringify(videoDescription)
+    ).slice(0, 800),
+    señal: 'informativo',
+  });
 
   return eventos;
 };
