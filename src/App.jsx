@@ -189,9 +189,9 @@ dirección de arte, diseño de sonido y análisis de contenido digital.
  
 Vas a analizar este video en DOS BLOQUES. Seguí el formato exacto.
  
-
+════════════════════════════════════════════════════════════════
 BLOQUE 1 — DESCRIPCIÓN LIBRE
-
+════════════════════════════════════════════════════════════════
 Describí el video como lo haría un director de cine describiendo
 el trabajo de otro director. Sin estructura forzada. Sin campos.
 Con el lenguaje y la precisión de alguien que realmente VE y ESCUCHA.
@@ -242,9 +242,9 @@ Máximo 1200 caracteres. Sé denso y preciso, no redundante.
 Empezá con: [DESCRIPCION]
 Terminá con: [/DESCRIPCION]
  
-
+════════════════════════════════════════════════════════════════
 BLOQUE 2 — SIGNALS TÉCNICOS
-
+════════════════════════════════════════════════════════════════
 Solo los valores que el sistema necesita para cálculos determinísticos.
 Nada más. Sin explicaciones.
  
@@ -285,7 +285,6 @@ El JSON dentro de [SIGNALS] debe ser exactamente este esquema:
   }
 }
 `;
-
 
 // ── CALL 1.5 — Research Brain ─────────────────────────────────
 export const buildResearchBrainPrompt = (platform, industria, objetivo, benchmarkData = null) => {
@@ -398,31 +397,50 @@ Abandona si: ${p.abandona_si}
 Volumen: ${p.volumen}`
   ).join('\n---\n');
 
-  return `Motor de simulación de audiencia para ${pName}.
+  return `Sos un motor de simulación de audiencia para ${pName}.
 
-Los perfiles no saben nada del nicho ni del producto. Solo reaccionan a señales
-visuales, sonoras y narrativas — exactamente como lo haría un usuario real en el FYP.
-
-EVENTOS DEL VIDEO:
-${JSON.stringify(eventos, null, 2)}
+Tenés acceso directo al video. Observalo completo antes de simular.
+No dependas de los eventos pre-calculados — son solo contexto de apoyo.
+Lo que VES y ESCUCHÁS en el video es tu fuente primaria de verdad.
 
 DURACIÓN: ${duracionSegundos}s
+PLATAFORMA: ${pName}
 
 ESTADO DEL MERCADO 2026:
 ${JSON.stringify(marketState, null, 2)}
 
-PERFILES:
+CONTEXTO DE APOYO — señales técnicas pre-calculadas:
+${JSON.stringify(eventos, null, 2)}
+
+PERFILES DE AUDIENCIA:
 ${perfilesStr}
 
-REGLAS:
-1. Solo reportás eventos donde la atención cambia — sin timeline segundo a segundo.
-2. Decisión BINARIA por evento: SIGUE o ABANDONA.
-3. tolerance_to_ads: 0.01 = abandona ante cualquier señal comercial.
-4. impatience: 0.95 = necesita recompensa en el primer o segundo evento.
-5. Perfiles sin_audio no reaccionan a hooks de voz — solo a lo visual.
-6. Sé indiferente, no cruel. La audiencia no regala atención sin razón.
-7. Tasa de completado realista en ${pName}: 20–40%. Si todos completan, revisá.
-8. Los perfiles NO saben qué nicho es. Reaccionan a lo que VEN y ESCUCHAN, no a lo que el creador intenta vender.
+INSTRUCCIONES DE SIMULACIÓN:
+Observá el video como si fueras cada perfil scrolleando el FYP.
+Cada perfil tiene su propio contexto, psicología y tolerancia.
+
+COBERTURA DE OBSERVACIÓN:
+Antes de simular, observá el video en profundidad. Como mínimo debés cubrir:
+voz, audio, música, edición, ritmo de cortes, transiciones, texto en pantalla,
+formato visual, calidad de producción, iluminación, lenguaje corporal, hook,
+payoff, CTA, credibilidad percibida, señales de contenido genérico o IA.
+
+Pero no te limitás a esa lista — usá tu criterio como analista audiovisual.
+Si detectás algo relevante que no está en los ejemplos anteriores
+(un detalle de color, un ruido de fondo, una expresión específica, un error de edición),
+incorporalo. Todo lo que un espectador real percibiría, vos también lo percibís.
+Cada aspecto que observés debe influir en la decisión de al menos un perfil.
+
+REGLAS DURAS:
+1. Decisión BINARIA por momento clave: SIGUE o ABANDONA — no hay grises.
+2. tolerance_to_ads: 0.01 = abandona ante cualquier señal comercial (logo, producto en mano, música corporativa).
+3. impatience: 0.95 = si no hay recompensa visual o sonora en los primeros 2s, se va.
+4. Perfiles sin_audio scrollean sin sonido — solo reaccionan a lo visual.
+5. Voz sintética/IA detectada = señal negativa automática para esceptico, impaciente y curioso_aleatorio.
+6. Producción percibida como template o Canva = penalización de credibilidad en nicho y comprador.
+7. Tasa de completado realista en ${pName}: 20–40%. Si todos completan, algo está mal — revisá.
+8. Los perfiles NO saben qué nicho es. Reaccionan a lo que VEN y ESCUCHAN, no a lo que el creador intenta comunicar.
+9. Sé brutal con la honestidad. Un video malo es malo. No compensés problemas reales con "potencial futuro".
 
 FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
 {
@@ -1498,22 +1516,24 @@ const runDeepAnalysis = async () => {
 
     try {
       const { data: call1bData, error: call1bError } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: buildSiliconAudiencePrompt(
-            eventosVideo,
-            marketState,
-            platform,
-            industria,
-            Math.round(duration)
-          ),
-          expectsJson:     true,
-          maxOutputTokens: 4096,
-          temperature:     0.3,
-          // Sin thinkingBudget — contraproducente para simulación conductual
-          // Sin video — los perfiles reaccionan a eventos, no al video crudo
-        }
-      });
-
+      body: {
+    text: buildSiliconAudiencePrompt(
+      eventosVideo,
+      marketState,
+      platform,
+      Math.round(duration)
+    ),
+    ...(sharedFileUri
+      ? { fileUri: sharedFileUri, fileName: sharedFileName }
+      : { storagePath, videoMimeType: mimeType }
+    ),
+    videoMimeType:   mimeType,
+    duration:        Math.round(duration),
+    expectsJson:     true,
+    maxOutputTokens: 4096,
+    temperature:     0.3,
+  }
+});
       if (!call1bError) {
         audienceSimulation = safeParseJSON(extractGeminiText(call1bData), 'silicon-audience');
         console.log('[SILICON AUDIENCE] Simulación:', audienceSimulation);
