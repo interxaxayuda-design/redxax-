@@ -182,89 +182,81 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
   "musica_artista":     { retention: 1.3, tension: 0.8, payoff: 0.9, clarity: 0.7, trust: 0.8 },
 };
 
+// ── CALL 0 — Observador libre + Signals técnicos ─────────────
 export const buildPreClassifierPrompt = () => `
-Sos una cámara de seguridad con visión computacional y análisis de audio profesional.
-Sin emociones. Sin interpretaciones de intención. Solo reportás lo que existe físicamente.
+Sos un analista audiovisual con 20 años de experiencia en producción de video,
+dirección de arte, diseño de sonido y análisis de contenido digital.
+ 
+Vas a analizar este video en DOS BLOQUES. Seguí el formato exacto.
+ 
 
-PROHIBIDO en descripcion_raw:
-- Palancas: "dolor", "solución", "transformación", "urgencia", "escasez", "miedo", "deseo", "aspiración"
-- Intenciones: "apela a", "busca generar", "intenta", "muestra que", "demuestra que"
-- Nicho o industria por nombre genérico
+BLOQUE 1 — DESCRIPCIÓN LIBRE
 
-FORMATO — responde ÚNICAMENTE este JSON, sin texto antes ni después:
+Describí el video como lo haría un director de cine describiendo
+el trabajo de otro director. Sin estructura forzada. Sin campos.
+Con el lenguaje y la precisión de alguien que realmente VE y ESCUCHA.
+ 
+Cubrí todo lo que percibís, incluyendo pero sin limitarte a:
+ 
+VISUAL
+- Qué aparece en pantalla segundo a segundo
+- Tipo de contenido: ¿es video real, imágenes de stock, animación, screencast, slideshow?
+- Ritmo visual: velocidad de cortes, transiciones, zoom, movimiento de cámara
+- Calidad de producción: ¿se ve casero, semiprofesional, profesional, hiperestético?
+- Iluminación, fondo, encuadre, color
+- Texto en pantalla: qué dice, dónde está, cómo está animado
+- Expresión facial y lenguaje corporal si hay persona en cámara
+- Si hay producto: ¿se ve en uso real, en mano, antes/después, solo mencionado?
+ 
+AUDIO
+- ¿Hay voz? Si la hay: ¿es humana o sintética/IA? ¿masculina, femenina, neutra?
+  ¿Cuál es su tono — energético, calmo, urgente, conversacional, corporativo, robótico?
+  ¿Habla rápido, lento, con pausas dramáticas?
+  ¿La voz está en cámara o es voz en off?
+  ¿Tiene acento perceptible?
+- Música: ¿qué tipo? ¿domina sobre la voz o está de fondo? ¿tiene letra?
+- Efectos de sonido, silencio estratégico, audio ambiente
+- Calidad del audio: ¿micrófono de solapa, de cámara, grabación de pantalla?
+ 
+NARRATIVA Y ESTRUCTURA
+- ¿Qué pasa en los primeros 2 segundos exactamente?
+- ¿Hay un hook claro? ¿Cuál es?
+- ¿Cuándo aparece el momento de mayor valor o payoff?
+- ¿Hay rehook o momento de re-enganche a mitad del video?
+- ¿Hay CTA? ¿Cómo es — verbal, texto, implícito?
+- ¿El video tiene arco narrativo o es plano?
+ 
+SEÑALES ESPECIALES — mencioná explícitamente si detectás:
+- Voz generada por IA (ElevenLabs, Murf, voz sintética genérica)
+- Imágenes de stock genéricas o generadas por IA
+- Plantilla de video reutilizada (se ve como template Canva/CapCut)
+- Contenido reciclado o reposteado
+- Logo o marca visible en los primeros segundos
+- Precio visible en pantalla
+- Testimonio de tercero
+- Urgencia artificial o escasez fabricada
+ 
+Escribí en párrafos continuos. Podés usar saltos de línea para separar secciones.
+Máximo 1200 caracteres. Sé denso y preciso, no redundante.
+ 
+Empezá con: [DESCRIPCION]
+Terminá con: [/DESCRIPCION]
+ 
+
+BLOQUE 2 — SIGNALS TÉCNICOS
+
+Solo los valores que el sistema necesita para cálculos determinísticos.
+Nada más. Sin explicaciones.
+ 
+Empezá con: [SIGNALS]
+Terminá con: [/SIGNALS]
+ 
+El JSON dentro de [SIGNALS] debe ser exactamente este esquema:
 {
-  "descripcion_raw": "<descripción técnica frame a frame — solo comillas simples adentro, sin saltos de línea, máx 800 chars. Formato: [s0: ...] [s1-s3: ...] [s4-s10: ...] [payoff: sX] [cierre: ...]>",
-
   "industria": "<producto_fisico | estetica | educacion | inmobiliaria | app_saas | comida_restaurante | musica_artista>",
   "palanca_psicologica": "<palanca dominante detectada>",
-
-  "voz": {
-    "presente": <true|false>,
-    "genero_percibido": "<masculino | femenino | neutro | no_aplica>",
-    "tono": "<energico | calmo | urgente | conversacional | corporativo | no_aplica>",
-    "ritmo": "<rapido | moderado | lento | no_aplica>",
-    "claridad": "<alta | media | baja | no_aplica>",
-    "idioma": "<es | en | otro | no_aplica>",
-    "off_o_en_camara": "<en_camara | off | mixto | no_aplica>"
-  },
-
-  "audio": {
-    "musica_presente": <true|false>,
-    "tipo_musica": "<trap | pop | electronica | acustica | corporativa | silencio | otro>",
-    "volumen_musica_vs_voz": "<musica_domina | equilibrado | voz_domina | solo_musica | solo_voz | silencio>",
-    "sonido_ambiente": <true|false>,
-    "efectos_sonoros": <true|false>,
-    "audio_desde_s0": <true|false>
-  },
-
-  "formato_visual": {
-    "tipo": "<talking_head | broll_con_voz | screencast | slideshow | demo_producto | ugc | animacion | texto_animado | mixto>",
-    "camara": "<fija | handheld | tripode | multiple_angulos>",
-    "orientacion": "<vertical | horizontal | cuadrado>",
-    "aspect_ratio_detectado": "<9:16 | 16:9 | 1:1 | otro>"
-  },
-
-  "edicion": {
-    "ritmo_cortes": "<muy_rapido | rapido | moderado | lento | sin_cortes>",
-    "tipo_transiciones": "<corte_directo | zoom | fade | wipe | ninguna>",
-    "texto_en_pantalla": <true|false>,
-    "estilo_subtitulos": "<karaoke | bloque | ninguno>",
-    "posicion_texto": "<superior | centro | inferior | no_aplica>",
-    "efectos_visuales": <true|false>,
-    "zoom_in_out": <true|false>
-  },
-
-  "lenguaje_corporal": {
-    "contacto_visual_camara": "<directo | ocasional | ninguno | no_aplica>",
-    "expresion_facial_dominante": "<neutral | entusiasta | seria | sorprendida | no_aplica>",
-    "gestos_manos": "<activos | moderados | ninguno | no_aplica>",
-    "postura": "<frontal | perfil | espalda | no_aplica>"
-  },
-
-  "entorno": {
-    "interior_exterior": "<interior | exterior | mixto | no_aplica>",
-    "fondo": "<limpio | caótico | natural | croma | no_aplica>",
-    "iluminacion": "<profesional | natural | baja | sobreexpuesta>",
-    "produccion_percibida": "<alta | media | baja | ugc_raw>"
-  },
-
-  "producto_servicio": {
-    "visible_en_video": <true|false>,
-    "en_uso_o_en_mano": "<en_uso | en_mano | solo_resultado | ausente>",
-    "antes_despues_presente": <true|false>,
-    "precio_visible": <true|false>,
-    "marca_visible": <true|false>
-  },
-
-  "cta": {
-    "presente": <true|false>,
-    "tipo": "<verbal | texto_pantalla | ambos | ninguno>",
-    "momento": "<inicio | medio | final | no_aplica>",
-    "claridad": "<explicito | implicito | ninguno>"
-  },
-
   "hook_type_detectado": "<explosivo | bait_con_puente | apertura_informativa | muerto | debil>",
-  "hook_confianza": <0.0 a 1.0>,
+  "hook_confianza": <0.0–1.0>,
   "logo_en_s0": <true|false>,
   "pregunta_al_espectador": <true|false>,
   "afirmacion_contradictoria": <true|false>,
@@ -274,19 +266,18 @@ FORMATO — responde ÚNICAMENTE este JSON, sin texto antes ni después:
   "transformacion_visible": <true|false>,
   "tiene_rehook": <true|false>,
   "es_slideshow_imagenes": <true|false>,
+  "voz_ia_detectada": <true|false>,
   "duracion_estimada_segundos": <número>,
-
   "atomicas": {
     "silence_duration_s": <número>,
     "duration_total_s": <número>,
     "cuts_per_10s": <número>,
-    "motion_intensity": <0.0 a 1.0>,
+    "motion_intensity": <0.0–1.0>,
     "audio_in_first_second": <true|false>,
     "payoff_second": <número>,
     "rehook_present": <true|false>,
     "average_shot_duration_s": <número>
   },
-
   "hook_gate": {
     "veredicto_gate": "<VIVO|MUERTO>",
     "elemento_que_retiene": "<string o null>",
@@ -294,6 +285,7 @@ FORMATO — responde ÚNICAMENTE este JSON, sin texto antes ni después:
   }
 }
 `;
+
 
 // ── CALL 1.5 — Research Brain ─────────────────────────────────
 export const buildResearchBrainPrompt = (platform, industria, objetivo, benchmarkData = null) => {
@@ -656,153 +648,104 @@ export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => 
   return { cap: Math.min(nicheCap, baseCap), reason: penaltyLevel === 'none' ? 'sin_penalizacion' : `penalizacion_${penaltyLevel}: ${hookGateStatus?.reason ?? ''}` };
 };
 
+// ── Parser para el nuevo formato de dos bloques ───────────────
+export const parsePreClassifierResponse = (rawText) => {
+  // Extraer descripción libre
+  const descMatch = rawText.match(/\[DESCRIPCION\]([\s\S]*?)\[\/DESCRIPCION\]/);
+  const descripcion_raw = descMatch ? descMatch[1].trim() : '';
+ 
+  // Extraer signals JSON
+  const signalsMatch = rawText.match(/\[SIGNALS\]([\s\S]*?)\[\/SIGNALS\]/);
+  if (!signalsMatch) throw new Error('No se encontró bloque [SIGNALS] en CALL 0');
+ 
+  const signals = safeParseJSON(signalsMatch[1].trim(), 'pre-classifier-signals');
+ 
+  return {
+    ...signals,
+    descripcion_raw, // texto libre como campo raíz — circula por todo el pipeline
+  };
+};
+ 
+ 
+// ── extractEventosFromPreFacts actualizado ────────────────────
+// Ahora construye eventos mucho más ricos usando descripcion_raw
+// como contexto narrativo principal en vez de flags booleanos.
 export const extractEventosFromPreFacts = (preFacts, videoDescription) => {
   const atomicas = preFacts?.atomicas ?? {};
-  const voz      = preFacts?.voz      ?? {};
-  const audio    = preFacts?.audio    ?? {};
-  const edicion  = preFacts?.edicion  ?? {};
-  const entorno  = preFacts?.entorno  ?? {};
-  const producto = preFacts?.producto_servicio ?? {};
-  const cta      = preFacts?.cta      ?? {};
-  const lb       = preFacts?.lenguaje_corporal ?? {};
-  const formato  = preFacts?.formato_visual   ?? {};
-
-  const eventos = [];
-
+  const eventos  = [];
+ 
   // ── s0: Frame inicial ──────────────────────────────────────
-  const s0Tipo = preFacts?.logo_en_s0        ? 'logo'
-    : preFacts?.imagen_alto_impacto           ? 'hook_visual'
-    : preFacts?.pregunta_al_espectador        ? 'hook_pregunta'
-    : preFacts?.afirmacion_contradictoria     ? 'hook_contradictorio'
-    : preFacts?.producto_en_accion_s0         ? 'demo_inmediata'
+  const s0Tipo = preFacts?.logo_en_s0               ? 'logo'
+    : preFacts?.imagen_alto_impacto                  ? 'hook_visual'
+    : preFacts?.pregunta_al_espectador               ? 'hook_pregunta'
+    : preFacts?.afirmacion_contradictoria            ? 'hook_contradictorio'
+    : preFacts?.producto_en_accion_s0                ? 'demo_inmediata'
     : 'apertura';
-
-  const s0Desc = [
-    `Frame inicial — tipo: ${s0Tipo}`,
-    formato.tipo         ? `formato: ${formato.tipo}`              : null,
-    entorno.produccion_percibida ? `producción: ${entorno.produccion_percibida}` : null,
-    entorno.fondo        ? `fondo: ${entorno.fondo}`               : null,
-    entorno.iluminacion  ? `luz: ${entorno.iluminacion}`           : null,
-    lb.expresion_facial_dominante && lb.expresion_facial_dominante !== 'no_aplica'
-      ? `expresión: ${lb.expresion_facial_dominante}`              : null,
-    lb.contacto_visual_camara && lb.contacto_visual_camara !== 'no_aplica'
-      ? `contacto visual: ${lb.contacto_visual_camara}`            : null,
-  ].filter(Boolean).join(' | ');
-
+ 
   eventos.push({
     segundo:     0,
     tipo:        s0Tipo,
-    descripcion: s0Desc,
+    descripcion: `Frame inicial — tipo detectado: ${s0Tipo}. Hook gate: ${preFacts?.hook_gate?.veredicto_gate ?? '?'}. Elemento que retiene: ${preFacts?.hook_gate?.elemento_que_retiene ?? 'ninguno'}.`,
     señal:       preFacts?.logo_en_s0 ? 'negativo' : preFacts?.imagen_alto_impacto ? 'positivo' : 'neutro',
   });
-
-  // ── s0–s1: Audio ──────────────────────────────────────────
-  if (audio.audio_desde_s0 !== undefined || voz.presente !== undefined) {
-    const audioDesc = [
-      audio.audio_desde_s0 ? 'audio desde s0' : 'sin audio en s0',
-      voz.presente         ? `voz ${voz.genero_percibido} — tono ${voz.tono} — ritmo ${voz.ritmo}` : 'sin voz',
-      audio.musica_presente
-        ? `música: ${audio.tipo_musica} (${audio.volumen_musica_vs_voz})`
-        : 'sin música',
-      audio.efectos_sonoros ? 'con efectos sonoros' : null,
-    ].filter(Boolean).join(' | ');
-
-    eventos.push({
-      segundo:     1,
-      tipo:        audio.audio_desde_s0 ? 'audio_hook' : 'silencio',
-      descripcion: audioDesc,
-      señal:       audio.audio_desde_s0 && voz.presente ? 'positivo'
-                 : audio.audio_desde_s0                 ? 'neutro'
-                 :                                         'negativo',
-    });
-  }
-
-  // ── Edición: ritmo visual ──────────────────────────────────
-  if (edicion.ritmo_cortes) {
-    eventos.push({
-      segundo:     2,
-      tipo:        'ritmo_edicion',
-      descripcion: [
-        `cortes: ${edicion.ritmo_cortes}`,
-        edicion.texto_en_pantalla ? `subtítulos: ${edicion.estilo_subtitulos}` : 'sin texto',
-        edicion.efectos_visuales  ? 'efectos visuales presentes'               : null,
-        edicion.zoom_in_out       ? 'zoom dinámico activo'                     : null,
-        `transiciones: ${edicion.tipo_transiciones}`,
-      ].filter(Boolean).join(' | '),
-      señal: edicion.ritmo_cortes === 'muy_rapido' || edicion.ritmo_cortes === 'rapido' ? 'positivo'
-           : edicion.ritmo_cortes === 'sin_cortes'                                       ? 'negativo'
-           :                                                                               'neutro',
-    });
-  }
-
-  // ── Payoff ────────────────────────────────────────────────
+ 
+  // ── s1: Audio ──────────────────────────────────────────────
+  const tieneAudio = atomicas.audio_in_first_second;
+  const esVozIA    = preFacts?.voz_ia_detectada === true;
+ 
+  eventos.push({
+    segundo:     1,
+    tipo:        tieneAudio ? (esVozIA ? 'audio_hook_voz_ia' : 'audio_hook') : 'silencio',
+    descripcion: tieneAudio
+      ? `Audio desde s0. ${esVozIA ? '⚠ VOZ SINTÉTICA/IA DETECTADA — impacto negativo en autenticidad percibida.' : 'Voz humana.'}`
+      : 'Sin audio en s1. Perfil sin_audio no recibe señal alguna.',
+    señal: tieneAudio ? (esVozIA ? 'negativo' : 'positivo') : 'negativo',
+  });
+ 
+  // ── s2: Edición y ritmo ────────────────────────────────────
+  const cutsP10 = Number(atomicas.cuts_per_10s ?? 0);
+  eventos.push({
+    segundo:     2,
+    tipo:        'ritmo_edicion',
+    descripcion: `Cortes por 10s: ${cutsP10}. Shot promedio: ${atomicas.average_shot_duration_s ?? '?'}s. Motion: ${atomicas.motion_intensity ?? '?'}. Slideshow: ${preFacts?.es_slideshow_imagenes ? 'SÍ' : 'NO'}.`,
+    señal: cutsP10 >= 4 ? 'positivo' : cutsP10 <= 1 ? 'negativo' : 'neutro',
+  });
+ 
+  // ── Payoff ─────────────────────────────────────────────────
   if (atomicas.payoff_second) {
-    const payoffDesc = [
-      `payoff en s${atomicas.payoff_second}`,
-      producto.antes_despues_presente ? 'antes/después visible' : null,
-      producto.visible_en_video
-        ? `producto ${producto.en_uso_o_en_mano}`                  : null,
-    ].filter(Boolean).join(' | ');
-
     eventos.push({
       segundo:     atomicas.payoff_second,
       tipo:        'payoff',
-      descripcion: payoffDesc,
+      descripcion: `Momento de mayor densidad/valor en s${atomicas.payoff_second}.`,
       señal:       atomicas.payoff_second <= 5  ? 'positivo'
                  : atomicas.payoff_second <= 10 ? 'neutro'
                  :                                'riesgo',
     });
   }
-
-  // ── Rehook ────────────────────────────────────────────────
+ 
+  // ── Rehook ─────────────────────────────────────────────────
   if (atomicas.rehook_present) {
     eventos.push({
       segundo:     Math.round((atomicas.duration_total_s ?? 30) * 0.4),
       tipo:        'rehook',
-      descripcion: 'Re-enganche a mitad del video',
+      descripcion: 'Re-enganche detectado a mitad del video.',
       señal:       'positivo',
     });
   }
-
-  // ── CTA ───────────────────────────────────────────────────
-  if (cta.presente) {
-    const duracion = atomicas.duration_total_s ?? 30;
-    const ctaSegundo = cta.momento === 'inicio' ? 2
-                     : cta.momento === 'medio'  ? Math.round(duracion * 0.5)
-                     :                            Math.round(duracion * 0.9);
-    eventos.push({
-      segundo:     ctaSegundo,
-      tipo:        'cta',
-      descripcion: `CTA ${cta.claridad} — ${cta.tipo} — momento: ${cta.momento}`,
-      señal:       cta.claridad === 'explicito' ? 'positivo' : 'neutro',
-    });
-  }
-
-  // ── Lenguaje corporal notable ─────────────────────────────
-  if (lb.gestos_manos === 'activos' || lb.contacto_visual_camara === 'directo') {
-    eventos.push({
-      segundo:     3,
-      tipo:        'lenguaje_corporal',
-      descripcion: [
-        lb.contacto_visual_camara === 'directo' ? 'contacto visual directo con cámara' : null,
-        lb.gestos_manos === 'activos'           ? 'gestos de manos activos'            : null,
-        lb.postura !== 'no_aplica'              ? `postura: ${lb.postura}`             : null,
-      ].filter(Boolean).join(' | '),
-      señal: 'positivo',
-    });
-  }
-
-  // ── Contexto narrativo completo ───────────────────────────
+ 
+  // ── Contexto narrativo completo (descripción libre) ─────────
+  // Este es el evento más importante — Silicon Audience lo lee
+  // y reacciona a todo lo que Gemini describió libremente.
+  const descTexto = preFacts?.descripcion_raw
+    || (typeof videoDescription === 'string' ? videoDescription : JSON.stringify(videoDescription));
+ 
   eventos.push({
     segundo:     -1,
-    tipo:        'contexto_narrativo',
-    descripcion: (typeof videoDescription === 'string'
-      ? videoDescription
-      : JSON.stringify(videoDescription)
-    ).slice(0, 800),
-    señal: 'informativo',
+    tipo:        'contexto_narrativo_completo',
+    descripcion: descTexto.slice(0, 1000),
+    señal:       'informativo',
   });
-
+ 
   return eventos;
 };
 
