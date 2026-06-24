@@ -186,28 +186,31 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
 export const buildPreClassifierPrompt = () => `
 Sos un analista audiovisual con 20 años de experiencia en producción de video,
 dirección de arte, diseño de sonido y análisis de contenido digital.
- 
+
 Vas a analizar este video en DOS BLOQUES. Seguí el formato exacto.
- 
+
 ════════════════════════════════════════════════════════════════
 BLOQUE 1 — DESCRIPCIÓN LIBRE
 ════════════════════════════════════════════════════════════════
 Describí el video como lo haría un director de cine describiendo
 el trabajo de otro director. Sin estructura forzada. Sin campos.
 Con el lenguaje y la precisión de alguien que realmente VE y ESCUCHA.
- 
+
 Cubrí todo lo que percibís, incluyendo pero sin limitarte a:
- 
+
 VISUAL
 - Qué aparece en pantalla segundo a segundo
-- Tipo de contenido: ¿es video real, imágenes de stock, animación, screencast, slideshow?
+- Tipo de contenido: ¿es video real con movimiento, imágenes de stock estáticas,
+  animación, screencast, o slideshow tipo PowerPoint?
+  IMPORTANTE: un video con cortes rápidos entre clips en movimiento NO es slideshow.
+  Slideshow es exclusivamente una secuencia de imágenes fijas sin movimiento interno.
 - Ritmo visual: velocidad de cortes, transiciones, zoom, movimiento de cámara
 - Calidad de producción: ¿se ve casero, semiprofesional, profesional, hiperestético?
 - Iluminación, fondo, encuadre, color
 - Texto en pantalla: qué dice, dónde está, cómo está animado
 - Expresión facial y lenguaje corporal si hay persona en cámara
 - Si hay producto: ¿se ve en uso real, en mano, antes/después, solo mencionado?
- 
+
 AUDIO
 - ¿Hay voz? Si la hay: ¿es humana o sintética/IA? ¿masculina, femenina, neutra?
   ¿Cuál es su tono — energético, calmo, urgente, conversacional, corporativo, robótico?
@@ -217,7 +220,7 @@ AUDIO
 - Música: ¿qué tipo? ¿domina sobre la voz o está de fondo? ¿tiene letra?
 - Efectos de sonido, silencio estratégico, audio ambiente
 - Calidad del audio: ¿micrófono de solapa, de cámara, grabación de pantalla?
- 
+
 NARRATIVA Y ESTRUCTURA
 - ¿Qué pasa en los primeros 2 segundos exactamente?
 - ¿Hay un hook claro? ¿Cuál es?
@@ -225,7 +228,7 @@ NARRATIVA Y ESTRUCTURA
 - ¿Hay rehook o momento de re-enganche a mitad del video?
 - ¿Hay CTA? ¿Cómo es — verbal, texto, implícito?
 - ¿El video tiene arco narrativo o es plano?
- 
+
 SEÑALES ESPECIALES — mencioná explícitamente si detectás:
 - Voz generada por IA (ElevenLabs, Murf, voz sintética genérica)
 - Imágenes de stock genéricas o generadas por IA
@@ -235,22 +238,32 @@ SEÑALES ESPECIALES — mencioná explícitamente si detectás:
 - Precio visible en pantalla
 - Testimonio de tercero
 - Urgencia artificial o escasez fabricada
- 
+
+No te limitás a esa lista — usá tu criterio como analista audiovisual.
+Si detectás algo relevante que no está en los ejemplos anteriores,
+incorporalo. Todo lo que un espectador real percibiría, vos también lo percibís.
+
 Escribí en párrafos continuos. Podés usar saltos de línea para separar secciones.
 Máximo 1200 caracteres. Sé denso y preciso, no redundante.
- 
+
 Empezá con: [DESCRIPCION]
 Terminá con: [/DESCRIPCION]
- 
+
 ════════════════════════════════════════════════════════════════
 BLOQUE 2 — SIGNALS TÉCNICOS
 ════════════════════════════════════════════════════════════════
 Solo los valores que el sistema necesita para cálculos determinísticos.
 Nada más. Sin explicaciones.
- 
+
+DEFINICIÓN CRÍTICA — es_slideshow_imagenes:
+true SOLO si el video es una secuencia de imágenes completamente estáticas,
+tipo presentación PowerPoint o galería de fotos sin ningún movimiento interno.
+Un video con cortes entre clips en movimiento = false, sin importar la velocidad.
+Si tenés cualquier duda = false.
+
 Empezá con: [SIGNALS]
 Terminá con: [/SIGNALS]
- 
+
 El JSON dentro de [SIGNALS] debe ser exactamente este esquema:
 {
   "industria": "<producto_fisico | estetica | educacion | inmobiliaria | app_saas | comida_restaurante | musica_artista>",
@@ -265,7 +278,7 @@ El JSON dentro de [SIGNALS] debe ser exactamente este esquema:
   "producto_en_accion_s0": <true|false>,
   "transformacion_visible": <true|false>,
   "tiene_rehook": <true|false>,
-  "es_slideshow_imagenes": <true|false>,
+  "es_slideshow_imagenes": <true SOLO si es secuencia de imágenes estáticas sin movimiento interno — ante cualquier duda, false>,
   "voz_ia_detectada": <true|false>,
   "duracion_estimada_segundos": <número>,
   "atomicas": {
@@ -285,6 +298,35 @@ El JSON dentro de [SIGNALS] debe ser exactamente este esquema:
   }
 }
 `;
+
+// ── Parser para el formato de dos bloques ─────────────────────
+export const parsePreClassifierResponse = (rawText) => {
+  const descMatch = rawText.match(/\[DESCRIPCION\]([\s\S]*?)\[\/DESCRIPCION\]/);
+  const descripcion_raw = descMatch ? descMatch[1].trim() : '';
+
+  const signalsMatch = rawText.match(/\[SIGNALS\]([\s\S]*?)\[\/SIGNALS\]/);
+  if (!signalsMatch) throw new Error('No se encontró bloque [SIGNALS] en CALL 0');
+
+  const signals = safeParseJSON(signalsMatch[1].trim(), 'pre-classifier-signals');
+
+  // ── Doble validación JS para es_slideshow_imagenes ──────────
+  // Si CALL 0 dice slideshow pero motion_intensity > 0.3 o cuts_per_10s > 2,
+  // es un falso positivo — el JS lo corrige antes de que contamine el pipeline.
+  if (signals?.es_slideshow_imagenes === true) {
+    const motion = signals?.atomicas?.motion_intensity ?? 0;
+    const cuts   = signals?.atomicas?.cuts_per_10s     ?? 0;
+    const audio  = signals?.atomicas?.audio_in_first_second ?? false;
+    if (motion > 0.3 || cuts > 2 || audio) {
+      console.warn('[CALL 0] Falso positivo slideshow corregido por JS — motion:', motion, 'cuts:', cuts, 'audio:', audio);
+      signals.es_slideshow_imagenes = false;
+    }
+  }
+
+  return {
+    ...signals,
+    descripcion_raw,
+  };
+};
 
 // ── CALL 1.5 — Research Brain ─────────────────────────────────
 export const buildResearchBrainPrompt = (platform, industria, objetivo, benchmarkData = null) => {
@@ -319,10 +361,9 @@ FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
 
 // ── SILICON AUDIENCE — Perfiles conductuales ──────────────────
 export const SILICON_PROFILES = [
-  // ── PESO: 2x — representa al 60-70% del FYP real ──
   {
     id: 'curioso_aleatorio',
-    peso: 2,  // ← cuenta doble en el score final
+    peso: 2,
     descripcion: 'No buscó este contenido. El algoritmo se lo mostró entre un video de gatitos y uno de Minecraft.',
     psicologia: { impatience: 0.70, curiosity_threshold: 0.60, tolerance_to_confusion: 0.25, tolerance_to_ads: 0.15, receptivity_to_purchase: 0.20 },
     contexto: 'No tiene contexto previo del nicho. Decide en 1-2 segundos si algo le llama la atención por razones puramente visuales o emocionales, no racionales.',
@@ -330,8 +371,6 @@ export const SILICON_PROFILES = [
     abandona_si: 'Cualquier señal de que necesita saber algo del nicho para entender qué está pasando. Jerga del nicho en los primeros segundos. Cara hablando sin contexto visual.',
     volumen: 'sin_audio',
   },
-
-  // ── PESO: 1x ── /s
   {
     id: 'impaciente',
     peso: 1,
@@ -463,7 +502,12 @@ FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
   "evento_que_mas_retiene": "<string>",
   "evento_que_mas_expulsa": "<string>",
   "patron_abandono": "<string>",
-  "patron_retencion": "<string>"
+  "patron_retencion": "<string>",
+  "confirmacion_formato": {
+    "es_slideshow_real": <true|false>,
+    "tiene_audio_real": <true|false>,
+    "voz_ia_confirmada": <true|false>
+  }
 }`;
 };
 
@@ -498,11 +542,12 @@ INSTRUCCIONES:
 FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
 {
   "retencion_por_perfil": {
-    "impaciente":  { "retencion_pct": <number>, "razon": "<string>" },
-    "promedio":    { "retencion_pct": <number>, "razon": "<string>" },
-    "nicho":       { "retencion_pct": <number>, "razon": "<string>" },
-    "esceptico":   { "retencion_pct": <number>, "razon": "<string>" },
-    "comprador":   { "retencion_pct": <number>, "razon": "<string>" }
+    "impaciente":       { "retencion_pct": <number>, "razon": "<string>" },
+    "promedio":         { "retencion_pct": <number>, "razon": "<string>" },
+    "nicho":            { "retencion_pct": <number>, "razon": "<string>" },
+    "esceptico":        { "retencion_pct": <number>, "razon": "<string>" },
+    "comprador":        { "retencion_pct": <number>, "razon": "<string>" },
+    "curioso_aleatorio":{ "retencion_pct": <number>, "razon": "<string>" }
   },
   "probabilidad_viral": <number>,
   "viralScore": <number>,
@@ -547,7 +592,7 @@ ${audienceAnalysis}
 ── REGLAS PARA viralScore ──
 Evalúa SOLO señales técnicas de retención. Nicho y palanca no existen en esta fase.
 - Sin audio en video > 10s = viralScore máximo 35, sin excepción
-- Slideshow de imágenes sin voz = viralScore máximo 30
+- Slideshow de imágenes estáticas sin voz = viralScore máximo 30
 - Hook muerto o sin elemento de retención en s0-s2 = penalización severa
 - viralScore NO puede superar ${viralCapData?.cap ?? 100}
 - hookGate MUERTO + penaltyLevel hard = viralScore máximo 30
@@ -667,23 +712,6 @@ export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => 
 };
 
 // ── Parser para el nuevo formato de dos bloques ───────────────
-export const parsePreClassifierResponse = (rawText) => {
-  // Extraer descripción libre
-  const descMatch = rawText.match(/\[DESCRIPCION\]([\s\S]*?)\[\/DESCRIPCION\]/);
-  const descripcion_raw = descMatch ? descMatch[1].trim() : '';
- 
-  // Extraer signals JSON
-  const signalsMatch = rawText.match(/\[SIGNALS\]([\s\S]*?)\[\/SIGNALS\]/);
-  if (!signalsMatch) throw new Error('No se encontró bloque [SIGNALS] en CALL 0');
- 
-  const signals = safeParseJSON(signalsMatch[1].trim(), 'pre-classifier-signals');
- 
-  return {
-    ...signals,
-    descripcion_raw, // texto libre como campo raíz — circula por todo el pipeline
-  };
-};
- 
  
 // ── extractEventosFromPreFacts actualizado ────────────────────
 // Ahora construye eventos mucho más ricos usando descripcion_raw
