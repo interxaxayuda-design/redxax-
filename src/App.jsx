@@ -187,7 +187,7 @@ export const buildPreClassifierPrompt = () => `
 Sos un analista audiovisual con 20 años de experiencia en producción de video,
 dirección de arte, diseño de sonido y análisis de contenido digital.
  
-Vas a analizar este video en DOS BLOQUES. Seguí el formato exacto.
+Analizá este video en DOS BLOQUES. Seguí el formato exacto.
  
 ════════════════════════════════════════════════════════════════
 BLOQUE 1 — DESCRIPCIÓN LIBRE
@@ -237,54 +237,125 @@ SEÑALES ESPECIALES — mencioná explícitamente si detectás:
 - Urgencia artificial o escasez fabricada
  
 Escribí en párrafos continuos. Podés usar saltos de línea para separar secciones.
-Máximo 1200 caracteres. Sé denso y preciso, no redundante.
+Máximo 1400 caracteres. Sé denso y preciso, no redundante.
  
 Empezá con: [DESCRIPCION]
 Terminá con: [/DESCRIPCION]
  
 ════════════════════════════════════════════════════════════════
-BLOQUE 2 — SIGNALS TÉCNICOS
+BLOQUE 2 — REFERENCIAS TÉCNICAS
 ════════════════════════════════════════════════════════════════
-Solo los valores que el sistema necesita para cálculos determinísticos.
-Nada más. Sin explicaciones.
+Describí en lenguaje natural, UNA línea por referencia.
+Sin JSON. Sin corchetes. Solo texto directo.
  
-Empezá con: [SIGNALS]
-Terminá con: [/SIGNALS]
+Empezá con: [REFERENCIAS]
+Terminá con: [/REFERENCIAS]
  
-El JSON dentro de [SIGNALS] debe ser exactamente este esquema:
-{
-  "industria": "<producto_fisico | estetica | educacion | inmobiliaria | app_saas | comida_restaurante | musica_artista>",
-  "palanca_psicologica": "<palanca dominante detectada>",
-  "hook_type_detectado": "<explosivo | bait_con_puente | apertura_informativa | muerto | debil>",
-  "hook_confianza": <0.0–1.0>,
-  "logo_en_s0": <true|false>,
-  "pregunta_al_espectador": <true|false>,
-  "afirmacion_contradictoria": <true|false>,
-  "imagen_alto_impacto": <true|false>,
-  "producto_en_s0": <true|false>,
-  "producto_en_accion_s0": <true|false>,
-  "transformacion_visible": <true|false>,
-  "tiene_rehook": <true|false>,
-  "es_slideshow_imagenes": <true|false>,
-  "voz_ia_detectada": <true|false>,
-  "duracion_estimada_segundos": <número>,
-  "atomicas": {
-    "silence_duration_s": <número>,
-    "duration_total_s": <número>,
-    "cuts_per_10s": <número>,
-    "motion_intensity": <0.0–1.0>,
-    "audio_in_first_second": <true|false>,
-    "payoff_second": <número>,
-    "rehook_present": <true|false>,
-    "average_shot_duration_s": <número>
-  },
-  "hook_gate": {
-    "veredicto_gate": "<VIVO|MUERTO>",
-    "elemento_que_retiene": "<string o null>",
-    "pregunta_activa_en_espectador": "<string o null>"
-  }
-}
+Dentro del bloque, escribí exactamente estas líneas:
+ 
+duracion: <número en segundos>
+audio_presente: <sí | no>
+audio_desde_inicio: <sí | no>
+es_slideshow: <sí | no>
+voz_ia: <sí | no>
+logo_en_frame_0: <sí | no>
+tiene_rehook: <sí | no>
+payoff_segundo: <número>
+cortes_por_10s: <número estimado>
+industria_detectada: <una frase corta, máximo 4 palabras, describiendo de qué trata el negocio>
+hook_tipo: <explosivo | pregunta | contradiccion | demo | apertura | debil | muerto>
+hook_fuerza: <alta | media | baja>
 `;
+ 
+ 
+// ═══════════════════════════════════════════════════════════════
+// CAMBIO 2 de 4 — parsePreClassifierResponse
+// Buscá la función parsePreClassifierResponse en App.jsx y
+// reemplazala COMPLETA por esta:
+// ═══════════════════════════════════════════════════════════════
+ 
+export const parsePreClassifierResponse = (rawText) => {
+  // ── Extraer descripción libre ──────────────────────────────
+  const descMatch = rawText.match(/\[DESCRIPCION\]([\s\S]*?)\[\/DESCRIPCION\]/);
+  const descripcion_raw = descMatch ? descMatch[1].trim() : '';
+ 
+  // ── Extraer bloque de referencias ─────────────────────────
+  const refMatch = rawText.match(/\[REFERENCIAS\]([\s\S]*?)\[\/REFERENCIAS\]/);
+  if (!refMatch) {
+    console.warn('[CALL 0] No se encontró [REFERENCIAS] — usando defaults');
+    return { descripcion_raw, _refs_missing: true };
+  }
+ 
+  const refBlock = refMatch[1];
+ 
+  const getRef = (key) => {
+    const match = refBlock.match(new RegExp(`${key}:\\s*(.+)`, 'i'));
+    return match ? match[1].trim() : null;
+  };
+ 
+  const parseBool = (val) => {
+    if (!val) return false;
+    return /^(sí|si|yes|true|1)$/i.test(val.trim());
+  };
+ 
+  const parseNum = (val) => {
+    if (!val) return null;
+    const n = parseFloat(val.replace(',', '.'));
+    return isNaN(n) ? null : n;
+  };
+ 
+  const duracion       = parseNum(getRef('duracion'))          ?? 30;
+  const audio_presente = parseBool(getRef('audio_presente'));
+  const audio_desde    = parseBool(getRef('audio_desde_inicio'));
+  const es_slideshow   = parseBool(getRef('es_slideshow'));
+  const voz_ia         = parseBool(getRef('voz_ia'));
+  const logo_s0        = parseBool(getRef('logo_en_frame_0'));
+  const tiene_rehook   = parseBool(getRef('tiene_rehook'));
+  const payoff_s       = parseNum(getRef('payoff_segundo'))    ?? Math.round(duracion * 0.4);
+  const cuts_10        = parseNum(getRef('cortes_por_10s'))    ?? 2;
+  const industria      = getRef('industria_detectada')         ?? 'general';
+  const hook_tipo      = getRef('hook_tipo')                   ?? 'debil';
+  const hook_fuerza    = getRef('hook_fuerza')                 ?? 'baja';
+ 
+  const hook_confianza = { alta: 0.85, media: 0.60, baja: 0.35 }[hook_fuerza] ?? 0.5;
+ 
+  const atomicas = {
+    duration_total_s:        duracion,
+    silence_duration_s:      audio_presente ? 0 : duracion,
+    audio_in_first_second:   audio_desde,
+    payoff_second:           payoff_s,
+    rehook_present:          tiene_rehook,
+    cuts_per_10s:            cuts_10,
+    average_shot_duration_s: cuts_10 > 0 ? parseFloat((10 / cuts_10).toFixed(1)) : 10,
+    motion_intensity:        cuts_10 >= 6 ? 0.8 : cuts_10 >= 3 ? 0.5 : 0.2,
+  };
+ 
+  return {
+    descripcion_raw,
+    industria,
+    palanca_psicologica:        null,
+    hook_type_detectado:        hook_tipo,
+    hook_confianza,
+    logo_en_s0:                 logo_s0,
+    pregunta_al_espectador:     hook_tipo === 'pregunta',
+    afirmacion_contradictoria:  hook_tipo === 'contradiccion',
+    imagen_alto_impacto:        false,
+    producto_en_s0:             false,
+    producto_en_accion_s0:      false,
+    transformacion_visible:     false,
+    tiene_rehook,
+    es_slideshow_imagenes:      es_slideshow,
+    voz_ia_detectada:           voz_ia,
+    duracion_estimada_segundos: duracion,
+    atomicas,
+    hook_gate: {
+      veredicto_gate:                logo_s0 || hook_tipo === 'muerto' ? 'MUERTO' : 'VIVO',
+      elemento_que_retiene:          hook_tipo !== 'muerto' && hook_tipo !== 'debil' ? hook_tipo : null,
+      pregunta_activa_en_espectador: hook_tipo === 'pregunta' ? 'sí' : null,
+    },
+    _raw_referencias: refBlock.trim(),
+  };
+};
 
 // ── CALL 1.5 — Research Brain ─────────────────────────────────
 export const buildResearchBrainPrompt = (platform, industria, objetivo, benchmarkData = null) => {
@@ -754,24 +825,6 @@ export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => 
   if (lento) return { cap: Math.min(nicheCap, 40, baseCap), reason: 'video_lento_extremo_sin_audio' };
 
   return { cap: Math.min(nicheCap, baseCap), reason: penaltyLevel === 'none' ? 'sin_penalizacion' : `penalizacion_${penaltyLevel}: ${hookGateStatus?.reason ?? ''}` };
-};
-
-// ── Parser para el nuevo formato de dos bloques ───────────────
-export const parsePreClassifierResponse = (rawText) => {
-  // Extraer descripción libre
-  const descMatch = rawText.match(/\[DESCRIPCION\]([\s\S]*?)\[\/DESCRIPCION\]/);
-  const descripcion_raw = descMatch ? descMatch[1].trim() : '';
- 
-  // Extraer signals JSON
-  const signalsMatch = rawText.match(/\[SIGNALS\]([\s\S]*?)\[\/SIGNALS\]/);
-  if (!signalsMatch) throw new Error('No se encontró bloque [SIGNALS] en CALL 0');
- 
-  const signals = safeParseJSON(signalsMatch[1].trim(), 'pre-classifier-signals');
- 
-  return {
-    ...signals,
-    descripcion_raw, // texto libre como campo raíz — circula por todo el pipeline
-  };
 };
  
  
@@ -1415,33 +1468,35 @@ const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
 
    // En runNeuralAnalysis, reemplazá el bloque CALL 0:
 const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildPreClassifierPrompt(),
-    storagePath,
-    videoMimeType: mimeType,
-    duration: Math.round(duration),
-    maxOutputTokens: 1500,
-    expectsJson: true,
-    temperature: 0,
-  }
-});
-
-if (call0Error) {
-  // ← AGREGA ESTO para ver el error real
-  let rawBody = '';
-  try { rawBody = await call0Error.context?.text?.(); } catch (_) {}
-  console.error('[CALL 0 ERROR] Status:', call0Error.message);
-  console.error('[CALL 0 ERROR] Body real:', rawBody);
-  throw new Error(`CALL 0 falló: ${rawBody || call0Error.message}`);
-}
-    const preFacts = safeParseJSON(extractGeminiText(call0Data), 'pre-classifier') || {};
-    console.log('[VIRAX] Pre-facts:', preFacts);
-
+      body: {
+        text:          buildPreClassifierPrompt(),
+        storagePath,
+        videoMimeType: mimeType,
+        duration:      Math.round(duration),
+        maxOutputTokens: 1800,
+        expectsJson:   false,   // ← CAMBIO: ya no es JSON puro
+        temperature:   0,
+      }
+    });
+ 
+    if (call0Error) {
+      let rawBody = '';
+      try { rawBody = await call0Error.context?.text?.(); } catch (_) {}
+      console.error('[CALL 0 ERROR] Status:', call0Error.message);
+      console.error('[CALL 0 ERROR] Body real:', rawBody);
+      throw new Error(`CALL 0 falló: ${rawBody || call0Error.message}`);
+    }
+ 
+    // ← CAMBIO: nuevo parser sin JSON
+    const call0RawText = extractGeminiText(call0Data);
+    const preFacts = parsePreClassifierResponse(call0RawText);
+    console.log('[VIRAX] Pre-facts (calibración):', preFacts);
+ 
     setPerception({
       industria:           preFacts.industria || selectedNicho,
-      palanca_psicologica: preFacts.palanca_psicologica || 'Curiosidad / Retención',
+      palanca_psicologica: 'A confirmar',   // ← ya no se infiere en CALL 0
     });
-
+ 
     setVideoMeta({
       storagePath,
       mimeType,
@@ -1449,7 +1504,7 @@ if (call0Error) {
       preFacts,
       platform,
       followerRange,
-      palanca_detectada: preFacts.palanca_psicologica || 'Curiosidad / Retención',
+      palanca_detectada: 'A confirmar',     // ← el usuario la define en validación
     });
 
     setAnalysisProgress(100);
