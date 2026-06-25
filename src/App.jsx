@@ -1582,17 +1582,15 @@ const runDeepAnalysis = async () => {
     // Se calcula ANTES de Silicon Audience para pasarlo al Prediction Market
     const hookGate     = deriveHookGateStatus(preFacts);
     const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
-
+ 
     console.log('[VIRAX] Hook gate:', hookGate);
     console.log('[VIRAX] Viral cap:', viralCapData);
-
+ 
     // ── CALL 1B — Silicon Audience ────────────────────────────
     setStatusText("Simulando 5 perfiles de audiencia...");
-
-    // Eventos estructurados desde preFacts — sin call extra, sin video
+ 
     const eventosVideo = extractEventosFromPreFacts(preFacts, videoDescription);
-
-    // Market state desde researchData que ya tenemos
+ 
     const marketState = {
       novelty_level:      researchData?.fatiga_de_formato ? 'saturado' : 'normal',
       audience_fatigue:   researchData?.errores_hook_comunes   ?? [],
@@ -1600,47 +1598,88 @@ const runDeepAnalysis = async () => {
       patron_dominante:   researchData?.patron_hook_dominante  ?? '',
       oportunidad:        researchData?.oportunidad_detectada  ?? '',
     };
-
+ 
     let audienceSimulation = null;
     let audienceAnalysis   = '';
-
+ 
+    // ── LOG 1: ¿qué tiene sharedFileUri antes de CALL 1B? ─────
+    console.log('[DIAG CALL 1B] ¿Tiene sharedFileUri?', {
+      sharedFileUri:  sharedFileUri  ?? '❌ NULL — usará storagePath',
+      sharedFileName: sharedFileName ?? '❌ NULL',
+      storagePath,
+      fallbackActivo: !sharedFileUri,
+    });
+ 
+    // ── LOG 2: body exacto que va al proxy ────────────────────
+    const call1bBody = {
+      text: buildSiliconAudiencePrompt(
+        eventosVideo,
+        marketState,
+        platform,
+        Math.round(duration)
+      ),
+      ...(sharedFileUri
+        ? { fileUri: sharedFileUri, fileName: sharedFileName }
+        : { storagePath, videoMimeType: mimeType }
+      ),
+      videoMimeType:   mimeType,
+      duration:        Math.round(duration),
+      expectsJson:     true,
+      maxOutputTokens: 4096,
+      temperature:     0.3,
+    };
+ 
+    console.log('[DIAG CALL 1B] Body enviado al proxy:', {
+      tieneFileUri:     !!call1bBody.fileUri,
+      tieneStoragePath: !!call1bBody.storagePath,
+      fileUri:          call1bBody.fileUri     ?? '—',
+      storagePath:      call1bBody.storagePath ?? '—',
+      modoUsado: call1bBody.fileUri
+        ? '✅ File API (Gemini ve el video)'
+        : '⚠️ storagePath (el proxy tiene que subir)',
+    });
+ 
     try {
       const { data: call1bData, error: call1bError } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-    text: buildSiliconAudiencePrompt(
-      eventosVideo,
-      marketState,
-      platform,
-      Math.round(duration)
-    ),
-    ...(sharedFileUri
-      ? { fileUri: sharedFileUri, fileName: sharedFileName }
-      : { storagePath, videoMimeType: mimeType }
-    ),
-    videoMimeType:   mimeType,
-    duration:        Math.round(duration),
-    expectsJson:     true,
-    maxOutputTokens: 4096,
-    temperature:     0.3,
-  }
-});
-      if (!call1bError) {
-        audienceSimulation = safeParseJSON(extractGeminiText(call1bData), 'silicon-audience');
+        body: call1bBody   // ← usa el objeto ya armado arriba
+      });
+ 
+      // ── LOG 3: ¿la respuesta refleja observación real? ──────
+      if (!call1bError && call1bData) {
+        const rawText = extractGeminiText(call1bData);
+        console.log('[DIAG CALL 1B] Primeros 300 chars de respuesta:', rawText.slice(0, 300));
+ 
+        const noVioSenales = [
+          'no tengo acceso',
+          'no puedo ver',
+          'no puedo acceder',
+          'basándome en los eventos',
+          'según los datos proporcionados',
+          'sin poder ver',
+        ];
+        const noVio = noVioSenales.some(s => rawText.toLowerCase().includes(s));
+        if (noVio) {
+          console.warn('[DIAG CALL 1B] ⚠️ Gemini NO vio el video — responde solo con texto');
+        } else {
+          console.log('[DIAG CALL 1B] ✅ Respuesta parece basada en observación real');
+        }
+ 
+        audienceSimulation = safeParseJSON(rawText, 'silicon-audience');
         console.log('[SILICON AUDIENCE] Simulación:', audienceSimulation);
       } else {
-        console.warn('[CALL 1B] Error:', call1bError.message);
+        console.warn('[CALL 1B] Error:', call1bError?.message);
       }
     } catch (e) {
       console.warn('[CALL 1B] Excepción:', e.message);
     }
-
+ 
     setAnalysisProgress(55);
-
+ 
     // ── CALL 2 — Prediction Market ────────────────────────────
     setStatusText("Calculando predicción de mercado...");
-
+ 
     let predictionMarket = null;
-
+ 
     if (audienceSimulation?.simulacion?.length) {
       try {
         const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
@@ -1659,7 +1698,7 @@ const runDeepAnalysis = async () => {
             temperature:     0.2,
           }
         });
-
+ 
         if (!call2Error) {
           predictionMarket = safeParseJSON(extractGeminiText(call2Data), 'prediction-market');
           console.log('[PREDICTION MARKET]', predictionMarket);
