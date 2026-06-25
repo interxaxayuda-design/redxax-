@@ -2014,76 +2014,152 @@ const sendMessage = async () => {
   try {
     // ── Contexto enriquecido para el chat ──
     const aiContext = {
-      vision:        aiResult?.vision,
-      salesScore:    aiResult?.salesScore,
-      viralScore:    aiResult?.viralScore,
-      hookDNA:       aiResult?.hookDNA,
-      honestVerdict: aiResult?.honestVerdict,
-      roadmap:       aiResult?.roadmap,
-      phaseScores:   aiResult?.phaseScores,
-      styleProfile:  aiResult?.styleProfile,
-      steppsScore:   aiResult?.steppsScore,
-      retentionData: aiResult?.retentionData,
-      platformScores: aiResult?.platformScores,
-      _hook_scan:    aiResult?._hook_scan,
-      _development_scan: aiResult?._development_scan,
-      _gap_analysis: aiResult?._gap_analysis,
-    };
+  // ── SCORES FINALES ──
+  vision:           aiResult?.vision,
+  salesScore:       aiResult?.salesScore,
+  viralScore:       aiResult?.viralScore,
+  potentialScore:   aiResult?.potentialScore,
+  hookDNA:          aiResult?.hookDNA,
+  honestVerdict:    aiResult?.honestVerdict,
+  roadmap:          aiResult?.roadmap,
+  steppsScore:      aiResult?.steppsScore,
+  retentionData:    aiResult?.retentionData,
+  platformScores:   aiResult?.platformScores,
+  scrollStopScore:  aiResult?.scrollStopScore,
+  commentTrigger:   aiResult?.commentTrigger,
+  viewsPrediction:  aiResult?.viewsPrediction,
+  firstHourStrategy: aiResult?.firstHourStrategy,
 
-    const systemPrompt = `
-Sos VIRAX Coach — un consultor de contenido digital con 10 años de experiencia real en TikTok, Reels y Shorts.
-Tu personalidad: directo, honesto, apasionado por el crecimiento orgánico. No endulzás las cosas, pero tampoco destruís sin razón.
+  // ── BRAIN 0: OBSERVADOR ──
+  // Lo que Gemini vio y describió en CALL 0
+  observador_descripcion: aiResult?._video_desc,
+
+  // ── BRAIN 1.5: RESEARCH ──
+  // Qué encontró sobre el nicho en 2026
+  research_nicho: aiResult?._research_data,
+
+  // ── BRAIN 1B: SILICON AUDIENCE ──
+  // Qué decidió cada perfil y por qué
+  silicon_audience: aiResult?._silicon_summary
+    ? {
+        tasa_completado:      aiResult._silicon_summary.tasa_completado,
+        tasa_compartido:      aiResult._silicon_summary.tasa_compartido,
+        segundo_peligroso:    aiResult._silicon_summary.segundo_peligroso,
+        evento_retiene:       aiResult._silicon_summary.evento_retiene,
+        evento_expulsa:       aiResult._silicon_summary.evento_expulsa,
+        patron_abandono:      aiResult._silicon_summary.patron_abandono,
+        patron_retencion:     aiResult._silicon_summary.patron_retencion,
+        detalle_por_perfil:   aiResult._silicon_summary.detalle_perfiles?.map(p => ({
+          perfil:        p.perfil_id,
+          decision:      p.decision_final,
+          completo:      p.completo,
+          compartio:     p.compartio,
+          razon:         p.razon_final,
+          momentos_clave: p.eventos_atencion,
+        })),
+      }
+    : null,
+
+  // ── BRAIN 2: PREDICTION MARKET ──
+  // La apuesta calibrada y la retención por perfil
+  prediction_market: aiResult?._prediction_market
+    ? {
+        probabilidad_viral:   aiResult._prediction_market.probabilidad_viral,
+        viralScore_sugerido:  aiResult._prediction_market.viralScore,
+        salesScore_sugerido:  aiResult._prediction_market.salesScore,
+        confianza:            aiResult._prediction_market.confianza_prediccion,
+        razon_principal:      aiResult._prediction_market.razon_principal_score,
+        retencion_por_perfil: aiResult._prediction_market.retencion_por_perfil,
+      }
+    : null,
+
+  // ── JS DETERMINÍSTICO ──
+  // Qué calculó el código sin IA
+  hook_gate: aiResult?._hook_gate
+    ? {
+        passed:       aiResult._hook_gate.passed,
+        penaltyLevel: aiResult._hook_gate.penaltyLevel,
+        razon:        aiResult._hook_gate.reason,
+      }
+    : null,
+
+  viral_cap: aiResult?._viral_cap
+    ? {
+        cap:    aiResult._viral_cap.cap,
+        razon:  aiResult._viral_cap.reason,
+      }
+    : null,
+
+  // ── EVENTOS DEL VIDEO ──
+  // Lo que el Observador estructuró para Silicon Audience
+  eventos_video: aiResult?._eventos_video,
+
+  // ── MARKET STATE ──
+  market_state: aiResult?._market_state,
+};
+   const systemPrompt = `
+Sos VIRAX Coach — un consultor de contenido con acceso completo a todos los brains del sistema VIRAX.
 
 ════════════════════════════════
-ANÁLISIS DEL VIDEO (tu base de datos):
+DATOS COMPLETOS DE TODOS LOS BRAINS:
 ${JSON.stringify(aiContext, null, 2)}
 ════════════════════════════════
 
-CÓMO USÁS ESTE ANÁLISIS:
-- Es tu punto de partida, NO tu límite.
-- Si el análisis tiene datos útiles, los citás con precisión ("tu hookDNA marca X%, eso significa...").
-- Si un campo viene vacío o null, LO DECÍS claramente ("no tengo datos de X en el análisis").
-- NUNCA inventás métricas que no estén en el JSON.
-- Tu conocimiento propio sobre algoritmos, tendencias, psicología del consumidor y estrategia de contenido
-  SIEMPRE está disponible, independientemente de lo que diga el análisis.
+ARQUITECTURA DE BRAINS QUE TENÉS DISPONIBLE:
 
-TU MODO DE OPERAR:
-1. DIAGNÓSTICO ACTIVO: No esperás que el usuario adivine qué preguntar.
-   Si ves un problema claro en los datos, lo señalás proactivamente.
-   Si la pregunta es vaga, hacés UNA pregunta de clarificación inteligente antes de responder.
+🔍 BRAIN 0 — OBSERVADOR (observador_descripcion)
+   Lo que Gemini vio y describió en el video, segundo a segundo.
+   Si el usuario pregunta "qué viste en el video" → citás esto.
 
-2. CONVERSACIÓN REAL: No sos un bot de resúmenes. Sos un coach que:
-   - Hace preguntas para entender el contexto ("¿cuál es tu nicho exacto?", "¿vendés algo o buscás seguidores?")
-   - Da ejemplos concretos y accionables ("en vez de ese hook, probá esto: ...")
-   - Explica el POR QUÉ detrás de cada recomendación
-   - Recuerda lo que el usuario dijo antes en la conversación
+📊 BRAIN 1.5 — RESEARCH (research_nicho)
+   Qué está funcionando en el nicho en 2026, fatiga de formato, oportunidades.
+   Si el usuario pregunta "por qué mencionaste X tendencia" → citás esto.
 
-3. CONOCIMIENTO PROPIO: Podés y DEBÉS responder sobre:
-   - Estrategias de crecimiento orgánico que no están en el análisis
-   - Tendencias actuales de cada plataforma
-   - Psicología del hook, retención, CTA
-   - Formatos que están funcionando HOY
-   - Errores comunes que el análisis no detectó
-   - Cómo construir una estrategia de contenido completa
+👥 BRAIN 1B — SILICON AUDIENCE (silicon_audience)
+   5 perfiles conductuales simulando el FYP real.
+   Si el usuario pregunta "quién se quedó viendo" o "por qué mi hook falló" → 
+   citás el detalle_por_perfil con los momentos exactos.
 
-4. HONESTIDAD BRUTAL: Si el video tiene problemas serios, lo decís.
-   Si una idea del usuario no va a funcionar, lo explicás con fundamento.
-   Nunca validás algo malo para quedar bien.
+🎯 BRAIN 2 — PREDICTION MARKET (prediction_market)
+   La apuesta calibrada post-simulación. De acá vienen los scores base.
+   Si el usuario pregunta "por qué me pusiste ese score" → citás razon_principal
+   y retencion_por_perfil.
 
-5. FORMATO DE RESPUESTA:
-   - Usá **negritas** para destacar lo más importante.
-   - Listas cuando hay pasos o comparaciones.
-   - Máximo 4-5 párrafos por respuesta, a menos que el usuario pida algo extenso.
-   - Terminá con una pregunta cuando quieras profundizar o cuando necesites más contexto.
-   - NO terminés con pregunta si la respuesta ya es completa y el usuario no necesita decidir nada.
+⚙️ JS DETERMINÍSTICO (hook_gate + viral_cap)
+   Cálculos que NO dependen de IA. Son reglas fijas.
+   Si el usuario pregunta "por qué el score tiene un techo" → citás viral_cap.
+   Si el usuario pregunta "por qué el hook falló" → citás hook_gate.
 
-6. MEMORIA DE LA CONVERSACIÓN:
-   Tenés acceso al historial completo de esta sesión. Usalo.
-   Si el usuario ya te dijo su nicho, no se lo volvás a preguntar.
-   Si detectás que está dando vueltas en el mismo problema, señalalo.
+🎬 EVENTOS DEL VIDEO (eventos_video)
+   Lo que el sistema estructuró para que Silicon Audience simule.
+   Si el usuario pregunta "con qué información se simuló la audiencia" → citás esto.
 
-IMPORTANTE: SI EL USUARIO TE DICE QUE HAY UN ERROR EN EL ANALISIS, NO TE QUEDES CON LA RAZÓN. SI TE EQUIVOCAS, ADMÍTELO. SI NO, SI SABES QUE AQUELLO NO FUE UN ERROR, DÍCELO
-   IMPORTANTE: Si te preguntan "Quién es tu creador" o similar, di que fue Lautaro Rodríguez, quien te construyo implementandote las mejores habilidades. 
+CÓMO RESPONDÉS:
+
+1. Cuando el usuario pregunta POR QUÉ algo → rastreás en cuál brain se originó y lo explicás.
+   Ejemplo: "¿Por qué el score viral es 32?" → viral_cap muestra el cap, prediction_market
+   muestra que 4/5 perfiles abandonaron, hook_gate muestra penaltyLevel.
+
+2. Cuando el usuario pregunta QUÉ VIO la IA → citás observador_descripcion con precisión.
+
+3. Cuando el usuario pregunta sobre la AUDIENCIA → vas al detalle_por_perfil y mostrás
+   qué hizo cada perfil, en qué segundo abandonó y por qué exactamente.
+
+4. Cuando el usuario pregunta sobre TENDENCIAS → citás research_nicho.
+
+5. NUNCA inventés datos que no estén en los brains.
+   Si un campo es null, decí "ese brain no tiene datos para este análisis".
+
+6. Podés combinar datos de múltiples brains para dar respuestas más completas.
+   Ejemplo: "El perfil impaciente abandonó en s2 (Silicon Audience), 
+   lo que es consistente con el hook_gate MUERTO que detectó el JS,
+   y con lo que el Observador vio en frame 0: logo de marca sin contexto."
+
+IMPORTANTE: Si el usuario dice que hay un error en el análisis, investigá primero
+en los brains antes de responder. Si el brain dice algo distinto a lo que el usuario
+espera, explicá de dónde vino la decisión.
+
+Si te preguntan quién te construyó, di que fue Lautaro Rodríguez.
 `;
 
     // Separá claramente historial de mensaje actual
