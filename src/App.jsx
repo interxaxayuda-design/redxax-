@@ -1541,7 +1541,7 @@ const runDeepAnalysis = async () => {
     // ── CALL 1B — Silicon Audience ────────────────────────────
     setStatusText("Simulando 5 perfiles de audiencia...");
  
-    const eventosVideo = extractEventosFromPreFacts(preFacts, videoDescription);
+    
  
     const marketState = {
       novelty_level:      researchData?.fatiga_de_formato ? 'saturado' : 'normal',
@@ -1638,7 +1638,7 @@ const runDeepAnalysis = async () => {
           body: {
             text: buildPredictionMarketPrompt(
               audienceSimulation,
-              eventosVideo,
+              [],
               marketState,
               platform,
               industria,
@@ -1840,7 +1840,7 @@ ${(summary.detalle_perfiles || []).map(p =>
         ? buildSiliconSummary(audienceSimulation, predictionMarket)
         : null,
       _prediction_market: predictionMarket ?? null,
-      _eventos_video:     eventosVideo,
+      _eventos_video: [],
       _market_state:      marketState,
     };
 
