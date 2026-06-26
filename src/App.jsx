@@ -455,7 +455,7 @@ export const SILICON_PROFILES = [
   },
 ];
 
-export const buildSiliconAudiencePrompt = (eventos, marketState, platform, duracionSegundos) => {
+export const buildSiliconAudiencePrompt = (videoDescription, marketState, platform, duracionSegundos) => {
   const pName = {
     tiktok: 'TikTok',
     reels: 'Instagram Reels',
