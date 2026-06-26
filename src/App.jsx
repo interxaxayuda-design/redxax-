@@ -479,10 +479,7 @@ Tenés acceso directo al video.
 
 Observalo completo antes de simular.
 
-No dependas de los eventos pre-calculados.
-Son únicamente contexto auxiliar.
-
-Lo que VES y ESCUCHÁS en el video es tu fuente primaria de verdad.
+Lo que VES y ESCUCHÁS en el video es la fuente principal de verdad.
 
 DURACIÓN: ${duracionSegundos}s
 PLATAFORMA: ${pName}
@@ -495,110 +492,104 @@ ${JSON.stringify(eventos, null, 2)}
 
 IMPORTANTE:
 
-Las señales pre-calculadas pueden estar incompletas.
-Pueden omitir información relevante.
-Pueden interpretar incorrectamente partes del video.
+Las señales pre-calculadas son únicamente contexto auxiliar.
+
+Pueden estar incompletas.
+Pueden contener errores.
+Pueden omitir información importante.
 
 Nunca las tomes como verdad absoluta.
 
-Si existe una contradicción entre los eventos y el video,
+Si existe cualquier contradicción entre los eventos y el video,
 confiá en el video.
 
-Lo que observás directamente tiene prioridad absoluta.
+Lo observado directamente tiene prioridad absoluta.
 
 PERFILES DE AUDIENCIA:
 ${perfilesStr}
 
-FASE 0 — INTERNALIZACIÓN DEL VIDEO
+FASE 0 — OBSERVACIÓN
 
-Antes de simular cualquier audiencia:
+Antes de simular:
 
-1. Observá el video completo.
-2. Reconstruí mentalmente todo lo que sucede desde el inicio hasta el final.
-3. Detectá qué momentos aumentan la atención.
-4. Detectá qué momentos generan curiosidad.
-5. Detectá qué momentos generan rechazo.
-6. Detectá qué momentos parecen publicidad.
-7. Detectá qué momentos parecen auténticos.
-8. Detectá qué momentos generan emoción.
-9. Detectá qué momentos pueden provocar abandono.
+- Observá el video completo.
+- Comprendé qué ocurre desde el inicio hasta el final.
+- Internalizá la experiencia completa del espectador.
 
 No respondas estas observaciones.
 
-Utilizalas internamente para construir una comprensión profunda del video.
+Utilizalas internamente para construir una comprensión profunda del contenido.
 
 INSTRUCCIONES DE OBSERVACIÓN
 
-No completes una checklist.
+No completes checklists.
 
-No intentes confirmar los eventos entregados por el sistema.
+No intentes validar eventos.
 
-No busques validar campos específicos.
+No intentes confirmar categorías.
 
-Observá el contenido como lo haría simultáneamente:
+No busques llenar formularios mentales.
 
-- un espectador real
-- un editor profesional
-- un creador de contenido
-- un anunciante
-- un analista de comportamiento humano
+Observá el contenido como una persona real.
 
-Prestá atención a cualquier elemento capaz de modificar
-la reacción de una audiencia real.
+Prestá atención a cualquier elemento capaz de influir en la reacción de una audiencia.
 
-Esto puede incluir, entre muchas otras cosas:
-
-- señales visuales
-- señales auditivas
-- señales emocionales
-- señales narrativas
-- señales psicológicas
-- señales sociales
-- señales de credibilidad
-- señales de artificialidad
-- señales de producción
-- señales de entretenimiento
-- señales de venta
-
-La lista anterior NO es exhaustiva.
-
-Si detectás factores relevantes no mencionados,
+Si detectás factores relevantes no mencionados por el sistema,
 incorporalos igualmente.
 
 Tu trabajo no es verificar una lista.
 
-Tu trabajo es comprender todo aquello que una persona
-percibiría consciente o inconscientemente al ver este video.
+Tu trabajo es comprender la experiencia completa que recibe el espectador.
 
 INSTRUCCIONES DE SIMULACIÓN
 
 Una vez completada la observación:
 
-Observá el video como si fueras cada perfil scrolleando el FYP.
+Simulá cada perfil scrolleando el FYP.
 
-Cada perfil tiene su propio contexto,
-psicología,
-expectativas,
-tolerancias
-y motivos de abandono.
+Cada perfil posee:
 
-Las decisiones deben surgir principalmente
-de lo observado en el video y no de los eventos pre-calculados.
+- contexto
+- psicología
+- expectativas
+- tolerancias
+- intereses
+- motivos de abandono
 
-REGLAS DURAS:
+Las decisiones deben surgir principalmente de lo observado en el video.
+
+No dependas de reglas automáticas.
+
+No dependas de etiquetas.
+
+No dependas de conclusiones predefinidas.
+
+REGLAS DE COMPORTAMIENTO
 
 1. Decisión BINARIA por momento clave: SIGUE o ABANDONA.
-2. tolerance_to_ads: 0.01 = abandona ante cualquier señal comercial.
-3. impatience: 0.95 = si no hay recompensa visual o sonora en los primeros 2 segundos, se va.
-4. Perfiles sin_audio scrollean sin sonido.
-5. Voz sintética/IA detectada = señal negativa automática para esceptico, impaciente y curioso_aleatorio.
-6. Producción percibida como template o Canva = penalización de credibilidad en nicho y comprador.
-7. Tasa de completado realista en ${pName}: 20–40%. Si todos completan, algo está mal.
-8. Los perfiles NO saben qué nicho es.
-9. Reaccionan a lo que VEN y ESCUCHAN.
-10. Sé brutalmente honesto.
+
+2. Los perfiles reaccionan a la experiencia completa del contenido.
+
+3. No asumas que ningún elemento tiene un efecto predeterminado.
+
+4. Determiná el impacto de cada elemento según el contexto específico del video.
+
+5. Los perfiles sin_audio reaccionan únicamente a señales visuales.
+
+6. Los perfiles no conocen las intenciones del creador.
+
+7. Los perfiles reaccionan únicamente a lo que perciben.
+
+8. Si existe contradicción entre los eventos y el video, el video tiene prioridad.
+
+9. Sé brutalmente honesto.
+
+10. Simulá comportamiento humano real, no comportamiento idealizado.
+
+11. Si todos los perfiles retienen o todos abandonan, revisá nuevamente el análisis.
 
 FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
+
 {
   "simulacion": [
     {
