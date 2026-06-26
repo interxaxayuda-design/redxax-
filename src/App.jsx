@@ -487,23 +487,12 @@ PLATAFORMA: ${pName}
 ESTADO DEL MERCADO 2026:
 ${JSON.stringify(marketState, null, 2)}
 
-CONTEXTO DE APOYO — señales técnicas pre-calculadas:
-${JSON.stringify(eventos, null, 2)}
+DESCRIPCIÓN OBSERVADA DEL VIDEO:
+${videoDescription}
 
-IMPORTANTE:
-
-Las señales pre-calculadas son únicamente contexto auxiliar.
-
-Pueden estar incompletas.
-Pueden contener errores.
-Pueden omitir información importante.
-
-Nunca las tomes como verdad absoluta.
-
-Si existe cualquier contradicción entre los eventos y el video,
-confiá en el video.
-
-Lo observado directamente tiene prioridad absoluta.
+Esta descripción es contexto de apoyo generado en un análisis previo.
+El video que tenés delante es la fuente de verdad absoluta.
+Si algo no coincide con la descripción, confiá en lo que ves.
 
 PERFILES DE AUDIENCIA:
 ${perfilesStr}
@@ -816,89 +805,6 @@ export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => 
   if (lento) return { cap: Math.min(nicheCap, 40, baseCap), reason: 'video_lento_extremo_sin_audio' };
 
   return { cap: Math.min(nicheCap, baseCap), reason: penaltyLevel === 'none' ? 'sin_penalizacion' : `penalizacion_${penaltyLevel}: ${hookGateStatus?.reason ?? ''}` };
-};
- 
- 
-// ── extractEventosFromPreFacts actualizado ────────────────────
-// Ahora construye eventos mucho más ricos usando descripcion_raw
-// como contexto narrativo principal en vez de flags booleanos.
-export const extractEventosFromPreFacts = (preFacts, videoDescription) => {
-  const atomicas = preFacts?.atomicas ?? {};
-  const eventos  = [];
- 
-  // ── s0: Frame inicial ──────────────────────────────────────
-  const s0Tipo = preFacts?.logo_en_s0               ? 'logo'
-    : preFacts?.imagen_alto_impacto                  ? 'hook_visual'
-    : preFacts?.pregunta_al_espectador               ? 'hook_pregunta'
-    : preFacts?.afirmacion_contradictoria            ? 'hook_contradictorio'
-    : preFacts?.producto_en_accion_s0                ? 'demo_inmediata'
-    : 'apertura';
- 
-  eventos.push({
-    segundo:     0,
-    tipo:        s0Tipo,
-    descripcion: `Frame inicial — tipo detectado: ${s0Tipo}. Hook gate: ${preFacts?.hook_gate?.veredicto_gate ?? '?'}. Elemento que retiene: ${preFacts?.hook_gate?.elemento_que_retiene ?? 'ninguno'}.`,
-    señal:       preFacts?.logo_en_s0 ? 'negativo' : preFacts?.imagen_alto_impacto ? 'positivo' : 'neutro',
-  });
- 
-  // ── s1: Audio ──────────────────────────────────────────────
-  const tieneAudio = atomicas.audio_in_first_second;
-  const esVozIA    = preFacts?.voz_ia_detectada === true;
- 
-  eventos.push({
-    segundo:     1,
-    tipo:        tieneAudio ? (esVozIA ? 'audio_hook_voz_ia' : 'audio_hook') : 'silencio',
-    descripcion: tieneAudio
-      ? `Audio desde s0. ${esVozIA ? '⚠ VOZ SINTÉTICA/IA DETECTADA — impacto negativo en autenticidad percibida.' : 'Voz humana.'}`
-      : 'Sin audio en s1. Perfil sin_audio no recibe señal alguna.',
-    señal: tieneAudio ? (esVozIA ? 'negativo' : 'positivo') : 'negativo',
-  });
- 
-  // ── s2: Edición y ritmo ────────────────────────────────────
-  const cutsP10 = Number(atomicas.cuts_per_10s ?? 0);
-  eventos.push({
-    segundo:     2,
-    tipo:        'ritmo_edicion',
-    descripcion: `Cortes por 10s: ${cutsP10}. Shot promedio: ${atomicas.average_shot_duration_s ?? '?'}s. Motion: ${atomicas.motion_intensity ?? '?'}. Slideshow: ${preFacts?.es_slideshow_imagenes ? 'SÍ' : 'NO'}.`,
-    señal: cutsP10 >= 4 ? 'positivo' : cutsP10 <= 1 ? 'negativo' : 'neutro',
-  });
- 
-  // ── Payoff ─────────────────────────────────────────────────
-  if (atomicas.payoff_second) {
-    eventos.push({
-      segundo:     atomicas.payoff_second,
-      tipo:        'payoff',
-      descripcion: `Momento de mayor densidad/valor en s${atomicas.payoff_second}.`,
-      señal:       atomicas.payoff_second <= 5  ? 'positivo'
-                 : atomicas.payoff_second <= 10 ? 'neutro'
-                 :                                'riesgo',
-    });
-  }
- 
-  // ── Rehook ─────────────────────────────────────────────────
-  if (atomicas.rehook_present) {
-    eventos.push({
-      segundo:     Math.round((atomicas.duration_total_s ?? 30) * 0.4),
-      tipo:        'rehook',
-      descripcion: 'Re-enganche detectado a mitad del video.',
-      señal:       'positivo',
-    });
-  }
- 
-  // ── Contexto narrativo completo (descripción libre) ─────────
-  // Este es el evento más importante — Silicon Audience lo lee
-  // y reacciona a todo lo que Gemini describió libremente.
-  const descTexto = preFacts?.descripcion_raw
-    || (typeof videoDescription === 'string' ? videoDescription : JSON.stringify(videoDescription));
- 
-  eventos.push({
-    segundo:     -1,
-    tipo:        'contexto_narrativo_completo',
-    descripcion: descTexto.slice(0, 1000),
-    señal:       'informativo',
-  });
- 
-  return eventos;
 };
 
 export const calcularCurvaRetencionSilicon = (simulacion, duracionSegundos) => {
@@ -1659,7 +1565,7 @@ const runDeepAnalysis = async () => {
     // ── LOG 2: body exacto que va al proxy ────────────────────
     const call1bBody = {
       text: buildSiliconAudiencePrompt(
-        eventosVideo,
+        videoDescription,  // ← la descripción libre directamente
         marketState,
         platform,
         Math.round(duration)
