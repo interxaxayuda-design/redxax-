@@ -1672,7 +1672,7 @@ const runDeepAnalysis = async () => {
       duration:        Math.round(duration),
       expectsJson:     true,
       maxOutputTokens: 4096,
-      temperature:     0.3,
+      temperature:     0,
     };
  
     console.log('[DIAG CALL 1B] Body enviado al proxy:', {
@@ -1741,7 +1741,7 @@ const runDeepAnalysis = async () => {
             ),
             expectsJson:     true,
             maxOutputTokens: 1500,
-            temperature:     0.2,
+            temperature:     0,
           }
         });
  
@@ -1812,7 +1812,7 @@ ${(summary.detalle_perfiles || []).map(p =>
           duration:        Math.round(duration),
           maxOutputTokens: 6144,
           expectsJson:     false,
-          temperature:     0.4,
+          temperature:     0,
           thinkingBudget:  1024,
           forceFullModel:  true,
         }
@@ -1851,7 +1851,7 @@ ${(summary.detalle_perfiles || []).map(p =>
         duration:        Math.round(duration),
         expectsJson:     true,
         maxOutputTokens: 4096,
-        temperature:     0.2,
+        temperature:     0
       }
     });
 
