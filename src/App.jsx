@@ -1091,7 +1091,7 @@ function TypingIndicator({ logo }) {
   return (
     <div className="flex items-start gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
       <div className="w-7 h-7 rounded-full bg-[#0f0f18] border border-white/[0.08] flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden">
-        <img src={logo} alt="VIRAX" className="w-5 h-5 object-contain" />
+        <img src={logo} alt="SOFÍA CHIABRERA" className="w-5 h-5 object-contain" />
       </div>
       <div className="bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl px-4 py-3 flex items-center gap-3">
         <div className="flex items-end gap-[3px] h-4">
