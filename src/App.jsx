@@ -1567,23 +1567,18 @@ const runDeepAnalysis = async () => {
       console.log('[VIRAX] Descripción del video:', videoDescription);
 
     // ── DESPUÉS ──
+// REEMPLAZÁ el bloque else completo por esto:
 } else {
-  // Usamos descripcion_raw si existe — es texto puro sin palanca
-  // Si no, armamos un JSON solo con señales técnicas, sin palanca ni industria
   videoDescription = preFacts?.descripcion_raw ?? JSON.stringify({
-    hook_type_detectado:        preFacts?.hook_type_detectado,
-    hook_confianza:             preFacts?.hook_confianza,
-    logo_en_s0:                 preFacts?.logo_en_s0,
-    audio_desde_s0:             preFacts?.audio_desde_s0,
-    imagen_alto_impacto:        preFacts?.imagen_alto_impacto,
-    producto_en_s0:             preFacts?.producto_en_s0,
-    producto_en_accion_s0:      preFacts?.producto_en_accion_s0,
-    transformacion_visible:     preFacts?.transformacion_visible,
-    tiene_rehook:               preFacts?.tiene_rehook,
-    es_slideshow_imagenes:      preFacts?.es_slideshow_imagenes,
+    logo_en_s0:              preFacts?.logo_en_s0,
+    tiene_rehook:            preFacts?.tiene_rehook,
+    es_slideshow_imagenes:   preFacts?.es_slideshow_imagenes,
+    elemento_en_s0:          preFacts?.elemento_en_s0,
+    pregunta_visible:        preFacts?.pregunta_visible,
+    texto_en_pantalla_s0:    preFacts?.texto_en_pantalla_s0,
+    transformacion_visible:  preFacts?.transformacion_visible,
     duracion_estimada_segundos: preFacts?.duracion_estimada_segundos,
-    atomicas:                   preFacts?.atomicas,
-    hook_gate:                  preFacts?.hook_gate,
+    atomicas:                preFacts?.atomicas,
   });
   console.log('[VIRAX] Reutilizando descripción de calibración ✅');
 }
@@ -1627,11 +1622,6 @@ const runDeepAnalysis = async () => {
     }
 
     setAnalysisProgress(40);
-
-    // ── JS — Gate + Cap determinístico ───────────────────────
-    // Se calcula ANTES de Silicon Audience para pasarlo al Prediction Market
-    const hookGate     = deriveHookGateStatus(preFacts);
-    const viralCapData = deriveViralCap(hookGate, preFacts, nicheConfig);
  
     console.log('[VIRAX] Hook gate:', hookGate);
     console.log('[VIRAX] Viral cap:', viralCapData);
@@ -1734,15 +1724,13 @@ const runDeepAnalysis = async () => {
       try {
         const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
           body: {
-            text: buildPredictionMarketPrompt(
-              audienceSimulation,
-              [],
-              marketState,
-              platform,
-              industria,
-              viralCapData,
-              hookGate
-            ),
+            text: 
+            buildPredictionMarketPrompt(
+             audienceSimulation,
+             marketState,
+             platform,
+             industria
+          ),
             expectsJson:     true,
             maxOutputTokens: 1500,
             temperature:     0,
@@ -1873,39 +1861,44 @@ ${(summary.detalle_perfiles || []).map(p =>
     const viralScoreBase  = predictionMarket?.viralScore
       ?? outputParsed.viralScore?.score
       ?? 0;
-    const viralScoreFinal = Math.min(viralScoreBase, viralCapData.cap);
+    // POR ESTO:
+  const viralScoreFinal = Math.min(
+  predictionMarket?.viralScore ?? 100,
+  outputParsed.viralScore?.score ?? 100
+);
+
 
     const salesScoreFinal = predictionMarket?.salesScore
       ?? outputParsed.salesScore?.score
       ?? 0;
 
     const finalResult = {
-      viralScore: {
-        score:        viralScoreFinal,
-        titulo:       'Potencial Viral',
-        verdict:      outputParsed.viralScore?.verdict      ?? predictionMarket?.razon_principal_score ?? '',
-        accion_clave: outputParsed.viralScore?.accion_clave ?? predictionMarket?.accion_clave_viral    ?? '',
-        cap_reason:   viralCapData.reason,
-      },
-      salesScore: {
-        score:        salesScoreFinal,
-        titulo:       'Potencial de Ventas',
-        verdict:      outputParsed.salesScore?.verdict      ?? predictionMarket?.razon_principal_score ?? '',
-        accion_clave: outputParsed.salesScore?.accion_clave ?? predictionMarket?.accion_clave_ventas   ?? '',
-      },
-      scrollStopScore:  outputParsed.scrollStopScore  ?? { score: 0, verdict: '' },
-      hookDNA:          outputParsed.hookDNA          ?? {},
-      steppsScore:      outputParsed.steppsScore      ?? {},
-      honestVerdict:    outputParsed.honestVerdict     ?? '',
-      roadmap:          outputParsed.roadmap           ?? [],
-      objetivo:         selectedObjetivo,
+  viralScore: {
+    score:        viralScoreFinal,
+    titulo:       'Potencial Viral',
+    verdict:      outputParsed.viralScore?.verdict      ?? predictionMarket?.razon_principal_score ?? '',
+    accion_clave: outputParsed.viralScore?.accion_clave ?? predictionMarket?.accion_clave_viral    ?? '',
+    cap_reason:   null,  // ← era viralCapData.reason
+  },
+  salesScore: {
+    score:        salesScoreFinal,
+    titulo:       'Potencial de Ventas',
+    verdict:      outputParsed.salesScore?.verdict      ?? predictionMarket?.razon_principal_score ?? '',
+    accion_clave: outputParsed.salesScore?.accion_clave ?? predictionMarket?.accion_clave_ventas   ?? '',
+  },
+  scrollStopScore:  outputParsed.scrollStopScore  ?? { score: 0, verdict: '' },
+  hookDNA:          outputParsed.hookDNA          ?? {},
+  steppsScore:      outputParsed.steppsScore      ?? {},
+  honestVerdict:    outputParsed.honestVerdict     ?? '',
+  roadmap:          outputParsed.roadmap           ?? [],
+  objetivo:         selectedObjetivo,
 
-      vision: {
-        niche:    outputParsed.vision?.niche    || industria || 'General',
-        type:     outputParsed.vision?.type     || 'Video',
-        audience: outputParsed.vision?.audience || '—',
-        promise:  outputParsed.vision?.promise  || '—',
-      },
+  vision: {
+    niche:    outputParsed.vision?.niche    || industria || 'General',
+    type:     outputParsed.vision?.type     || 'Video',
+    audience: outputParsed.vision?.audience || '—',
+    promise:  outputParsed.vision?.promise  || '—',
+  },
 
       potentialScore: Math.round(
         (viralScoreFinal + salesScoreFinal) / 2
