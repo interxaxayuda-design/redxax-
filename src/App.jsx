@@ -1871,7 +1871,26 @@ ${(summary.detalle_perfiles || []).map(p =>
       ?? outputParsed.salesScore?.score
       ?? 0;
 
-    const finalResult = {
+    console.log('=== VIRAX DEBUG ===');
+console.log('Silicon simulacion:', audienceSimulation?.simulacion?.map(p => ({
+  perfil: p.perfil_id,
+  decision: p.decision_final,
+  completo: p.completo
+})));
+console.log('Prediction Market raw:', {
+  viralScore: predictionMarket?.viralScore,
+  salesScore: predictionMarket?.salesScore,
+  razon: predictionMarket?.razon_principal_score
+});
+console.log('CALL 3 raw:', {
+  viralScore: outputParsed?.viralScore?.score,
+  salesScore: outputParsed?.salesScore?.score
+});
+console.log('viralScoreFinal:', viralScoreFinal);
+console.log('salesScoreFinal:', salesScoreFinal);
+console.log('videoDescription (primeros 200 chars):', videoDescription?.slice(0, 200));
+
+const finalResult = {   // ← esta línea ya existía
   viralScore: {
     score:        viralScoreFinal,
     titulo:       'Potencial Viral',
