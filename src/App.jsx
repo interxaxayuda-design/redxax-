@@ -2433,7 +2433,7 @@ ${currentMessage.text}
       20%  { opacity: 0.4; transform: translateX(0px); }
       100% { opacity: 0.4; transform: translateX(0px); }
     }
-    .virax-text {
+    .SOFÍA CHIABRERA-text {
       background: linear-gradient(90deg,
         #ffffff 0%, #ffffff 25%,
         #ff6b6b 38%, #ffaaaa 50%, #ff6b6b 62%,
