@@ -1749,7 +1749,6 @@ const runDeepAnalysis = async () => {
 
     setAnalysisProgress(65);
 
-    // ── Armar audienceAnalysis como string para CALL 3 ────────
     if (audienceSimulation && predictionMarket) {
       const summary = buildSiliconSummary(audienceSimulation, predictionMarket);
       audienceAnalysis = `
