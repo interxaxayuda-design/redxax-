@@ -1488,10 +1488,10 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
     const preFacts = parsePreClassifierResponse(call0RawText);
     console.log('[VIRAX] Pre-facts (calibración):', preFacts);
  
-    setPerception({
-      industria:           preFacts.industria || selectedNicho,
-      palanca_psicologica: 'A confirmar',   // ← ya no se infiere en CALL 0
-    });
+    // DESPUÉS:
+  setPerception({
+  industria: preFacts.industria || selectedNicho,
+});
  
     setVideoMeta({
       storagePath,
@@ -1500,7 +1500,6 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
       preFacts,
       platform,
       followerRange,
-      palanca_detectada: 'A confirmar',     // ← el usuario la define en validación
     });
 
     setAnalysisProgress(100);
@@ -1835,30 +1834,27 @@ ${(summary.detalle_perfiles || []).map(p =>
     setStatusText("Generando reporte final...");
 
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildScoringBrainPrompt(
-  videoDescription,
-  audienceAnalysis,
-  researchData,
-  viralCapData,
-  hookGate,
-  platform,
-  selectedObjetivo,
-  industria,
-'—',  // palancaObjetivo eliminado — no contamina el scoring base
-  Math.round(duration)
-),
-        ...(sharedFileUri
-          ? { fileUri: sharedFileUri, fileName: sharedFileName }
-          : { storagePath, videoMimeType: mimeType }
-        ),
-        videoMimeType:   mimeType,
-        duration:        Math.round(duration),
-        expectsJson:     true,
-        maxOutputTokens: 4096,
-        temperature:     0
-      }
-    });
+    body: {
+    text: buildScoringBrainPrompt(
+      videoDescription,
+      audienceAnalysis,
+      researchData,
+      platform,
+      selectedObjetivo,
+      industria,
+      Math.round(duration)
+    ),
+    ...(sharedFileUri
+      ? { fileUri: sharedFileUri, fileName: sharedFileName }
+      : { storagePath, videoMimeType: mimeType }
+    ),
+    videoMimeType:   mimeType,
+    duration:        Math.round(duration),
+    expectsJson:     true,
+    maxOutputTokens: 4096,
+    temperature:     0
+  }
+});
 
     if (call3Error) throw new Error(`CALL 3 falló: ${call3Error.message}`);
 
@@ -1907,7 +1903,7 @@ ${(summary.detalle_perfiles || []).map(p =>
       vision: {
         niche:    outputParsed.vision?.niche    || industria || 'General',
         type:     outputParsed.vision?.type     || 'Video',
-        audience: outputParsed.vision?.audience || perception?.palanca_psicologica || '—',
+        audience: outputParsed.vision?.audience || '—',
         promise:  outputParsed.vision?.promise  || '—',
       },
 
@@ -2832,28 +2828,6 @@ ${currentMessage.text}
               </div>
             </div>
           </div>
-
-          {/* Palanca DETECTADA — editable */}
-<div className="group flex flex-col space-y-3 p-5 rounded-[2rem] border border-white/[0.07] bg-white/[0.02] hover:border-purple-500/20 transition-all duration-300">
-  <div className="flex justify-between items-center">
-    <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 group-hover:text-purple-400 transition-colors">
-      Palanca detectada en el video (Hacé clic para editar)
-    </label>
-    <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
-      Editable 📝
-    </span>
-  </div>
-  <textarea
-    rows={2}
-    value={videoMeta?.palanca_detectada || perception?.palanca_psicologica || ''}
-    onChange={(e) => {
-      setPerception({ ...perception, palanca_psicologica: e.target.value });
-      setVideoMeta({ ...videoMeta, palanca_detectada: e.target.value });
-    }}
-    placeholder="Ej. Transformación, Escasez, Curiosidad..."
-    className="bg-transparent text-lg text-white font-bold outline-none border-b border-white/10 focus:border-purple-500 pb-1 transition-colors w-full resize-none break-words whitespace-pre-wrap leading-relaxed"
-  />
-</div>
 
 
         </div>
