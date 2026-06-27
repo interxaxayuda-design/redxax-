@@ -1623,8 +1623,7 @@ const runDeepAnalysis = async () => {
 
     setAnalysisProgress(40);
  
-    console.log('[VIRAX] Hook gate:', hookGate);
-    console.log('[VIRAX] Viral cap:', viralCapData);
+    
  
     // ── CALL 1B — Silicon Audience ────────────────────────────
     setStatusText("Simulando 5 perfiles de audiencia...");
@@ -1920,8 +1919,9 @@ ${(summary.detalle_perfiles || []).map(p =>
       commentTrigger:    outputParsed.commentTrigger    ?? null,
 
       // Debug + Silicon Audience
-      _hook_gate:         hookGate,
-      _viral_cap:         viralCapData,
+      // DESPUÉS:
+      _hook_gate:         null,
+      _viral_cap:         null,
       _research_data:     researchData,
       _video_desc:        videoDescription,
       _silicon_summary:   audienceSimulation
