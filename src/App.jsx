@@ -450,10 +450,7 @@ FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
 };
 
 
-// ─────────────────────────────────────────────────────────────
-// SILICON AUDIENCE — Perfiles conductuales
-// Sin cambios respecto a v1.
-// ─────────────────────────────────────────────────────────────
+
 export const SILICON_PROFILES = [
   {
     id: 'curioso_aleatorio',
