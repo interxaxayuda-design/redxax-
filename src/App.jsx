@@ -492,16 +492,16 @@ export const SILICON_PROFILES = [
     abandona_si: 'Contenido genérico, promesas sin prueba, formato sobreusado.',
     volumen: 'con_audio',
   },
-  {
-    id: 'esceptico',
-    peso: 1,
-    descripcion: 'Detecta al instante publicidad disfrazada o promesa vacía.',
-    psicologia: { impatience: 0.80, curiosity_threshold: 0.90, tolerance_to_confusion: 0.10, tolerance_to_ads: 0.01, receptivity_to_purchase: 0.05 },
-    contexto: 'Filtro de bullshit al máximo. Fue quemado antes.',
-    retiene_si: 'Evidencia concreta, resultado real, lenguaje sin hipérbole.',
-    abandona_si: 'Logo, producto en mano sin demo, música inspiracional, cualquier señal de ad.',
-    volumen: 'sin_audio',
-  },
+ {
+  id: 'esceptico',
+  peso: 0.5,  // ← era 1, reducido porque su tolerance_to_ads: 0.01 es extremo y produce varianza excesiva
+  descripcion: 'Detecta al instante publicidad disfrazada o promesa vacía.',
+  psicologia: { impatience: 0.80, curiosity_threshold: 0.90, tolerance_to_confusion: 0.10, tolerance_to_ads: 0.01, receptivity_to_purchase: 0.05 },
+  contexto: 'Filtro de bullshit al máximo. Fue quemado antes.',
+  retiene_si: 'Evidencia concreta, resultado real, lenguaje sin hipérbole.',
+  abandona_si: 'Logo, producto en mano sin demo, música inspiracional, cualquier señal de ad.',
+  volumen: 'sin_audio',
+},
   {
     id: 'comprador',
     peso: 1,
