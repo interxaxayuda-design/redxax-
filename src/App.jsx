@@ -451,8 +451,6 @@ INSTRUCCIONES:
 - Sé honesto. Si todos retienen o todos abandonan, revisá.
 - curioso_aleatorio tiene peso doble en el FYP real.
 
-
-
 Respondé SOLO este JSON:
 {
   "simulacion": [
@@ -1241,9 +1239,6 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
       preFacts,
       platform,
       followerRange,
-      fileUri:  call0Data?._fileUri  ?? null,   // ← agregar
-      fileName: call0Data?._fileName ?? null,    // ← agregar
-
     });
 
     setAnalysisProgress(100);
@@ -1283,42 +1278,39 @@ const runDeepAnalysis = async () => {
   try {
 
     // ── CALL 0 — Descripción pura del video ──────────────────
-    // ── CALL 0 — Reutilizar descripción de calibración ───────
-setStatusText("Cargando observación previa...");
-setAnalysisProgress(15);
+    setStatusText("Observando el video...");
+    setAnalysisProgress(15);
 
-let preFacts         = videoMeta?.preFacts || {};
-let videoDescription = preFacts.descripcion_raw || '';
+    let preFacts         = videoMeta?.preFacts || {};
+    let videoDescription = '';
 
-sharedFileUri  = videoMeta?.fileUri  ?? null;
-sharedFileName = videoMeta?.fileName ?? null;
+const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    text:            buildPreClassifierPrompt(),
+    storagePath,
+    videoMimeType:   mimeType,
+    duration:        Math.round(duration),
+    maxOutputTokens: 2000,
+    expectsJson:     false,
+    temperature:     0,
+  }
+});
 
-// Solo re-ejecutar si no hay descripción (caso edge)
-if (!videoDescription) {
-  console.warn('[VIRAX] descripcion_raw vacía — re-ejecutando CALL 0');
-  const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
-    body: {
-      text:            buildPreClassifierPrompt(),
-      storagePath,
-      videoMimeType:   mimeType,
-      duration:        Math.round(duration),
-      maxOutputTokens: 2000,
-      expectsJson:     false,
-      temperature:     0,
-    }
-  });
-  if (call0Error) throw new Error(`CALL 0 falló: ${call0Error.message}`);
-  sharedFileUri  = call0Data?._fileUri  ?? null;
-  sharedFileName = call0Data?._fileName ?? null;
-  const call0Parsed = parsePreClassifierResponse(extractGeminiText(call0Data));
-  videoDescription  = call0Parsed.descripcion_raw || '';
+if (call0Error) throw new Error(`CALL 0 falló: ${call0Error.message}`);
+
+sharedFileUri  = call0Data?._fileUri  ?? null;
+sharedFileName = call0Data?._fileName ?? null;
+
+const call0RawText = extractGeminiText(call0Data);
+const call0Parsed  = parsePreClassifierResponse(call0RawText);
+
+// La descripción libre es la fuente de verdad para todo el pipeline
+videoDescription = call0Parsed.descripcion_raw || call0RawText;
+
+// Si hay datos nuevos de calibración, actualizamos preFacts
+if (call0Parsed && Object.keys(call0Parsed).length > 0) {
   preFacts = { ...preFacts, ...call0Parsed };
 }
-
-console.log('[VIRAX] Descripción reutilizada de CALL 0 calibración ✅', {
-  descripcion: videoDescription.slice(0, 150),
-  sharedFileUri: sharedFileUri ?? '⚠️ null — usará storagePath',
-});
 
 console.log('[VIRAX] CALL 0 ejecutado fresco ✅', {
   descripcion: videoDescription.slice(0, 150),
