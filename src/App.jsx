@@ -1292,17 +1292,37 @@ const runDeepAnalysis = async () => {
     setStatusText("Preparando análisis de video...");
     setAnalysisProgress(8);
 
-    const { data: cacheData, error: cacheError } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        createCacheOnly: true,
-        storagePath,
-        videoMimeType:   mimeType,
-      }
-    });
+    // ── REEMPLAZAR POR ESTO: ──
+const { data: cacheData, error: cacheError } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    createCacheOnly: true,
+    storagePath,
+    videoMimeType:   mimeType,
+  }
+});
 
-    if (cacheError || !cacheData?.cacheName) {
-      throw new Error(`No se pudo crear el cache del video: ${cacheError?.message ?? 'respuesta vacía'}`);
-    }
+// Diagnóstico — mirá estos logs en la consola del navegador
+console.error('[CACHE] cacheError:', JSON.stringify(cacheError));
+console.error('[CACHE] cacheData:', JSON.stringify(cacheData));
+
+// Leer el body real del error si Supabase lo wrapeó
+let cacheErrorDetail = null;
+if (cacheError) {
+  try {
+    cacheErrorDetail = await cacheError.context?.text?.();
+  } catch (_) {}
+  console.error('[CACHE] Body real del error:', cacheErrorDetail);
+}
+
+if (!cacheData?.cacheName) {
+  throw new Error(
+    cacheErrorDetail ??
+    cacheError?.message ??
+    cacheData?.detail ??
+    cacheData?.error ??
+    'respuesta vacía del proxy'
+  );
+}
 
     cacheName    = cacheData.cacheName;
     cacheFileUri = cacheData.fileUri;
