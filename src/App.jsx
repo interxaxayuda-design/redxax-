@@ -185,6 +185,11 @@ const safeParseJSON = (rawText, context = '') => {
 //    Las reglas de scoring son criterios de evaluación, no caps duros.
 // ─────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────
+// prompts.js — VIRAX v3 (simplificado)
+// Todos los prompts reducidos al mínimo de tokens necesario.
+// ─────────────────────────────────────────────────────────────
+
 export const NICHE_MOTORS = {
   "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
   "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
@@ -210,139 +215,49 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
 
 // ─────────────────────────────────────────────────────────────
 // CALL 0 — Observador puro
-//
-// FILOSOFÍA: Este llamado NO interpreta. NO clasifica. NO juzga.
-// Solo describe con precisión lo que existe en el video.
-//
-// El BLOQUE 2 contiene únicamente señales que cualquier observador
-// entrenado podría medir sin emitir juicio sobre su efectividad.
-//
-// Lo que fue eliminado vs v1:
-//   ✗ hook_tipo (era una interpretación, no una observación)
-//   ✗ hook_fuerza (ídem)
-//
-// Lo que reemplaza esos campos:
-//   ✓ elemento_en_s0     — qué objeto/acción/texto aparece en frame 0
-//   ✓ pregunta_visible   — hay pregunta explícita en texto o audio en s0-s2
-//   ✓ texto_en_pantalla_s0 — qué dice el primer texto visible, si existe
-//   ✓ transformacion_visible — hay antes/después observable, sí o no
+// Solo describe. No interpreta. No evalúa.
 // ─────────────────────────────────────────────────────────────
 export const buildPreClassifierPrompt = () => `
-Sos un analista audiovisual con 20 años de experiencia en producción de video,
-dirección de arte, diseño de sonido y análisis de contenido digital.
+Analizá este video en DOS BLOQUES con el formato exacto que se indica.
 
-Analizá este video en DOS BLOQUES. Seguí el formato exacto.
+[DESCRIPCION]
+Describí el video segundo a segundo. Solo describí, no evalúes.
+Incluí: qué aparece en pantalla, audio (voz, música, tono), texto en pantalla (copiado literal),
+ritmo de cortes, calidad de producción, producto en uso o solo mencionado,
+si hay persona en cámara, CTA, estructura narrativa.
+Señalá si existe: logo en primeros 3s, precio visible, antes/después, voz IA, testimonio, plantilla Canva/CapCut.
+Máximo 800 palabras. Sin juicios de valor.
+[/DESCRIPCION]
 
-════════════════════════════════════════════════════════════════
-BLOQUE 1 — DESCRIPCIÓN LIBRE
-════════════════════════════════════════════════════════════════
-Describí el video como lo haría un director de cine describiendo
-el trabajo de otro director. Sin estructura forzada. Sin campos.
-Con el lenguaje y la precisión de alguien que realmente VE y ESCUCHA.
-
-Tu trabajo en este bloque es DESCRIBIR, no evaluar.
-No uses palabras como "débil", "fuerte", "efectivo", "malo", "bueno".
-No juzgues si algo funciona o no. Solo describí lo que ves y escuchás.
-
-Cubrí todo lo que percibís, incluyendo pero sin limitarte a:
-
-VISUAL
-- Qué aparece en pantalla segundo a segundo
-- Tipo de contenido: ¿es video real, imágenes de stock, animación, screencast, slideshow?
-- Ritmo visual: velocidad de cortes, transiciones, zoom, movimiento de cámara
-- Calidad de producción: ¿se ve casero, semiprofesional, profesional, hiperestético?
-- Iluminación, fondo, encuadre, color
-- Texto en pantalla: qué dice exactamente, dónde está, cómo está animado
-- Expresión facial y lenguaje corporal si hay persona en cámara
-- Si hay producto: describí cómo aparece — en mano, en uso, en comparación, solo mencionado
-
-AUDIO
-- ¿Hay voz? Si la hay: ¿es humana o sintética/IA? ¿masculina, femenina, neutra?
-  Describí el tono — energético, calmo, urgente, conversacional, corporativo, robótico.
-  ¿Habla rápido, lento, con pausas dramáticas?
-  ¿La voz está en cámara o es voz en off?
-  ¿Tiene acento perceptible?
-- Música: ¿qué tipo? ¿domina sobre la voz o está de fondo? ¿tiene letra?
-- Efectos de sonido, silencio, audio ambiente
-- Calidad del audio: ¿micrófono de solapa, de cámara, grabación de pantalla?
-
-NARRATIVA Y ESTRUCTURA
-- ¿Qué aparece exactamente en los primeros 2 segundos? Describí frame a frame.
-- ¿Qué elemento aparece primero: persona, producto, texto, acción, logo?
-- ¿En qué segundo aparece el momento de mayor actividad o cambio visual?
-- ¿Hay un momento de re-enganche a mitad del video?
-- ¿Hay llamado a la acción? ¿Cómo es — verbal, texto en pantalla, implícito?
-- ¿El video tiene estructura narrativa o es una secuencia plana de imágenes?
-
-SEÑALES ESPECIALES — describí si observás cualquiera de estas cosas.
-No las interpretes. Solo describí si están o no están:
-- Voz generada por IA
-- Imágenes de stock o generadas por IA
-- Plantilla de video reutilizada (aspecto de Canva/CapCut)
-- Logo o marca visible en los primeros 3 segundos
-- Precio visible en pantalla
-- Persona real hablando a cámara
-- Comparación antes/después visible
-- Testimonio de una tercera persona
-
-Escribí en párrafos continuos. Podés usar saltos de línea para separar secciones.
-Máximo 1400 caracteres. Sé denso y preciso.
-
-Empezá con: [DESCRIPCION]
-Terminá con: [/DESCRIPCION]
-
-════════════════════════════════════════════════════════════════
-BLOQUE 2 — SEÑALES TÉCNICAS OBSERVABLES
-════════════════════════════════════════════════════════════════
-Cada línea es un hecho observable, no una opinión.
-Respondé solo con lo que podés verificar directamente en el video.
-No evalúes si algo es bueno o malo. Solo describí qué existe.
-
-Empezá con: [SEÑALES]
-Terminá con: [/SEÑALES]
-
-Dentro del bloque, escribí exactamente estas líneas:
-
-duracion: <número en segundos>
-audio_presente: <sí | no>
-audio_desde_inicio: <sí | no>
-es_slideshow: <sí | no>
-voz_ia: <sí | no>
-logo_en_frame_0: <sí | no>
-tiene_rehook: <sí | no>
-payoff_segundo: <número — en qué segundo ocurre el cambio visual más importante>
-cortes_por_10s: <número estimado>
-industria_detectada: <una frase corta, máximo 4 palabras, describiendo de qué trata el negocio>
-elemento_en_s0: <qué objeto, persona, texto o acción aparece en el primer frame — describí, no evalúes>
-pregunta_visible: <sí | no — hay una pregunta explícita en texto o audio en los primeros 2 segundos>
-texto_en_pantalla_s0: <el primer texto visible en pantalla, copiado literalmente, o "ninguno">
-transformacion_visible: <sí | no — hay una comparación antes/después observable en algún momento del video>
+[SEÑALES]
+duracion: <segundos>
+audio_presente: <sí|no>
+audio_desde_inicio: <sí|no>
+es_slideshow: <sí|no>
+voz_ia: <sí|no>
+logo_en_frame_0: <sí|no>
+tiene_rehook: <sí|no>
+payoff_segundo: <número>
+cortes_por_10s: <número>
+industria_detectada: <máximo 4 palabras>
+elemento_en_s0: <qué aparece en el primer frame, sin evaluar>
+pregunta_visible: <sí|no>
+texto_en_pantalla_s0: <texto literal o "ninguno">
+transformacion_visible: <sí|no>
+[/SEÑALES]
 `;
 
 
 // ─────────────────────────────────────────────────────────────
-// parsePreClassifierResponse — Parser de CALL 0
-//
-// CAMBIOS vs v1:
-// ✗ Ya no deriva hook_gate
-// ✗ Ya no deriva hook_type_detectado
-// ✗ Ya no deriva hook_confianza
-// ✗ Ya no parsea hook_tipo ni hook_fuerza
-//
-// ✓ Parsea los 4 nuevos campos observables
-// ✓ La descripcion_raw sale sin ningún campo interpretativo adjunto
-// ✓ Las atomicas solo contienen métricas medibles
+// parsePreClassifierResponse
 // ─────────────────────────────────────────────────────────────
 export const parsePreClassifierResponse = (rawText) => {
-  // ── Extraer descripción libre ──────────────────────────────
   const descMatch = rawText.match(/\[DESCRIPCION\]([\s\S]*?)\[\/DESCRIPCION\]/);
   const descripcion_raw = descMatch ? descMatch[1].trim() : '';
 
-  // ── Extraer bloque de señales técnicas ────────────────────
-  // Acepta tanto [SEÑALES] como [SENALES] por si el modelo normaliza
   const refMatch = rawText.match(/\[SE[ÑN]ALES\]([\s\S]*?)\[\/SE[ÑN]ALES\]/);
   if (!refMatch) {
-    console.warn('[CALL 0] No se encontró [SEÑALES] — usando defaults');
+    console.warn('[CALL 0] No se encontró [SEÑALES]');
     return { descripcion_raw, _refs_missing: true };
   }
 
@@ -364,22 +279,21 @@ export const parsePreClassifierResponse = (rawText) => {
     return isNaN(n) ? null : n;
   };
 
-  const duracion             = parseNum(getRef('duracion'))              ?? 30;
-  const audio_presente       = parseBool(getRef('audio_presente'));
-  const audio_desde          = parseBool(getRef('audio_desde_inicio'));
-  const es_slideshow         = parseBool(getRef('es_slideshow'));
-  const voz_ia               = parseBool(getRef('voz_ia'));
-  const logo_s0              = parseBool(getRef('logo_en_frame_0'));
-  const tiene_rehook         = parseBool(getRef('tiene_rehook'));
-  const payoff_s             = parseNum(getRef('payoff_segundo'))        ?? Math.round(duracion * 0.4);
-  const cuts_10              = parseNum(getRef('cortes_por_10s'))        ?? 2;
-  const industria            = getRef('industria_detectada')             ?? 'general';
-  const elemento_en_s0       = getRef('elemento_en_s0')                 ?? '';
-  const pregunta_visible     = parseBool(getRef('pregunta_visible'));
-  const texto_en_pantalla_s0 = getRef('texto_en_pantalla_s0')           ?? 'ninguno';
+  const duracion               = parseNum(getRef('duracion'))              ?? 30;
+  const audio_presente         = parseBool(getRef('audio_presente'));
+  const audio_desde            = parseBool(getRef('audio_desde_inicio'));
+  const es_slideshow           = parseBool(getRef('es_slideshow'));
+  const voz_ia                 = parseBool(getRef('voz_ia'));
+  const logo_s0                = parseBool(getRef('logo_en_frame_0'));
+  const tiene_rehook           = parseBool(getRef('tiene_rehook'));
+  const payoff_s               = parseNum(getRef('payoff_segundo'))        ?? Math.round(duracion * 0.4);
+  const cuts_10                = parseNum(getRef('cortes_por_10s'))        ?? 2;
+  const industria              = getRef('industria_detectada')             ?? 'general';
+  const elemento_en_s0         = getRef('elemento_en_s0')                 ?? '';
+  const pregunta_visible       = parseBool(getRef('pregunta_visible'));
+  const texto_en_pantalla_s0   = getRef('texto_en_pantalla_s0')           ?? 'ninguno';
   const transformacion_visible = parseBool(getRef('transformacion_visible'));
 
-  // Métricas derivadas mecánicamente — sin juicio de valor
   const atomicas = {
     duration_total_s:        duracion,
     silence_duration_s:      audio_presente ? 0 : duracion,
@@ -394,12 +308,11 @@ export const parsePreClassifierResponse = (rawText) => {
   return {
     descripcion_raw,
     industria,
-    logo_en_s0:              logo_s0,
+    logo_en_s0:                logo_s0,
     tiene_rehook,
-    es_slideshow_imagenes:   es_slideshow,
-    voz_ia_detectada:        voz_ia,
+    es_slideshow_imagenes:     es_slideshow,
+    voz_ia_detectada:          voz_ia,
     duracion_estimada_segundos: duracion,
-    // Nuevos campos observables — reemplazan a hook_tipo/hook_fuerza
     elemento_en_s0,
     pregunta_visible,
     texto_en_pantalla_s0,
@@ -412,31 +325,26 @@ export const parsePreClassifierResponse = (rawText) => {
 
 // ─────────────────────────────────────────────────────────────
 // CALL 1.5 — Research Brain
-// Sin cambios de arquitectura respecto a v1.
 // ─────────────────────────────────────────────────────────────
 export const buildResearchBrainPrompt = (platform, industria, objetivo, benchmarkData = null) => {
   const pName = {
-    tiktok: 'TikTok',
-    reels:  'Instagram Reels',
-    shorts: 'YouTube Shorts',
-    all:    'TikTok/Reels/Shorts'
+    tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
   const benchmarkBlock = benchmarkData
-    ? `BENCHMARK REAL DEL NICHO:\n${JSON.stringify(benchmarkData, null, 2)}\nUsá estos datos como referencia concreta.`
-    : `No hay benchmark interno disponible.`;
+    ? `BENCHMARK:\n${JSON.stringify(benchmarkData, null, 2)}`
+    : 'Sin benchmark interno.';
 
-  return `Tu corte de entrenamiento es enero 2025. Estamos en junio 2026.
-Usá búsqueda web para datos actuales de ${pName} y el nicho "${industria}".
+  return `Junio 2026. Buscá datos actuales de ${pName} para el nicho "${industria}".
 
-Buscá:
-1. Qué formatos están funcionando en ${pName} para "${industria}" en 2026
-2. Quejas y problemas que tiene la gente con este tipo de contenido
+Investigá:
+1. Formatos funcionando en ${pName} para "${industria}" en 2026
+2. Quejas frecuentes sobre este tipo de contenido
 3. Patrones de hook en videos virales recientes del nicho
 
 ${benchmarkBlock}
 
-FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
+Respondé SOLO este JSON:
 {
   "hooks_virales_reales": [{ "descripcion": "", "mecanismo_psicologico": "", "resultado_aproximado": "" }],
   "patron_hook_dominante": "",
@@ -445,71 +353,67 @@ FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
   "fatiga_de_formato": "",
   "benchmark_viral_score": <0-100>,
   "oportunidad_detectada": "",
-  "fuente_temporal": "<búsqueda_2026 | conocimiento_entrenamiento_2025>"
+  "fuente_temporal": "<búsqueda_2026|conocimiento_entrenamiento_2025>"
 }`;
 };
 
 
-
+// ─────────────────────────────────────────────────────────────
+// SILICON AUDIENCE — Perfiles
+// ─────────────────────────────────────────────────────────────
 export const SILICON_PROFILES = [
   {
     id: 'curioso_aleatorio',
     peso: 2,
-    descripcion: 'No buscó este contenido. El algoritmo se lo mostró entre un video de gatitos y uno de Minecraft.',
+    descripcion: 'El algoritmo le mostró este video entre gatitos y Minecraft. No lo buscó.',
     psicologia: { impatience: 0.70, curiosity_threshold: 0.60, tolerance_to_confusion: 0.25, tolerance_to_ads: 0.15, receptivity_to_purchase: 0.20 },
-    contexto: 'No tiene contexto previo del nicho. Decide en 1-2 segundos si algo le llama la atención por razones puramente visuales o emocionales, no racionales.',
-    retiene_si: 'Algo visualmente raro, gracioso, sorprendente o emocionalmente intenso que no requiere contexto previo para entenderse.',
-    abandona_si: 'Cualquier señal de que necesita saber algo del nicho para entender qué está pasando. Jerga del nicho en los primeros segundos. Cara hablando sin contexto visual.',
+    retiene_si: 'Algo visualmente raro, gracioso o sorprendente que no requiere contexto previo.',
+    abandona_si: 'Jerga del nicho, cara hablando sin contexto visual, señal de anuncio.',
     volumen: 'sin_audio',
   },
   {
     id: 'impaciente',
     peso: 1,
-    descripcion: 'Consume 150+ videos por día. Dedo listo para deslizar desde el frame 0.',
+    descripcion: '150+ videos por día. Dedo listo para deslizar desde frame 0.',
     psicologia: { impatience: 0.95, curiosity_threshold: 0.85, tolerance_to_confusion: 0.05, tolerance_to_ads: 0.02, receptivity_to_purchase: 0.15 },
-    contexto: 'Scrollea en automático. Solo busca entretenimiento inmediato.',
-    retiene_si: 'Algo visualmente disruptivo o pregunta abierta en frame 0 o 1.',
-    abandona_si: 'Cara hablando sin contexto, logo, música corporativa, texto estático.',
+    retiene_si: 'Elemento visualmente disruptivo o pregunta abierta en s0-s1.',
+    abandona_si: 'Logo, cara hablando sin contexto, texto estático, música corporativa.',
     volumen: 'sin_audio',
   },
   {
     id: 'promedio',
     peso: 1,
-    descripcion: 'Scrollea con moderación. Da una oportunidad si algo lo toca en los primeros 3 eventos.',
+    descripcion: 'Scrollea con moderación. Da oportunidad si algo resuena en los primeros 3 eventos.',
     psicologia: { impatience: 0.55, curiosity_threshold: 0.50, tolerance_to_confusion: 0.35, tolerance_to_ads: 0.30, receptivity_to_purchase: 0.40 },
-    contexto: 'Modo pasivo. Abierto si algo resuena.',
     retiene_si: 'Promesa clara con resultado concreto antes del evento 3.',
-    abandona_si: 'Intro lenta, sensación de "ya vi algo igual".',
+    abandona_si: 'Intro lenta, "ya vi algo igual".',
     volumen: 'con_audio',
   },
   {
     id: 'nicho',
     peso: 1,
-    descripcion: 'Conoce el tema. Busca algo nuevo o diferente a lo que ya consumió.',
+    descripcion: 'Conoce el tema. Detecta genérico al instante.',
     psicologia: { impatience: 0.40, curiosity_threshold: 0.30, tolerance_to_confusion: 0.60, tolerance_to_ads: 0.45, receptivity_to_purchase: 0.75 },
-    contexto: 'Ya vio cientos de videos del nicho. Detecta genérico al instante.',
     retiene_si: 'Ángulo diferente, dato nuevo, demostración real verificable.',
-    abandona_si: 'Contenido genérico, promesas sin prueba, formato sobreusado.',
+    abandona_si: 'Contenido genérico, promesas sin prueba.',
     volumen: 'con_audio',
   },
- {
-  id: 'esceptico',
-  peso: 0.5,  // ← era 1, reducido porque su tolerance_to_ads: 0.01 es extremo y produce varianza excesiva
-  descripcion: 'Detecta al instante publicidad disfrazada o promesa vacía.',
-  psicologia: { impatience: 0.80, curiosity_threshold: 0.90, tolerance_to_confusion: 0.10, tolerance_to_ads: 0.01, receptivity_to_purchase: 0.05 },
-  contexto: 'Filtro de bullshit al máximo. Fue quemado antes.',
-  retiene_si: 'Evidencia concreta, resultado real, lenguaje sin hipérbole.',
-  abandona_si: 'Logo, producto en mano sin demo, música inspiracional, cualquier señal de ad.',
-  volumen: 'sin_audio',
-},
+  {
+    id: 'esceptico',
+    peso: 0.5,
+    descripcion: 'Filtro de bullshit al máximo. Detecta publicidad disfrazada.',
+    psicologia: { impatience: 0.80, curiosity_threshold: 0.90, tolerance_to_confusion: 0.10, tolerance_to_ads: 0.01, receptivity_to_purchase: 0.05 },
+    retiene_si: 'Evidencia concreta, resultado real, sin hipérbole.',
+    abandona_si: 'Logo, producto en mano sin demo, música inspiracional.',
+    volumen: 'sin_audio',
+  },
   {
     id: 'comprador',
     peso: 1,
-    descripcion: 'Busca activamente resolver algo. Receptivo pero evaluando.',
+    descripcion: 'Tiene un problema sin resolver. Receptivo si el video lo soluciona.',
     psicologia: { impatience: 0.35, curiosity_threshold: 0.40, tolerance_to_confusion: 0.50, tolerance_to_ads: 0.55, receptivity_to_purchase: 0.90 },
-    contexto: 'Tiene un problema sin resolver. Si el video promete solucionarlo, presta atención.',
     retiene_si: 'Solución clara, precio o acceso visible, CTA concreto.',
-    abandona_si: 'No entiende qué se vende, CTA confuso o inexistente.',
+    abandona_si: 'No entiende qué se vende, CTA confuso.',
     volumen: 'con_audio',
   },
 ];
@@ -517,116 +421,48 @@ export const SILICON_PROFILES = [
 
 // ─────────────────────────────────────────────────────────────
 // CALL 1B — Silicon Audience
-//
-// CAMBIOS vs v1:
-// ✓ Recibe descripcion_raw como fuente primaria, sin subordinarla.
-//   La frase "Esta descripción es contexto de apoyo" fue eliminada
-//   porque le decía al modelo que la descripción era menos confiable
-//   que su propia observación, lo que causaba que ignorara datos reales.
-//
-// ✓ La instrucción correcta ahora es: el video y la descripción son
-//   dos fuentes independientes. Si coinciden, bien. Si no coinciden,
-//   el modelo debe notar la discrepancia, no descartar una de las dos.
-//
-// ✓ Se eliminó la instrucción "Si algo no coincide con la descripción,
-//   confiá en lo que ves" — esa instrucción causaba que el modelo
-//   ignorara la descripción de CALL 0 cuando su propia lectura del
-//   video (potencialmente errónea) contradecía lo documentado.
 // ─────────────────────────────────────────────────────────────
 export const buildSiliconAudiencePrompt = (descripcionRaw, marketState, platform, duracionSegundos) => {
   const pName = {
-    tiktok: 'TikTok',
-    reels:  'Instagram Reels',
-    shorts: 'YouTube Shorts',
-    all:    'TikTok/Reels/Shorts'
+    tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
   const perfilesStr = SILICON_PROFILES.map(p =>
-    `PERFIL: ${p.id.toUpperCase()}
-Descripción: ${p.descripcion}
-Contexto: ${p.contexto}
-Psicología: impaciencia=${p.psicologia.impatience} | curiosidad=${p.psicologia.curiosity_threshold} | tolerancia_ads=${p.psicologia.tolerance_to_ads} | compra=${p.psicologia.receptivity_to_purchase}
-Retiene si: ${p.retiene_si}
-Abandona si: ${p.abandona_si}
-Volumen: ${p.volumen}`
+    `[${p.id.toUpperCase()}] imp=${p.psicologia.impatience} ads=${p.psicologia.tolerance_to_ads} compra=${p.psicologia.receptivity_to_purchase} vol=${p.volumen}
+retiene: ${p.retiene_si}
+abandona: ${p.abandona_si}`
   ).join('\n---\n');
 
-  return `Sos un motor de simulación de audiencia para ${pName}.
-
-Tenés acceso directo al video.
+  return `Simulás audiencia real de ${pName}. Tenés acceso directo al video.
 
 DURACIÓN: ${duracionSegundos}s
-PLATAFORMA: ${pName}
+MERCADO: ${JSON.stringify(marketState)}
 
-ESTADO DEL MERCADO 2026:
-${JSON.stringify(marketState, null, 2)}
-
-DESCRIPCIÓN DEL VIDEO (generada por un analista audiovisual en un análisis previo):
+DESCRIPCIÓN DEL VIDEO:
 ${descripcionRaw}
 
-Esta descripción documenta lo que el analista observó.
-Vos también tenés acceso al video y podés verlo directamente.
-Usá ambas fuentes. Si observás algo que la descripción no menciona, incorporalo.
-Si algo que describe no lo podés confirmar en el video, notalo internamente pero no lo descartés.
-
-PERFILES DE AUDIENCIA:
+PERFILES:
 ${perfilesStr}
 
-FASE 0 — OBSERVACIÓN
+INSTRUCCIONES:
+- Observá el video completo antes de simular.
+- Cada perfil decide RETUVO o ABANDONÓ basándose en lo que percibe.
+- Perfiles sin_audio reaccionan solo a señales visuales.
+- Sé honesto. Si todos retienen o todos abandonan, revisá.
+- curioso_aleatorio tiene peso doble en el FYP real.
 
-Antes de simular, observá el video completo.
-Comprendé qué ocurre desde el inicio hasta el final.
-Internalizá la experiencia completa del espectador.
-
-No respondas estas observaciones. Utilizalas internamente.
-
-INSTRUCCIONES DE OBSERVACIÓN
-
-Observá el contenido como una persona real.
-Prestá atención a cualquier elemento capaz de influir en la reacción de una audiencia.
-No completes checklists. No busques categorías. No validés etiquetas.
-Si detectás factores relevantes no mencionados en la descripción, incorporalos.
-
-INSTRUCCIONES DE SIMULACIÓN
-
-Una vez completada la observación, simulá cada perfil scrolleando el FYP.
-
-Cada perfil tiene su contexto, psicología, expectativas, tolerancias y motivos de abandono.
-Las decisiones deben surgir de lo que observaste en el video, no de reglas automáticas.
-
-REGLAS DE COMPORTAMIENTO
-
-1. Decisión BINARIA por momento clave: SIGUE o ABANDONA.
-2. Los perfiles reaccionan a la experiencia completa del contenido.
-3. No asumas que ningún elemento tiene un efecto predeterminado.
-4. Determiná el impacto de cada elemento según el contexto específico del video.
-5. Los perfiles sin_audio reaccionan únicamente a señales visuales.
-6. Los perfiles no conocen las intenciones del creador.
-7. Los perfiles reaccionan únicamente a lo que perciben.
-8. Sé brutalmente honesto.
-9. Simulá comportamiento humano real, no comportamiento idealizado.
-10. Si todos los perfiles retienen o todos abandonan, revisá nuevamente el análisis.
-
-FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
-
+Respondé SOLO este JSON:
 {
   "simulacion": [
     {
-      "perfil_id": "impaciente",
-      "decision_final": "RETUVO | ABANDONÓ",
+      "perfil_id": "",
+      "decision_final": "RETUVO|ABANDONÓ",
       "abandono_en_evento": <number|null>,
       "completo": <boolean>,
       "compartio": <boolean>,
       "guardó": <boolean>,
       "comentaria": <boolean>,
-      "eventos_atencion": [
-        {
-          "evento_index": <number>,
-          "segundo": <number>,
-          "decision": "SIGUE|ABANDONA",
-          "razon": "<string corta>"
-        }
-      ],
+      "eventos_atencion": [{ "evento_index": <number>, "segundo": <number>, "decision": "SIGUE|ABANDONA", "razon": "<string>" }],
       "razon_final": "<string>"
     }
   ],
@@ -641,64 +477,29 @@ FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
 
 // ─────────────────────────────────────────────────────────────
 // CALL 2 — Prediction Market
-//
-// CAMBIOS vs v1:
-// ✗ Eliminados los parámetros viralCapData y hookGate
-// ✗ Eliminadas las instrucciones "viralScore no puede superar X"
-// ✗ Eliminada la instrucción "3/5 perfiles abandonando = máx 45"
-//   Esas reglas numéricas convertían al modelo en un ejecutor de
-//   caps externos en lugar de un predictor independiente.
-//
-// ✓ El modelo ahora produce sus propios scores basados en lo que
-//   observó en la simulación, sin techo impuesto desde afuera.
-// ✓ Las instrucciones son criterios de razonamiento, no límites duros.
 // ─────────────────────────────────────────────────────────────
 export const buildPredictionMarketPrompt = (simulacionSilicon, marketState, platform, industria) => {
   const pName = {
-    tiktok: 'TikTok',
-    reels:  'Instagram Reels',
-    shorts: 'YouTube Shorts',
-    all:    'TikTok/Reels/Shorts'
+    tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
   const resumen = simulacionSilicon.simulacion.map(p =>
-    `${p.perfil_id.toUpperCase()}: ${p.decision_final} | completo: ${p.completo} | compartió: ${p.compartio} | ${p.razon_final}`
+    `${p.perfil_id}: ${p.decision_final} | completo:${p.completo} | compartió:${p.compartio} | ${p.razon_final}`
   ).join('\n');
 
-  return `Prediction Market de contenido en ${pName}.
+  return `Prediction Market — ${pName}
 
-SIMULACIÓN DE AUDIENCIA:
+SIMULACIÓN:
 ${resumen}
+s_peligroso:${simulacionSilicon.segundo_mas_peligroso ?? '—'} | retiene:${simulacionSilicon.evento_que_mas_retiene} | expulsa:${simulacionSilicon.evento_que_mas_expulsa}
 
-Segundo más peligroso: s${simulacionSilicon.segundo_mas_peligroso ?? '—'}
-Evento que retiene: ${simulacionSilicon.evento_que_mas_retiene}
-Evento que expulsa: ${simulacionSilicon.evento_que_mas_expulsa}
-Patrón de abandono: ${simulacionSilicon.patron_abandono}
-Patrón de retención: ${simulacionSilicon.patron_retencion}
+MERCADO: ${JSON.stringify(marketState)}
 
-ESTADO DEL MERCADO:
-${JSON.stringify(marketState)}
+viralScore = probabilidad top 15% del nicho en 7 días. curioso_aleatorio tiene peso doble.
+salesScore = señales de conversión: demo, CTA, prueba social, claridad. Independiente del viral.
+Sé conservador. El viral real es raro.
 
-INSTRUCCIONES:
-
-Producís una predicción de mercado basada en el comportamiento observado en la simulación.
-
-Para viralScore:
-- Refleja la probabilidad de que el contenido entre al top 15% del nicho en 7 días.
-- Basate en cuántos perfiles completaron, compartieron y guardaron.
-- Considerá el peso diferencial: curioso_aleatorio representa al 60-70% del FYP real.
-- Un score alto requiere que al menos los perfiles de mayor peso hayan retenido.
-- Sé conservador. El viral real es raro.
-
-Para salesScore:
-- Refleja señales de intención de compra visibles: demo del producto, CTA, prueba social, claridad.
-- Es independiente del viralScore. Un video puede vender bien sin viralizarse.
-
-Para probabilidad_viral:
-- Número entre 0 y 100 que representa la probabilidad de alcanzar viralidad real.
-- Sé honesto. Un video que hizo abandonar a 4/5 perfiles tiene probabilidad baja.
-
-FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
+Respondé SOLO este JSON:
 {
   "retencion_por_perfil": {
     "curioso_aleatorio": { "retencion_pct": <number>, "razon": "<string>" },
@@ -721,21 +522,6 @@ FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
 
 // ─────────────────────────────────────────────────────────────
 // CALL 3 — Scoring Brain
-//
-// CAMBIOS vs v1:
-// ✗ Eliminados los parámetros viralCapData y hookGate de la firma
-// ✗ Eliminadas las reglas "viralScore NO puede superar X"
-// ✗ Eliminada la instrucción "hookGate MUERTO + penaltyLevel hard = máx 30"
-//   Esas instrucciones hacían que CALL 3 justificara sentencias
-//   anteriores en lugar de analizar el video independientemente.
-//
-// ✓ CALL 3 ahora recibe solo la descripción del video y el análisis
-//   de audiencia. Produce sus propios scores sin techo externo.
-// ✓ Las reglas de scoring son criterios de observación directa,
-//   no referencias a clasificaciones anteriores.
-// ✓ El viralScore de Prediction Market y el de CALL 3 se reconcilian
-//   en App.jsx tomando el más bajo como techo natural, no como regla
-//   impuesta desde este archivo.
 // ─────────────────────────────────────────────────────────────
 export const buildScoringBrainPrompt = (
   videoDescription,
@@ -746,17 +532,7 @@ export const buildScoringBrainPrompt = (
   industria,
   duracionSegundos
 ) => `
-Sos un sistema de scoring en dos fases estrictamente separadas.
-Ejecutalas en orden. Los scores de Fase 1 son INMUTABLES — Fase 2 no los toca.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FASE 1 — SCORING BASADO EN OBSERVACIÓN DIRECTA
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Calculá viralScore, salesScore, scrollStopScore, hookDNA, steppsScore,
-platformScores, retentionData, retentionCurve, viewsPrediction y commentTrigger.
-
-Basate ÚNICAMENTE en lo que está en esta fase.
-Datos de nicho, palanca e industria NO EXISTEN todavía.
+FASE 1 — SCORING CIEGO (ejecutá primero, scores inmutables)
 
 PLATAFORMA: ${platform} | DURACIÓN: ${duracionSegundos}s
 
@@ -766,74 +542,33 @@ ${videoDescription}
 SILICON AUDIENCE + PREDICTION MARKET:
 ${audienceAnalysis}
 
-── CRITERIOS PARA viralScore ──
+Calculá viralScore, salesScore, scrollStopScore, hookDNA, steppsScore,
+platformScores, retentionData, retentionCurve, viewsPrediction, commentTrigger.
 
-Observá directamente estas señales en la descripción y en el análisis de audiencia:
+viralScore — evaluá desde la descripción y el análisis de audiencia:
+- Audio desde el inicio (sin audio en >10s = retención muy baja)
+- Primer frame: ¿genera pregunta mental? ¿texto visible? ¿movimiento sorpresivo?
+- Payoff tarde + ritmo lento = abandono masivo
+- Cuántos perfiles abandonaron y en qué segundo (curioso_aleatorio tiene peso doble)
 
-AUDIO
-- ¿El video tiene audio desde el inicio? Sin audio en videos de más de 10 segundos
-  reduce drásticamente la retención en FYP porque la mayoría del tráfico llega sin volumen.
-- ¿Hay voz? ¿La voz engancha o es genérica/corporativa?
+salesScore — evaluá independiente del viral:
+- Demo del producto en uso real
+- CTA explícito (verbal, texto o implícito claro)
+- Prueba social o comparación visible
+- Propuesta de valor clara sin contexto previo
 
-PRIMER FRAME
-- ¿Qué aparece exactamente en el primer frame? ¿Genera una pregunta mental en el espectador?
-- ¿Hay texto visible que obligue a seguir leyendo?
-- ¿Hay movimiento, contraste visual o elemento sorpresivo?
+Si hay problemas reales (sin audio, hook plano, CTA ausente) nombralos sin suavizarlos.
 
-ESTRUCTURA
-- ¿Cuándo aparece el payoff? Un payoff tarde con ritmo lento genera abandono masivo.
-- ¿Hay rehook? Un video largo sin rehook pierde retención en el tramo medio.
-- ¿El ritmo de cortes sostiene la atención o la adormece?
+FASE 2 — VEREDICTO (solo honestVerdict, roadmap y vision)
+Los scores de Fase 1 son fijos.
 
-SEÑALES DE ABANDONO
-- Cuántos perfiles de Silicon Audience abandonaron y en qué segundo.
-- El perfil curioso_aleatorio tiene peso doble — su abandono impacta más que otros.
-- Si impaciente y curioso_aleatorio abandonaron, el alcance orgánico masivo es improbable.
+OBJETIVO: ${objetivo} | INDUSTRIA: ${industria}
+BENCHMARK: ${JSON.stringify(researchData)}
 
-── CRITERIOS PARA salesScore ──
+honestVerdict: problemas concretos de Fase 1 conectados con el objetivo del creador.
+roadmap: ordenado por impacto real, solo problemas que surgieron en Fase 1.
 
-Observá señales de conversión directamente en el video:
-- ¿Hay demo del producto visible y en uso real?
-- ¿Hay CTA explícito — verbal, texto, o implícito claro?
-- ¿Hay prueba social — testimonio, resultado, comparación?
-- ¿La propuesta de valor queda clara sin necesitar contexto previo?
-
-salesScore es independiente de viralScore.
-Un video puede tener bajo potencial viral y alto potencial de ventas.
-
-── REGLA DE HONESTIDAD ──
-Si observás problemas reales en el video — falta de audio, ritmo lento, hook sin elemento
-de retención, CTA ausente — nombralos con precisión en los verdicts.
-No los suavices. No los compenses con supuestos sobre la intención del creador.
-Lo que el espectador ve es lo único que cuenta.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FASE 2 — VEREDICTO CONTEXTUAL
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Los scores de Fase 1 son fijos. No los modificás.
-Esta fase produce ÚNICAMENTE: honestVerdict, roadmap y vision.
-
-Respondé a esta pregunta:
-"Dado el score que calculé, ¿qué tiene que cambiar en este video
-para lograr [${objetivo}] en el nicho [${industria}]?"
-
-OBJETIVO DEL CREADOR: ${objetivo}
-INDUSTRIA: ${industria}
-BENCHMARK DEL NICHO: ${JSON.stringify(researchData)}
-
-El honestVerdict debe:
-- Nombrar los problemas observados en Fase 1 sin suavizarlos
-- Conectarlos con el objetivo del creador
-- Ser accionable: qué cambiar primero y por qué
-
-El roadmap debe:
-- Ordenarse por impacto real, no por facilidad
-- Cada paso conecta el problema observado con la consecuencia comercial
-- Solo incluir problemas que surgieron de la observación en Fase 1
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Respondé SOLO este JSON:
 {
   "viralScore":      { "score": 0, "verdict": "", "accion_clave": "" },
   "salesScore":      { "score": 0, "verdict": "", "accion_clave": "" },
@@ -843,13 +578,57 @@ FORMATO — ÚNICAMENTE este JSON, sin texto antes ni después:
   "honestVerdict":   "",
   "roadmap":         [{ "problema": "", "solucion": "", "resultado": "", "impacto": "ALTO" }],
   "vision":          { "niche": "", "type": "", "audience": "", "promise": "" },
-  "platformScores":  { "tiktok": { "score": 0, "verdict": "", "topTip": "" }, "reels": { "score": 0, "verdict": "", "topTip": "" }, "shorts": { "score": 0, "verdict": "", "topTip": "" } },
+  "platformScores":  { "tiktok": { "score"s: 0, "verdict": "", "topTip": "" }, "reels": { "score": 0, "verdict": "", "topTip": "" }, "shorts": { "score": 0, "verdict": "", "topTip": "" } },
   "retentionData":   { "at3s": "", "at10s": "", "final": "" },
   "retentionCurve":  [],
   "viewsPrediction":    { "scenario_low": "", "scenario_mid": "", "scenario_high": "", "probability_viral": "" },
   "firstHourStrategy":  { "optimalPostTime": "", "firstActionAfterPost": "", "commentSeed": "", "engagementBoost": "" },
   "commentTrigger":     { "probability": 0, "triggerType": "", "suggestedCTA": "" }
 }`;
+
+
+// ─────────────────────────────────────────────────────────────
+// Utilidades — sin cambios
+// ─────────────────────────────────────────────────────────────
+export const calcularCurvaRetencionSilicon = (simulacion, duracionSegundos) => {
+  if (!simulacion?.simulacion?.length) return [];
+  const perfiles = simulacion.simulacion;
+  const total    = perfiles.length;
+
+  return Array.from({ length: Math.ceil(duracionSegundos) }, (_, s) => {
+    const quedaron = perfiles.filter(p => {
+      if (p.completo) return true;
+      const primerAbandono  = p.eventos_atencion?.find(e => e.decision === 'ABANDONA');
+      const abandonoSegundo = primerAbandono?.segundo ?? null;
+      return abandonoSegundo === null || abandonoSegundo > s;
+    }).length;
+    return Math.round((quedaron / total) * 100);
+  });
+};
+
+export const buildSiliconSummary = (simulacion, predictionMarket) => {
+  if (!simulacion?.simulacion?.length) return null;
+  const perfiles     = simulacion.simulacion;
+  const total        = perfiles.length;
+  const completaron  = perfiles.filter(p => p.completo).length;
+  const compartieron = perfiles.filter(p => p.compartio).length;
+  const guardaron    = perfiles.filter(p => p.guardó).length;
+
+  return {
+    tasa_completado:      Math.round((completaron  / total) * 100),
+    tasa_compartido:      Math.round((compartieron / total) * 100),
+    tasa_guardado:        Math.round((guardaron    / total) * 100),
+    segundo_peligroso:    simulacion.segundo_mas_peligroso  ?? null,
+    evento_retiene:       simulacion.evento_que_mas_retiene ?? '',
+    evento_expulsa:       simulacion.evento_que_mas_expulsa ?? '',
+    patron_abandono:      simulacion.patron_abandono        ?? '',
+    patron_retencion:     simulacion.patron_retencion       ?? '',
+    retencion_por_perfil: predictionMarket?.retencion_por_perfil ?? {},
+    probabilidad_viral:   predictionMarket?.probabilidad_viral   ?? null,
+    confianza:            predictionMarket?.confianza_prediccion  ?? 'baja',
+    detalle_perfiles:     perfiles,
+  };
+};
 
 // ── JS — Hook Gate ────────────────────────────────────────────
 export const deriveHookGateStatus = (preFacts) => {
@@ -904,46 +683,6 @@ export const deriveViralCap = (hookGateStatus, preFacts, nicheConfig = null) => 
   if (lento) return { cap: Math.min(nicheCap, 40, baseCap), reason: 'video_lento_extremo_sin_audio' };
 
   return { cap: Math.min(nicheCap, baseCap), reason: penaltyLevel === 'none' ? 'sin_penalizacion' : `penalizacion_${penaltyLevel}: ${hookGateStatus?.reason ?? ''}` };
-};
-
-export const calcularCurvaRetencionSilicon = (simulacion, duracionSegundos) => {
-  if (!simulacion?.simulacion?.length) return [];
-  const perfiles = simulacion.simulacion;
-  const total    = perfiles.length;
-
-  return Array.from({ length: Math.ceil(duracionSegundos) }, (_, s) => {
-    const quedaron = perfiles.filter(p => {
-      if (p.completo) return true;
-      const primerAbandono  = p.eventos_atencion?.find(e => e.decision === 'ABANDONA');
-      const abandonoSegundo = primerAbandono?.segundo ?? null;
-      return abandonoSegundo === null || abandonoSegundo > s;
-    }).length;
-    return Math.round((quedaron / total) * 100);
-  });
-};
-
-export const buildSiliconSummary = (simulacion, predictionMarket) => {
-  if (!simulacion?.simulacion?.length) return null;
-  const perfiles     = simulacion.simulacion;
-  const total        = perfiles.length;
-  const completaron  = perfiles.filter(p => p.completo).length;
-  const compartieron = perfiles.filter(p => p.compartio).length;
-  const guardaron    = perfiles.filter(p => p.guardó).length;
-
-  return {
-    tasa_completado:      Math.round((completaron  / total) * 100),
-    tasa_compartido:      Math.round((compartieron / total) * 100),
-    tasa_guardado:        Math.round((guardaron    / total) * 100),
-    segundo_peligroso:    simulacion.segundo_mas_peligroso     ?? null,
-    evento_retiene:       simulacion.evento_que_mas_retiene    ?? '',
-    evento_expulsa:       simulacion.evento_que_mas_expulsa    ?? '',
-    patron_abandono:      simulacion.patron_abandono           ?? '',
-    patron_retencion:     simulacion.patron_retencion          ?? '',
-    retencion_por_perfil: predictionMarket?.retencion_por_perfil ?? {},
-    probabilidad_viral:   predictionMarket?.probabilidad_viral  ?? null,
-    confianza:            predictionMarket?.confianza_prediccion ?? 'baja',
-    detalle_perfiles:     perfiles,
-  };
 };
 
 export const deriveHookType = (preFacts) => {
