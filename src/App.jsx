@@ -1268,56 +1268,99 @@ const runDeepAnalysis = async () => {
 
   setStep('analyzing');
   setStatusText("Iniciando auditoría profunda...");
-  setAnalysisProgress(10);
+  setAnalysisProgress(5);
 
-  let sharedFileUri  = null;
-  let sharedFileName = null;
+  // ─────────────────────────────────────────────────────────────
+  // Variables de cache — se llenan en el PASO 0 y se usan en
+  // todas las calls siguientes que necesitan ver el video.
+  // El finally las limpia siempre, haya error o no.
+  // ─────────────────────────────────────────────────────────────
+  let cacheName    = null;   // nombre del context cache de Gemini
+  let cacheFileUri = null;   // fileUri del video en File API (para debug)
+  let cacheFileName = null;  // fileName del archivo (para cleanup)
 
   try {
 
-    // ── CALL 0 — Descripción pura del video ──────────────────
+    // ══════════════════════════════════════════════════════════
+    // PASO 0 — Crear el Context Cache
+    //
+    // El video se sube a File API y se tokeniza UNA SOLA VEZ.
+    // Todas las calls que necesitan ver el video (CALL 0, 1B, 3)
+    // referencian este cache por nombre → mismos KV tensors →
+    // variabilidad de observación eliminada.
+    // ══════════════════════════════════════════════════════════
+    setStatusText("Preparando análisis de video...");
+    setAnalysisProgress(8);
+
+    const { data: cacheData, error: cacheError } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        createCacheOnly: true,
+        storagePath,
+        videoMimeType:   mimeType,
+      }
+    });
+
+    if (cacheError || !cacheData?.cacheName) {
+      throw new Error(`No se pudo crear el cache del video: ${cacheError?.message ?? 'respuesta vacía'}`);
+    }
+
+    cacheName    = cacheData.cacheName;
+    cacheFileUri = cacheData.fileUri;
+    cacheFileName = cacheData.fileName;
+
+    console.log('[VIRAX] ✅ Cache creado:', {
+      cacheName,
+      cacheFileUri,
+      cacheFileName,
+    });
+
+    // ══════════════════════════════════════════════════════════
+    // CALL 0 — Observador puro (usa cache)
+    //
+    // Reutiliza preFacts de runNeuralAnalysis si ya existen.
+    // Solo re-ejecuta si no hay descripción (caso edge: si el
+    // usuario llegó a validation sin pasar por calibración).
+    // ══════════════════════════════════════════════════════════
     setStatusText("Observando el video...");
     setAnalysisProgress(15);
 
-    let preFacts         = videoMeta?.preFacts || {};
-    let videoDescription = '';
+    let preFacts         = videoMeta?.preFacts ?? {};
+    let videoDescription = preFacts.descripcion_raw ?? '';
 
-const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text:            buildPreClassifierPrompt(),
-    storagePath,
-    videoMimeType:   mimeType,
-    duration:        Math.round(duration),
-    maxOutputTokens: 2000,
-    expectsJson:     false,
-    temperature:     0,
-  }
-});
+    if (!videoDescription) {
+      // Edge case: no hay descripción previa → ejecutar CALL 0
+      console.warn('[VIRAX] descripcion_raw vacía — ejecutando CALL 0 con cache');
 
-if (call0Error) throw new Error(`CALL 0 falló: ${call0Error.message}`);
+      const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text:            buildPreClassifierPrompt(),
+          cacheName,                 // ← usa el cache, NO storagePath
+          maxOutputTokens: 2000,
+          expectsJson:     false,
+          temperature:     0,
+        }
+      });
 
-sharedFileUri  = call0Data?._fileUri  ?? null;
-sharedFileName = call0Data?._fileName ?? null;
+      if (call0Error) throw new Error(`CALL 0 falló: ${call0Error.message}`);
 
-const call0RawText = extractGeminiText(call0Data);
-const call0Parsed  = parsePreClassifierResponse(call0RawText);
+      const call0Parsed = parsePreClassifierResponse(extractGeminiText(call0Data));
+      videoDescription  = call0Parsed.descripcion_raw ?? '';
+      preFacts          = { ...preFacts, ...call0Parsed };
 
-// La descripción libre es la fuente de verdad para todo el pipeline
-videoDescription = call0Parsed.descripcion_raw || call0RawText;
-
-// Si hay datos nuevos de calibración, actualizamos preFacts
-if (call0Parsed && Object.keys(call0Parsed).length > 0) {
-  preFacts = { ...preFacts, ...call0Parsed };
-}
-
-console.log('[VIRAX] CALL 0 ejecutado fresco ✅', {
-  descripcion: videoDescription.slice(0, 150),
-  sharedFileUri: sharedFileUri ?? '❌ null',
-});
+      console.log('[VIRAX] CALL 0 ejecutado ✅', {
+        descripcion: videoDescription.slice(0, 150),
+      });
+    } else {
+      console.log('[VIRAX] ✅ descripcion_raw reutilizada de calibración:', {
+        descripcion: videoDescription.slice(0, 150),
+      });
+    }
 
     setAnalysisProgress(25);
 
-    // ── CALL 1.5 — Research Brain ─────────────────────────────
+    // ══════════════════════════════════════════════════════════
+    // CALL 1.5 — Research Brain (sin video — solo texto + search)
+    // ══════════════════════════════════════════════════════════
     setStatusText("Investigando benchmark del nicho...");
 
     let nichoBenchmark = null;
@@ -1342,7 +1385,7 @@ console.log('[VIRAX] CALL 0 ejecutado fresco ✅', {
           expectsJson:     true,
           useSearch:       true,
           maxOutputTokens: 2048,
-          temperature:     0.2,
+          temperature:     0,     // ← era 0.2, ahora 0 para consistencia
         }
       });
       if (!call1_5Error) {
@@ -1354,14 +1397,12 @@ console.log('[VIRAX] CALL 0 ejecutado fresco ✅', {
     }
 
     setAnalysisProgress(40);
- 
-    
- 
-    // ── CALL 1B — Silicon Audience ────────────────────────────
+
+    // ══════════════════════════════════════════════════════════
+    // CALL 1B — Silicon Audience (usa cache → Gemini ve el video)
+    // ══════════════════════════════════════════════════════════
     setStatusText("Simulando 5 perfiles de audiencia...");
- 
-    
- 
+
     const marketState = {
       novelty_level:      researchData?.fatiga_de_formato ? 'saturado' : 'normal',
       audience_fatigue:   researchData?.errores_hook_comunes   ?? [],
@@ -1369,80 +1410,41 @@ console.log('[VIRAX] CALL 0 ejecutado fresco ✅', {
       patron_dominante:   researchData?.patron_hook_dominante  ?? '',
       oportunidad:        researchData?.oportunidad_detectada  ?? '',
     };
- 
+
     let audienceSimulation = null;
     let audienceAnalysis   = '';
- 
-    // ── LOG 1: ¿qué tiene sharedFileUri antes de CALL 1B? ─────
-    console.log('[DIAG CALL 1B] ¿Tiene sharedFileUri?', {
-      sharedFileUri:  sharedFileUri  ?? '❌ NULL — usará storagePath',
-      sharedFileName: sharedFileName ?? '❌ NULL',
-      storagePath,
-      fallbackActivo: !sharedFileUri,
-    });
- 
-console.log('[VIDEO SOURCE]', {
-  tienePreFacts: Object.keys(preFacts).length > 0,
-  sharedFileUri,
-  videoDescription: videoDescription?.slice(0, 100),
-  descripcion_raw: preFacts?.descripcion_raw?.slice(0, 100),
-});
 
-
-    // ── LOG 2: body exacto que va al proxy ────────────────────
-    const call1bBody = {
-      text: buildSiliconAudiencePrompt(
-        videoDescription,  // ← la descripción libre directamente
-        marketState,
-        platform,
-        Math.round(duration)
-      ),
-      ...(sharedFileUri
-        ? { fileUri: sharedFileUri, fileName: sharedFileName }
-        : { storagePath, videoMimeType: mimeType }
-      ),
-      videoMimeType:   mimeType,
-      duration:        Math.round(duration),
-      expectsJson:     true,
-      maxOutputTokens: 4096,
-      temperature:     0,
-    };
- 
-    console.log('[DIAG CALL 1B] Body enviado al proxy:', {
-      tieneFileUri:     !!call1bBody.fileUri,
-      tieneStoragePath: !!call1bBody.storagePath,
-      fileUri:          call1bBody.fileUri     ?? '—',
-      storagePath:      call1bBody.storagePath ?? '—',
-      modoUsado: call1bBody.fileUri
-        ? '✅ File API (Gemini ve el video)'
-        : '⚠️ storagePath (el proxy tiene que subir)',
-    });
- 
     try {
       const { data: call1bData, error: call1bError } = await supabase.functions.invoke('gemini-proxy', {
-        body: call1bBody   // ← usa el objeto ya armado arriba
+        body: {
+          text: buildSiliconAudiencePrompt(
+            videoDescription,
+            marketState,
+            platform,
+            Math.round(duration)
+          ),
+          cacheName,               // ← Gemini ve el video desde el cache
+          expectsJson:     true,
+          maxOutputTokens: 4096,
+          temperature:     0,
+        }
       });
- 
-      // ── LOG 3: ¿la respuesta refleja observación real? ──────
+
       if (!call1bError && call1bData) {
         const rawText = extractGeminiText(call1bData);
-        console.log('[DIAG CALL 1B] Primeros 300 chars de respuesta:', rawText.slice(0, 300));
- 
+
+        // Diagnóstico: ¿Gemini realmente observó el video?
         const noVioSenales = [
-          'no tengo acceso',
-          'no puedo ver',
-          'no puedo acceder',
-          'basándome en los eventos',
-          'según los datos proporcionados',
-          'sin poder ver',
+          'no tengo acceso', 'no puedo ver', 'no puedo acceder',
+          'basándome en los eventos', 'según los datos proporcionados', 'sin poder ver',
         ];
         const noVio = noVioSenales.some(s => rawText.toLowerCase().includes(s));
         if (noVio) {
-          console.warn('[DIAG CALL 1B] ⚠️ Gemini NO vio el video — responde solo con texto');
+          console.warn('[CALL 1B] ⚠️ Gemini NO vio el video — responde solo con texto');
         } else {
-          console.log('[DIAG CALL 1B] ✅ Respuesta parece basada en observación real');
+          console.log('[CALL 1B] ✅ Respuesta basada en observación real del video');
         }
- 
+
         audienceSimulation = safeParseJSON(rawText, 'silicon-audience');
         console.log('[SILICON AUDIENCE] Simulación:', audienceSimulation);
       } else {
@@ -1451,31 +1453,32 @@ console.log('[VIDEO SOURCE]', {
     } catch (e) {
       console.warn('[CALL 1B] Excepción:', e.message);
     }
- 
+
     setAnalysisProgress(55);
- 
-    // ── CALL 2 — Prediction Market ────────────────────────────
+
+    // ══════════════════════════════════════════════════════════
+    // CALL 2 — Prediction Market (sin video — razona sobre texto)
+    // ══════════════════════════════════════════════════════════
     setStatusText("Calculando predicción de mercado...");
- 
+
     let predictionMarket = null;
- 
+
     if (audienceSimulation?.simulacion?.length) {
       try {
         const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
           body: {
-            text: 
-            buildPredictionMarketPrompt(
-             audienceSimulation,
-             marketState,
-             platform,
-             industria
-          ),
+            text: buildPredictionMarketPrompt(
+              audienceSimulation,
+              marketState,
+              platform,
+              industria
+            ),
             expectsJson:     true,
             maxOutputTokens: 1500,
             temperature:     0,
           }
         });
- 
+
         if (!call2Error) {
           predictionMarket = safeParseJSON(extractGeminiText(call2Data), 'prediction-market');
           console.log('[PREDICTION MARKET]', predictionMarket);
@@ -1489,6 +1492,7 @@ console.log('[VIDEO SOURCE]', {
 
     setAnalysisProgress(65);
 
+    // ── Armar audienceAnalysis para CALL 3 ──────────────────
     if (audienceSimulation && predictionMarket) {
       const summary = buildSiliconSummary(audienceSimulation, predictionMarket);
       audienceAnalysis = `
@@ -1524,7 +1528,7 @@ ${(summary.detalle_perfiles || []).map(p =>
       `.trim();
 
     } else {
-      // ── Fallback al prompt original si Silicon Audience falló ──
+      // Fallback: Silicon Audience falló → usar prompt clásico de audiencia
       console.warn('[SILICON AUDIENCE] Fallback a buildAudiencePredictionPrompt');
       const { data: call1FallbackData, error: call1FallbackError } = await supabase.functions.invoke('gemini-proxy', {
         body: {
@@ -1534,17 +1538,11 @@ ${(summary.detalle_perfiles || []).map(p =>
             videoDescription,
             researchData
           ),
-          ...(sharedFileUri
-            ? { fileUri: sharedFileUri, fileName: sharedFileName }
-            : { storagePath, videoMimeType: mimeType }
-          ),
-          videoMimeType:   mimeType,
-          duration:        Math.round(duration),
+          cacheName,               // ← también usa cache en el fallback
           maxOutputTokens: 6144,
           expectsJson:     false,
           temperature:     0,
           thinkingBudget:  1024,
-          forceFullModel:  true,
         }
       });
       if (call1FallbackError) throw new Error(`Fallback CALL 1 falló: ${call1FallbackError.message}`);
@@ -1554,33 +1552,29 @@ ${(summary.detalle_perfiles || []).map(p =>
     console.log('[VIRAX] Audience Analysis final:', audienceAnalysis);
     setAnalysisProgress(70);
 
+    // ══════════════════════════════════════════════════════════
+    // CALL 3 — Scoring Brain (usa cache → Gemini ve el video)
+    // ══════════════════════════════════════════════════════════
+    setStatusText("Generando reporte final...");
     setAnalysisProgress(78);
 
-    // ── CALL 3 — Scoring final ────────────────────────────────
-    setStatusText("Generando reporte final...");
-
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
-    body: {
-    text: buildScoringBrainPrompt(
-      videoDescription,
-      audienceAnalysis,
-      researchData,
-      platform,
-      selectedObjetivo,
-      industria,
-      Math.round(duration)
-    ),
-    ...(sharedFileUri
-      ? { fileUri: sharedFileUri, fileName: sharedFileName }
-      : { storagePath, videoMimeType: mimeType }
-    ),
-    videoMimeType:   mimeType,
-    duration:        Math.round(duration),
-    expectsJson:     true,
-    maxOutputTokens: 4096,
-    temperature:     0
-  }
-});
+      body: {
+        text: buildScoringBrainPrompt(
+          videoDescription,
+          audienceAnalysis,
+          researchData,
+          platform,
+          selectedObjetivo,
+          industria,
+          Math.round(duration)
+        ),
+        cacheName,               // ← Gemini ve el video desde el mismo cache
+        expectsJson:     true,
+        maxOutputTokens: 4096,
+        temperature:     0,
+      }
+    });
 
     if (call3Error) throw new Error(`CALL 3 falló: ${call3Error.message}`);
 
@@ -1594,90 +1588,76 @@ ${(summary.detalle_perfiles || []).map(p =>
       hookStr:    outputParsed.hookDNA?.strength,
     });
 
-    // ── Ensamblado final ──────────────────────────────────────
-    // Prediction Market da la base, CALL 3 puede refinar, cap es el techo
-    const viralScoreBase  = predictionMarket?.viralScore
-      ?? outputParsed.viralScore?.score
-      ?? 0;
-    // POR ESTO:
-  const viralScoreFinal = Math.min(
-  predictionMarket?.viralScore ?? 100,
-  outputParsed.viralScore?.score ?? 100
-);
-
+    // ── Ensamblado de scores finales ─────────────────────────
+    // Prediction Market da la base, CALL 3 refina.
+    // Tomamos el mínimo para no inflar scores.
+    const viralScoreFinal = Math.min(
+      predictionMarket?.viralScore  ?? 100,
+      outputParsed.viralScore?.score ?? 100
+    );
 
     const salesScoreFinal = predictionMarket?.salesScore
       ?? outputParsed.salesScore?.score
       ?? 0;
 
-    console.log('=== VIRAX DEBUG ===');
-console.log('Silicon simulacion:', audienceSimulation?.simulacion?.map(p => ({
-  perfil: p.perfil_id,
-  decision: p.decision_final,
-  completo: p.completo
-})));
-console.log('Prediction Market raw:', {
-  viralScore: predictionMarket?.viralScore,
-  salesScore: predictionMarket?.salesScore,
-  razon: predictionMarket?.razon_principal_score
-});
-console.log('CALL 3 raw:', {
-  viralScore: outputParsed?.viralScore?.score,
-  salesScore: outputParsed?.salesScore?.score
-});
-console.log('viralScoreFinal:', viralScoreFinal);
-console.log('salesScoreFinal:', salesScoreFinal);
-console.log('videoDescription (primeros 200 chars):', videoDescription?.slice(0, 200));
+    console.log('=== VIRAX SCORE DEBUG ===');
+    console.log('Silicon simulacion:', audienceSimulation?.simulacion?.map(p => ({
+      perfil: p.perfil_id, decision: p.decision_final, completo: p.completo
+    })));
+    console.log('Prediction Market raw:', {
+      viralScore: predictionMarket?.viralScore,
+      salesScore: predictionMarket?.salesScore,
+      razon:      predictionMarket?.razon_principal_score,
+    });
+    console.log('CALL 3 raw:', {
+      viralScore: outputParsed?.viralScore?.score,
+      salesScore: outputParsed?.salesScore?.score,
+    });
+    console.log('Scores finales:', { viralScoreFinal, salesScoreFinal });
 
-const finalResult = {   // ← esta línea ya existía
-  viralScore: {
-    score:        viralScoreFinal,
-    titulo:       'Potencial Viral',
-    verdict:      outputParsed.viralScore?.verdict      ?? predictionMarket?.razon_principal_score ?? '',
-    accion_clave: outputParsed.viralScore?.accion_clave ?? predictionMarket?.accion_clave_viral    ?? '',
-    cap_reason:   null,  // ← era viralCapData.reason
-  },
-  salesScore: {
-    score:        salesScoreFinal,
-    titulo:       'Potencial de Ventas',
-    verdict:      outputParsed.salesScore?.verdict      ?? predictionMarket?.razon_principal_score ?? '',
-    accion_clave: outputParsed.salesScore?.accion_clave ?? predictionMarket?.accion_clave_ventas   ?? '',
-  },
-  scrollStopScore:  outputParsed.scrollStopScore  ?? { score: 0, verdict: '' },
-  hookDNA:          outputParsed.hookDNA          ?? {},
-  steppsScore:      outputParsed.steppsScore      ?? {},
-  honestVerdict:    outputParsed.honestVerdict     ?? '',
-  roadmap:          outputParsed.roadmap           ?? [],
-  objetivo:         selectedObjetivo,
+    const finalResult = {
+      viralScore: {
+        score:        viralScoreFinal,
+        titulo:       'Potencial Viral',
+        verdict:      outputParsed.viralScore?.verdict      ?? predictionMarket?.razon_principal_score ?? '',
+        accion_clave: outputParsed.viralScore?.accion_clave ?? predictionMarket?.accion_clave_viral    ?? '',
+        cap_reason:   null,
+      },
+      salesScore: {
+        score:        salesScoreFinal,
+        titulo:       'Potencial de Ventas',
+        verdict:      outputParsed.salesScore?.verdict      ?? predictionMarket?.razon_principal_score ?? '',
+        accion_clave: outputParsed.salesScore?.accion_clave ?? predictionMarket?.accion_clave_ventas   ?? '',
+      },
+      scrollStopScore: outputParsed.scrollStopScore ?? { score: 0, verdict: '' },
+      hookDNA:         outputParsed.hookDNA         ?? {},
+      steppsScore:     outputParsed.steppsScore     ?? {},
+      honestVerdict:   outputParsed.honestVerdict   ?? '',
+      roadmap:         outputParsed.roadmap         ?? [],
+      objetivo:        selectedObjetivo,
 
-  vision: {
-    niche:    outputParsed.vision?.niche    || industria || 'General',
-    type:     outputParsed.vision?.type     || 'Video',
-    audience: outputParsed.vision?.audience || '—',
-    promise:  outputParsed.vision?.promise  || '—',
-  },
+      vision: {
+        niche:    outputParsed.vision?.niche    || industria || 'General',
+        type:     outputParsed.vision?.type     || 'Video',
+        audience: outputParsed.vision?.audience || '—',
+        promise:  outputParsed.vision?.promise  || '—',
+      },
 
-      potentialScore: Math.round(
-        (viralScoreFinal + salesScoreFinal) / 2
-      ),
+      potentialScore: Math.round((viralScoreFinal + salesScoreFinal) / 2),
       performanceScenario: viralScoreFinal >= 70 ? 'ALTO POTENCIAL'
                          : viralScoreFinal >= 45 ? 'POTENCIAL MEDIO'
                          : 'BAJO POTENCIAL',
 
       platformScores:    outputParsed.platformScores    ?? null,
       retentionData:     outputParsed.retentionData     ?? null,
-
-      // Curva calculada desde comportamiento real de perfiles, no inventada por Gemini
-      retentionCurve: audienceSimulation
+      retentionCurve:    audienceSimulation
         ? calcularCurvaRetencionSilicon(audienceSimulation, Math.round(duration))
         : (outputParsed.retentionCurve ?? null),
-
       viewsPrediction:   outputParsed.viewsPrediction   ?? null,
       firstHourStrategy: outputParsed.firstHourStrategy ?? null,
       commentTrigger:    outputParsed.commentTrigger    ?? null,
 
-      // Debug + Silicon Audience
-      // DESPUÉS:
+      // Debug internos
       _hook_gate:         null,
       _viral_cap:         null,
       _research_data:     researchData,
@@ -1686,7 +1666,7 @@ const finalResult = {   // ← esta línea ya existía
         ? buildSiliconSummary(audienceSimulation, predictionMarket)
         : null,
       _prediction_market: predictionMarket ?? null,
-      _eventos_video: [],
+      _eventos_video:     [],
       _market_state:      marketState,
     };
 
@@ -1706,19 +1686,44 @@ const finalResult = {   // ← esta línea ya existía
     console.error('Error en análisis profundo:', err);
     alert(`❌ Error al procesar reporte: ${err.message || err}`);
     setStep('upload');
+
   } finally {
-    if (sharedFileName) {
+    // ──────────────────────────────────────────────────────────
+    // CLEANUP — siempre se ejecuta, haya error o no.
+    // Orden: primero el cache, luego el archivo, luego Supabase.
+    // ──────────────────────────────────────────────────────────
+
+    // 1. Eliminar el context cache de Gemini
+    if (cacheName) {
       try {
         await supabase.functions.invoke('gemini-proxy', {
-          body: { deleteOnly: true, fileName: sharedFileName }
+          body: { deleteCacheOnly: true, cacheName }
         });
-        console.log('[VIRAX] Archivo eliminado de Google File API ✅');
+        console.log('[VIRAX] ✅ Context cache eliminado:', cacheName);
       } catch (e) {
-        console.warn('[VIRAX] No se pudo eliminar:', e);
+        console.warn('[VIRAX] No se pudo eliminar el cache:', e);
       }
     }
-    await supabase.storage.from('videos').remove([storagePath]);
-    console.log('[VIRAX] Video eliminado de Supabase ✅');
+
+    // 2. Eliminar el archivo de Gemini File API
+    if (cacheFileName) {
+      try {
+        await supabase.functions.invoke('gemini-proxy', {
+          body: { deleteOnly: true, fileName: cacheFileName }
+        });
+        console.log('[VIRAX] ✅ Archivo eliminado de Google File API:', cacheFileName);
+      } catch (e) {
+        console.warn('[VIRAX] No se pudo eliminar el archivo de File API:', e);
+      }
+    }
+
+    // 3. Eliminar el video de Supabase Storage
+    try {
+      await supabase.storage.from('videos').remove([storagePath]);
+      console.log('[VIRAX] ✅ Video eliminado de Supabase Storage');
+    } catch (e) {
+      console.warn('[VIRAX] No se pudo eliminar el video de Supabase:', e);
+    }
   }
 };
 
