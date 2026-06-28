@@ -1142,9 +1142,7 @@ const stripFlags = (strategyText) =>
 
 
 
-// ============================================================
-// FASE 1: CALIBRACIÓN (Sube video y ejecuta CALL 0) //const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
-// ============================================================
+
 // ============================================================
 // runNeuralAnalysis + runDeepAnalysis — CORREGIDOS
 //
