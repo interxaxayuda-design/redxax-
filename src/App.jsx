@@ -1545,43 +1545,38 @@ const runDeepAnalysis = async () => {
     let preFacts         = videoMeta?.preFacts || {};
     let videoDescription = '';
 
-    if (!preFacts || Object.keys(preFacts).length === 0) {
-      const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text:            buildPreClassifierPrompt(),
-          storagePath,
-          videoMimeType:   mimeType,
-          duration:        Math.round(duration),
-          maxOutputTokens: 2000,
-          expectsJson:     false,
-          temperature:     0,
-        }
-      });
+const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
+  body: {
+    text:            buildPreClassifierPrompt(),
+    storagePath,
+    videoMimeType:   mimeType,
+    duration:        Math.round(duration),
+    maxOutputTokens: 2000,
+    expectsJson:     false,
+    temperature:     0,
+  }
+});
 
-      if (call0Error) throw new Error(`CALL 0 falló: ${call0Error.message}`);
+if (call0Error) throw new Error(`CALL 0 falló: ${call0Error.message}`);
 
-      sharedFileUri  = call0Data?._fileUri  ?? null;
-      sharedFileName = call0Data?._fileName ?? null;
+sharedFileUri  = call0Data?._fileUri  ?? null;
+sharedFileName = call0Data?._fileName ?? null;
 
-      videoDescription = extractGeminiText(call0Data);
-      console.log('[VIRAX] Descripción del video:', videoDescription);
+const call0RawText = extractGeminiText(call0Data);
+const call0Parsed  = parsePreClassifierResponse(call0RawText);
 
-    // ── DESPUÉS ──
-// REEMPLAZÁ el bloque else completo por esto:
-} else {
-  videoDescription = preFacts?.descripcion_raw ?? JSON.stringify({
-    logo_en_s0:              preFacts?.logo_en_s0,
-    tiene_rehook:            preFacts?.tiene_rehook,
-    es_slideshow_imagenes:   preFacts?.es_slideshow_imagenes,
-    elemento_en_s0:          preFacts?.elemento_en_s0,
-    pregunta_visible:        preFacts?.pregunta_visible,
-    texto_en_pantalla_s0:    preFacts?.texto_en_pantalla_s0,
-    transformacion_visible:  preFacts?.transformacion_visible,
-    duracion_estimada_segundos: preFacts?.duracion_estimada_segundos,
-    atomicas:                preFacts?.atomicas,
-  });
-  console.log('[VIRAX] Reutilizando descripción de calibración ✅');
+// La descripción libre es la fuente de verdad para todo el pipeline
+videoDescription = call0Parsed.descripcion_raw || call0RawText;
+
+// Si hay datos nuevos de calibración, actualizamos preFacts
+if (call0Parsed && Object.keys(call0Parsed).length > 0) {
+  preFacts = { ...preFacts, ...call0Parsed };
 }
+
+console.log('[VIRAX] CALL 0 ejecutado fresco ✅', {
+  descripcion: videoDescription.slice(0, 150),
+  sharedFileUri: sharedFileUri ?? '❌ null',
+});
 
     setAnalysisProgress(25);
 
