@@ -1301,7 +1301,7 @@ const { data: cacheData, error: cacheError } = await supabase.functions.invoke('
   }
 });
 
-// Diagnóstico — mirá estos logs en la consola del navegador
+
 console.error('[CACHE] cacheError:', JSON.stringify(cacheError));
 console.error('[CACHE] cacheData:', JSON.stringify(cacheData));
 
