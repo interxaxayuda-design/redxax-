@@ -1548,26 +1548,50 @@ ${(summary.detalle_perfiles || []).map(p =>
       `.trim();
 
     } else {
-      // Fallback: Silicon Audience falló → usar prompt clásico de audiencia
-      console.warn('[SILICON AUDIENCE] Fallback a buildAudiencePredictionPrompt');
-      const { data: call1FallbackData, error: call1FallbackError } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: buildAudiencePredictionPrompt(
-            platform,
-            Math.round(duration),
-            videoDescription,
-            researchData
-          ),
-          cacheName,               // ← también usa cache en el fallback
-          maxOutputTokens: 6144,
-          expectsJson:     false,
-          temperature:     0,
-          thinkingBudget:  1024,
-        }
-      });
-      if (call1FallbackError) throw new Error(`Fallback CALL 1 falló: ${call1FallbackError.message}`);
-      audienceAnalysis = extractGeminiText(call1FallbackData);
+  // Fallback: Silicon Audience falló → reintentar UNA vez con el mismo prompt
+  console.warn('[SILICON AUDIENCE] Simulación falló — reintentando una vez');
+
+  try {
+    const { data: retryData, error: retryError } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildSiliconAudiencePrompt(
+          videoDescription,
+          marketState,
+          platform,
+          Math.round(duration)
+        ),
+        cacheName,
+        expectsJson:     true,
+        maxOutputTokens: 4096,
+        temperature:     0,
+      }
+    });
+
+    if (!retryError && retryData) {
+      const retryText = extractGeminiText(retryData);
+      audienceSimulation = safeParseJSON(retryText, 'silicon-audience-retry');
     }
+  } catch (e) {
+    console.warn('[SILICON AUDIENCE] Reintento también falló:', e.message);
+  }
+
+  // Si el reintento funcionó, armamos audienceAnalysis con los datos reales
+  if (audienceSimulation?.simulacion?.length) {
+    const summary = buildSiliconSummary(audienceSimulation, predictionMarket);
+    audienceAnalysis = `
+SILICON AUDIENCE — 5 PERFILES CONDUCTUALES (reintento):
+
+Tasa de completado: ${summary.tasa_completado}%
+Segundo más peligroso: s${summary.segundo_peligroso ?? '—'}
+Evento que retiene: ${summary.evento_retiene}
+Evento que expulsa: ${summary.evento_expulsa}
+    `.trim();
+  } else {
+    // Último recurso: texto genérico basado solo en la descripción del video
+    console.warn('[SILICON AUDIENCE] Sin simulación disponible — usando descripción cruda');
+    audienceAnalysis = `No se pudo simular audiencia. Análisis basado únicamente en la descripción del video:\n\n${videoDescription}`;
+  }
+}
 
     console.log('[VIRAX] Audience Analysis final:', audienceAnalysis);
     setAnalysisProgress(70);
