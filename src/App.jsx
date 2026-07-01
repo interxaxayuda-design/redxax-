@@ -1475,7 +1475,7 @@ try {
             platform,
             Math.round(duration)
           ),
-          cacheName,               // ← Gemini ve el video desde el cache
+          cacheName,               
           expectsJson:     true,
           maxOutputTokens: 4096,
           temperature:     0,
