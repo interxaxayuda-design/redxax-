@@ -350,6 +350,7 @@ Respondé SOLO este JSON:
   "patron_hook_dominante": "",
   "top_formatos_ganadores": [],
   "errores_hook_comunes": [],
+  "confianza_research": "<alta|media|baja>",
   "fatiga_de_formato": "",
   "benchmark_viral_score": <0-100>,
   "oportunidad_detectada": "",
@@ -497,7 +498,11 @@ MERCADO: ${JSON.stringify(marketState)}
 
 viralScore = probabilidad top 15% del nicho en 7 días. curioso_aleatorio tiene peso doble.
 salesScore = señales de conversión: demo, CTA, prueba social, claridad. Independiente del viral.
-Sé conservador. El viral real es raro.
+Sé conservador con la base rate: el viral real es raro.
+Pero la señal de "saturación de mercado" del research (fatiga_de_formato,
+oportunidad_detectada) solo debe penalizar fuerte si confianza_research es "alta".
+Si es "media", penalización leve. Si es "baja" o el campo no está, ignorala
+y basate solo en la simulación de audiencia.
 
 Respondé SOLO este JSON:
 {
@@ -1383,38 +1388,65 @@ if (!cacheData?.cacheName) {
     // ══════════════════════════════════════════════════════════
     setStatusText("Investigando benchmark del nicho...");
 
-    let nichoBenchmark = null;
-    try {
-      const { data: benchmarkRow } = await supabase
-        .from('niche_benchmarks')
-        .select('benchmark_json, updated_at')
-        .eq('industria', industria)
-        .eq('platform', platform)
-        .eq('region', 'AR')
-        .single();
-      nichoBenchmark = benchmarkRow?.benchmark_json ?? null;
-    } catch (e) {
-      console.warn('[BENCHMARK] Error al leer:', e.message);
-    }
+    const isBenchmarkFresh = (updatedAt, maxDays = 7) => {
+  if (!updatedAt) return false;
+  const ageMs = Date.now() - new Date(updatedAt).getTime();
+  return ageMs < maxDays * 24 * 60 * 60 * 1000;
+};
 
-    let researchData = {};
-    try {
-      const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text:            buildResearchBrainPrompt(platform, industria, selectedObjetivo, nichoBenchmark),
-          expectsJson:     true,
-          useSearch:       true,
-          maxOutputTokens: 2048,
-          temperature:     0,     // ← era 0.2, ahora 0 para consistencia
-        }
-      });
-      if (!call1_5Error) {
-        researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
+let nichoBenchmark = null;
+let benchmarkFresh  = false;
+try {
+  const { data: benchmarkRow } = await supabase
+    .from('niche_benchmarks')
+    .select('benchmark_json, updated_at')
+    .eq('industria', industria)
+    .eq('platform', platform)
+    .eq('region', 'AR')
+    .single();
+  nichoBenchmark = benchmarkRow?.benchmark_json ?? null;
+  benchmarkFresh  = isBenchmarkFresh(benchmarkRow?.updated_at);
+} catch (e) {
+  console.warn('[BENCHMARK] Error al leer:', e.message);
+}
+
+let researchData = {};
+try {
+  if (benchmarkFresh) {
+    console.log('[RESEARCH] Benchmark fresco — sin búsqueda en vivo, reutilizando cache');
+    researchData = nichoBenchmark;
+  } else {
+    const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text:            buildResearchBrainPrompt(platform, industria, selectedObjetivo, nichoBenchmark),
+        expectsJson:     true,
+        useSearch:       true,
+        maxOutputTokens: 2048,
+        temperature:     0,
       }
-      console.log('[RESEARCH] data:', researchData);
-    } catch (e) {
-      console.warn('[CALL 1.5] Fallback research:', e.message);
+    });
+    if (!call1_5Error) {
+      researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
+
+      // ── Guardar en cache para el próximo análisis del mismo nicho+plataforma ──
+      try {
+        await supabase.from('niche_benchmarks').upsert({
+          industria,
+          platform,
+          region: 'AR',
+          benchmark_json: researchData,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'industria,platform,region' });
+        console.log('[BENCHMARK] Guardado en cache ✅');
+      } catch (e) {
+        console.warn('[BENCHMARK] Error al guardar:', e.message);
+      }
     }
+    console.log('[RESEARCH] data:', researchData);
+  }
+} catch (e) {
+  console.warn('[CALL 1.5] Fallback research:', e.message);
+}
 
     setAnalysisProgress(40);
 
@@ -1474,7 +1506,10 @@ if (!cacheData?.cacheName) {
       console.warn('[CALL 1B] Excepción:', e.message);
     }
 
+   
     setAnalysisProgress(55);
+
+    console.log('[MARKET STATE]', JSON.stringify(marketState, null, 2));
 
     // ══════════════════════════════════════════════════════════
     // CALL 2 — Prediction Market (sin video — razona sobre texto)
