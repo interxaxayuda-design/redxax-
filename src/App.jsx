@@ -1547,7 +1547,7 @@ try {
 
     setAnalysisProgress(65);
 
-    // ── Armar audienceAnalysis para CALL 3 ──────────────────
+ 
     if (audienceSimulation && predictionMarket) {
       const summary = buildSiliconSummary(audienceSimulation, predictionMarket);
       audienceAnalysis = `
