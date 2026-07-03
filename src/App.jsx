@@ -11,11 +11,10 @@ import {
   NICHE_MOTORS,
   parsePreClassifierResponse,
   PREDICTION_MARKET_SCHEMA,
-  // ← nuevo:
   RESEARCH_BRAIN_SCHEMA,
   SCORING_BRAIN_SCHEMA,
   SILICON_AUDIENCE_SCHEMA
-} from './virax-prompts.js';
+} from './prompts.js'; // ← acá, sin "virax-"
 
 import { createClient } from '@supabase/supabase-js'; //phaseScores  //toggleStep  //const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
 
