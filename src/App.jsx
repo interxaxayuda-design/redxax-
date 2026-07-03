@@ -1,26 +1,22 @@
-import {
-  BarChart3,
-  BrainCircuit,
-  CheckCircle,
-  CheckSquare,
-  Compass,
-  FileText,
-  Gem,
-  MessageSquare,
-  Microscope,
-  RotateCcw,
-  Send,
-  Square,
-  Target,
-  TrendingUp,
-  Upload,
-  Users //<label className="text-[10px] font-black uppercase tracking-wider text-slate-500 group-hover:text-purple-400 transition-colors">
-  , //deriveHookType
-  X,
-  Zap
-} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react'; //const buildPreClassifierPrompt = () => `  //import { FFmpeg } from '@ffmpeg/ffmpeg';
 import logo from './logo.png';
+import {
+  buildPreClassifierPrompt,
+  buildPredictionMarketPrompt,
+  buildResearchBrainPrompt,
+  buildScoringBrainPrompt,
+  buildSiliconAudiencePrompt,
+  buildSiliconSummary,
+  calcularCurvaRetencionSilicon,
+  NICHE_MOTORS,
+  parsePreClassifierResponse,
+  PREDICTION_MARKET_SCHEMA,
+  // ← nuevo:
+  RESEARCH_BRAIN_SCHEMA,
+  SCORING_BRAIN_SCHEMA,
+  SILICON_AUDIENCE_SCHEMA,
+  SILICON_PROFILES
+} from './virax-prompts.js';
 
 import { createClient } from '@supabase/supabase-js'; //phaseScores  //toggleStep  //const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
 
@@ -1420,6 +1416,7 @@ try {
       body: {
         text:            buildResearchBrainPrompt(platform, industria, selectedObjetivo, nichoBenchmark),
         expectsJson:     true,
+         responseSchema:  RESEARCH_BRAIN_SCHEMA,   // ← nuevo
         useSearch:       true,
         maxOutputTokens: 2048,
         temperature:     0,
@@ -1475,12 +1472,14 @@ try {
     body: {
       text: buildSiliconAudiencePrompt(
         videoDescription,
+        
         marketState,
         platform,
         Math.round(duration)
       ),
       cacheName,
       expectsJson: true,
+      responseSchema:  SILICON_AUDIENCE_SCHEMA,   // ← nuevo
       maxOutputTokens: 4096,
       temperature: 0,
     },
@@ -1538,6 +1537,7 @@ try {
               industria
             ),
             expectsJson:     true,
+             responseSchema:  PREDICTION_MARKET_SCHEMA,   // ← nuevo
             maxOutputTokens: 1500,
             temperature:     0,
           }
@@ -1659,6 +1659,7 @@ Evento que expulsa: ${summary.evento_expulsa}
         ),
         cacheName,               // ← Gemini ve el video desde el mismo cache
         expectsJson:     true,
+        responseSchema:  SCORING_BRAIN_SCHEMA,   // ← nuevo
         maxOutputTokens: 4096,
         temperature:     0,
       }
