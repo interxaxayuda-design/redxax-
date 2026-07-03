@@ -46,7 +46,7 @@ const FOLLOWER_RANGES = [
   { id: 'mega',  label: 'Mega cuenta',     range: '500K+',       emoji: '👑' },
 ];
 
-function extractGeminiText(data) { //const flagsDeterministic = {
+export function extractGeminiText(data) {//const flagsDeterministic = {
   if (data?.error) {
     throw new Error(`Edge Function error: ${data.error} — ${data.message ?? data.raw ?? ''}`);
   }
@@ -65,7 +65,7 @@ const GEM_PACKAGES = [
   { id: 'elite',   gems: 6000, price: 15, label: 'Elite',   analyses: '60 análisis', popular: false },
 ];
 
-const safeParseJSON = (rawText, context = '') => {
+export const safeParseJSON = (rawText, context = '') => {
   const aggressiveClean = (str) => {
     let s = str.replace(/```json|```/g, '').trim();
     const start = s.indexOf('{');
@@ -514,6 +514,12 @@ Respondé SOLO este JSON:
     "esceptico":         { "retencion_pct": <number>, "razon": "<string>" },
     "comprador":         { "retencion_pct": <number>, "razon": "<string>" }
   },
+  "razonamiento_paso_a_paso": {
+  "peso_curioso_aleatorio": "<qué pesó y por qué, en 1 frase>",
+  "senal_mas_determinante": "<cuál de las 6 retenciones definió más el score>",
+  "ajuste_por_research": "<si penalizó o no por fatiga_de_formato, y por qué>"
+},
+"viralScore": <number>,
   "probabilidad_viral": <number>,
   "viralScore": <number>,
   "salesScore": <number>,
@@ -587,6 +593,9 @@ Respondé SOLO este JSON:
   "retentionData":   { "at3s": "", "at10s": "", "final": "" },
   "retentionCurve":  [],
   "viewsPrediction":    { "scenario_low": "", "scenario_mid": "", "scenario_high": "", "probability_viral": "" },
+  "razonamiento_viralScore": "<2-3 frases: qué datos de audienceAnalysis pesaron más>",
+"razonamiento_salesScore": "<2-3 frases: qué señal de venta encontró o no encontró>",
+"viralScore": { "score": 0, "verdict": "", "accion_clave": "" },
   "firstHourStrategy":  { "optimalPostTime": "", "firstActionAfterPost": "", "commentSeed": "", "engagementBoost": "" },
   "commentTrigger":     { "probability": 0, "triggerType": "", "suggestedCTA": "" }
 }`;
@@ -1455,57 +1464,66 @@ try {
     // ══════════════════════════════════════════════════════════
     setStatusText("Simulando 5 perfiles de audiencia...");
 
-    const marketState = {
-      novelty_level:      researchData?.fatiga_de_formato ? 'saturado' : 'normal',
-      audience_fatigue:   researchData?.errores_hook_comunes   ?? [],
-      currently_rewarded: researchData?.top_formatos_ganadores ?? [],
-      patron_dominante:   researchData?.patron_hook_dominante  ?? '',
-      oportunidad:        researchData?.oportunidad_detectada  ?? '',
-    };
+const marketState = {
+  novelty_level:      researchData?.fatiga_de_formato ? 'saturado' : 'normal',
+  audience_fatigue:   researchData?.errores_hook_comunes   ?? [],
+  currently_rewarded: researchData?.top_formatos_ganadores ?? [],
+  patron_dominante:   researchData?.patron_hook_dominante  ?? '',
+  oportunidad:        researchData?.oportunidad_detectada  ?? '',
+};
 
-    let audienceSimulation = null;
-    let audienceAnalysis   = '';
+let audienceSimulation = null;
+let audienceAnalysis   = '';
 
-    try {
-      const { data: call1bData, error: call1bError } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: buildSiliconAudiencePrompt(
-            videoDescription,
-            marketState,
-            platform,
-            Math.round(duration)
-          ),
-          cacheName,               
-          expectsJson:     true,
-          maxOutputTokens: 4096,
-          temperature:     0,
-        }
-      });
+try {
+  const analysisId = currentHistoryId || `temp_${Date.now()}`;
 
-      if (!call1bError && call1bData) {
-        const rawText = extractGeminiText(call1bData);
+  const { rawText: call1bRaw, parsedOutput: audienceSimulationResult } = await loggedGeminiCall({
+    analysisId,
+    callName: 'CALL_1B',
+    body: {
+      text: buildSiliconAudiencePrompt(
+        videoDescription,
+        marketState,
+        platform,
+        Math.round(duration)
+      ),
+      cacheName,
+      expectsJson: true,
+      maxOutputTokens: 4096,
+      temperature: 0,
+    },
+    extractReasoning: (raw, parsed) => ({
+      razones_por_perfil: parsed?.simulacion?.map(p => ({
+        perfil: p.perfil_id,
+        decision: p.decision_final,
+        razon: p.razon_final,
+        eventos: p.eventos_atencion,
+      })),
+      patron_abandono: parsed?.patron_abandono,
+      patron_retencion: parsed?.patron_retencion,
+    }),
+  });
 
-        // Diagnóstico: ¿Gemini realmente observó el video?
-        const noVioSenales = [
-          'no tengo acceso', 'no puedo ver', 'no puedo acceder',
-          'basándome en los eventos', 'según los datos proporcionados', 'sin poder ver',
-        ];
-        const noVio = noVioSenales.some(s => rawText.toLowerCase().includes(s));
-        if (noVio) {
-          console.warn('[CALL 1B] ⚠️ Gemini NO vio el video — responde solo con texto');
-        } else {
-          console.log('[CALL 1B] ✅ Respuesta basada en observación real del video');
-        }
+  audienceSimulation = audienceSimulationResult;
 
-        audienceSimulation = safeParseJSON(rawText, 'silicon-audience');
-        console.log('[SILICON AUDIENCE] Simulación:', audienceSimulation);
-      } else {
-        console.warn('[CALL 1B] Error:', call1bError?.message);
-      }
-    } catch (e) {
-      console.warn('[CALL 1B] Excepción:', e.message);
-    }
+  // Diagnóstico: ¿Gemini realmente observó el video?
+  const noVioSenales = [
+    'no tengo acceso', 'no puedo ver', 'no puedo acceder',
+    'basándome en los eventos', 'según los datos proporcionados', 'sin poder ver',
+  ];
+  const noVio = noVioSenales.some(s => call1bRaw.toLowerCase().includes(s));
+  if (noVio) {
+    console.warn('[CALL 1B] ⚠️ Gemini NO vio el video — responde solo con texto');
+  } else {
+    console.log('[CALL 1B] ✅ Respuesta basada en observación real del video');
+  }
 
+  console.log('[SILICON AUDIENCE] Simulación:', audienceSimulation);
+
+} catch (e) {
+  console.warn('[CALL 1B] Excepción:', e.message);
+}
    
     setAnalysisProgress(55);
 
