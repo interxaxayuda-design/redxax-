@@ -1,3 +1,22 @@
+import {
+  BarChart3,
+  BrainCircuit,
+  CheckCircle, CheckSquare,
+  Compass,
+  FileText,
+  Gem,
+  MessageSquare,
+  Microscope,
+  RotateCcw,
+  Send,
+  Square,
+  Target,
+  TrendingUp,
+  Upload,
+  Users,
+  X,
+  Zap
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react'; //const buildPreClassifierPrompt = () => `  //import { FFmpeg } from '@ffmpeg/ffmpeg';
 import logo from './logo.png';
 import {
@@ -11,10 +30,11 @@ import {
   NICHE_MOTORS,
   parsePreClassifierResponse,
   PREDICTION_MARKET_SCHEMA,
+  // ← nuevo:
   RESEARCH_BRAIN_SCHEMA,
   SCORING_BRAIN_SCHEMA,
   SILICON_AUDIENCE_SCHEMA
-} from './prompts.js'; // ← acá, sin "virax-"
+} from './virax-prompts.js';
 
 import { createClient } from '@supabase/supabase-js'; //phaseScores  //toggleStep  //const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
 
