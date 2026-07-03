@@ -190,6 +190,14 @@ export const safeParseJSON = (rawText, context = '') => {
 // Todos los prompts reducidos al mínimo de tokens necesario.
 // ─────────────────────────────────────────────────────────────
 
+// ═════════════════════════════════════════════════════════════
+// VIRAX — Prompts v2
+// Reglas aplicadas: sin enseñar, sin instrucciones de score,
+// prompts cortos, sin JSON embebido (tags de texto), análisis
+// libre pero obligatoriamente completo.
+// Nombres de funciones y constantes: intactos.
+// ═════════════════════════════════════════════════════════════
+
 export const NICHE_MOTORS = {
   "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
   "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
@@ -215,32 +223,26 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
 
 // ─────────────────────────────────────────────────────────────
 // CALL 0 — Observador puro
-// Solo describe. No interpreta. No evalúa.
 // ─────────────────────────────────────────────────────────────
 export const buildPreClassifierPrompt = () => `
-Analizá este video en DOS BLOQUES con el formato exacto que se indica.
+Tenés acceso directo al video. Mirá el video completo, de principio a fin, sin saltear ningún segundo, y respondé con tu propio criterio.
 
 [DESCRIPCION]
-Describí el video segundo a segundo. Solo describí, no evalúes.
-Incluí: qué aparece en pantalla, audio (voz, música, tono), texto en pantalla (copiado literal),
-ritmo de cortes, calidad de producción, producto en uso o solo mencionado,
-si hay persona en cámara, CTA, estructura narrativa.
-Señalá si existe: logo en primeros 3s, precio visible, antes/después, voz IA, testimonio, plantilla Canva/CapCut.
-Máximo 800 palabras. Sin juicios de valor.
+Describí lo que ves y escuchás: imagen, audio, texto en pantalla, ritmo, estructura, producción. Observá, no evalúes. Máximo 700 palabras.
 [/DESCRIPCION]
 
 [SEÑALES]
 duracion: <segundos>
+industria_detectada: <tu criterio, máximo 4 palabras>
+elemento_en_s0: <qué aparece en el primer frame>
+payoff_segundo: <segundo donde ocurre el punto más fuerte del video>
 audio_presente: <sí|no>
 audio_desde_inicio: <sí|no>
-es_slideshow: <sí|no>
-voz_ia: <sí|no>
-logo_en_frame_0: <sí|no>
 tiene_rehook: <sí|no>
-payoff_segundo: <número>
 cortes_por_10s: <número>
-industria_detectada: <máximo 4 palabras>
-elemento_en_s0: <qué aparece en el primer frame, sin evaluar>
+logo_en_frame_0: <sí|no>
+voz_ia: <sí|no>
+es_slideshow: <sí|no>
 pregunta_visible: <sí|no>
 texto_en_pantalla_s0: <texto literal o "ninguno">
 transformacion_visible: <sí|no>
@@ -249,7 +251,7 @@ transformacion_visible: <sí|no>
 
 
 // ─────────────────────────────────────────────────────────────
-// parsePreClassifierResponse
+// parsePreClassifierResponse — sin cambios de contrato
 // ─────────────────────────────────────────────────────────────
 export const parsePreClassifierResponse = (rawText) => {
   const descMatch = rawText.match(/\[DESCRIPCION\]([\s\S]*?)\[\/DESCRIPCION\]/);
@@ -335,32 +337,28 @@ export const buildResearchBrainPrompt = (platform, industria, objetivo, benchmar
     ? `BENCHMARK:\n${JSON.stringify(benchmarkData, null, 2)}`
     : 'Sin benchmark interno.';
 
-  return `Junio 2026. Buscá datos actuales de ${pName} para el nicho "${industria}".
-
-Investigá:
-1. Formatos funcionando en ${pName} para "${industria}" en 2026
-2. Quejas frecuentes sobre este tipo de contenido
-3. Patrones de hook en videos virales recientes del nicho
+  return `
+Investigá el estado actual de ${pName} para el nicho "${industria}", pensando en un creador cuyo objetivo es: ${objetivo}.
 
 ${benchmarkBlock}
 
-Respondé SOLO este JSON:
-{
-  "hooks_virales_reales": [{ "descripcion": "", "mecanismo_psicologico": "", "resultado_aproximado": "" }],
-  "patron_hook_dominante": "",
-  "top_formatos_ganadores": [],
-  "errores_hook_comunes": [],
-  "confianza_research": "<alta|media|baja>",
-  "fatiga_de_formato": "",
-  "benchmark_viral_score": <0-100>,
-  "oportunidad_detectada": "",
-  "fuente_temporal": "<búsqueda_2026|conocimiento_entrenamiento_2025>"
-}`;
+[RESEARCH]
+hooks_virales_reales: <ejemplos reales, con el mecanismo detrás de cada uno>
+patron_hook_dominante: <texto>
+top_formatos_ganadores: <lista breve>
+errores_hook_comunes: <lista breve>
+fatiga_de_formato: <texto>
+oportunidad_detectada: <texto>
+confianza_research: <alta|media|baja>
+benchmark_viral_score: <0-100>
+fuente_temporal: <búsqueda_actual|conocimiento_entrenamiento>
+[/RESEARCH]
+`;
 };
 
 
 // ─────────────────────────────────────────────────────────────
-// SILICON AUDIENCE — Perfiles
+// SILICON AUDIENCE — Perfiles (datos, no prompts)
 // ─────────────────────────────────────────────────────────────
 export const SILICON_PROFILES = [
   {
@@ -429,12 +427,11 @@ export const buildSiliconAudiencePrompt = (descripcionRaw, marketState, platform
   }[platform] || platform;
 
   const perfilesStr = SILICON_PROFILES.map(p =>
-    `[${p.id.toUpperCase()}] imp=${p.psicologia.impatience} ads=${p.psicologia.tolerance_to_ads} compra=${p.psicologia.receptivity_to_purchase} vol=${p.volumen}
-retiene: ${p.retiene_si}
-abandona: ${p.abandona_si}`
-  ).join('\n---\n');
+    `[${p.id.toUpperCase()}] ${p.descripcion} (peso=${p.peso}, ${p.volumen})`
+  ).join('\n');
 
-  return `Simulás audiencia real de ${pName}. Tenés acceso directo al video.
+  return `
+Tenés acceso directo al video. Vas a simular, uno por uno y con total libertad de criterio, cómo reacciona cada uno de estos seis usuarios reales de ${pName} al verlo.
 
 DURACIÓN: ${duracionSegundos}s
 MERCADO: ${JSON.stringify(marketState)}
@@ -442,37 +439,29 @@ MERCADO: ${JSON.stringify(marketState)}
 DESCRIPCIÓN DEL VIDEO:
 ${descripcionRaw}
 
-PERFILES:
+USUARIOS:
 ${perfilesStr}
 
-INSTRUCCIONES:
-- Observá el video completo antes de simular.
-- Cada perfil decide RETUVO o ABANDONÓ basándose en lo que percibe.
-- Perfiles sin_audio reaccionan solo a señales visuales.
-- Sé honesto. Si todos retienen o todos abandonan, revisá.
-- curioso_aleatorio tiene peso doble en el FYP real.
+Mirá el video completo para cada perfil antes de decidir. Cada uno puede abandonar en el segundo que deje de interesarle, o llegar hasta el final.
 
-Respondé SOLO este JSON:
-{
-  "simulacion": [
-    {
-      "perfil_id": "",
-      "decision_final": "RETUVO|ABANDONÓ",
-      "abandono_en_evento": <number|null>,
-      "completo": <boolean>,
-      "compartio": <boolean>,
-      "guardó": <boolean>,
-      "comentaria": <boolean>,
-      "eventos_atencion": [{ "evento_index": <number>, "segundo": <number>, "decision": "SIGUE|ABANDONA", "razon": "<string>" }],
-      "razon_final": "<string>"
-    }
-  ],
-  "segundo_mas_peligroso": <number>,
-  "evento_que_mas_retiene": "<string>",
-  "evento_que_mas_expulsa": "<string>",
-  "patron_abandono": "<string>",
-  "patron_retencion": "<string>"
-}`;
+[SIMULACION]
+Repetí este bloque una vez por usuario:
+perfil: <id>
+decision_final: RETUVO|ABANDONÓ
+abandono_en_evento: <número o ninguno>
+completo: <sí|no>
+compartio: <sí|no>
+guardo: <sí|no>
+comento: <sí|no>
+razon_final: <texto>
+[/SIMULACION]
+
+[PATRONES]
+segundo_mas_peligroso: <número>
+evento_que_mas_retiene: <texto>
+evento_que_mas_expulsa: <texto>
+[/PATRONES]
+`;
 };
 
 
@@ -488,46 +477,34 @@ export const buildPredictionMarketPrompt = (simulacionSilicon, marketState, plat
     `${p.perfil_id}: ${p.decision_final} | completo:${p.completo} | compartió:${p.compartio} | ${p.razon_final}`
   ).join('\n');
 
-  return `Prediction Market — ${pName}
+  return `
+Sos el prediction market de ${pName} para el nicho "${industria}". Tenés la simulación completa de audiencia y el estado del mercado. Considerá todo antes de fijar tu predicción — nada queda afuera.
 
 SIMULACIÓN:
 ${resumen}
-s_peligroso:${simulacionSilicon.segundo_mas_peligroso ?? '—'} | retiene:${simulacionSilicon.evento_que_mas_retiene} | expulsa:${simulacionSilicon.evento_que_mas_expulsa}
+segundo_mas_peligroso:${simulacionSilicon.segundo_mas_peligroso ?? '—'} | retiene:${simulacionSilicon.evento_que_mas_retiene} | expulsa:${simulacionSilicon.evento_que_mas_expulsa}
 
 MERCADO: ${JSON.stringify(marketState)}
 
-viralScore = probabilidad top 15% del nicho en 7 días. curioso_aleatorio tiene peso doble.
-salesScore = señales de conversión: demo, CTA, prueba social, claridad. Independiente del viral.
-Sé conservador con la base rate: el viral real es raro.
-Pero la señal de "saturación de mercado" del research (fatiga_de_formato,
-oportunidad_detectada) solo debe penalizar fuerte si confianza_research es "alta".
-Si es "media", penalización leve. Si es "baja" o el campo no está, ignorala
-y basate solo en la simulación de audiencia.
-
-Respondé SOLO este JSON:
-{
-  "retencion_por_perfil": {
-    "curioso_aleatorio": { "retencion_pct": <number>, "razon": "<string>" },
-    "impaciente":        { "retencion_pct": <number>, "razon": "<string>" },
-    "promedio":          { "retencion_pct": <number>, "razon": "<string>" },
-    "nicho":             { "retencion_pct": <number>, "razon": "<string>" },
-    "esceptico":         { "retencion_pct": <number>, "razon": "<string>" },
-    "comprador":         { "retencion_pct": <number>, "razon": "<string>" }
-  },
-  "razonamiento_paso_a_paso": {
-  "peso_curioso_aleatorio": "<qué pesó y por qué, en 1 frase>",
-  "senal_mas_determinante": "<cuál de las 6 retenciones definió más el score>",
-  "ajuste_por_research": "<si penalizó o no por fatiga_de_formato, y por qué>"
-},
-"viralScore": <number>,
-  "probabilidad_viral": <number>,
-  "viralScore": <number>,
-  "salesScore": <number>,
-  "confianza_prediccion": "<alta|media|baja>",
-  "razon_principal_score": "<string>",
-  "accion_clave_viral": "<string>",
-  "accion_clave_ventas": "<string>"
-}`;
+[PREDICCION]
+retencion_por_perfil.curioso_aleatorio: <0-100>, razon: <texto>
+retencion_por_perfil.impaciente: <0-100>, razon: <texto>
+retencion_por_perfil.promedio: <0-100>, razon: <texto>
+retencion_por_perfil.nicho: <0-100>, razon: <texto>
+retencion_por_perfil.esceptico: <0-100>, razon: <texto>
+retencion_por_perfil.comprador: <0-100>, razon: <texto>
+viralScore: <0-100>
+salesScore: <0-100>
+probabilidad_viral: <0-100>
+confianza_prediccion: <alta|media|baja>
+razon_principal_score: <texto>
+accion_clave_viral: <texto>
+accion_clave_ventas: <texto>
+razonamiento_paso_a_paso.peso_curioso_aleatorio: <qué pesó y por qué, en 1 frase>
+razonamiento_paso_a_paso.senal_mas_determinante: <cuál de las seis retenciones definió más el score>
+razonamiento_paso_a_paso.ajuste_por_research: <si hubo ajuste por el mercado, y por qué>
+[/PREDICCION]
+`;
 };
 
 
@@ -543,63 +520,77 @@ export const buildScoringBrainPrompt = (
   industria,
   duracionSegundos
 ) => `
-FASE 1 — SCORING CIEGO (ejecutá primero, scores inmutables)
+Tenés el video completo, la simulación de audiencia real y el research de mercado. Analizá todo antes de emitir tu veredicto — nada queda afuera, con total libertad de criterio.
 
-PLATAFORMA: ${platform} | DURACIÓN: ${duracionSegundos}s
+PLATAFORMA: ${platform} | DURACIÓN: ${duracionSegundos}s | INDUSTRIA: ${industria} | OBJETIVO: ${objetivo}
 
 DESCRIPCIÓN DEL VIDEO:
 ${videoDescription}
 
-SILICON AUDIENCE + PREDICTION MARKET:
+AUDIENCIA Y MERCADO:
 ${audienceAnalysis}
 
-Calculá viralScore, salesScore, scrollStopScore, hookDNA, steppsScore,
-platformScores, retentionData, retentionCurve, viewsPrediction, commentTrigger.
+BENCHMARK:
+${JSON.stringify(researchData)}
 
-viralScore — evaluá desde la descripción y el análisis de audiencia:
-- Audio desde el inicio (sin audio en >10s = retención muy baja)
-- Primer frame: ¿genera pregunta mental? ¿texto visible? ¿movimiento sorpresivo?
-- Payoff tarde + ritmo lento = abandono masivo
-- Cuántos perfiles abandonaron y en qué segundo (curioso_aleatorio tiene peso doble)
+Si hay problemas reales, nombralos sin suavizarlos. El roadmap solo debe incluir problemas que vos mismo detectaste, ordenados por impacto real.
 
-salesScore — evaluá independiente del viral:
-- Demo del producto en uso real
-- CTA explícito (verbal, texto o implícito claro)
-- Prueba social o comparación visible
-- Propuesta de valor clara sin contexto previo
-
-Si hay problemas reales (sin audio, hook plano, CTA ausente) nombralos sin suavizarlos.
-
-FASE 2 — VEREDICTO (solo honestVerdict, roadmap y vision)
-Los scores de Fase 1 son fijos.
-
-OBJETIVO: ${objetivo} | INDUSTRIA: ${industria}
-BENCHMARK: ${JSON.stringify(researchData)}
-
-honestVerdict: problemas concretos de Fase 1 conectados con el objetivo del creador.
-roadmap: ordenado por impacto real, solo problemas que surgieron en Fase 1.
-
-Respondé SOLO este JSON:
-{
-  "viralScore":      { "score": 0, "verdict": "", "accion_clave": "" },
-  "salesScore":      { "score": 0, "verdict": "", "accion_clave": "" },
-  "scrollStopScore": { "score": 0, "faceDetected": false, "textOnScreen": false, "contrastLevel": "bajo", "emotionVisible": "ninguna", "emotionIntensity": 0, "verdict": "" },
-  "hookDNA":         { "strength": 0, "pattern": "", "missingElement": "", "optimizedHook": "" },
-  "steppsScore":     { "socialCurrency": 0, "triggers": 0, "emotion": 0, "public": 0, "practicalValue": 0, "stories": 0, "viralCoefficient": 0.0, "dominantFactor": "", "weakestFactor": "", "shareMotivation": "" },
-  "honestVerdict":   "",
-  "roadmap":         [{ "problema": "", "solucion": "", "resultado": "", "impacto": "ALTO" }],
-  "vision":          { "niche": "", "type": "", "audience": "", "promise": "" },
-  "platformScores":  { "tiktok": { "score"s: 0, "verdict": "", "topTip": "" }, "reels": { "score": 0, "verdict": "", "topTip": "" }, "shorts": { "score": 0, "verdict": "", "topTip": "" } },
-  "retentionData":   { "at3s": "", "at10s": "", "final": "" },
-  "retentionCurve":  [],
-  "viewsPrediction":    { "scenario_low": "", "scenario_mid": "", "scenario_high": "", "probability_viral": "" },
-  "razonamiento_viralScore": "<2-3 frases: qué datos de audienceAnalysis pesaron más>",
-"razonamiento_salesScore": "<2-3 frases: qué señal de venta encontró o no encontró>",
-"viralScore": { "score": 0, "verdict": "", "accion_clave": "" },
-  "firstHourStrategy":  { "optimalPostTime": "", "firstActionAfterPost": "", "commentSeed": "", "engagementBoost": "" },
-  "commentTrigger":     { "probability": 0, "triggerType": "", "suggestedCTA": "" }
-}`;
-
+[VEREDICTO]
+viralScore.score: <0-100>
+viralScore.verdict: <texto>
+viralScore.accion_clave: <texto>
+salesScore.score: <0-100>
+salesScore.verdict: <texto>
+salesScore.accion_clave: <texto>
+scrollStopScore.score: <0-100>
+scrollStopScore.faceDetected: <sí|no>
+scrollStopScore.textOnScreen: <sí|no>
+scrollStopScore.contrastLevel: <bajo|medio|alto>
+scrollStopScore.emotionVisible: <texto>
+scrollStopScore.emotionIntensity: <0-100>
+scrollStopScore.verdict: <texto>
+hookDNA.strength: <0-100>
+hookDNA.pattern: <texto>
+hookDNA.missingElement: <texto>
+hookDNA.optimizedHook: <texto>
+steppsScore.socialCurrency: <0-100>
+steppsScore.triggers: <0-100>
+steppsScore.emotion: <0-100>
+steppsScore.public: <0-100>
+steppsScore.practicalValue: <0-100>
+steppsScore.stories: <0-100>
+steppsScore.viralCoefficient: <0-1>
+steppsScore.dominantFactor: <texto>
+steppsScore.weakestFactor: <texto>
+steppsScore.shareMotivation: <texto>
+honestVerdict: <texto>
+roadmap: <una línea por problema real: problema | solución | resultado esperado | impacto ALTO/MEDIO/BAJO>
+vision.niche: <texto>
+vision.type: <texto>
+vision.audience: <texto>
+vision.promise: <texto>
+platformScores.tiktok: <score, verdict, topTip>
+platformScores.reels: <score, verdict, topTip>
+platformScores.shorts: <score, verdict, topTip>
+retentionData.at3s: <texto>
+retentionData.at10s: <texto>
+retentionData.final: <texto>
+retentionCurve: <puntos segundo:retención% representativos del video>
+viewsPrediction.scenario_low: <texto>
+viewsPrediction.scenario_mid: <texto>
+viewsPrediction.scenario_high: <texto>
+viewsPrediction.probability_viral: <texto>
+firstHourStrategy.optimalPostTime: <texto>
+firstHourStrategy.firstActionAfterPost: <texto>
+firstHourStrategy.commentSeed: <texto>
+firstHourStrategy.engagementBoost: <texto>
+commentTrigger.probability: <0-100>
+commentTrigger.triggerType: <texto>
+commentTrigger.suggestedCTA: <texto>
+razonamiento_viralScore: <2-3 frases: qué de la audiencia pesó más>
+razonamiento_salesScore: <2-3 frases: qué señal de venta encontró o no>
+[/VEREDICTO]
+`;
 
 // ─────────────────────────────────────────────────────────────
 // Utilidades — sin cambios
