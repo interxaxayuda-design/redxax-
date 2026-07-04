@@ -34,14 +34,13 @@ import {
   RESEARCH_BRAIN_SCHEMA,
   SCORING_BRAIN_SCHEMA,
   SILICON_AUDIENCE_SCHEMA
-} from './virax-prompts.js';
+} from './prompts.js'; // ← acá, sin "virax-"
 
 import { createClient } from '@supabase/supabase-js'; //phaseScores  //toggleStep  //const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
-
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso';
-
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
 
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 
@@ -126,7 +125,7 @@ export const safeParseJSON = (rawText, context = '') => {
     return result;
   };
 
-  // Intento 1: limpieza con lookahead //setVideoMeta({
+   
   try { return JSON.parse(aggressiveClean(rawText)); }
   catch (err1) { console.warn(`[${context}] Intento 1 falló:`, err1.message); }
 
