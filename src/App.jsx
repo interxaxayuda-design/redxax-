@@ -17,7 +17,7 @@ import {
   X,
   Zap
 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react'; //const buildPreClassifierPrompt = () => `  //import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { useEffect, useRef, useState } from 'react';
 import logo from './logo.png';
 import {
   buildPreClassifierPrompt,
