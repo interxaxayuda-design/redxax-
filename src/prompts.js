@@ -1,47 +1,57 @@
 // ─────────────────────────────────────────────────────────────
-// virax-prompts.js — VIRAX v5 (File Search + anti-contaminación
-// entre brains + timestamps nativos de Gemini)
+// virax-prompts.js — VIRAX v6 (schemas completos y precisos +
+// taxonomía de patrones + estructura oficial de Gemini)
 //
 // Todos los prompts, schemas y utilidades de scoring viven acá.
 // App.jsx SOLO importa de este archivo — no vuelve a declarar
 // nada de esto localmente. Si necesitás modificar un prompt,
 // se edita ÚNICAMENTE acá.
 //
-// CAMBIOS v3 -> v4:
-// - Se agrega la sección FILE SEARCH (RAG nativo de Gemini): en vez
-//   de pedirle al modelo que "recuerde" hooks virales de su
-//   entrenamiento, se consulta una base real e indexada de hooks y
-//   desarrollos (buenos y malos) con miles de ejemplos.
-// - buildResearchBrainPrompt se ACHICA: ya no describe ejemplos a
-//   mano, delega la búsqueda al tool file_search.
-// - Se agregan helpers de indexado (uso admin / backend, no en el
-//   bundle del cliente) para cargar el corpus histórico.
+// CAMBIOS v5 -> v6 (ninguno requiere tocar App.jsx: mismos nombres
+// de export, misma firma de parámetros, mismas keys de salida):
 //
-// CAMBIOS v4 -> v5:
-// - CALL 0 ya NO describe el video completo. [DESCRIPCION] queda
-//   limitada al hook (primeros `hookWindowSegundos` segundos).
-//   Antes, esa descripción completa se pasaba a CALL 1B y CALL 3,
-//   que YA miran el video entero por su cuenta (vía context cache)
-//   — recibirla los anclaba a la lectura de CALL 0 en vez de
-//   observar de forma independiente. [SEÑALES] sigue requiriendo
-//   el video completo porque son hechos objetivos, no narrativa.
-// - buildSiliconAudiencePrompt y buildScoringBrainPrompt reciben
-//   ahora `hookDescripcion` (no `videoDescription`/`descripcionRaw`)
-//   y el prompt la marca explícitamente como referencia parcial,
-//   no como resumen del video completo — con instrucción explícita
-//   de observar y corregir por cuenta propia (anti-anchoring).
-// - payoff_segundo ahora se pide en formato MM:SS (parseado por
-//   parsePreClassifierResponse), siguiendo la guía oficial de
-//   Gemini: es el formato en el que el modelo fue entrenado para
-//   razonar temporalmente sobre video, más preciso que un entero
-//   suelto.
-// - Pendiente de tu lado (fuera de este archivo, en gemini-proxy):
-//   Gemini muestrea video a 1 frame/segundo por defecto, lo que
-//   puede perder cortes rápidos — justo lo que importa para contar
-//   `cortes_por_10s` en un hook. Si tu proxy arma el `videoMetadata`
-//   de la Part de video, subir el `fps` (ej. a 4) específicamente
-//   para CALL 0 mejora la detección de corte rápido sin encarecer
-//   mucho el costo, porque solo aplica a esa llamada.
+// 1. BUG CRÍTICO ENCONTRADO Y CORREGIDO: SCORING_BRAIN_SCHEMA y
+//    PREDICTION_MARKET_SCHEMA solo declaraban una fracción de los
+//    campos que el prompt pedía y que App.jsx lee de outputParsed.
+//    Como responseSchema usa decodificación controlada (no
+//    validación posterior), un campo que no está en el schema es
+//    IMPOSIBLE de generar, sin importar qué diga el prompt. Por
+//    eso hookDNA, steppsScore, roadmap, platformScores, etc.
+//    llegaban siempre undefined. Ahora los 4 schemas declaran
+//    exactamente los campos que el prompt pide y que la UI usa.
+// 2. Mismo bug de formato que Silicon Audience (tags de texto
+//    mezclados con JSON mode) también existía en
+//    buildResearchBrainPrompt — corregido.
+// 3. Reordenamiento de campos (propertyOrdering) en todos los
+//    schemas: los campos de razonamiento van ANTES que el score
+//    final, siguiendo la recomendación oficial de Gemini — la
+//    generación es autoregresiva, así que si el score sale primero
+//    el modelo no pudo "pensarlo" todavía.
+// 4. Se agregó `description` a cada campo de cada schema (Google:
+//    "crucial para guiar la salida del modelo"), `enum` en todo
+//    campo de valores cerrados, y `minimum`/`maximum` en los scores
+//    0-100 — nada de esto existía antes.
+// 5. Los prompts de texto se ACORTARON: ya no listan campo por
+//    campo (eso ahora lo hace el schema). Es la recomendación
+//    oficial de Gemini para schemas complejos, y de paso resuelve
+//    el pedido original de "prompt corto".
+// 6. Estructura <role>/<context>/<task> en los prompts — patrón
+//    documentado oficialmente por Gemini para que el modelo separe
+//    instrucción, contexto y tarea.
+// 7. NUEVO: HOOK_PATTERNS — taxonomía cerrada de patrones de hook,
+//    compartida entre hookDNA.pattern y la metadata `patron` de
+//    File Search. Incluye payoff_negado: el video corta justo
+//    antes de mostrar algo que prometía mostrar (ej. una piedra a
+//    punto de caer al agua, corte abrupto antes del impacto).
+// 8. Fix menor: buildSiliconSummary filtraba por `p.guardó` (con
+//    tilde), que no coincidía con ningún campo real. Ahora es
+//    `p.guardo`.
+//
+// Pendiente de tu lado (fuera de este archivo, en gemini-proxy):
+// no le pongas thinkingBudget:0 a CALL 1B/2/3 — son las tareas de
+// razonamiento multi-paso para las que 2.5 Flash está diseñado
+// como "thinking model". Dejalo dinámico (-1) o con presupuesto
+// generoso (2048-4096).
 // ─────────────────────────────────────────────────────────────
 
 // ═════════════════════════════════════════════════════════════
@@ -70,7 +80,36 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
 };
 
 // ═════════════════════════════════════════════════════════════
-// FILE SEARCH — configuración y helpers (NUEVO)
+// TAXONOMÍA DE PATRONES DE HOOK (NUEVO en v6)
+//
+// Vocabulario CERRADO y compartido entre:
+//  - hookDNA.pattern en SCORING_BRAIN_SCHEMA (para que cada video
+//    quede etiquetado siempre con el mismo nombre de patrón)
+//  - la metadata `patron` que se indexa en File Search (para que
+//    filtrar por patrón realmente agrupe ejemplos comparables)
+//
+// Si con el tiempo identificás un patrón real que no está acá,
+// agregalo a esta lista — no lo dejes como texto libre en ninguno
+// de los dos lugares, o se rompe la comparabilidad entre ejemplos.
+// ═════════════════════════════════════════════════════════════
+export const HOOK_PATTERNS = [
+  "pregunta_directa",        // Le hace una pregunta directa al espectador
+  "afirmacion_contradictoria", // Contradice una creencia común / genera fricción
+  "shock_visual",             // Imagen o sonido de alto impacto en el frame 0
+  "pattern_interrupt",        // Rompe el patrón visual esperado del feed
+  "payoff_negado",             // Corta justo antes de mostrar la resolución que prometía (ej: piedra a punto de caer al agua, corte abrupto antes del impacto)
+  "cold_open",                 // Arranca en medio de la acción, sin contexto previo
+  "pov_relatable",              // Situación relatable en primera persona / POV
+  "transformacion_teaser",      // Muestra un adelanto del resultado antes de explicar cómo se logró
+  "conteo_o_lista",              // "3 cosas que...", "el error #1..."
+  "confesion_o_secreto",          // Promesa de revelar algo oculto o no dicho antes
+  "bait_desconectado",             // Imagen de impacto sin relación real con el resto del contenido
+  "apertura_informativa",           // Presenta el producto/tema directamente, sin mecanismo de gancho
+  "debil",                           // No hay mecanismo de hook identificable
+];
+
+// ═════════════════════════════════════════════════════════════
+// FILE SEARCH — configuración y helpers
 //
 // Un solo store contiene TODO el corpus histórico (hooks y
 // desarrollos, buenos y malos, de todos los nichos). La separación
@@ -86,7 +125,7 @@ export const FILE_SEARCH_STORE_DISPLAY_NAME = "virax-corpus-viral";
 //   segmento  -> "hook" | "desarrollo"
 //   resultado -> "bueno" | "malo"
 //   industria -> mismas keys que NICHE_MOTORS (ej: "estetica")
-//   patron    -> ej: "pregunta", "shock", "pattern_interrupt", "pov"...
+//   patron    -> un valor de HOOK_PATTERNS (ver taxonomía arriba)
 //   plataforma-> "tiktok" | "reels" | "shorts"
 
 /**
@@ -121,11 +160,13 @@ export const buildFileSearchTool = (storeName, filters = {}) => {
 
 /**
  * Filtro típico para traer solo ejemplos de HOOK del nicho actual.
+ * `patron`, si se pasa, debe ser un valor de HOOK_PATTERNS.
  */
-export const fileSearchFiltersHook = (industria, plataforma) => ({
+export const fileSearchFiltersHook = (industria, plataforma, patron) => ({
   segmento: "hook",
   industria,
   ...(plataforma && plataforma !== "all" ? { plataforma } : {}),
+  ...(patron ? { patron } : {}),
 });
 
 /**
@@ -139,115 +180,306 @@ export const fileSearchFiltersDesarrollo = (industria, plataforma) => ({
 
 // ═════════════════════════════════════════════════════════════
 // SCHEMAS — para responseSchema de Gemini (JSON mode estricto)
-// Sin cambios.
+//
+// v6: cada campo tiene `description` (Google: "crucial para guiar
+// la salida"), los campos de valores cerrados usan `enum`, los
+// scores 0-100 tienen `minimum`/`maximum`, y `propertyOrdering`
+// fuerza que el razonamiento se genere ANTES que el score final
+// en cada objeto — la generación es autoregresiva, así que el
+// orden importa para la calidad del resultado, no solo para la
+// legibilidad.
 // ═════════════════════════════════════════════════════════════
+
 export const RESEARCH_BRAIN_SCHEMA = {
   type: "OBJECT",
+  description: "Investigación de mercado sobre hooks reales para el nicho y plataforma indicados, recuperada de la base indexada (File Search) cuando esté disponible.",
   properties: {
-    hooks_virales_reales:   { type: "STRING" },
-    patron_hook_dominante:  { type: "STRING" },
-    top_formatos_ganadores: { type: "STRING" },
-    errores_hook_comunes:   { type: "STRING" },
-    fatiga_de_formato:      { type: "STRING" },
-    oportunidad_detectada:  { type: "STRING" },
-    confianza_research:     { type: "STRING" },
-    benchmark_viral_score:  { type: "NUMBER" },
-    fuente_temporal:        { type: "STRING" },
+    hooks_virales_reales: {
+      type: "STRING",
+      description: "Ejemplos reales recuperados de la base indexada, con el mecanismo psicológico detrás de cada uno. Si no hay ejemplos suficientes en la base, decilo acá en vez de inventar.",
+    },
+    patron_hook_dominante: {
+      type: "STRING",
+      enum: HOOK_PATTERNS,
+      description: "El patrón (de la taxonomía HOOK_PATTERNS) que más se repite entre los ejemplos ganadores recuperados.",
+    },
+    top_formatos_ganadores: { type: "STRING", description: "Formatos de video que están funcionando mejor ahora mismo en este nicho y plataforma." },
+    errores_hook_comunes:   { type: "STRING", description: "Errores de hook recurrentes, basados en los ejemplos marcados como 'malo' en la base." },
+    fatiga_de_formato:      { type: "STRING", description: "Si algún formato o patrón ya está sobreexpuesto en este nicho/plataforma y perdiendo efectividad." },
+    oportunidad_detectada:  { type: "STRING", description: "Un ángulo que los ejemplos recuperados sugieren que está subexplotado." },
+    benchmark_viral_score:  { type: "NUMBER", minimum: 0, maximum: 100, description: "Nivel de exigencia actual del nicho/plataforma para considerarse viral." },
+    confianza_research:     { type: "STRING", enum: ["alta", "media", "baja"], description: "Qué tan respaldados están los hallazgos por ejemplos reales encontrados. 'baja' si la base no tenía cobertura suficiente de este nicho." },
+    fuente_temporal:        { type: "STRING", enum: ["file_search", "conocimiento_entrenamiento"], description: "Si la información salió de la base indexada o, a falta de datos, del conocimiento general del modelo." },
   },
+  propertyOrdering: [
+    "hooks_virales_reales", "patron_hook_dominante", "top_formatos_ganadores",
+    "errores_hook_comunes", "fatiga_de_formato", "oportunidad_detectada",
+    "benchmark_viral_score", "confianza_research", "fuente_temporal",
+  ],
 };
 
 export const SILICON_AUDIENCE_SCHEMA = {
   type: "OBJECT",
+  description: "Simulación de cómo reaccionan 6 perfiles de audiencia distintos al ver el video completo.",
   properties: {
     simulacion: {
       type: "ARRAY",
+      description: "Una entrada por cada uno de los 6 perfiles definidos en SILICON_PROFILES.",
       items: {
         type: "OBJECT",
         properties: {
-          perfil:              { type: "STRING" },
-          decision_final:      { type: "STRING" },
-          abandono_en_evento:  { type: "STRING" },
-          completo:            { type: "BOOLEAN" },
-          compartio:           { type: "BOOLEAN" },
-          guardo:              { type: "BOOLEAN" },
-          comento:             { type: "BOOLEAN" },
-          razon_final:         { type: "STRING" },
+          perfil_id: {
+            type: "STRING",
+            enum: ["curioso_aleatorio", "impaciente", "promedio", "nicho", "esceptico", "comprador"],
+            description: "Cuál de los 6 perfiles está reaccionando.",
+          },
+          eventos_atencion: {
+            type: "ARRAY",
+            description: "Cronología de la atención de este perfil, en el orden en que ocurren los eventos relevantes del video.",
+            items: {
+              type: "OBJECT",
+              properties: {
+                segundo:  { type: "NUMBER", description: "Segundo del video en el que ocurre este evento." },
+                decision: { type: "STRING", enum: ["RETIENE", "ABANDONA"], description: "Si en este momento el perfil sigue mirando o se va." },
+              },
+              propertyOrdering: ["segundo", "decision"],
+            },
+          },
+          razon_final:    { type: "STRING", description: "Por qué este perfil tomó su decisión final, en su propio lenguaje." },
+          decision_final: { type: "STRING", enum: ["RETUVO", "ABANDONÓ"], description: "Resultado final: si terminó viendo el video o lo abandonó en algún punto." },
+          completo:       { type: "BOOLEAN", description: "Si llegó hasta el final del video." },
+          compartio:      { type: "BOOLEAN", description: "Si este perfil compartiría el video." },
+          guardo:         { type: "BOOLEAN", description: "Si este perfil guardaría el video." },
+          comento:        { type: "BOOLEAN", description: "Si este perfil dejaría un comentario." },
         },
+        propertyOrdering: ["perfil_id", "eventos_atencion", "razon_final", "decision_final", "completo", "compartio", "guardo", "comento"],
       },
     },
-    segundo_mas_peligroso: { type: "NUMBER" },
-    evento_que_mas_retiene: { type: "STRING" },
-    evento_que_mas_expulsa: { type: "STRING" },
+    segundo_mas_peligroso:  { type: "NUMBER", description: "El segundo del video donde más perfiles decidieron abandonar." },
+    evento_que_mas_retiene: { type: "STRING", description: "Qué elemento concreto del video retuvo a más perfiles." },
+    evento_que_mas_expulsa: { type: "STRING", description: "Qué elemento concreto del video expulsó a más perfiles." },
+    patron_abandono:        { type: "STRING", description: "Patrón general que explica por qué abandonan los que abandonan, mirando los 6 perfiles en conjunto." },
+    patron_retencion:       { type: "STRING", description: "Patrón general que explica por qué se quedan los que se quedan, mirando los 6 perfiles en conjunto." },
   },
+  propertyOrdering: ["simulacion", "segundo_mas_peligroso", "evento_que_mas_retiene", "evento_que_mas_expulsa", "patron_abandono", "patron_retencion"],
 };
 
 export const PREDICTION_MARKET_SCHEMA = {
   type: "OBJECT",
+  description: "Calibración final de scores a partir de la simulación de audiencia y el estado del mercado. La retención por perfil y el razonamiento van antes que los scores para que estén fundamentados, no al revés.",
   properties: {
-    viralScore:             { type: "NUMBER" },
-    salesScore:              { type: "NUMBER" },
-    probabilidad_viral:     { type: "NUMBER" },
-    confianza_prediccion:   { type: "STRING" },
-    razon_principal_score:  { type: "STRING" },
-    accion_clave_viral:     { type: "STRING" },
-    accion_clave_ventas:    { type: "STRING" },
+    retencion_por_perfil: {
+      type: "OBJECT",
+      description: "Retención estimada (0-100) para cada uno de los 6 perfiles, con su razón.",
+      properties: {
+        curioso_aleatorio: { type: "OBJECT", properties: { razon: { type: "STRING" }, retencion_pct: { type: "NUMBER", minimum: 0, maximum: 100 } }, propertyOrdering: ["razon", "retencion_pct"] },
+        impaciente:        { type: "OBJECT", properties: { razon: { type: "STRING" }, retencion_pct: { type: "NUMBER", minimum: 0, maximum: 100 } }, propertyOrdering: ["razon", "retencion_pct"] },
+        promedio:          { type: "OBJECT", properties: { razon: { type: "STRING" }, retencion_pct: { type: "NUMBER", minimum: 0, maximum: 100 } }, propertyOrdering: ["razon", "retencion_pct"] },
+        nicho:             { type: "OBJECT", properties: { razon: { type: "STRING" }, retencion_pct: { type: "NUMBER", minimum: 0, maximum: 100 } }, propertyOrdering: ["razon", "retencion_pct"] },
+        esceptico:         { type: "OBJECT", properties: { razon: { type: "STRING" }, retencion_pct: { type: "NUMBER", minimum: 0, maximum: 100 } }, propertyOrdering: ["razon", "retencion_pct"] },
+        comprador:         { type: "OBJECT", properties: { razon: { type: "STRING" }, retencion_pct: { type: "NUMBER", minimum: 0, maximum: 100 } }, propertyOrdering: ["razon", "retencion_pct"] },
+      },
+      propertyOrdering: ["curioso_aleatorio", "impaciente", "promedio", "nicho", "esceptico", "comprador"],
+    },
+    razonamiento_paso_a_paso: {
+      type: "OBJECT",
+      description: "Rastro explícito de cómo se llegó al score. Lo usa el chat de VIRAX Coach para explicarle al usuario de dónde salió cada número.",
+      properties: {
+        senal_mas_determinante:  { type: "STRING", description: "Cuál de las seis retenciones definió más el score final." },
+        peso_curioso_aleatorio:  { type: "STRING", description: "Qué pesó y por qué sobre el perfil curioso_aleatorio en particular (tiene doble peso en el algoritmo real)." },
+        ajuste_por_research:     { type: "STRING", description: "Si el estado de mercado hizo subir o bajar el score, y por qué." },
+      },
+      propertyOrdering: ["senal_mas_determinante", "peso_curioso_aleatorio", "ajuste_por_research"],
+    },
+    razon_principal_score: { type: "STRING", description: "La razón principal, en 1-2 frases, del score que estás por dar." },
+    viralScore:            { type: "NUMBER", minimum: 0, maximum: 100, description: "Score de potencial viral, calibrado a partir de todo lo anterior." },
+    salesScore:            { type: "NUMBER", minimum: 0, maximum: 100, description: "Score de potencial de ventas, calibrado a partir de todo lo anterior." },
+    probabilidad_viral:    { type: "NUMBER", minimum: 0, maximum: 100, description: "Probabilidad estimada de que este video específico se vuelva viral." },
+    confianza_prediccion:  { type: "STRING", enum: ["alta", "media", "baja"], description: "Qué tan segura es esta predicción." },
+    accion_clave_viral:    { type: "STRING", description: "La acción más importante para mejorar el potencial viral." },
+    accion_clave_ventas:   { type: "STRING", description: "La acción más importante para mejorar el potencial de ventas." },
   },
+  propertyOrdering: [
+    "retencion_por_perfil", "razonamiento_paso_a_paso", "razon_principal_score",
+    "viralScore", "salesScore", "probabilidad_viral", "confianza_prediccion",
+    "accion_clave_viral", "accion_clave_ventas",
+  ],
 };
 
 export const SCORING_BRAIN_SCHEMA = {
   type: "OBJECT",
+  description: "Veredicto final completo del video: el análisis granular va primero, los scores después, para que estén fundamentados en el análisis y no al revés.",
   properties: {
+    hookDNA: {
+      type: "OBJECT",
+      description: "Diagnóstico específico del hook (primeros segundos).",
+      properties: {
+        pattern:        { type: "STRING", enum: HOOK_PATTERNS, description: "El patrón detectado. Ej: si el video corta justo antes de mostrar algo que prometía mostrar (como una piedra a punto de caer al agua y un corte abrupto antes del impacto), es 'payoff_negado'." },
+        missingElement: { type: "STRING", description: "Qué elemento le falta al hook para ser más efectivo." },
+        strength:       { type: "NUMBER", minimum: 0, maximum: 100 },
+        optimizedHook:  { type: "STRING", description: "Una propuesta concreta de hook mejorado." },
+      },
+      propertyOrdering: ["pattern", "missingElement", "strength", "optimizedHook"],
+    },
+    scrollStopScore: {
+      type: "OBJECT",
+      description: "Qué tan bien el frame 0 detiene el scroll.",
+      properties: {
+        faceDetected:     { type: "BOOLEAN" },
+        textOnScreen:     { type: "BOOLEAN" },
+        contrastLevel:    { type: "STRING", enum: ["bajo", "medio", "alto"] },
+        emotionVisible:   { type: "STRING", description: "Emoción visible en el frame 0, o 'ninguna'." },
+        emotionIntensity: { type: "NUMBER", minimum: 0, maximum: 10 },
+        verdict:          { type: "STRING" },
+        score:            { type: "NUMBER", minimum: 0, maximum: 100 },
+      },
+      propertyOrdering: ["faceDetected", "textOnScreen", "contrastLevel", "emotionVisible", "emotionIntensity", "verdict", "score"],
+    },
+    steppsScore: {
+      type: "OBJECT",
+      description: "Framework STEPPS (Wharton) de viralidad.",
+      properties: {
+        socialCurrency:   { type: "NUMBER", minimum: 0, maximum: 10 },
+        triggers:         { type: "NUMBER", minimum: 0, maximum: 10 },
+        emotion:          { type: "NUMBER", minimum: 0, maximum: 10 },
+        public:           { type: "NUMBER", minimum: 0, maximum: 10 },
+        practicalValue:   { type: "NUMBER", minimum: 0, maximum: 10 },
+        stories:          { type: "NUMBER", minimum: 0, maximum: 10 },
+        dominantFactor:   { type: "STRING" },
+        weakestFactor:    { type: "STRING" },
+        shareMotivation:  { type: "STRING" },
+        viralCoefficient: { type: "NUMBER", minimum: 0, maximum: 1 },
+      },
+      propertyOrdering: ["socialCurrency", "triggers", "emotion", "public", "practicalValue", "stories", "dominantFactor", "weakestFactor", "shareMotivation", "viralCoefficient"],
+    },
+    razonamiento_viralScore: { type: "STRING", description: "2-3 frases: qué de la audiencia y del hook pesó más para el score viral. Se genera ANTES de fijar el número." },
+    razonamiento_salesScore: { type: "STRING", description: "2-3 frases: qué señal de venta encontró o no encontró. Se genera ANTES de fijar el número." },
     viralScore: {
       type: "OBJECT",
       properties: {
-        score:        { type: "NUMBER" },
         verdict:      { type: "STRING" },
         accion_clave: { type: "STRING" },
+        score:        { type: "NUMBER", minimum: 0, maximum: 100 },
       },
+      propertyOrdering: ["verdict", "accion_clave", "score"],
     },
     salesScore: {
       type: "OBJECT",
       properties: {
-        score:        { type: "NUMBER" },
         verdict:      { type: "STRING" },
         accion_clave: { type: "STRING" },
+        score:        { type: "NUMBER", minimum: 0, maximum: 100 },
+      },
+      propertyOrdering: ["verdict", "accion_clave", "score"],
+    },
+    honestVerdict: { type: "STRING", description: "El veredicto más honesto posible, en 1-2 frases, sin suavizarlo." },
+    roadmap: {
+      type: "ARRAY",
+      description: "Solo problemas reales detectados en este video puntual, ordenados por impacto real — nada genérico.",
+      items: {
+        type: "OBJECT",
+        properties: {
+          problema:  { type: "STRING" },
+          impacto:   { type: "STRING", enum: ["ALTO", "MEDIO", "BAJO"] },
+          solucion:  { type: "STRING" },
+          resultado: { type: "STRING", description: "Resultado esperado si se aplica la solución." },
+        },
+        propertyOrdering: ["problema", "impacto", "solucion", "resultado"],
       },
     },
-    honestVerdict: { type: "STRING" },
+    vision: {
+      type: "OBJECT",
+      properties: {
+        niche:    { type: "STRING" },
+        type:     { type: "STRING" },
+        audience: { type: "STRING" },
+        promise:  { type: "STRING" },
+      },
+      propertyOrdering: ["niche", "type", "audience", "promise"],
+    },
+    platformScores: {
+      type: "OBJECT",
+      properties: {
+        tiktok: { type: "OBJECT", properties: { verdict: { type: "STRING" }, topTip: { type: "STRING" }, score: { type: "NUMBER", minimum: 0, maximum: 100 } }, propertyOrdering: ["verdict", "topTip", "score"] },
+        reels:  { type: "OBJECT", properties: { verdict: { type: "STRING" }, topTip: { type: "STRING" }, score: { type: "NUMBER", minimum: 0, maximum: 100 } }, propertyOrdering: ["verdict", "topTip", "score"] },
+        shorts: { type: "OBJECT", properties: { verdict: { type: "STRING" }, topTip: { type: "STRING" }, score: { type: "NUMBER", minimum: 0, maximum: 100 } }, propertyOrdering: ["verdict", "topTip", "score"] },
+      },
+      propertyOrdering: ["tiktok", "reels", "shorts"],
+    },
+    retentionData: {
+      type: "OBJECT",
+      description: "Cada valor como texto que YA incluya el símbolo %, ej. '65%' (la UI no lo agrega).",
+      properties: {
+        at3s:  { type: "STRING" },
+        at10s: { type: "STRING" },
+        final: { type: "STRING" },
+      },
+      propertyOrdering: ["at3s", "at10s", "final"],
+    },
+    retentionCurve: {
+      type: "ARRAY",
+      description: "Solo se usa como respaldo si no hay curva calculada por la simulación de audiencia. Puntos de retención 0-100 representativos a lo largo del video.",
+      items: { type: "NUMBER", minimum: 0, maximum: 100 },
+    },
+    viewsPrediction: {
+      type: "OBJECT",
+      properties: {
+        scenario_low:      { type: "STRING" },
+        scenario_mid:      { type: "STRING" },
+        scenario_high:     { type: "STRING" },
+        probability_viral: { type: "STRING" },
+      },
+      propertyOrdering: ["scenario_low", "scenario_mid", "scenario_high", "probability_viral"],
+    },
+    firstHourStrategy: {
+      type: "OBJECT",
+      properties: {
+        optimalPostTime:       { type: "STRING" },
+        firstActionAfterPost:  { type: "STRING" },
+        commentSeed:           { type: "STRING" },
+        engagementBoost:       { type: "STRING" },
+      },
+      propertyOrdering: ["optimalPostTime", "firstActionAfterPost", "commentSeed", "engagementBoost"],
+    },
+    commentTrigger: {
+      type: "OBJECT",
+      properties: {
+        triggerType:  { type: "STRING" },
+        suggestedCTA: { type: "STRING" },
+        probability:  { type: "NUMBER", minimum: 0, maximum: 100 },
+      },
+      propertyOrdering: ["triggerType", "suggestedCTA", "probability"],
+    },
   },
+  propertyOrdering: [
+    "hookDNA", "scrollStopScore", "steppsScore",
+    "razonamiento_viralScore", "razonamiento_salesScore",
+    "viralScore", "salesScore", "honestVerdict", "roadmap", "vision",
+    "platformScores", "retentionData", "retentionCurve",
+    "viewsPrediction", "firstHourStrategy", "commentTrigger",
+  ],
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 0 — Observador del HOOK (v5: ya NO describe el video entero)
+// CALL 0 — Observador del HOOK
 //
-// POR QUÉ CAMBIÓ: la [DESCRIPCION] de CALL 0 se pasaba tal cual a
-// CALL 1B y CALL 3, que YA tienen acceso directo al video completo
-// vía context cache. Recibir la interpretación de CALL 0 además de
-// mirar el video con sus propios "ojos" los anclaba a esa lectura
-// (anchoring bias) en vez de observar de forma independiente.
-//
-// SOLUCIÓN: [DESCRIPCION] queda limitada EXCLUSIVAMENTE al hook
-// (los primeros `hookWindowSegundos` segundos). Es lo único que se
-// pasa río abajo, y se pasa explícitamente marcado como "referencia
-// de apertura, no verdad completa" (ver buildSiliconAudiencePrompt
-// y buildScoringBrainPrompt más abajo).
-//
-// [SEÑALES] SÍ requiere ver el video completo (duración, cortes,
-// payoff, rehook) — pero es extracción de hechos objetivos, no
-// interpretación narrativa, así que no genera el mismo anclaje.
-//
-// TIMESTAMPS: siguiendo la guía oficial de Gemini para video
-// understanding, se pide el formato MM:SS en vez de un número
-// suelto de segundos — es el formato en el que el modelo fue
-// entrenado para razonar temporalmente sobre video, y mejora la
-// precisión de payoff_segundo respecto a pedirle un entero a ojo.
+// No usa responseSchema (va con expectsJson:false en App.jsx), así
+// que acá el formato [DESCRIPCION]/[SEÑALES] sigue siendo válido:
+// no hay JSON mode con el que pueda contradecirse.
 // ─────────────────────────────────────────────────────────────
 export const buildPreClassifierPrompt = (hookWindowSegundos = 5) => `
-Tenés acceso directo al video completo. Miralo entero, de principio a fin, sin saltear nada — lo necesitás completo para responder [SEÑALES] con precisión, aunque [DESCRIPCION] solo te pida los primeros segundos.
+<role>
+Sos un observador técnicso de video. Tu trabajo es reportar hechos, no opinar ni evaluar.
+</role>
 
+<context>
+Tenés acceso directo al video completo. Vas a mirarlo entero, de principio a fin, sin saltear nada — lo necesitás completo para responder [SEÑALES] con precisión, aunque [DESCRIPCION] solo te pida los primeros segundos.
+</context>
+
+<task>
 [DESCRIPCION]
-Describí ÚNICAMENTE lo que pasa en los primeros ${hookWindowSegundos} segundos (el hook / la apertura): imagen, audio, texto en pantalla, ritmo de corte, qué promesa o pattern interrupt se instala ahí.
-NO describas ni resumas el resto del video en este bloque. El desarrollo completo lo va a observar cada análisis siguiente de forma directa e independiente — tu trabajo acá es solo dejar registrado qué arma el video en su apertura, sin condicionar cómo se lee el resto.
+Describí ÚNICAMENTE lo que pasa en los primeros ${hookWindowSegundos} segundos (el hook / la apertura): imagen, audio, texto en pantalla, ritmo de corte, qué promesa o pattern interrupt se instala ahí. Prestá atención especial a si el video corta o interrumpe justo antes de mostrar algo que visualmente prometía mostrar (por ejemplo: se ve una piedra a punto de caer al agua y corta antes del impacto) — es una técnica de hook específica y vale la pena registrarla si aparece.
+NO describas ni resumas el resto del video en este bloque. El desarrollo completo lo va a observar cada análisis siguiente de forma directa e independiente.
 Máximo 250 palabras.
 [/DESCRIPCION]
 
@@ -268,10 +500,11 @@ pregunta_visible: <sí|no>
 texto_en_pantalla_s0: <texto literal o "ninguno">
 transformacion_visible: <sí|no>
 [/SEÑALES]
+</task>
 `;
 
 // ─────────────────────────────────────────────────────────────
-// parsePreClassifierResponse — sin cambios
+// parsePreClassifierResponse — sin cambios de lógica
 // ─────────────────────────────────────────────────────────────
 export const parsePreClassifierResponse = (rawText) => {
   const descMatch = rawText.match(/\[DESCRIPCION\]([\s\S]*?)\[\/DESCRIPCION\]/);
@@ -301,9 +534,6 @@ export const parsePreClassifierResponse = (rawText) => {
     return isNaN(n) ? null : n;
   };
 
-  // v5: payoff_segundo ahora viene en MM:SS (formato nativo de Gemini
-  // para timestamps de video). Soporta también un número suelto por
-  // si el modelo lo devuelve así de vez en cuando (fallback).
   const parseTimestamp = (val) => {
     if (!val) return null;
     const trimmed = val.trim();
@@ -357,17 +587,11 @@ export const parsePreClassifierResponse = (rawText) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 1.5 — Research Brain (ACHICADO: ahora delega en File Search)
+// CALL 1.5 — Research Brain
 //
-// ANTES: le pedíamos al modelo que "recuerde" hooks virales reales
-// de su conocimiento de entrenamiento (impreciso, no verificable,
-// y obligaba a un prompt largo con benchmark en JSON pegado).
-//
-// AHORA: el prompt es corto. La evidencia real (miles de hooks
-// indexados, con su resultado real bueno/malo) se la trae el tool
-// file_search, filtrada por industria y segmento. App.jsx debe
-// pasar buildFileSearchTool(storeName, fileSearchFiltersHook(...))
-// en el config.tools de esta llamada.
+// v6: se sacó el bloque de tags [RESEARCH]...[/RESEARCH] — tenía
+// el mismo problema que Silicon Audience: contradecía el JSON mode
+// que ya impone RESEARCH_BRAIN_SCHEMA en la llamada real.
 // ─────────────────────────────────────────────────────────────
 export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
   const pName = {
@@ -375,21 +599,18 @@ export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
   }[platform] || platform;
 
   return `
-Buscá en la base indexada los hooks reales (buenos y malos) más relevantes para ${pName}, nicho "${industria}", pensando en un creador cuyo objetivo es: ${objetivo}.
+<role>
+Sos un investigador de tendencias de contenido para redes sociales, con acceso a una base indexada de miles de hooks reales (buenos y malos).
+</role>
 
-Usá SOLO ejemplos que efectivamente encuentres en la base. Si la base no tiene suficientes ejemplos de este nicho, decilo explícitamente en confianza_research en vez de rellenar con conocimiento genérico.
+<context>
+Plataforma: ${pName}. Nicho: "${industria}". Objetivo del creador: ${objetivo}.
+Para nombrar cualquier patrón de hook, usá siempre uno de estos nombres exactos: ${HOOK_PATTERNS.join(", ")}.
+</context>
 
-[RESEARCH]
-hooks_virales_reales: <ejemplos reales recuperados, con el mecanismo detrás de cada uno>
-patron_hook_dominante: <texto>
-top_formatos_ganadores: <lista breve>
-errores_hook_comunes: <lista breve, basada en los ejemplos marcados como "malo">
-fatiga_de_formato: <texto>
-oportunidad_detectada: <texto>
-confianza_research: <alta|media|baja>
-benchmark_viral_score: <0-100>
-fuente_temporal: <file_search|conocimiento_entrenamiento>
-[/RESEARCH]
+<task>
+Buscá en la base indexada los hooks reales (buenos y malos) más relevantes para este nicho y plataforma. Usá SOLO ejemplos que efectivamente encuentres — si no hay suficientes, decilo en confianza_research en vez de rellenar con conocimiento genérico.
+</task>
 `;
 };
 
@@ -454,20 +675,11 @@ export const SILICON_PROFILES = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// CALL 1B — Silicon Audience (v5: anti-anclaje contra CALL 0)
+// CALL 1B — Silicon Audience
 //
-// ANTES: recibía descripcionRaw = el resumen de TODO el video hecho
-// por CALL 0, y lo trataba como si fuera la fuente de verdad. Como
-// CALL 0 ahora solo describe el hook, y como este brain igual tiene
-// el video completo vía cache, se lo tratamos explícitamente como
-// una referencia parcial y le pedimos que confirme o corrija por su
-// cuenta en vez de asumirla.
-//
-// (Opcional: si querés que los perfiles reaccionen con precedentes
-// reales, App.jsx puede pasar también
-// buildFileSearchTool(storeName, fileSearchFiltersDesarrollo(industria))
-// en esta llamada. El prompt no necesita cambios para eso: el tool
-// se inyecta desde afuera.)
+// v6: alineado con el nuevo SILICON_AUDIENCE_SCHEMA (perfil_id,
+// eventos_atencion, patron_abandono/retencion). Ya no tiene tags
+// de texto — el schema impone la estructura.
 // ─────────────────────────────────────────────────────────────
 export const buildSiliconAudiencePrompt = (hookDescripcion, marketState, platform, duracionSegundos) => {
   const pName = {
@@ -479,41 +691,36 @@ export const buildSiliconAudiencePrompt = (hookDescripcion, marketState, platfor
   ).join('\n');
 
   return `
-Tenés acceso directo al video completo. Vas a simular, uno por uno y con total libertad de criterio, cómo reacciona cada uno de estos seis usuarios reales de ${pName} al verlo.
+<role>
+Sos un simulador de audiencia real de ${pName}. Vas a encarnar, uno por uno, a seis personas distintas viendo este video.
+</role>
 
+<context>
 DURACIÓN: ${duracionSegundos}s
 MERCADO: ${JSON.stringify(marketState)}
 
 REFERENCIA DEL HOOK (detectada en un paso previo, solo los primeros segundos — es un punto de partida, NO una descripción del video completo. Mirá vos mismo el desarrollo entero y confirmá, corregí o ignorá esto si el video te muestra algo distinto):
 "${hookDescripcion}"
 
-USUARIOS:
+USUARIOS A SIMULAR:
 ${perfilesStr}
+</context>
 
-Mirá el video completo, de punta a punta, para cada perfil antes de decidir — tu propia observación manda por sobre la referencia del hook de arriba. Cada uno puede abandonar en el segundo que deje de interesarle, o llegar hasta el final.
+<task>
+Tenés acceso directo al video completo. Para cada uno de los 6 usuarios, con total libertad de criterio: mirá el video de punta a punta y decidí en qué momentos concretos ese usuario sigue mirando o se va, y por qué. Tu propia observación manda por sobre la referencia del hook de arriba.
 
-[SIMULACION]
-Repetí este bloque una vez por usuario:
-perfil: <id>
-decision_final: RETUVO|ABANDONÓ
-abandono_en_evento: <número o ninguno>
-completo: <sí|no>
-compartio: <sí|no>
-guardo: <sí|no>
-comento: <sí|no>
-razon_final: <texto>
-[/SIMULACION]
-
-[PATRONES]
-segundo_mas_peligroso: <número>
-evento_que_mas_retiene: <texto>
-evento_que_mas_expulsa: <texto>
-[/PATRONES]
+Después de simular a los 6 por separado, mirá el conjunto: identificá el segundo más peligroso, qué elemento retiene más, qué elemento expulsa más, y el patrón general de abandono y de retención que se repite entre los 6 perfiles.
+</task>
 `;
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 2 — Prediction Market — sin cambios
+// CALL 2 — Prediction Market
+//
+// v6: usa perfil_id (antes decía perfil_id sobre un campo que el
+// schema llamaba "perfil" — ya está alineado), y pide explícitamente
+// retencion_por_perfil + razonamiento_paso_a_paso, que ahora sí
+// existen en PREDICTION_MARKET_SCHEMA.
 // ─────────────────────────────────────────────────────────────
 export const buildPredictionMarketPrompt = (simulacionSilicon, marketState, platform, industria) => {
   const pName = {
@@ -525,42 +732,34 @@ export const buildPredictionMarketPrompt = (simulacionSilicon, marketState, plat
   ).join('\n');
 
   return `
-Sos el prediction market de ${pName} para el nicho "${industria}". Tenés la simulación completa de audiencia y el estado del mercado. Considerá todo antes de fijar tu predicción — nada queda afuera.
+<role>
+Sos el prediction market de ${pName} para el nicho "${industria}": calibrás el score final combinando evidencia dura, no una impresión general.
+</role>
 
-SIMULACIÓN:
+<context>
+SIMULACIÓN DE AUDIENCIA:
 ${resumen}
-segundo_mas_peligroso:${simulacionSilicon.segundo_mas_peligroso ?? '—'} | retiene:${simulacionSilicon.evento_que_mas_retiene} | expulsa:${simulacionSilicon.evento_que_mas_expulsa}
+Segundo más peligroso: ${simulacionSilicon.segundo_mas_peligroso ?? '—'} | Retiene: ${simulacionSilicon.evento_que_mas_retiene} | Expulsa: ${simulacionSilicon.evento_que_mas_expulsa}
+Patrón de abandono: ${simulacionSilicon.patron_abandono ?? '—'} | Patrón de retención: ${simulacionSilicon.patron_retencion ?? '—'}
 
-MERCADO: ${JSON.stringify(marketState)}
+ESTADO DEL MERCADO: ${JSON.stringify(marketState)}
+</context>
 
-[PREDICCION]
-retencion_por_perfil.curioso_aleatorio: <0-100>, razon: <texto>
-retencion_por_perfil.impaciente: <0-100>, razon: <texto>
-retencion_por_perfil.promedio: <0-100>, razon: <texto>
-retencion_por_perfil.nicho: <0-100>, razon: <texto>
-retencion_por_perfil.esceptico: <0-100>, razon: <texto>
-retencion_por_perfil.comprador: <0-100>, razon: <texto>
-viralScore: <0-100>
-salesScore: <0-100>
-probabilidad_viral: <0-100>
-confianza_prediccion: <alta|media|baja>
-razon_principal_score: <texto>
-accion_clave_viral: <texto>
-accion_clave_ventas: <texto>
-razonamiento_paso_a_paso.peso_curioso_aleatorio: <qué pesó y por qué, en 1 frase>
-razonamiento_paso_a_paso.senal_mas_determinante: <cuál de las seis retenciones definió más el score>
-razonamiento_paso_a_paso.ajuste_por_research: <si hubo ajuste por el mercado, y por qué>
-[/PREDICCION]
+<task>
+Basándote en todo lo anterior: primero estimá la retención de cada uno de los 6 perfiles con su razón, después explicitá qué pesó más, y recién ahí fijá viralScore y salesScore. El perfil curioso_aleatorio pesa doble en el algoritmo real — tenelo en cuenta.
+</task>
 `;
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 3 — Scoring Brain (v5: anti-anclaje contra CALL 0)
+// CALL 3 — Scoring Brain
 //
-// El primer parámetro ahora es explícitamente la referencia del
-// hook (no un resumen del video entero) y se lo marca como tal, por
-// la misma razón que en CALL 1B: este brain tiene el video completo
-// vía cache y no debería limitarse a validar la lectura de CALL 0.
+// v6: se sacó el listado campo-por-campo [VEREDICTO] — con un
+// SCORING_BRAIN_SCHEMA completo, listar los campos en el prompt es
+// redundante y, según la propia documentación de Gemini, puede
+// confundir al modelo si el orden no coincide exactamente con el
+// del schema. El prompt ahora solo da instrucciones de criterio;
+// la estructura la impone el schema.
 // ─────────────────────────────────────────────────────────────
 export const buildScoringBrainPrompt = (
   hookDescripcion,
@@ -571,80 +770,34 @@ export const buildScoringBrainPrompt = (
   industria,
   duracionSegundos
 ) => `
-Tenés acceso directo al video completo, la simulación de audiencia real y el research de mercado. Analizá todo antes de emitir tu veredicto — nada queda afuera, con total libertad de criterio.
+<role>
+Sos el auditor final de VIRAX: das un veredicto honesto y accionable, fundamentado en evidencia concreta, no en una impresión general del video.
+</role>
 
+<context>
 PLATAFORMA: ${platform} | DURACIÓN: ${duracionSegundos}s | INDUSTRIA: ${industria} | OBJETIVO: ${objetivo}
 
 REFERENCIA DEL HOOK (primeros segundos, detectada en un paso previo — no la tomes como descripción del video completo; observá vos mismo el desarrollo entero antes de puntuar):
 "${hookDescripcion}"
 
-AUDIENCIA Y MERCADO:
+SIMULACIÓN DE AUDIENCIA Y PREDICTION MARKET:
 ${audienceAnalysis}
 
-BENCHMARK:
+BENCHMARK DE MERCADO:
 ${JSON.stringify(researchData)}
 
-Si hay problemas reales, nombralos sin suavizarlos. El roadmap solo debe incluir problemas que vos mismo detectaste, ordenados por impacto real.
+Para nombrar el patrón del hook, usá uno de estos nombres exactos: ${HOOK_PATTERNS.join(", ")}.
+</context>
 
-[VEREDICTO]
-viralScore.score: <0-100>
-viralScore.verdict: <texto>
-viralScore.accion_clave: <texto>
-salesScore.score: <0-100>
-salesScore.verdict: <texto>
-salesScore.accion_clave: <texto>
-scrollStopScore.score: <0-100>
-scrollStopScore.faceDetected: <sí|no>
-scrollStopScore.textOnScreen: <sí|no>
-scrollStopScore.contrastLevel: <bajo|medio|alto>
-scrollStopScore.emotionVisible: <texto>
-scrollStopScore.emotionIntensity: <0-100>
-scrollStopScore.verdict: <texto>
-hookDNA.strength: <0-100>
-hookDNA.pattern: <texto>
-hookDNA.missingElement: <texto>
-hookDNA.optimizedHook: <texto>
-steppsScore.socialCurrency: <0-100>
-steppsScore.triggers: <0-100>
-steppsScore.emotion: <0-100>
-steppsScore.public: <0-100>
-steppsScore.practicalValue: <0-100>
-steppsScore.stories: <0-100>
-steppsScore.viralCoefficient: <0-1>
-steppsScore.dominantFactor: <texto>
-steppsScore.weakestFactor: <texto>
-steppsScore.shareMotivation: <texto>
-honestVerdict: <texto>
-roadmap: <una línea por problema real: problema | solución | resultado esperado | impacto ALTO/MEDIO/BAJO>
-vision.niche: <texto>
-vision.type: <texto>
-vision.audience: <texto>
-vision.promise: <texto>
-platformScores.tiktok: <score, verdict, topTip>
-platformScores.reels: <score, verdict, topTip>
-platformScores.shorts: <score, verdict, topTip>
-retentionData.at3s: <texto>
-retentionData.at10s: <texto>
-retentionData.final: <texto>
-retentionCurve: <puntos segundo:retención% representativos del video>
-viewsPrediction.scenario_low: <texto>
-viewsPrediction.scenario_mid: <texto>
-viewsPrediction.scenario_high: <texto>
-viewsPrediction.probability_viral: <texto>
-firstHourStrategy.optimalPostTime: <texto>
-firstHourStrategy.firstActionAfterPost: <texto>
-firstHourStrategy.commentSeed: <texto>
-firstHourStrategy.engagementBoost: <texto>
-commentTrigger.probability: <0-100>
-commentTrigger.triggerType: <texto>
-commentTrigger.suggestedCTA: <texto>
-razonamiento_viralScore: <2-3 frases: qué de la audiencia pesó más>
-razonamiento_salesScore: <2-3 frases: qué señal de venta encontró o no>
-[/VEREDICTO]
+<task>
+Tenés acceso directo al video completo. Basándote en todo lo anterior: analizá primero el hook, el frame 0 (scroll-stop) y el framework STEPPS. Con eso ya observado, escribí tu razonamiento sobre el score viral y el de ventas ANTES de fijar los números — los números son consecuencia de ese razonamiento, no al revés.
+
+Si hay problemas reales, nombralos sin suavizarlos. El roadmap solo debe incluir problemas que vos mismo detectaste en este video puntual, ordenados por impacto real — nada genérico.
+</task>
 `;
 
 // ─────────────────────────────────────────────────────────────
-// Utilidades — sin cambios
+// Utilidades
 // ─────────────────────────────────────────────────────────────
 export const calcularCurvaRetencionSilicon = (simulacion, duracionSegundos) => {
   if (!simulacion?.simulacion?.length) return [];
@@ -668,7 +821,7 @@ export const buildSiliconSummary = (simulacion, predictionMarket) => {
   const total        = perfiles.length;
   const completaron  = perfiles.filter(p => p.completo).length;
   const compartieron = perfiles.filter(p => p.compartio).length;
-  const guardaron    = perfiles.filter(p => p.guardó).length;
+  const guardaron    = perfiles.filter(p => p.guardo).length; // FIX v6: antes era p.guardó (con tilde), no coincidía con ningún campo real
 
   return {
     tasa_completado:      Math.round((completaron  / total) * 100),
@@ -783,13 +936,17 @@ export const buildFlagsDeterministic = (flagsFromStrategy, preFacts, preHookType
 };
 
 // ═════════════════════════════════════════════════════════════
-// ADMIN — Indexado del corpus histórico (NUEVO)
+// ADMIN — Indexado del corpus histórico
 //
 // Esto NO va en el bundle del cliente (React/App.jsx). Es un script
 // de administración/backend (Node.js) que corrés una vez para
 // cargar tu histórico de miles de hooks y desarrollos, y después
 // cada vez que sumes ejemplos nuevos. Requiere @google/genai
 // >= 1.29.0 y GOOGLE_API_KEY en el entorno.
+//
+// Al taggear cada entrada, usá siempre un valor de HOOK_PATTERNS
+// como `patron` — así el filtro por patrón en fileSearchFiltersHook
+// agrupa ejemplos realmente comparables entre sí.
 //
 // Uso típico (script separado, ej. scripts/indexar-corpus.mjs):
 //
@@ -802,10 +959,6 @@ export const buildFlagsDeterministic = (flagsFromStrategy, preFacts, preHookType
 //   }
 // ═════════════════════════════════════════════════════════════
 
-/**
- * Busca el store por displayName; si no existe, lo crea.
- * Evita duplicar stores en corridas sucesivas del script.
- */
 export const ensureFileSearchStore = async (ai, displayName = FILE_SEARCH_STORE_DISPLAY_NAME) => {
   const pager = await ai.fileSearchStores.list({ config: { pageSize: 20 } });
   let page = pager.page;
@@ -818,31 +971,17 @@ export const ensureFileSearchStore = async (ai, displayName = FILE_SEARCH_STORE_
   return ai.fileSearchStores.create({ config: { displayName } });
 };
 
-/**
- * Indexa una entrada del corpus histórico. `entry.texto` es el
- * análisis en texto libre (hook o desarrollo, ya extraído del video
- * con Gemini multimodal en un paso previo). `entry` trae también
- * la metadata que después se usa para filtrar (segmento, resultado,
- * industria, patron, plataforma).
- *
- * File Search no soporta audio/video directamente, por eso primero
- * hay que convertir cada video a texto (transcripción + descripción
- * del hook/desarrollo) con una llamada multimodal aparte, y ESO es
- * lo que se indexa acá.
- */
 export const indexEntry = async (ai, storeName, entry) => {
   const {
     texto,
     segmento,       // "hook" | "desarrollo"
     resultado,      // "bueno" | "malo"
     industria,
-    patron = "sin_clasificar",
+    patron = "debil", // usar siempre un valor de HOOK_PATTERNS
     plataforma = "all",
     displayName = `${segmento}-${Date.now()}`,
   } = entry;
 
-  // uploadToFileSearchStore acepta un path de archivo o un Blob.
-  // Si tu texto ya está en memoria (no en disco), convertilo a Blob:
   const file = new Blob([texto], { type: "text/plain" });
 
   let operation = await ai.fileSearchStores.uploadToFileSearchStore({
@@ -869,10 +1008,6 @@ export const indexEntry = async (ai, storeName, entry) => {
   return operation;
 };
 
-/**
- * Indexa un lote completo en paralelo (con límite de concurrencia
- * simple para no saturar la API).
- */
 export const indexBatch = async (ai, storeName, entries, concurrencia = 5) => {
   const resultados = [];
   for (let i = 0; i < entries.length; i += concurrencia) {
