@@ -778,7 +778,7 @@ if (!cacheData?.cacheName) {
     let preFacts         = videoMeta?.preFacts ?? {};
 let hookDescripcion  = preFacts.descripcion_raw ?? '';   // ahora solo describe el hook, no todo el video
 
-    if (!videoDescription) {
+    if (!hookDescripcion) {
       // Edge case: no hay descripción previa → ejecutar CALL 0
       console.warn('[VIRAX] descripcion_raw vacía — ejecutando CALL 0 con cache');
 
@@ -795,16 +795,16 @@ let hookDescripcion  = preFacts.descripcion_raw ?? '';   // ahora solo describe 
       if (call0Error) throw new Error(`CALL 0 falló: ${call0Error.message}`);
 
       const call0Parsed = parsePreClassifierResponse(extractGeminiText(call0Data));
-      videoDescription  = call0Parsed.descripcion_raw ?? '';
+      hookDescripcion  = call0Parsed.descripcion_raw ?? '';
       preFacts          = { ...preFacts, ...call0Parsed };
 
       console.log('[VIRAX] CALL 0 ejecutado ✅', {
-        descripcion: videoDescription.slice(0, 150),
-      });
+  descripcion: hookDescripcion.slice(0, 150),
+});
     } else {
       console.log('[VIRAX] ✅ descripcion_raw reutilizada de calibración:', {
-        descripcion: videoDescription.slice(0, 150),
-      });
+  descripcion: hookDescripcion.slice(0, 150),
+});
     }
 
     setAnalysisProgress(25);
@@ -1028,11 +1028,11 @@ ${(summary.detalle_perfiles || []).map(p =>
     const { data: retryData, error: retryError } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildSiliconAudiencePrompt(
-          videoDescription,
-          marketState,
-          platform,
-          Math.round(duration)
-        ),
+  hookDescripcion,
+  marketState,
+  platform,
+  Math.round(duration)
+),
         cacheName,
         expectsJson:     true,
         maxOutputTokens: 4096,
@@ -1062,8 +1062,7 @@ Evento que expulsa: ${summary.evento_expulsa}
   } else {
     // Último recurso: texto genérico basado solo en la descripción del video
     console.warn('[SILICON AUDIENCE] Sin simulación disponible — usando descripción cruda');
-    audienceAnalysis = `No se pudo simular audiencia. Análisis basado únicamente en la descripción del video:\n\n${videoDescription}`;
-  }
+    audienceAnalysis = `No se pudo simular audiencia. Análisis basado únicamente en la descripción del hook:\n\n${hookDescripcion}`;  }
 }
 
     console.log('[VIRAX] Audience Analysis final:', audienceAnalysis);
@@ -1179,7 +1178,7 @@ Evento que expulsa: ${summary.evento_expulsa}
       _hook_gate:         null,
       _viral_cap:         null,
       _research_data:     researchData,
-      _video_desc:        videoDescription,
+      _video_desc: hookDescripcion,
       _silicon_summary:   audienceSimulation
         ? buildSiliconSummary(audienceSimulation, predictionMarket)
         : null,
