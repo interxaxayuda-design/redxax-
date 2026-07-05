@@ -776,7 +776,7 @@ if (!cacheData?.cacheName) {
     setAnalysisProgress(15);
 
     let preFacts         = videoMeta?.preFacts ?? {};
-    let videoDescription = preFacts.descripcion_raw ?? '';
+let hookDescripcion  = preFacts.descripcion_raw ?? '';   // ahora solo describe el hook, no todo el video
 
     if (!videoDescription) {
       // Edge case: no hay descripción previa → ejecutar CALL 0
@@ -901,8 +901,7 @@ try {
     callName: 'CALL_1B',
     body: {
       text: buildSiliconAudiencePrompt(
-        videoDescription,
-        
+        hookDescripcion,
         marketState,
         platform,
         Math.round(duration)
@@ -1079,14 +1078,14 @@ Evento que expulsa: ${summary.evento_expulsa}
     const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildScoringBrainPrompt(
-          videoDescription,
-          audienceAnalysis,
-          researchData,
-          platform,
-          selectedObjetivo,
-          industria,
-          Math.round(duration)
-        ),
+        hookDescripcion,
+        audienceAnalysis,
+        researchData,
+        platform,
+        selectedObjetivo,
+        industria,
+        Math.round(duration)
+      ),
         cacheName,               // ← Gemini ve el video desde el mismo cache
         expectsJson:     true,
         responseSchema:  SCORING_BRAIN_SCHEMA,   // ← nuevo

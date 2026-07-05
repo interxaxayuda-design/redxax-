@@ -1,5 +1,6 @@
 // ─────────────────────────────────────────────────────────────
-// virax-prompts.js — VIRAX v4 (con File Search / RAG nativo)
+// virax-prompts.js — VIRAX v5 (File Search + anti-contaminación
+// entre brains + timestamps nativos de Gemini)
 //
 // Todos los prompts, schemas y utilidades de scoring viven acá.
 // App.jsx SOLO importa de este archivo — no vuelve a declarar
@@ -15,8 +16,32 @@
 //   mano, delega la búsqueda al tool file_search.
 // - Se agregan helpers de indexado (uso admin / backend, no en el
 //   bundle del cliente) para cargar el corpus histórico.
-// - CALL 0, Silicon Audience, Prediction Market, Scoring Brain y
-//   las utilidades de scoring quedan sin cambios de lógica.
+//
+// CAMBIOS v4 -> v5:
+// - CALL 0 ya NO describe el video completo. [DESCRIPCION] queda
+//   limitada al hook (primeros `hookWindowSegundos` segundos).
+//   Antes, esa descripción completa se pasaba a CALL 1B y CALL 3,
+//   que YA miran el video entero por su cuenta (vía context cache)
+//   — recibirla los anclaba a la lectura de CALL 0 en vez de
+//   observar de forma independiente. [SEÑALES] sigue requiriendo
+//   el video completo porque son hechos objetivos, no narrativa.
+// - buildSiliconAudiencePrompt y buildScoringBrainPrompt reciben
+//   ahora `hookDescripcion` (no `videoDescription`/`descripcionRaw`)
+//   y el prompt la marca explícitamente como referencia parcial,
+//   no como resumen del video completo — con instrucción explícita
+//   de observar y corregir por cuenta propia (anti-anchoring).
+// - payoff_segundo ahora se pide en formato MM:SS (parseado por
+//   parsePreClassifierResponse), siguiendo la guía oficial de
+//   Gemini: es el formato en el que el modelo fue entrenado para
+//   razonar temporalmente sobre video, más preciso que un entero
+//   suelto.
+// - Pendiente de tu lado (fuera de este archivo, en gemini-proxy):
+//   Gemini muestrea video a 1 frame/segundo por defecto, lo que
+//   puede perder cortes rápidos — justo lo que importa para contar
+//   `cortes_por_10s` en un hook. Si tu proxy arma el `videoMetadata`
+//   de la Part de video, subir el `fps` (ej. a 4) específicamente
+//   para CALL 0 mejora la detección de corte rápido sin encarecer
+//   mucho el costo, porque solo aplica a esa llamada.
 // ─────────────────────────────────────────────────────────────
 
 // ═════════════════════════════════════════════════════════════
@@ -193,21 +218,45 @@ export const SCORING_BRAIN_SCHEMA = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 0 — Observador puro (sin cambios: esto es observación cruda
-// del video, no necesita RAG)
+// CALL 0 — Observador del HOOK (v5: ya NO describe el video entero)
+//
+// POR QUÉ CAMBIÓ: la [DESCRIPCION] de CALL 0 se pasaba tal cual a
+// CALL 1B y CALL 3, que YA tienen acceso directo al video completo
+// vía context cache. Recibir la interpretación de CALL 0 además de
+// mirar el video con sus propios "ojos" los anclaba a esa lectura
+// (anchoring bias) en vez de observar de forma independiente.
+//
+// SOLUCIÓN: [DESCRIPCION] queda limitada EXCLUSIVAMENTE al hook
+// (los primeros `hookWindowSegundos` segundos). Es lo único que se
+// pasa río abajo, y se pasa explícitamente marcado como "referencia
+// de apertura, no verdad completa" (ver buildSiliconAudiencePrompt
+// y buildScoringBrainPrompt más abajo).
+//
+// [SEÑALES] SÍ requiere ver el video completo (duración, cortes,
+// payoff, rehook) — pero es extracción de hechos objetivos, no
+// interpretación narrativa, así que no genera el mismo anclaje.
+//
+// TIMESTAMPS: siguiendo la guía oficial de Gemini para video
+// understanding, se pide el formato MM:SS en vez de un número
+// suelto de segundos — es el formato en el que el modelo fue
+// entrenado para razonar temporalmente sobre video, y mejora la
+// precisión de payoff_segundo respecto a pedirle un entero a ojo.
 // ─────────────────────────────────────────────────────────────
-export const buildPreClassifierPrompt = () => `
-Tenés acceso directo al video. Mirá el video completo, de principio a fin, sin saltear ningún segundo, y respondé con tu propio criterio.
+export const buildPreClassifierPrompt = (hookWindowSegundos = 5) => `
+Tenés acceso directo al video completo. Miralo entero, de principio a fin, sin saltear nada — lo necesitás completo para responder [SEÑALES] con precisión, aunque [DESCRIPCION] solo te pida los primeros segundos.
 
 [DESCRIPCION]
-Describí lo que ves y escuchás: imagen, audio, texto en pantalla, ritmo, estructura, producción. Observá, no evalúes. Máximo 700 palabras.
+Describí ÚNICAMENTE lo que pasa en los primeros ${hookWindowSegundos} segundos (el hook / la apertura): imagen, audio, texto en pantalla, ritmo de corte, qué promesa o pattern interrupt se instala ahí.
+NO describas ni resumas el resto del video en este bloque. El desarrollo completo lo va a observar cada análisis siguiente de forma directa e independiente — tu trabajo acá es solo dejar registrado qué arma el video en su apertura, sin condicionar cómo se lee el resto.
+Máximo 250 palabras.
 [/DESCRIPCION]
 
 [SEÑALES]
-duracion: <segundos>
+Estas señales sí requieren el video completo. Para cualquier marca de tiempo usá el formato MM:SS (ej: 00:07) — es el formato que interpretás con más precisión.
+duracion: <segundos totales, número>
 industria_detectada: <tu criterio, máximo 4 palabras>
 elemento_en_s0: <qué aparece en el primer frame>
-payoff_segundo: <segundo donde ocurre el punto más fuerte del video>
+payoff_segundo: <MM:SS del punto más fuerte de todo el video>
 audio_presente: <sí|no>
 audio_desde_inicio: <sí|no>
 tiene_rehook: <sí|no>
@@ -252,6 +301,18 @@ export const parsePreClassifierResponse = (rawText) => {
     return isNaN(n) ? null : n;
   };
 
+  // v5: payoff_segundo ahora viene en MM:SS (formato nativo de Gemini
+  // para timestamps de video). Soporta también un número suelto por
+  // si el modelo lo devuelve así de vez en cuando (fallback).
+  const parseTimestamp = (val) => {
+    if (!val) return null;
+    const trimmed = val.trim();
+    const mmss = trimmed.match(/^(\d{1,2}):(\d{2})$/);
+    if (mmss) return parseInt(mmss[1], 10) * 60 + parseInt(mmss[2], 10);
+    const n = parseFloat(trimmed.replace(',', '.'));
+    return isNaN(n) ? null : n;
+  };
+
   const duracion               = parseNum(getRef('duracion'))              ?? 30;
   const audio_presente         = parseBool(getRef('audio_presente'));
   const audio_desde            = parseBool(getRef('audio_desde_inicio'));
@@ -259,7 +320,7 @@ export const parsePreClassifierResponse = (rawText) => {
   const voz_ia                 = parseBool(getRef('voz_ia'));
   const logo_s0                = parseBool(getRef('logo_en_frame_0'));
   const tiene_rehook           = parseBool(getRef('tiene_rehook'));
-  const payoff_s               = parseNum(getRef('payoff_segundo'))        ?? Math.round(duracion * 0.4);
+  const payoff_s               = parseTimestamp(getRef('payoff_segundo')) ?? Math.round(duracion * 0.4);
   const cuts_10                = parseNum(getRef('cortes_por_10s'))        ?? 2;
   const industria              = getRef('industria_detectada')             ?? 'general';
   const elemento_en_s0         = getRef('elemento_en_s0')                 ?? '';
@@ -393,14 +454,22 @@ export const SILICON_PROFILES = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// CALL 1B — Silicon Audience — sin cambios de lógica.
+// CALL 1B — Silicon Audience (v5: anti-anclaje contra CALL 0)
+//
+// ANTES: recibía descripcionRaw = el resumen de TODO el video hecho
+// por CALL 0, y lo trataba como si fuera la fuente de verdad. Como
+// CALL 0 ahora solo describe el hook, y como este brain igual tiene
+// el video completo vía cache, se lo tratamos explícitamente como
+// una referencia parcial y le pedimos que confirme o corrija por su
+// cuenta en vez de asumirla.
+//
 // (Opcional: si querés que los perfiles reaccionen con precedentes
 // reales, App.jsx puede pasar también
 // buildFileSearchTool(storeName, fileSearchFiltersDesarrollo(industria))
 // en esta llamada. El prompt no necesita cambios para eso: el tool
 // se inyecta desde afuera.)
 // ─────────────────────────────────────────────────────────────
-export const buildSiliconAudiencePrompt = (descripcionRaw, marketState, platform, duracionSegundos) => {
+export const buildSiliconAudiencePrompt = (hookDescripcion, marketState, platform, duracionSegundos) => {
   const pName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
@@ -410,18 +479,18 @@ export const buildSiliconAudiencePrompt = (descripcionRaw, marketState, platform
   ).join('\n');
 
   return `
-Tenés acceso directo al video. Vas a simular, uno por uno y con total libertad de criterio, cómo reacciona cada uno de estos seis usuarios reales de ${pName} al verlo.
+Tenés acceso directo al video completo. Vas a simular, uno por uno y con total libertad de criterio, cómo reacciona cada uno de estos seis usuarios reales de ${pName} al verlo.
 
 DURACIÓN: ${duracionSegundos}s
 MERCADO: ${JSON.stringify(marketState)}
 
-DESCRIPCIÓN DEL VIDEO:
-${descripcionRaw}
+REFERENCIA DEL HOOK (detectada en un paso previo, solo los primeros segundos — es un punto de partida, NO una descripción del video completo. Mirá vos mismo el desarrollo entero y confirmá, corregí o ignorá esto si el video te muestra algo distinto):
+"${hookDescripcion}"
 
 USUARIOS:
 ${perfilesStr}
 
-Mirá el video completo para cada perfil antes de decidir. Cada uno puede abandonar en el segundo que deje de interesarle, o llegar hasta el final.
+Mirá el video completo, de punta a punta, para cada perfil antes de decidir — tu propia observación manda por sobre la referencia del hook de arriba. Cada uno puede abandonar en el segundo que deje de interesarle, o llegar hasta el final.
 
 [SIMULACION]
 Repetí este bloque una vez por usuario:
@@ -486,10 +555,15 @@ razonamiento_paso_a_paso.ajuste_por_research: <si hubo ajuste por el mercado, y 
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 3 — Scoring Brain — sin cambios
+// CALL 3 — Scoring Brain (v5: anti-anclaje contra CALL 0)
+//
+// El primer parámetro ahora es explícitamente la referencia del
+// hook (no un resumen del video entero) y se lo marca como tal, por
+// la misma razón que en CALL 1B: este brain tiene el video completo
+// vía cache y no debería limitarse a validar la lectura de CALL 0.
 // ─────────────────────────────────────────────────────────────
 export const buildScoringBrainPrompt = (
-  videoDescription,
+  hookDescripcion,
   audienceAnalysis,
   researchData,
   platform,
@@ -497,12 +571,12 @@ export const buildScoringBrainPrompt = (
   industria,
   duracionSegundos
 ) => `
-Tenés el video completo, la simulación de audiencia real y el research de mercado. Analizá todo antes de emitir tu veredicto — nada queda afuera, con total libertad de criterio.
+Tenés acceso directo al video completo, la simulación de audiencia real y el research de mercado. Analizá todo antes de emitir tu veredicto — nada queda afuera, con total libertad de criterio.
 
 PLATAFORMA: ${platform} | DURACIÓN: ${duracionSegundos}s | INDUSTRIA: ${industria} | OBJETIVO: ${objetivo}
 
-DESCRIPCIÓN DEL VIDEO:
-${videoDescription}
+REFERENCIA DEL HOOK (primeros segundos, detectada en un paso previo — no la tomes como descripción del video completo; observá vos mismo el desarrollo entero antes de puntuar):
+"${hookDescripcion}"
 
 AUDIENCIA Y MERCADO:
 ${audienceAnalysis}
