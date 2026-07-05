@@ -1,14 +1,26 @@
 // ─────────────────────────────────────────────────────────────
-// virax-prompts.js — VIRAX v3
+// virax-prompts.js — VIRAX v4 (con File Search / RAG nativo)
 //
 // Todos los prompts, schemas y utilidades de scoring viven acá.
 // App.jsx SOLO importa de este archivo — no vuelve a declarar
 // nada de esto localmente. Si necesitás modificar un prompt,
 // se edita ÚNICAMENTE acá.
+//
+// CAMBIOS v3 -> v4:
+// - Se agrega la sección FILE SEARCH (RAG nativo de Gemini): en vez
+//   de pedirle al modelo que "recuerde" hooks virales de su
+//   entrenamiento, se consulta una base real e indexada de hooks y
+//   desarrollos (buenos y malos) con miles de ejemplos.
+// - buildResearchBrainPrompt se ACHICA: ya no describe ejemplos a
+//   mano, delega la búsqueda al tool file_search.
+// - Se agregan helpers de indexado (uso admin / backend, no en el
+//   bundle del cliente) para cargar el corpus histórico.
+// - CALL 0, Silicon Audience, Prediction Market, Scoring Brain y
+//   las utilidades de scoring quedan sin cambios de lógica.
 // ─────────────────────────────────────────────────────────────
 
 // ═════════════════════════════════════════════════════════════
-// NICHOS — motores psicológicos y pesos por industria
+// NICHOS — motores psicológicos y pesos por industria (sin cambios)
 // ═════════════════════════════════════════════════════════════
 export const NICHE_MOTORS = {
   "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
@@ -33,8 +45,76 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
 };
 
 // ═════════════════════════════════════════════════════════════
+// FILE SEARCH — configuración y helpers (NUEVO)
+//
+// Un solo store contiene TODO el corpus histórico (hooks y
+// desarrollos, buenos y malos, de todos los nichos). La separación
+// no se hace con stores distintos (hay límite de 10 por proyecto),
+// sino con metadata en cada documento indexado + un filtro en la
+// consulta. Esto es lo que te permite mandar prompts cortos: el
+// "conocimiento" vive afuera, indexado, no en el texto del prompt.
+// ═════════════════════════════════════════════════════════════
+
+export const FILE_SEARCH_STORE_DISPLAY_NAME = "virax-corpus-viral";
+
+// Campos de metadata que usamos para filtrar la búsqueda:
+//   segmento  -> "hook" | "desarrollo"
+//   resultado -> "bueno" | "malo"
+//   industria -> mismas keys que NICHE_MOTORS (ej: "estetica")
+//   patron    -> ej: "pregunta", "shock", "pattern_interrupt", "pov"...
+//   plataforma-> "tiktok" | "reels" | "shorts"
+
+/**
+ * Arma el bloque `tools` que hay que pasar en config.tools de
+ * generateContent para que el modelo consulte el store indexado.
+ * Se usa así en App.jsx:
+ *
+ *   const response = await ai.models.generateContent({
+ *     model: "gemini-2.5-flash",
+ *     contents: buildResearchBrainPrompt(platform, industria, objetivo),
+ *     config: {
+ *       tools: buildFileSearchTool(storeName, { segmento: "hook", industria }),
+ *     },
+ *   });
+ */
+export const buildFileSearchTool = (storeName, filters = {}) => {
+  const filterParts = Object.entries(filters)
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
+    .map(([key, value]) => `${key}="${value}"`);
+
+  const metadataFilter = filterParts.length ? filterParts.join(" AND ") : undefined;
+
+  return [
+    {
+      fileSearch: {
+        fileSearchStoreNames: [storeName],
+        ...(metadataFilter ? { metadataFilter } : {}),
+      },
+    },
+  ];
+};
+
+/**
+ * Filtro típico para traer solo ejemplos de HOOK del nicho actual.
+ */
+export const fileSearchFiltersHook = (industria, plataforma) => ({
+  segmento: "hook",
+  industria,
+  ...(plataforma && plataforma !== "all" ? { plataforma } : {}),
+});
+
+/**
+ * Filtro típico para traer solo ejemplos de DESARROLLO del nicho actual.
+ */
+export const fileSearchFiltersDesarrollo = (industria, plataforma) => ({
+  segmento: "desarrollo",
+  industria,
+  ...(plataforma && plataforma !== "all" ? { plataforma } : {}),
+});
+
+// ═════════════════════════════════════════════════════════════
 // SCHEMAS — para responseSchema de Gemini (JSON mode estricto)
-// Ajustá los campos si tus brains devuelven estructuras distintas.
+// Sin cambios.
 // ═════════════════════════════════════════════════════════════
 export const RESEARCH_BRAIN_SCHEMA = {
   type: "OBJECT",
@@ -113,7 +193,8 @@ export const SCORING_BRAIN_SCHEMA = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 0 — Observador puro
+// CALL 0 — Observador puro (sin cambios: esto es observación cruda
+// del video, no necesita RAG)
 // ─────────────────────────────────────────────────────────────
 export const buildPreClassifierPrompt = () => `
 Tenés acceso directo al video. Mirá el video completo, de principio a fin, sin saltear ningún segundo, y respondé con tu propio criterio.
@@ -141,7 +222,7 @@ transformacion_visible: <sí|no>
 `;
 
 // ─────────────────────────────────────────────────────────────
-// parsePreClassifierResponse
+// parsePreClassifierResponse — sin cambios
 // ─────────────────────────────────────────────────────────────
 export const parsePreClassifierResponse = (rawText) => {
   const descMatch = rawText.match(/\[DESCRIPCION\]([\s\S]*?)\[\/DESCRIPCION\]/);
@@ -215,38 +296,44 @@ export const parsePreClassifierResponse = (rawText) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 1.5 — Research Brain
+// CALL 1.5 — Research Brain (ACHICADO: ahora delega en File Search)
+//
+// ANTES: le pedíamos al modelo que "recuerde" hooks virales reales
+// de su conocimiento de entrenamiento (impreciso, no verificable,
+// y obligaba a un prompt largo con benchmark en JSON pegado).
+//
+// AHORA: el prompt es corto. La evidencia real (miles de hooks
+// indexados, con su resultado real bueno/malo) se la trae el tool
+// file_search, filtrada por industria y segmento. App.jsx debe
+// pasar buildFileSearchTool(storeName, fileSearchFiltersHook(...))
+// en el config.tools de esta llamada.
 // ─────────────────────────────────────────────────────────────
-export const buildResearchBrainPrompt = (platform, industria, objetivo, benchmarkData = null) => {
+export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
   const pName = {
     tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
   }[platform] || platform;
 
-  const benchmarkBlock = benchmarkData
-    ? `BENCHMARK:\n${JSON.stringify(benchmarkData, null, 2)}`
-    : 'Sin benchmark interno.';
-
   return `
-Investigá el estado actual de ${pName} para el nicho "${industria}", pensando en un creador cuyo objetivo es: ${objetivo}.
+Buscá en la base indexada los hooks reales (buenos y malos) más relevantes para ${pName}, nicho "${industria}", pensando en un creador cuyo objetivo es: ${objetivo}.
 
-${benchmarkBlock}
+Usá SOLO ejemplos que efectivamente encuentres en la base. Si la base no tiene suficientes ejemplos de este nicho, decilo explícitamente en confianza_research en vez de rellenar con conocimiento genérico.
 
 [RESEARCH]
-hooks_virales_reales: <ejemplos reales, con el mecanismo detrás de cada uno>
+hooks_virales_reales: <ejemplos reales recuperados, con el mecanismo detrás de cada uno>
 patron_hook_dominante: <texto>
 top_formatos_ganadores: <lista breve>
-errores_hook_comunes: <lista breve>
+errores_hook_comunes: <lista breve, basada en los ejemplos marcados como "malo">
 fatiga_de_formato: <texto>
 oportunidad_detectada: <texto>
 confianza_research: <alta|media|baja>
 benchmark_viral_score: <0-100>
-fuente_temporal: <búsqueda_actual|conocimiento_entrenamiento>
+fuente_temporal: <file_search|conocimiento_entrenamiento>
 [/RESEARCH]
 `;
 };
 
 // ─────────────────────────────────────────────────────────────
-// SILICON AUDIENCE — Perfiles (datos, no prompts)
+// SILICON AUDIENCE — Perfiles (datos, no prompts) — sin cambios
 // ─────────────────────────────────────────────────────────────
 export const SILICON_PROFILES = [
   {
@@ -306,7 +393,12 @@ export const SILICON_PROFILES = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// CALL 1B — Silicon Audience
+// CALL 1B — Silicon Audience — sin cambios de lógica.
+// (Opcional: si querés que los perfiles reaccionen con precedentes
+// reales, App.jsx puede pasar también
+// buildFileSearchTool(storeName, fileSearchFiltersDesarrollo(industria))
+// en esta llamada. El prompt no necesita cambios para eso: el tool
+// se inyecta desde afuera.)
 // ─────────────────────────────────────────────────────────────
 export const buildSiliconAudiencePrompt = (descripcionRaw, marketState, platform, duracionSegundos) => {
   const pName = {
@@ -352,7 +444,7 @@ evento_que_mas_expulsa: <texto>
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 2 — Prediction Market
+// CALL 2 — Prediction Market — sin cambios
 // ─────────────────────────────────────────────────────────────
 export const buildPredictionMarketPrompt = (simulacionSilicon, marketState, platform, industria) => {
   const pName = {
@@ -394,7 +486,7 @@ razonamiento_paso_a_paso.ajuste_por_research: <si hubo ajuste por el mercado, y 
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 3 — Scoring Brain
+// CALL 3 — Scoring Brain — sin cambios
 // ─────────────────────────────────────────────────────────────
 export const buildScoringBrainPrompt = (
   videoDescription,
@@ -520,7 +612,7 @@ export const buildSiliconSummary = (simulacion, predictionMarket) => {
   };
 };
 
-// ── JS — Hook Gate ────────────────────────────────────────────
+// ── JS — Hook Gate — sin cambios ───────────────────────────────
 export const deriveHookGateStatus = (preFacts) => {
   const gate     = preFacts?.hook_gate;
   const hookType = preFacts?.hook_type_detectado ?? '';
@@ -614,4 +706,106 @@ export const buildFlagsDeterministic = (flagsFromStrategy, preFacts, preHookType
     cortes_por_minuto:         preFacts.cortes_por_minuto ?? 0,
     hook_descripcion_libre:    preFacts.hook_libre ?? null,
   };
+};
+
+// ═════════════════════════════════════════════════════════════
+// ADMIN — Indexado del corpus histórico (NUEVO)
+//
+// Esto NO va en el bundle del cliente (React/App.jsx). Es un script
+// de administración/backend (Node.js) que corrés una vez para
+// cargar tu histórico de miles de hooks y desarrollos, y después
+// cada vez que sumes ejemplos nuevos. Requiere @google/genai
+// >= 1.29.0 y GOOGLE_API_KEY en el entorno.
+//
+// Uso típico (script separado, ej. scripts/indexar-corpus.mjs):
+//
+//   import { GoogleGenAI } from '@google/genai';
+//   import { ensureFileSearchStore, indexEntry, FILE_SEARCH_STORE_DISPLAY_NAME } from './virax-prompts.js';
+//   const ai = new GoogleGenAI({ apiKey: process.env.GOOGLE_API_KEY });
+//   const store = await ensureFileSearchStore(ai);
+//   for (const entry of miCorpusHistorico) {
+//     await indexEntry(ai, store.name, entry);
+//   }
+// ═════════════════════════════════════════════════════════════
+
+/**
+ * Busca el store por displayName; si no existe, lo crea.
+ * Evita duplicar stores en corridas sucesivas del script.
+ */
+export const ensureFileSearchStore = async (ai, displayName = FILE_SEARCH_STORE_DISPLAY_NAME) => {
+  const pager = await ai.fileSearchStores.list({ config: { pageSize: 20 } });
+  let page = pager.page;
+  while (true) {
+    const found = page.find((s) => s.displayName === displayName);
+    if (found) return found;
+    if (!pager.hasNextPage()) break;
+    page = await pager.nextPage();
+  }
+  return ai.fileSearchStores.create({ config: { displayName } });
+};
+
+/**
+ * Indexa una entrada del corpus histórico. `entry.texto` es el
+ * análisis en texto libre (hook o desarrollo, ya extraído del video
+ * con Gemini multimodal en un paso previo). `entry` trae también
+ * la metadata que después se usa para filtrar (segmento, resultado,
+ * industria, patron, plataforma).
+ *
+ * File Search no soporta audio/video directamente, por eso primero
+ * hay que convertir cada video a texto (transcripción + descripción
+ * del hook/desarrollo) con una llamada multimodal aparte, y ESO es
+ * lo que se indexa acá.
+ */
+export const indexEntry = async (ai, storeName, entry) => {
+  const {
+    texto,
+    segmento,       // "hook" | "desarrollo"
+    resultado,      // "bueno" | "malo"
+    industria,
+    patron = "sin_clasificar",
+    plataforma = "all",
+    displayName = `${segmento}-${Date.now()}`,
+  } = entry;
+
+  // uploadToFileSearchStore acepta un path de archivo o un Blob.
+  // Si tu texto ya está en memoria (no en disco), convertilo a Blob:
+  const file = new Blob([texto], { type: "text/plain" });
+
+  let operation = await ai.fileSearchStores.uploadToFileSearchStore({
+    file,
+    fileSearchStoreName: storeName,
+    config: {
+      displayName,
+      mimeType: "text/plain",
+      customMetadata: [
+        { key: "segmento", stringValue: segmento },
+        { key: "resultado", stringValue: resultado },
+        { key: "industria", stringValue: industria },
+        { key: "patron", stringValue: patron },
+        { key: "plataforma", stringValue: plataforma },
+      ],
+    },
+  });
+
+  while (!operation.done) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    operation = await ai.operations.get({ operation });
+  }
+
+  return operation;
+};
+
+/**
+ * Indexa un lote completo en paralelo (con límite de concurrencia
+ * simple para no saturar la API).
+ */
+export const indexBatch = async (ai, storeName, entries, concurrencia = 5) => {
+  const resultados = [];
+  for (let i = 0; i < entries.length; i += concurrencia) {
+    const lote = entries.slice(i, i + concurrencia);
+    const ops = await Promise.all(lote.map((entry) => indexEntry(ai, storeName, entry)));
+    resultados.push(...ops);
+    console.log(`Indexados ${Math.min(i + concurrencia, entries.length)}/${entries.length}`);
+  }
+  return resultados;
 };
