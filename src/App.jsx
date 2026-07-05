@@ -1174,7 +1174,7 @@ Evento que expulsa: ${summary.evento_expulsa}
       firstHourStrategy: outputParsed.firstHourStrategy ?? null,
       commentTrigger:    outputParsed.commentTrigger    ?? null,
 
-      // Debug internos
+      
       _hook_gate:         null,
       _viral_cap:         null,
       _research_data:     researchData,
