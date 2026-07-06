@@ -1,6 +1,7 @@
 // ─────────────────────────────────────────────────────────────
-// virax-prompts.js — VIRAX v7 (rúbricas por tramo + consenso
-// multi-run + auto-verificación + config única de generación)
+// virax-prompts.js — VIRAX v8 (hookDNA.pattern abierto + rúbricas
+// sin checklist rígido + consenso multi-run + auto-verificación +
+// config única de generación)
 //
 // Todos los prompts, schemas y utilidades de scoring viven acá.
 // App.jsx / gemini-proxy SOLO importan de este archivo — no
@@ -8,58 +9,65 @@
 // modificar un prompt, un schema o un parámetro de generación,
 // se edita ÚNICAMENTE acá.
 //
-// CAMBIOS v6 -> v7 (ninguno requiere tocar App.jsx: mismos nombres
+// CAMBIOS v7 -> v8 (ninguno requiere tocar App.jsx: mismos nombres
 // de export, misma firma de parámetros, mismas keys de salida.
-// Todo lo nuevo es ADITIVO):
+// Todo lo nuevo es ADITIVO salvo el punto 14, que es la única
+// key de schema que efectivamente cambia de tipo):
 //
-// 9.  RÚBRICAS POR TRAMO en la `description` de los campos que el
-//     usuario final ve como "el número": hookDNA.strength,
-//     scrollStopScore.score, viralScore.score, salesScore.score,
-//     platformScores.*.score. Patrón tomado directo de cómo Vertex
-//     AI Gen AI Evaluation Service (Gecko / rating_rubric) define
-//     sus métricas: no "puntuá del 0 al 100" a secas, sino un
-//     significado fijo por tramo. Reduce varianza de interpretación
-//     entre corridas — es la intervención de mayor impacto y menor
-//     costo posible (no toca schema type, solo enriquece texto).
+// 14. hookDNA.pattern DEJA DE SER enum cerrado sobre HOOK_PATTERNS.
+//     Pasa a STRING libre. HOOK_PATTERNS no desaparece: se usa en
+//     la description del campo como vocabulario de referencia
+//     ("ejemplos de nivel de precisión esperado"), no como lista
+//     de opciones obligatorias. Motivo: forzar una etiqueta de un
+//     catálogo cerrado de 13 casos sobre un espacio real de miles
+//     de formatos hace que el modelo "encaje" el video en la
+//     categoría más parecida en vez de describir el mecanismo real
+//     — mismo patrón de sobre-indexación en restricciones rígidas
+//     que documenta la guía de Gemini 3 para instrucciones
+//     demasiado categóricas. HOOK_PATTERNS sigue existiendo para:
+//       (a) RESEARCH_BRAIN_SCHEMA.patron_hook_dominante (ahí sí
+//           tiene sentido cerrado: es un resumen agregado de
+//           ejemplos ya catalogados en la base indexada, no una
+//           observación directa de un video nuevo);
+//       (b) el vocabulario de referencia en la description de
+//           hookDNA.pattern y en los prompts de CALL 1.5 / CALL 3.
 //
-// 10. NUEVO: mergeScoringBrainConsensus + runScoringBrainWithConsensus.
-//     La Gemini API NO garantiza determinismo bit-a-bit ni siquiera
-//     con temperature=0 + seed fijo (confirmado por la propia
-//     documentación de Google y reproducido en issues públicos del
-//     repo google-gemini). Context Caching resuelve la varianza de
-//     INTERPRETACIÓN del video (el modelo no re-observa distinto
-//     cada vez), pero no la varianza de SAMPLING del decodificado.
-//     La mitigación documentada es self-consistency: correr CALL 3
-//     N veces y consolidar por mediana. Se aplica SOLO a CALL 3
-//     (es la única llamada cuyo score final ve el usuario) — hacerlo
-//     en CALL 0/1.5/1B multiplicaría costo sin beneficio.
+// 15. Silicon Audience: separada "atención" de "coherencia" a
+//     nivel de cada perfil simulado. attentionRetentionStrength
+//     mide si el perfil siguió mirando (mecánica de scroll/retención
+//     pura); narrativeCoherencePerceived mide si lo que vio conectó
+//     con lo que el video prometía o entregó después. Antes estaban
+//     mezclados dentro de razon_final / decision_final como un solo
+//     juicio implícito, obligando a promediar mentalmente dos
+//     preguntas de hecho distintas.
 //
-// 11. Instrucción explícita de "decilo si es ambiguo, no inventes"
-//     agregada a Silicon Audience y Scoring Brain. responseSchema
-//     garantiza JSON sintácticamente correcto — NO garantiza que los
-//     valores sean semánticamente ciertos (documentación oficial de
-//     Structured Outputs). Contra eso no hay schema que alcance,
-//     solo instrucción explícita de abstenerse de inventar.
+// 16. Rúbricas por tramo de hookDNA.strength y scrollStopScore.score
+//     reescritas para sacar el checklist de elementos obligatorios
+//     ("cara + contraste + texto") en los tramos intermedios y altos.
+//     Se conserva el número acotado 0-100 (necesario para consenso/UI)
+//     pero se reemplaza la lista fija de ingredientes por criterio
+//     de efectividad real de scroll-stop, permitiendo vías no
+//     catalogadas.
 //
-// 12. Auto-verificación de consistencia interna agregada al final
-//     del <task> de CALL 3: honestVerdict no puede contradecir
-//     roadmap ni los scores. Ataca el bug típico de objetos
-//     generados en la misma pasada que terminan contradiciéndose
-//     entre sí (ej. veredicto optimista + roadmap con impacto ALTO).
+// 17. Instrucción explícita agregada al <task> de CALL 3 (y reforzada
+//     en CALL 1.5): "no fuerces el video a encajar en un patrón
+//     conocido si no encaja bien" — extensión del permiso ya existente
+//     de v7 de decir "insuficiente contexto" en vez de inventar, ahora
+//     aplicado a "permiso explícito de no clasificar contra catálogo
+//     preexistente si no corresponde".
 //
-// 13. NUEVO: GENERATION_CONFIG — única fuente de verdad para
-//     temperature/media_resolution/consensusRuns por llamada, para
-//     que gemini-proxy/index.ts no hardcodee estos valores en otro
-//     archivo (mismo principio que ya aplicás con los schemas).
-//
-// Todo lo de v6 se mantiene sin cambios de comportamiento:
-// - SCORING_BRAIN_SCHEMA y PREDICTION_MARKET_SCHEMA con los campos
-//   completos que la UI lee.
-// - propertyOrdering con razonamiento antes que score en cada
-//   schema (Structured Outputs de Gemini: la generación es
-//   autoregresiva, el orden importa).
-// - HOOK_PATTERNS como vocabulario cerrado compartido entre schema
-//   y File Search metadata.
+// Todo lo de v7 se mantiene sin cambios de comportamiento:
+// - mergeScoringBrainConsensus + runScoringBrainWithConsensus
+//   (self-consistency por mediana, solo CALL 3).
+// - Rúbricas por tramo en viralScore/salesScore/platformScores
+//   (Vertex AI Gen AI Evaluation Service / rating_rubric pattern).
+// - Instrucción de "decilo si es ambiguo, no inventes" en Silicon
+//   Audience y Scoring Brain.
+// - Auto-verificación de consistencia interna (honestVerdict vs
+//   roadmap vs scores) al final del <task> de CALL 3.
+// - GENERATION_CONFIG como única fuente de verdad de temperature/
+//   media_resolution/consensusRuns.
+// - propertyOrdering con razonamiento antes que score en cada schema.
 // - Prompts cortos, sin listar campo por campo (eso lo hace el
 //   schema) y sin duplicar el schema en el texto del prompt.
 //
@@ -99,7 +107,17 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
 };
 
 // ═════════════════════════════════════════════════════════════
-// TAXONOMÍA DE PATRONES DE HOOK (sin cambios respecto a v6)
+// TAXONOMÍA DE PATRONES DE HOOK
+//
+// v8: ya NO es un enum obligatorio para hookDNA.pattern (ver
+// changelog #14). Sigue existiendo como:
+//   (a) enum real para RESEARCH_BRAIN_SCHEMA.patron_hook_dominante
+//       (resumen agregado de ejemplos ya catalogados, no
+//       observación directa de un video nuevo — ahí un catálogo
+//       cerrado sí tiene sentido);
+//   (b) vocabulario de referencia inyectado en las descriptions/
+//       prompts que generan hookDNA.pattern, para calibrar nivel
+//       de precisión esperado sin forzar la etiqueta exacta.
 // ═════════════════════════════════════════════════════════════
 export const HOOK_PATTERNS = [
   "pregunta_directa",        // Le hace una pregunta directa al espectador
@@ -118,7 +136,7 @@ export const HOOK_PATTERNS = [
 ];
 
 // ═════════════════════════════════════════════════════════════
-// FILE SEARCH — configuración y helpers (sin cambios respecto a v6)
+// FILE SEARCH — configuración y helpers (sin cambios respecto a v7)
 // ═════════════════════════════════════════════════════════════
 
 export const FILE_SEARCH_STORE_DISPLAY_NAME = "virax-corpus-viral";
@@ -154,31 +172,7 @@ export const fileSearchFiltersDesarrollo = (industria, plataforma) => ({
 });
 
 // ═════════════════════════════════════════════════════════════
-// GENERATION_CONFIG — NUEVO en v7
-//
-// Única fuente de verdad para los parámetros de generación por
-// llamada. gemini-proxy/index.ts debe LEER de acá, no hardcodear
-// temperature/media_resolution en otro archivo.
-//
-// Notas:
-// - temperature bajo en CALL 2 y CALL 3: son las llamadas donde
-//   el usuario ve "el número" — menos variación de sampling ayuda,
-//   aunque (ver runScoringBrainWithConsensus más abajo) no lo
-//   garantiza por sí solo.
-// - temperature alto (0.9) en CALL 1B es INTENCIONAL: es lo que
-//   genera diferenciación real entre los 6 perfiles de audiencia.
-//   No lo bajes pensando que "más consistencia siempre es mejor" —
-//   acá la consistencia deseable es narrativa (cada perfil coherente
-//   consigo mismo), no numérica.
-// - media_resolution: "low" reduce tokens/frame sin pérdida
-//   relevante para reconocimiento de acción y descripción de escena.
-//   Solo subir a "medium"/"high" si CALL 0 detectó
-//   texto_en_pantalla_s0 denso que hay que leer con precisión.
-//   Confirmá contra la documentación vigente que este parámetro
-//   aplica a la versión de API que estés usando con gemini-2.5-flash
-//   antes de asumir el mismo comportamiento que en Gemini 3.
-// - Restricción ya conocida: si hasCacheName es true, el modelo
-//   queda fijo en gemini-2.5-flash (flash-lite no puede reusar cache).
+// GENERATION_CONFIG (sin cambios respecto a v7)
 // ═════════════════════════════════════════════════════════════
 export const GENERATION_CONFIG = {
   call0_preClassifier: {
@@ -194,7 +188,7 @@ export const GENERATION_CONFIG = {
   },
   call1b_siliconAudience: {
     model: "gemini-2.5-flash",
-    temperature: 0.9, // intencional — ver nota arriba
+    temperature: 0.9, // intencional — ver nota en v7 changelog
     responseMimeType: "application/json",
     media_resolution: "low",
   },
@@ -227,7 +221,7 @@ export const RESEARCH_BRAIN_SCHEMA = {
     patron_hook_dominante: {
       type: "STRING",
       enum: HOOK_PATTERNS,
-      description: "El patrón (de la taxonomía HOOK_PATTERNS) que más se repite entre los ejemplos ganadores recuperados.",
+      description: "El patrón (de la taxonomía HOOK_PATTERNS) que más se repite entre los ejemplos ganadores recuperados. Acá SÍ es un catálogo cerrado válido: es un resumen agregado de ejemplos ya catalogados en la base indexada, no la observación directa de un video nuevo.",
     },
     top_formatos_ganadores: { type: "STRING", description: "Formatos de video que están funcionando mejor ahora mismo en este nicho y plataforma." },
     errores_hook_comunes:   { type: "STRING", description: "Errores de hook recurrentes, basados en los ejemplos marcados como 'malo' en la base." },
@@ -271,6 +265,29 @@ export const SILICON_AUDIENCE_SCHEMA = {
               propertyOrdering: ["segundo", "decision"],
             },
           },
+          // ── v8 (changelog #15) ──────────────────────────────
+          // Antes, "si siguió mirando" y "si lo que vio conectaba
+          // con lo prometido" quedaban mezclados dentro de un solo
+          // razon_final / decision_final. Son dos preguntas de
+          // hecho distintas y se separan explícitamente:
+          attentionRetentionStrength: {
+            type: "NUMBER",
+            minimum: 0,
+            maximum: 100,
+            description:
+              "Qué tan fuerte retuvo la atención de ESTE perfil el mecanismo del video en sí mismo (ritmo, estímulo " +
+              "visual/sonoro, curiosidad generada), independientemente de si el contenido conectaba temáticamente con " +
+              "lo que el perfil esperaba encontrar.",
+          },
+          narrativeCoherencePerceived: {
+            type: "NUMBER",
+            minimum: 0,
+            maximum: 100,
+            description:
+              "Qué tan conectado percibió ESTE perfil lo que retuvo su atención con lo que el video efectivamente " +
+              "entregó después (o prometía entregar). Puede ser alto en atención y bajo en coherencia — por ejemplo, " +
+              "un shock visual que engancha pero no tiene relación real con el resto del contenido.",
+          },
           razon_final:    { type: "STRING", description: "Por qué este perfil tomó su decisión final, en su propio lenguaje. Si algún momento del video fue difícil de interpretar, decilo acá en vez de inventar una lectura segura." },
           decision_final: { type: "STRING", enum: ["RETUVO", "ABANDONÓ"], description: "Resultado final: si terminó viendo el video o lo abandonó en algún punto." },
           completo:       { type: "BOOLEAN", description: "Si llegó hasta el final del video." },
@@ -278,7 +295,11 @@ export const SILICON_AUDIENCE_SCHEMA = {
           guardo:         { type: "BOOLEAN", description: "Si este perfil guardaría el video." },
           comento:        { type: "BOOLEAN", description: "Si este perfil dejaría un comentario." },
         },
-        propertyOrdering: ["perfil_id", "eventos_atencion", "razon_final", "decision_final", "completo", "compartio", "guardo", "comento"],
+        propertyOrdering: [
+          "perfil_id", "eventos_atencion",
+          "attentionRetentionStrength", "narrativeCoherencePerceived",
+          "razon_final", "decision_final", "completo", "compartio", "guardo", "comento",
+        ],
       },
     },
     segundo_mas_peligroso:  { type: "NUMBER", description: "El segundo del video donde más perfiles decidieron abandonar." },
@@ -340,18 +361,38 @@ export const SCORING_BRAIN_SCHEMA = {
       type: "OBJECT",
       description: "Diagnóstico específico del hook (primeros segundos).",
       properties: {
-        pattern:        { type: "STRING", enum: HOOK_PATTERNS, description: "El patrón detectado. Ej: si el video corta justo antes de mostrar algo que prometía mostrar (como una piedra a punto de caer al agua y un corte abrupto antes del impacto), es 'payoff_negado'." },
+        // ── v8 (changelog #14): pattern deja de ser enum ──────
+        pattern: {
+          type: "STRING",
+          description:
+            "Nombrá con tus propias palabras qué tipo de gancho es, de la forma más precisa posible. " +
+            "No existe una lista cerrada de opciones — hay miles de formatos válidos y en evolución constante. " +
+            `Ejemplos de nombres que OTROS análisis usaron antes (solo como referencia de nivel de precisión ` +
+            `esperado, no como opciones obligatorias): ${HOOK_PATTERNS.join(", ")}. ` +
+            "Si el video no se parece a ninguno de esos, describí el mecanismo real con tus propias palabras — " +
+            "es preferible un nombre nuevo y preciso que forzar el caso a uno de los ejemplos. Ej: si el video " +
+            "corta justo antes de mostrar algo que prometía mostrar (como una piedra a punto de caer al agua y " +
+            "un corte abrupto antes del impacto), y no tenés un nombre mejor, 'payoff negado' es un buen nombre — " +
+            "pero si el mecanismo real combina dos cosas a la vez (ej: dolor nombrado directo + demostración " +
+            "inmediata del producto resolviéndolo), describí esa combinación en vez de forzarlo a una sola etiqueta.",
+        },
         missingElement: { type: "STRING", description: "Qué elemento le falta al hook para ser más efectivo." },
         strength: {
           type: "NUMBER",
           minimum: 0,
           maximum: 100,
           description:
-            "Fuerza del hook según esta rúbrica — 0-20: no hay mecanismo de hook identificable (equivale a pattern='debil'). " +
-            "21-45: mecanismo presente pero fácil de ignorar en el feed, ejecución débil. " +
-            "46-70: mecanismo claro y reconocible, pero genérico o ya visto en el nicho. " +
-            "71-90: mecanismo fuerte y bien ejecutado, con al menos un elemento diferenciador real respecto al benchmark del nicho. " +
-            "91-100: ejecución excepcional, sin fricción, diseñado deliberadamente para retener contra el algoritmo.",
+            // ── v8 (changelog #16): rúbrica sin checklist de "ingredientes" fijos ──
+            "Fuerza del hook — juzgá con tu propio criterio qué tan efectivo es este gancho para detener el scroll " +
+            "de alguien que no lo estaba buscando y darle motivo de seguir mirando. No hay checklist de elementos " +
+            "obligatorios: un video puede lograrlo por vías que no están en ningún ejemplo previo. Guía de tramos, " +
+            "en términos de EFECTIVIDAD real (no de qué ingredientes específicos aparecen) — " +
+            "0-20: no hay mecanismo de hook identificable, nada en el video le daría a alguien un motivo para no " +
+            "seguir scrolleando. 21-45: hay algo de mecanismo pero es fácil de ignorar en el feed, ejecución débil. " +
+            "46-70: el mecanismo funciona y es reconocible, pero de forma genérica o ya vista en el nicho. " +
+            "71-90: el mecanismo es fuerte y está bien ejecutado, con al menos un elemento diferenciador real " +
+            "respecto al benchmark del nicho, sea cual sea la forma concreta que tome. " +
+            "91-100: ejecución excepcional, sin fricción, diseñada deliberadamente para retener contra el algoritmo.",
         },
         optimizedHook:  { type: "STRING", description: "Una propuesta concreta de hook mejorado." },
       },
@@ -372,11 +413,17 @@ export const SCORING_BRAIN_SCHEMA = {
           minimum: 0,
           maximum: 100,
           description:
-            "Qué tan bien el frame 0 detiene el scroll, según esta rúbrica — 0-20: no hay ningún elemento de detención " +
-            "(frame estático, sin cara, sin contraste, sin texto). 21-45: un elemento débil de detención pero fácilmente " +
-            "ignorable en el feed. 46-70: al menos un elemento fuerte (cara con emoción visible O alto contraste O texto " +
-            "de impacto). 71-90: combinación de 2 o más elementos fuertes trabajando juntos. 91-100: frame 0 diseñado " +
-            "deliberadamente para el algoritmo, sin ambigüedad de qué está pasando en menos de un segundo.",
+            // ── v8 (changelog #16): rúbrica sin checklist rígido de elementos ──
+            "Qué tan bien el frame 0 detiene el scroll — juzgá la efectividad real de detención en menos de un " +
+            "segundo, no la presencia de una lista fija de ingredientes. faceDetected/textOnScreen/contrastLevel " +
+            "son observaciones de apoyo, no una checklist que el frame tenga que cumplir para puntuar alto: un " +
+            "frame puede detener el scroll por una vía que no está en esos campos. Guía de tramos, en términos de " +
+            "efectividad — 0-20: el frame 0 no le da a nadie un motivo para detenerse, no hay ambigüedad: es " +
+            "ignorable. 21-45: hay algo que podría llamar la atención pero es débil o fácilmente ignorable en el " +
+            "feed. 46-70: el frame 0 efectivamente detiene el scroll de una porción real de audiencia, por la vía " +
+            "que sea. 71-90: el frame 0 detiene el scroll de forma robusta, combinando más de un recurso reforzándose " +
+            "entre sí. 91-100: frame 0 diseñado deliberadamente para el algoritmo, sin ambigüedad de qué está " +
+            "pasando en menos de un segundo.",
         },
       },
       propertyOrdering: ["faceDetected", "textOnScreen", "contrastLevel", "emotionVisible", "emotionIntensity", "verdict", "score"],
@@ -570,7 +617,7 @@ export const SCORING_BRAIN_SCHEMA = {
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 0 — Observador del HOOK (sin cambios respecto a v6)
+// CALL 0 — Observador del HOOK (sin cambios respecto a v7)
 // ─────────────────────────────────────────────────────────────
 export const buildPreClassifierPrompt = (hookWindowSegundos = 5) => `
 <role>
@@ -692,7 +739,11 @@ export const parsePreClassifierResponse = (rawText) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 1.5 — Research Brain (sin cambios respecto a v6)
+// CALL 1.5 — Research Brain
+//
+// v8: se aclara en el contexto que HOOK_PATTERNS es catálogo
+// cerrado válido ACÁ (resumen agregado de ejemplos ya indexados),
+// a diferencia de CALL 3 donde es solo referencia. Ver changelog #14.
 // ─────────────────────────────────────────────────────────────
 export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
   const pName = {
@@ -706,7 +757,7 @@ Sos un investigador de tendencias de contenido para redes sociales, con acceso a
 
 <context>
 Plataforma: ${pName}. Nicho: "${industria}". Objetivo del creador: ${objetivo}.
-Para nombrar cualquier patrón de hook, usá siempre uno de estos nombres exactos: ${HOOK_PATTERNS.join(", ")}.
+Para patron_hook_dominante, usá siempre uno de estos nombres exactos (acá sí es un catálogo cerrado, porque es un resumen agregado de ejemplos ya catalogados en la base, no la observación de un video nuevo): ${HOOK_PATTERNS.join(", ")}.
 </context>
 
 <task>
@@ -778,10 +829,10 @@ export const SILICON_PROFILES = [
 // ─────────────────────────────────────────────────────────────
 // CALL 1B — Silicon Audience
 //
-// v7: agregada instrucción explícita de abstenerse de inventar
-// ante ambigüedad (ver changelog #11). El schema ya tenía el campo
-// razon_final actualizado con la misma instrucción — acá se refuerza
-// a nivel de tarea completa, no solo campo por campo.
+// v8: instrucción de tarea actualizada para pedir explícitamente
+// attentionRetentionStrength y narrativeCoherencePerceived como
+// dos juicios separados por perfil (changelog #15), reforzando lo
+// que ya define el schema.
 // ─────────────────────────────────────────────────────────────
 export const buildSiliconAudiencePrompt = (hookDescripcion, marketState, platform, duracionSegundos) => {
   const pName = {
@@ -811,6 +862,8 @@ ${perfilesStr}
 <task>
 Tenés acceso directo al video completo. Para cada uno de los 6 usuarios, con total libertad de criterio: mirá el video de punta a punta y decidí en qué momentos concretos ese usuario sigue mirando o se va, y por qué. Tu propia observación manda por sobre la referencia del hook de arriba.
 
+Para cada perfil, juzgá dos cosas por separado, porque son preguntas distintas: (1) qué tan fuerte lo retuvo el mecanismo del video en sí mismo — ritmo, estímulo, curiosidad generada — independientemente de si conectaba con lo que esperaba encontrar; y (2) qué tan conectado percibió, una vez retenido, lo que vio con lo que el video efectivamente entregó o prometía entregar. Un video puede retener fuerte y a la vez sentirse desconectado temáticamente — no promedies esos dos juicios en uno solo.
+
 Después de simular a los 6 por separado, mirá el conjunto: identificá el segundo más peligroso, qué elemento retiene más, qué elemento expulsa más, y el patrón general de abandono y de retención que se repite entre los 6 perfiles.
 
 Si algún tramo del video es difícil de interpretar (calidad de imagen baja, corte muy rápido, audio poco claro), decilo explícitamente en razon_final del perfil correspondiente en vez de inventar una lectura segura que no tenés.
@@ -819,7 +872,7 @@ Si algún tramo del video es difícil de interpretar (calidad de imagen baja, co
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 2 — Prediction Market (sin cambios respecto a v6)
+// CALL 2 — Prediction Market (sin cambios respecto a v7)
 // ─────────────────────────────────────────────────────────────
 export const buildPredictionMarketPrompt = (simulacionSilicon, marketState, platform, industria) => {
   const pName = {
@@ -853,10 +906,10 @@ Basándote en todo lo anterior: primero estimá la retención de cada uno de los
 // ─────────────────────────────────────────────────────────────
 // CALL 3 — Scoring Brain
 //
-// v7: agregadas dos instrucciones nuevas al final del <task>
-// (ver changelog #11 y #12) — ni el schema ni las rúbricas por
-// tramo alcanzan solas para esto, hace falta instrucción explícita
-// de tarea. El resto del prompt es idéntico a v6.
+// v8: agregada instrucción explícita de no forzar el video a un
+// patrón conocido si no encaja (changelog #17), en la misma línea
+// que la instrucción ya existente de v7 sobre no inventar ante
+// ambigüedad. El resto del prompt es idéntico a v7.
 // ─────────────────────────────────────────────────────────────
 export const buildScoringBrainPrompt = (
   hookDescripcion,
@@ -883,11 +936,13 @@ ${audienceAnalysis}
 BENCHMARK DE MERCADO:
 ${JSON.stringify(researchData)}
 
-Para nombrar el patrón del hook, usá uno de estos nombres exactos: ${HOOK_PATTERNS.join(", ")}.
+Ejemplos de nombres de patrón de hook usados en análisis previos (solo como referencia de nivel de precisión esperado, no como lista obligatoria — hay miles de formatos válidos que no están acá): ${HOOK_PATTERNS.join(", ")}.
 </context>
 
 <task>
 Tenés acceso directo al video completo. Basándote en todo lo anterior: analizá primero el hook, el frame 0 (scroll-stop) y el framework STEPPS. Con eso ya observado, escribí tu razonamiento sobre el score viral y el de ventas ANTES de fijar los números — los números son consecuencia de ese razonamiento, no al revés.
+
+No fuerces el video a encajar en un patrón conocido si no encaja bien. Confiá en tu propio criterio sobre qué hace que ESTE video en particular funcione o no — hay miles de formatos válidos que no están en ningún catálogo, y tu trabajo es juzgar el mecanismo real, no clasificarlo contra una lista cerrada. Si el mecanismo combina dos cosas a la vez, describí la combinación en vez de elegir una sola etiqueta que fuerce a que sean mutuamente excluyentes.
 
 Si hay problemas reales, nombralos sin suavizarlos. El roadmap solo debe incluir problemas que vos mismo detectaste en este video puntual, ordenados por impacto real — nada genérico.
 
@@ -898,7 +953,7 @@ Antes de fijar honestVerdict: verificá que sea consistente con roadmap (si hay 
 `;
 
 // ─────────────────────────────────────────────────────────────
-// CONSENSO MULTI-RUN — NUEVO en v7 (ver changelog #10)
+// CONSENSO MULTI-RUN (sin cambios respecto a v7)
 //
 // Se aplica SOLO a CALL 3. mergeScoringBrainConsensus es pura
 // (fácil de testear); runScoringBrainWithConsensus es el wrapper
@@ -1005,7 +1060,7 @@ export const runScoringBrainWithConsensus = async (
 };
 
 // ─────────────────────────────────────────────────────────────
-// Utilidades (sin cambios respecto a v6)
+// Utilidades (sin cambios respecto a v7)
 // ─────────────────────────────────────────────────────────────
 export const calcularCurvaRetencionSilicon = (simulacion, duracionSegundos) => {
   if (!simulacion?.simulacion?.length) return [];
@@ -1143,7 +1198,7 @@ export const buildFlagsDeterministic = (flagsFromStrategy, preFacts, preHookType
 };
 
 // ═════════════════════════════════════════════════════════════
-// ADMIN — Indexado del corpus histórico (sin cambios respecto a v6)
+// ADMIN — Indexado del corpus histórico (sin cambios respecto a v7)
 // ═════════════════════════════════════════════════════════════
 
 export const ensureFileSearchStore = async (ai, displayName = FILE_SEARCH_STORE_DISPLAY_NAME) => {
