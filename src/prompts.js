@@ -1,89 +1,4 @@
-// ─────────────────────────────────────────────────────────────
-// virax-prompts.js — VIRAX v8 (hookDNA.pattern abierto + rúbricas
-// sin checklist rígido + consenso multi-run + auto-verificación +
-// config única de generación)
-//
-// Todos los prompts, schemas y utilidades de scoring viven acá.
-// App.jsx / gemini-proxy SOLO importan de este archivo — no
-// vuelven a declarar nada de esto localmente. Si necesitás
-// modificar un prompt, un schema o un parámetro de generación,
-// se edita ÚNICAMENTE acá.
-//
-// CAMBIOS v7 -> v8 (ninguno requiere tocar App.jsx: mismos nombres
-// de export, misma firma de parámetros, mismas keys de salida.
-// Todo lo nuevo es ADITIVO salvo el punto 14, que es la única
-// key de schema que efectivamente cambia de tipo):
-//
-// 14. hookDNA.pattern DEJA DE SER enum cerrado sobre HOOK_PATTERNS.
-//     Pasa a STRING libre. HOOK_PATTERNS no desaparece: se usa en
-//     la description del campo como vocabulario de referencia
-//     ("ejemplos de nivel de precisión esperado"), no como lista
-//     de opciones obligatorias. Motivo: forzar una etiqueta de un
-//     catálogo cerrado de 13 casos sobre un espacio real de miles
-//     de formatos hace que el modelo "encaje" el video en la
-//     categoría más parecida en vez de describir el mecanismo real
-//     — mismo patrón de sobre-indexación en restricciones rígidas
-//     que documenta la guía de Gemini 3 para instrucciones
-//     demasiado categóricas. HOOK_PATTERNS sigue existiendo para:
-//       (a) RESEARCH_BRAIN_SCHEMA.patron_hook_dominante (ahí sí
-//           tiene sentido cerrado: es un resumen agregado de
-//           ejemplos ya catalogados en la base indexada, no una
-//           observación directa de un video nuevo);
-//       (b) el vocabulario de referencia en la description de
-//           hookDNA.pattern y en los prompts de CALL 1.5 / CALL 3.
-//
-// 15. Silicon Audience: separada "atención" de "coherencia" a
-//     nivel de cada perfil simulado. attentionRetentionStrength
-//     mide si el perfil siguió mirando (mecánica de scroll/retención
-//     pura); narrativeCoherencePerceived mide si lo que vio conectó
-//     con lo que el video prometía o entregó después. Antes estaban
-//     mezclados dentro de razon_final / decision_final como un solo
-//     juicio implícito, obligando a promediar mentalmente dos
-//     preguntas de hecho distintas.
-//
-// 16. Rúbricas por tramo de hookDNA.strength y scrollStopScore.score
-//     reescritas para sacar el checklist de elementos obligatorios
-//     ("cara + contraste + texto") en los tramos intermedios y altos.
-//     Se conserva el número acotado 0-100 (necesario para consenso/UI)
-//     pero se reemplaza la lista fija de ingredientes por criterio
-//     de efectividad real de scroll-stop, permitiendo vías no
-//     catalogadas.
-//
-// 17. Instrucción explícita agregada al <task> de CALL 3 (y reforzada
-//     en CALL 1.5): "no fuerces el video a encajar en un patrón
-//     conocido si no encaja bien" — extensión del permiso ya existente
-//     de v7 de decir "insuficiente contexto" en vez de inventar, ahora
-//     aplicado a "permiso explícito de no clasificar contra catálogo
-//     preexistente si no corresponde".
-//
-// Todo lo de v7 se mantiene sin cambios de comportamiento:
-// - mergeScoringBrainConsensus + runScoringBrainWithConsensus
-//   (self-consistency por mediana, solo CALL 3).
-// - Rúbricas por tramo en viralScore/salesScore/platformScores
-//   (Vertex AI Gen AI Evaluation Service / rating_rubric pattern).
-// - Instrucción de "decilo si es ambiguo, no inventes" en Silicon
-//   Audience y Scoring Brain.
-// - Auto-verificación de consistencia interna (honestVerdict vs
-//   roadmap vs scores) al final del <task> de CALL 3.
-// - GENERATION_CONFIG como única fuente de verdad de temperature/
-//   media_resolution/consensusRuns.
-// - propertyOrdering con razonamiento antes que score en cada schema.
-// - Prompts cortos, sin listar campo por campo (eso lo hace el
-//   schema) y sin duplicar el schema en el texto del prompt.
-//
-// Pendiente de tu lado (fuera de este archivo, en gemini-proxy):
-// no le pongas thinkingBudget:0 a CALL 1B/2/3 — son las tareas de
-// razonamiento multi-paso para las que 2.5 Flash está diseñado
-// como "thinking model". Dejalo dinámico (-1) o con presupuesto
-// generoso (2048-4096). Además: confirmá que en el array `parts`
-// el `text` va DESPUÉS del `fileData`/`cachedContent` — es
-// instrucción oficial explícita de la doc de video understanding
-// y un desorden acá degrada calidad de forma silenciosa.
-// ─────────────────────────────────────────────────────────────
 
-// ═════════════════════════════════════════════════════════════
-// NICHOS — motores psicológicos y pesos por industria (sin cambios)
-// ═════════════════════════════════════════════════════════════
 export const NICHE_MOTORS = {
   "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
   "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
@@ -106,19 +21,6 @@ export const NICHE_WEIGHT_MULTIPLIERS = {
   "musica_artista":     { retention: 1.3, tension: 0.8, payoff: 0.9, clarity: 0.7, trust: 0.8 },
 };
 
-// ═════════════════════════════════════════════════════════════
-// TAXONOMÍA DE PATRONES DE HOOK
-//
-// v8: ya NO es un enum obligatorio para hookDNA.pattern (ver
-// changelog #14). Sigue existiendo como:
-//   (a) enum real para RESEARCH_BRAIN_SCHEMA.patron_hook_dominante
-//       (resumen agregado de ejemplos ya catalogados, no
-//       observación directa de un video nuevo — ahí un catálogo
-//       cerrado sí tiene sentido);
-//   (b) vocabulario de referencia inyectado en las descriptions/
-//       prompts que generan hookDNA.pattern, para calibrar nivel
-//       de precisión esperado sin forzar la etiqueta exacta.
-// ═════════════════════════════════════════════════════════════
 export const HOOK_PATTERNS = [
   "pregunta_directa",        // Le hace una pregunta directa al espectador
   "afirmacion_contradictoria", // Contradice una creencia común / genera fricción
@@ -206,9 +108,6 @@ export const GENERATION_CONFIG = {
   },
 };
 
-// ═════════════════════════════════════════════════════════════
-// SCHEMAS — para responseSchema de Gemini (JSON mode estricto)
-// ═════════════════════════════════════════════════════════════
 
 export const RESEARCH_BRAIN_SCHEMA = {
   type: "OBJECT",
@@ -265,11 +164,7 @@ export const SILICON_AUDIENCE_SCHEMA = {
               propertyOrdering: ["segundo", "decision"],
             },
           },
-          // ── v8 (changelog #15) ──────────────────────────────
-          // Antes, "si siguió mirando" y "si lo que vio conectaba
-          // con lo prometido" quedaban mezclados dentro de un solo
-          // razon_final / decision_final. Son dos preguntas de
-          // hecho distintas y se separan explícitamente:
+         
           attentionRetentionStrength: {
             type: "NUMBER",
             minimum: 0,
@@ -361,12 +256,50 @@ export const SCORING_BRAIN_SCHEMA = {
       type: "OBJECT",
       description: "Diagnóstico específico del hook (primeros segundos).",
       properties: {
+
+        // ①②③ NUEVO — van PRIMERO, antes de razonamiento_pattern/pattern
+        segundoDondeAparaceElValorReal: {
+          type: "NUMBER",
+          description:
+            "En qué segundo exacto del video aparece el primer elemento de VALOR REAL para el espectador " +
+            "(el producto en acción, la información prometida, el giro, la demostración — no un saludo, no una " +
+            "presentación genérica, no un logo). Si el valor real está desde el segundo 0, poné 0. Medilo mirando " +
+            "el video, no lo estimes.",
+        },
+
+        riesgosDeRetencionDetectados: {
+          type: "ARRAY",
+          description:
+            "Antes de puntuar, repasá el video con tu propio conocimiento de qué patrones suelen matar la " +
+            "retención en redes sociales (arranques vacíos, promesas no cumplidas, ritmo que decae, audio ausente " +
+            "en momentos clave, información crítica tardía, y cualquier otro patrón que reconozcas por tu propio " +
+            "criterio — no hay una lista cerrada de cuáles buscar). Por cada riesgo real que detectes EN ESTE " +
+            "VIDEO puntual, describilo con el timestamp y por qué es un riesgo acá específicamente. Si no detectás " +
+            "ninguno, dejá el array vacío — no inventes riesgos para llenar el campo.",
+          items: {
+            type: "OBJECT",
+            properties: {
+              riesgo:             { type: "STRING", description: "Descripción del riesgo, en tus propias palabras." },
+              timestamp:          { type: "STRING", description: "MM:SS donde ocurre." },
+              severidad_estimada: { type: "STRING", enum: ["baja", "media", "alta"], description: "Tu propio criterio de cuánto pesa esto en el contexto de este video, plataforma y duración específicos." },
+            },
+            propertyOrdering: ["riesgo", "timestamp", "severidad_estimada"],
+          },
+        },
+
         // ── v8 (changelog #14): pattern deja de ser enum ──────
+        razonamiento_pattern: {
+          type: "STRING",
+          description:
+            "Antes de nombrar el patrón: ¿qué elemento concreto genera atención en los primeros segundos? " +
+            "¿Ese elemento se resuelve, se conecta o queda huérfano respecto al resto del video? Escribí este " +
+            "razonamiento ANTES de completar pattern, attentionStrength y thematicCoherence.",
+        },
         pattern: {
           type: "STRING",
           description:
             "Nombrá con tus propias palabras qué tipo de gancho es, de la forma más precisa posible. " +
-            "No existe una lista cerrada de opciones — hay miles de formatos válidos y en evolución constante. " +
+            "No existe una lista cerrada de opciones — hay miles de formatos válidos o inválidos y en evolución constante. " +
             `Ejemplos de nombres que OTROS análisis usaron antes (solo como referencia de nivel de precisión ` +
             `esperado, no como opciones obligatorias): ${HOOK_PATTERNS.join(", ")}. ` +
             "Si el video no se parece a ninguno de esos, describí el mecanismo real con tus propias palabras — " +
@@ -377,6 +310,19 @@ export const SCORING_BRAIN_SCHEMA = {
             "inmediata del producto resolviéndolo), describí esa combinación en vez de forzarlo a una sola etiqueta.",
         },
         missingElement: { type: "STRING", description: "Qué elemento le falta al hook para ser más efectivo." },
+        attentionStrength: {
+          type: "NUMBER",
+          minimum: 0,
+          maximum: 100,
+          description: "Qué tan fuerte es el elemento de atención inicial identificado en razonamiento_pattern, independientemente de si se resuelve después.",
+        },
+        thematicCoherence: {
+          type: "NUMBER",
+          minimum: 0,
+          maximum: 100,
+          description: "Qué tan bien conecta ese elemento de atención inicial con el resto del video (vs. quedar huérfano o ser un cebo desconectado).",
+        },
+
         strength: {
           type: "NUMBER",
           minimum: 0,
@@ -385,8 +331,14 @@ export const SCORING_BRAIN_SCHEMA = {
             // ── v8 (changelog #16): rúbrica sin checklist de "ingredientes" fijos ──
             "Fuerza del hook — juzgá con tu propio criterio qué tan efectivo es este gancho para detener el scroll " +
             "de alguien que no lo estaba buscando y darle motivo de seguir mirando. No hay checklist de elementos " +
-            "obligatorios: un video puede lograrlo por vías que no están en ningún ejemplo previo. Guía de tramos, " +
-            "en términos de EFECTIVIDAD real (no de qué ingredientes específicos aparecen) — " +
+            "obligatorios: un video puede lograrlo por vías que no están en ningún ejemplo previo. " +
+            // ④ NUEVO — referencia a los dos campos nuevos
+            "Tené en cuenta lo que vos mismo mediste en segundoDondeAparaceElValorReal y en " +
+            "riesgosDeRetencionDetectados: cuanto más tarde aparece el valor real, y cuantos más riesgos de " +
+            "severidad alta detectaste, más debería golpear esto al score — pero el peso exacto que le des es " +
+            "tu criterio, no una fórmula fija (un video largo de nicho tolera más espera que un short de feed " +
+            "genérico). " +
+            "Guía de tramos, en términos de EFECTIVIDAD real (no de qué ingredientes específicos aparecen) — " +
             "0-20: no hay mecanismo de hook identificable, nada en el video le daría a alguien un motivo para no " +
             "seguir scrolleando. 21-45: hay algo de mecanismo pero es fácil de ignorar en el feed, ejecución débil. " +
             "46-70: el mecanismo funciona y es reconocible, pero de forma genérica o ya vista en el nicho. " +
@@ -394,9 +346,22 @@ export const SCORING_BRAIN_SCHEMA = {
             "respecto al benchmark del nicho, sea cual sea la forma concreta que tome. " +
             "91-100: ejecución excepcional, sin fricción, diseñada deliberadamente para retener contra el algoritmo.",
         },
-        optimizedHook:  { type: "STRING", description: "Una propuesta concreta de hook mejorado." },
+
+        optimizedHook: { type: "STRING", description: "Una propuesta concreta de hook mejorado." },
       },
-      propertyOrdering: ["pattern", "missingElement", "strength", "optimizedHook"],
+
+      // propertyOrdering actualizado — fuerza el orden de escritura
+      propertyOrdering: [
+        "segundoDondeAparaceElValorReal",
+        "riesgosDeRetencionDetectados",
+        "razonamiento_pattern",
+        "pattern",
+        "missingElement",
+        "attentionStrength",
+        "thematicCoherence",
+        "strength",
+        "optimizedHook",
+      ],
     },
     scrollStopScore: {
       type: "OBJECT",
@@ -462,7 +427,12 @@ export const SCORING_BRAIN_SCHEMA = {
             "perfiles promedio/nicho pero sin gancho para viralizar más allá de su audiencia habitual. 61-80: combina " +
             "retención sólida con al menos un factor STEPPS fuerte (emoción, trigger o valor práctico) que empuja el " +
             "compartido. 81-100: retiene a los 6 perfiles simulados — incluido el escéptico — y genera motivo claro " +
-            "de compartir fuera del nicho de origen.",
+            "de compartir fuera del nicho de origen. " +
+            // ← NUEVO: consistencia con hookDNA.riesgosDeRetencionDetectados
+            "Tiene que ser consistente con hookDNA.riesgosDeRetencionDetectados: si ahí detectaste riesgos de " +
+            "severidad alta, eso tiene que reflejarse en un score más bajo y quedar explicado en " +
+            "razonamiento_viralScore — vos decidís cuánto pesa cada riesgo según el contexto del video, no hay " +
+            "una tabla fija de puntos a descontar.",
         },
       },
       propertyOrdering: ["verdict", "accion_clave", "score"],
@@ -615,7 +585,6 @@ export const SCORING_BRAIN_SCHEMA = {
     "viewsPrediction", "firstHourStrategy", "commentTrigger",
   ],
 };
-
 // ─────────────────────────────────────────────────────────────
 // CALL 0 — Observador del HOOK (sin cambios respecto a v7)
 // ─────────────────────────────────────────────────────────────
