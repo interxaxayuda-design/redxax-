@@ -219,15 +219,28 @@ const ShinyCard = ({ children, className = '', tilt }) => {
 
 function renderBotText(text) {
   if (!text) return null;
-  return text.split('\n').map((line, lineIdx) => (
-    <p key={lineIdx} className={lineIdx > 0 ? 'mt-2' : ''}>
-      {line.split(/(\*\*[^*]+\*\*)/).map((part, partIdx) =>
-        part.startsWith('**') && part.endsWith('**')
-          ? <strong key={partIdx} className="text-white font-black">{part.slice(2, -2)}</strong>
-          : part
-      )}
-    </p>
-  ));
+  return text.split('\n').map((line, lineIdx) => {
+    // ── Detecta subtítulo tipo "## Texto" ──
+    const headerMatch = line.match(/^##\s+(.+)/);
+    if (headerMatch) {
+      return (
+        <p key={lineIdx} className={`text-base font-black italic text-purple-300 uppercase tracking-wide ${lineIdx > 0 ? 'mt-4 mb-1' : 'mb-1'}`}>
+          {headerMatch[1]}
+        </p>
+      );
+    }
+
+    // ── Línea normal (con soporte de negrita, como ya tenías) ──
+    return (
+      <p key={lineIdx} className={lineIdx > 0 ? 'mt-2' : ''}>
+        {line.split(/(\*\*[^*]+\*\*)/).map((part, partIdx) =>
+          part.startsWith('**') && part.endsWith('**')
+            ? <strong key={partIdx} className="text-white font-black">{part.slice(2, -2)}</strong>
+            : part
+        )}
+      </p>
+    );
+  });
 }
 
 const PHRASES = [
@@ -1470,6 +1483,15 @@ TONO: Motivador pero honesto. Nunca inflás un video flojo para hacer sentir
 bien al usuario — eso lo perjudica más que ayudarlo. Si algo está mal, decilo
 claro y después mostrale el camino de salida. La honestidad ES la forma de
 motivar acá: un creador que confía en que le decís la verdad, vuelve.
+
+FORMATO DE RESPUESTA (usá Markdown, así se renderiza con estilos):
+- Usá "## " antes de un subtítulo corto cuando quieras destacar un punto clave
+  o cambiar de tema (ej: "## El problema real").
+- Usá "**texto**" para negrita en frases importantes.
+- Usá listas con "- " cuando enumeres pasos o ideas.
+- NO abuses de los subtítulos: máximo 1 o 2 por respuesta, solo cuando
+  realmente marcan un quiebre de tema. La mayoría del texto va en párrafos
+  normales, conversacional, sin formato.
 `;
 
     // Separá claramente historial de mensaje actual
