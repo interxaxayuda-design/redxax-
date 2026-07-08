@@ -461,6 +461,27 @@ export const SCORING_BRAIN_SCHEMA = {
       propertyOrdering: ["verdict", "accion_clave", "score"],
     },
     honestVerdict: { type: "STRING", description: "El veredicto más honesto posible, en 1-2 frases, sin suavizarlo. Debe ser consistente con roadmap y con viralScore/salesScore — nunca optimista si el roadmap tiene un problema de impacto ALTO o los scores son bajos." },
+// Dentro de SCORING_BRAIN_SCHEMA -> properties
+erroresFatales: {
+  type: "ARRAY",
+  description:
+    "Encontrá exactamente 3 razones por las cuales un espectador CERRARÍA el video o dejaría de mirarlo — " +
+    "no 'qué se puede mejorar', sino lo que directamente lo expulsa. Tienen que ser errores reales de ESTE " +
+    "video puntual, no genéricos. Ordenalos del más letal al menos letal. Si el video es genuinamente bueno " +
+    "y no encontrás 3 errores reales, no inventes: describí el más real que tengas y marcá los otros con " +
+    "gravedad 'baja', pero no fuerces un error que no está.",
+  items: {
+    type: "OBJECT",
+    properties: {
+      error:       { type: "STRING", description: "El error, en términos concretos, no genéricos." },
+      timestamp:   { type: "STRING", description: "MM:SS donde ocurre, o 'todo el video' si es estructural." },
+      por_que_mata: { type: "STRING", description: "Por qué específicamente esto hace que el espectador se vaya, en este video en particular." },
+      gravedad:    { type: "STRING", enum: ["letal", "grave", "menor"] },
+    },
+    propertyOrdering: ["error", "timestamp", "por_que_mata", "gravedad"],
+  },
+},
+
     roadmap: {
       type: "ARRAY",
       description: "Solo problemas reales detectados en este video puntual, ordenados por impacto real — nada genérico.",
@@ -581,12 +602,13 @@ export const SCORING_BRAIN_SCHEMA = {
     },
   },
   propertyOrdering: [
-    "hookDNA", "scrollStopScore", "steppsScore",
-    "razonamiento_viralScore", "razonamiento_salesScore",
-    "viralScore", "salesScore", "honestVerdict", "roadmap", "vision",
-    "platformScores", "retentionData", "retentionCurve",
-    "viewsPrediction", "firstHourStrategy", "commentTrigger",
-  ],
+  "hookDNA", "scrollStopScore", "steppsScore",
+  "erroresFatales",              // ← nuevo, acá
+  "razonamiento_viralScore", "razonamiento_salesScore",
+  "viralScore", "salesScore", "honestVerdict", "roadmap", "vision",
+  "platformScores", "retentionData", "retentionCurve",
+  "viewsPrediction", "firstHourStrategy", "commentTrigger",
+],
 };
 // ─────────────────────────────────────────────────────────────
 // CALL 0 — Observador del HOOK (sin cambios respecto a v7)
