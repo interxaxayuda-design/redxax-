@@ -413,30 +413,33 @@ export const SCORING_BRAIN_SCHEMA = {
     razonamiento_viralScore: { type: "STRING", description: "2-3 frases: qué de la audiencia y del hook pesó más para el score viral. Se genera ANTES de fijar el número." },
     razonamiento_salesScore: { type: "STRING", description: "2-3 frases: qué señal de venta encontró o no encontró. Se genera ANTES de fijar el número." },
     viralScore: {
-      type: "OBJECT",
-      properties: {
-        verdict:      { type: "STRING" },
-        accion_clave: { type: "STRING" },
-        score: {
-          type: "NUMBER",
-          minimum: 0,
-          maximum: 100,
-          description:
-            "Score de potencial viral, rúbrica — 0-20: prácticamente sin mecanismo de retención ni de compartir. " +
-            "21-40: retiene a un perfil aislado pero no genera impulso de compartir. 41-60: retiene a la mayoría de " +
-            "perfiles promedio/nicho pero sin gancho para viralizar más allá de su audiencia habitual. 61-80: combina " +
-            "retención sólida con al menos un factor STEPPS fuerte (emoción, trigger o valor práctico) que empuja el " +
-            "compartido. 81-100: retiene a los 6 perfiles simulados — incluido el escéptico — y genera motivo claro " +
-            "de compartir fuera del nicho de origen. " +
-            // ← NUEVO: consistencia con hookDNA.riesgosDeRetencionDetectados
-            "Tiene que ser consistente con hookDNA.riesgosDeRetencionDetectados: si ahí detectaste riesgos de " +
-            "severidad alta, eso tiene que reflejarse en un score más bajo y quedar explicado en " +
-            "razonamiento_viralScore — vos decidís cuánto pesa cada riesgo según el contexto del video, no hay " +
-            "una tabla fija de puntos a descontar.",
-        },
-      },
-      propertyOrdering: ["verdict", "accion_clave", "score"],
+  type: "OBJECT",
+  properties: {
+    verdict:      { type: "STRING" },
+    accion_clave: { type: "STRING" },
+    score: {
+      type: "NUMBER",
+      minimum: 0,
+      maximum: 100,
+      description:
+        "Score de potencial viral, rúbrica — 0-20: prácticamente sin mecanismo de retención ni de compartir. " +
+        "21-40: retiene a un perfil aislado pero no genera impulso de compartir. 41-60: retiene a la mayoría de " +
+        "perfiles promedio/nicho pero sin gancho para viralizar más allá de su audiencia habitual. 61-80: combina " +
+        "retención sólida con al menos un factor STEPPS fuerte (emoción, trigger o valor práctico) que empuja el " +
+        "compartido. 81-100: retiene a los 6 perfiles simulados — incluido el escéptico — y genera motivo claro " +
+        "de compartir fuera del nicho de origen. " +
+        "Tiene que ser consistente con hookDNA.riesgosDeRetencionDetectados: si ahí detectaste riesgos de " +
+        "severidad alta, eso tiene que reflejarse en un score más bajo y quedar explicado en " +
+        "razonamiento_viralScore — vos decidís cuánto pesa cada riesgo según el contexto del video, no hay " +
+        "una tabla fija de puntos a descontar. " +
+        "REGLA DE ORO: la retención es un multiplicador, no un promedio. Si en hookDNA.riesgosDeRetencionDetectados " +
+        "marcaste un riesgo de severidad alta ocurrido en los primeros 3 segundos, el score viral NO PUEDE superar " +
+        "los 40 puntos, sin importar qué tan bueno sea el resto del video. Un fallo crítico temprano es una barrera " +
+        "insuperable, no un punto negativo que se compensa con otras virtudes.",
     },
+  },
+  propertyOrdering: ["verdict", "accion_clave", "score"],
+},
     salesScore: {
       type: "OBJECT",
       properties: {
@@ -749,14 +752,17 @@ export const SILICON_PROFILES = [
     volumen: 'sin_audio',
   },
   {
-    id: 'impaciente',
-    peso: 1,
-    descripcion: '150+ videos por día. Dedo listo para deslizar desde frame 0.',
-    psicologia: { impatience: 0.95, curiosity_threshold: 0.85, tolerance_to_confusion: 0.05, tolerance_to_ads: 0.02, receptivity_to_purchase: 0.15 },
-    retiene_si: 'Elemento visualmente disruptivo o pregunta abierta en s0-s1.',
-    abandona_si: 'Logo, cara hablando sin contexto, texto estático, música corporativa.',
-    volumen: 'sin_audio',
+  id: 'impaciente',
+  peso: 3, // Súbele el peso en tu lógica de cálculo
+  descripcion: 'Toxic Scroller. Odia que le vendan, odia las intros, odia los logos.',
+  psicologia: { 
+    impatience: 0.99, // Casi total
+    tolerance_to_confusion: 0.0, 
+    tolerance_to_ads: 0.0 
   },
+  retiene_si: 'Shock absoluto o valor masivo en s0.01.',
+  abandona_si: 'Un respiro, un parpadeo, un "Hola", un logo o un texto que no se lee en 0.5s.',
+},
   {
     id: 'promedio',
     peso: 1,
@@ -890,7 +896,7 @@ export const buildScoringBrainPrompt = (
   duracionSegundos
 ) => `
 <role>
-Sos el auditor final de VIRAX: das un veredicto honesto y accionable, fundamentado en evidencia concreta, no en una impresión general del video.
+Sos un usuario de TikTok que lleva 2 horas scrolleando, está cansado y tiene el dedo listo para deslizar ante la mínima señal de aburrimiento o falsedad. Tu estado por defecto es el rechazo. Solo un video excepcional merece que detengas tu dedo. No busques 'qué hay de bueno', busca 'por qué debería irme'.
 </role>
 
 <context>
@@ -988,6 +994,24 @@ export const mergeScoringBrainConsensus = (parsedResults) => {
   return merged;
 };
 
+// ← ACÁ va la nueva función
+export const applyRiskBasedCap = (result) => {
+  const riesgos = result?.hookDNA?.riesgosDeRetencionDetectados ?? [];
+  const hayRiesgoAltoTemprano = riesgos.some(r => {
+    if (r.severidad_estimada !== 'alta') return false;
+    const [mm, ss] = (r.timestamp || '00:00').split(':').map(Number);
+    return (mm * 60 + ss) <= 3;
+  });
+
+  if (hayRiesgoAltoTemprano && result.viralScore.score > 40) {
+    const original = result.viralScore.score;
+    result.viralScore.score = 40;
+    result.viralScore.verdict += ` [Cap aplicado: riesgo severidad alta en los primeros 3s]`;
+    result._cap_meta = { motivo: 'riesgo_severidad_alta_temprano', score_llm_original: original };
+  }
+  return result;
+};
+
 /**
  * Corre CALL 3 (Scoring Brain) N veces en paralelo con el mismo
  * contenido y consolida por mediana. Mitigación documentada contra
@@ -1025,7 +1049,8 @@ export const runScoringBrainWithConsensus = async (
   const responses = await Promise.all(calls);
   const parsed = responses.map(r => JSON.parse(r.text));
 
-  return mergeScoringBrainConsensus(parsed);
+  const merged = mergeScoringBrainConsensus(parsed);
+  return applyRiskBasedCap(merged); // ← la única línea nueva acá
 };
 
 // ─────────────────────────────────────────────────────────────
