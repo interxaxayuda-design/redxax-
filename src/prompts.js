@@ -1,4 +1,3 @@
-
 export const NICHE_MOTORS = {
   "producto_fisico":    { motor: "dolor -> solucion",                          urgency: true,  trust_signal: "demostracion",       cta_type: "directo"   },
   "comida_restaurante": { motor: "deseo_sensorial -> identidad",               urgency: false, trust_signal: "creador_real",       cta_type: "implicito" },
@@ -74,40 +73,109 @@ export const fileSearchFiltersDesarrollo = (industria, plataforma) => ({
 });
 
 // ═════════════════════════════════════════════════════════════
-// GENERATION_CONFIG (sin cambios respecto a v7)
+// VIDEO INPUT CONFIG — NUEVO EN v9
+//
+// Fundamento (documentación oficial de Gemini API, ai.google.dev):
+// 1) El File API muestrea video a 1 frame por segundo por defecto y
+//    audio a 1Kbps. Esto puede perder detalle en secuencias de acción
+//    rápida — textualmente Google recomienda "ralentizar esos clips
+//    si es necesario" o usar un fps más alto. Un hook viral de TikTok
+//    suele tener cortes de <1s (shock visual, pattern interrupt,
+//    payoff negado), que a 1 FPS pueden no llegar a muestrearse.
+// 2) Gemini soporta fps dinámico por request (0.1 a 60 FPS) vía
+//    videoMetadata.fps en la parte de video del contenido.
+// 3) media_resolution controla tokens por frame (66 en "low" vs 258
+//    en resolución default/alta) — afecta directamente la capacidad
+//    de leer texto en pantalla o detalles pequeños del frame 0.
+//
+// Esto es responsabilidad de quien arma el `contents`/`input` de la
+// llamada (gemini-proxy), no del texto del prompt en sí — pero el
+// texto del prompt SÍ debe saber qué limitación de muestreo tiene,
+// para no inventar una lectura segura de algo que no llegó a ver.
+// ═════════════════════════════════════════════════════════════
+
+export const VIDEO_INPUT_CONFIG = {
+  // CALL 0 necesita ver con precisión los primeros segundos (el hook)
+  // frame por frame — ahí es donde más duele perder muestreo. Se sube
+  // el fps sólo en la ventana del hook si tu pipeline permite recorte
+  // (videoMetadata.startOffset/endOffset + fps más alto en ese tramo).
+  call0_preClassifier: {
+    fps_recomendado: 4, // vs 1 FPS por defecto — cortes <1s se pierden a 1 FPS
+    media_resolution: "default", // NO "low": necesita leer texto en pantalla y logos pequeños
+  },
+  // CALL 1B simula percepción completa del video por 6 perfiles —
+  // beneficia de más detalle visual que "low", pero el video entero
+  // (no sólo el hook) hace que un fps muy alto sea costoso.
+  call1b_siliconAudience: {
+    fps_recomendado: 2,
+    media_resolution: "default",
+  },
+  // CALL 3 arma el hookDNA completo y erroresFatales con timestamps —
+  // es el análisis más fino de todos. No debería ir en "low".
+  call3_scoringBrain: {
+    fps_recomendado: 2,
+    media_resolution: "default",
+  },
+  // Recordatorio de la documentación: si el prompt combina texto y
+  // un solo video, la parte de video debe ir ANTES de la parte de
+  // texto dentro del array `contents`/`input`. Auditar gemini-proxy.
+  orden_contents: "video_primero_texto_despues",
+};
+
+// ═════════════════════════════════════════════════════════════
+// GENERATION_CONFIG
+//
+// v9: se agrega thinkingConfig explícito a cada call. Gemini 2.5
+// Flash es un modelo de razonamiento híbrido con thinking budget
+// configurable (0 a 24576 tokens; 0 lo apaga, -1 es modo dinámico).
+// No fijarlo deja el nivel de razonamiento de cada corrida a un
+// comportamiento no controlado — que es especialmente grave en
+// CALL 3, porque tu consenso multi-run (runScoringBrainWithConsensus)
+// asume que la varianza entre corridas es "ruido normal de sampling";
+// si el thinking budget también varía sin control entre corridas,
+// esa varianza deja de ser sólo ruido de sampling y empieza a ser
+// ruido de profundidad de razonamiento, lo cual rompe el supuesto
+// detrás del umbral de confianza_consenso (15 puntos).
 // ═════════════════════════════════════════════════════════════
 export const GENERATION_CONFIG = {
   call0_preClassifier: {
     model: "gemini-2.5-flash",
     temperature: 0.4,
     responseMimeType: undefined, // texto plano [DESCRIPCION]/[SEÑALES], no JSON mode
-    media_resolution: "low",
+    media_resolution: "default", // antes "low" — necesita leer texto en pantalla / logo / elemento_en_s0 con precisión
+    thinkingConfig: { thinkingBudget: 3072 }, // observación factual con algo de margen para resolver ambigüedad, sin sobrepensar
+    videoFps: VIDEO_INPUT_CONFIG.call0_preClassifier.fps_recomendado,
   },
   call1_5_researchBrain: {
     model: "gemini-2.5-flash",
     temperature: 0.5,
     responseMimeType: "application/json",
+    thinkingConfig: { thinkingBudget: 2048 }, // research vía file search, razonamiento liviano
   },
   call1b_siliconAudience: {
     model: "gemini-2.5-flash",
     temperature: 0.9, // intencional — ver nota en v7 changelog
     responseMimeType: "application/json",
-    media_resolution: "low",
+    media_resolution: "default", // antes "low" — simular 6 perfiles sobre el video completo se beneficia de más detalle visual
+    thinkingConfig: { thinkingBudget: 8192 }, // simular 6 perfiles distintos sobre el video completo requiere más razonamiento
+    videoFps: VIDEO_INPUT_CONFIG.call1b_siliconAudience.fps_recomendado,
   },
   call2_predictionMarket: {
     model: "gemini-2.5-flash",
     temperature: 0.3,
     responseMimeType: "application/json",
+    thinkingConfig: { thinkingBudget: 4096 }, // calibrar números a partir de evidencia ya generada
   },
   call3_scoringBrain: {
     model: "gemini-2.5-flash",
     temperature: 0.3,
     responseMimeType: "application/json",
-    media_resolution: "low",
+    media_resolution: "default", // antes "low" — hookDNA y erroresFatales necesitan detalle fino con timestamps
+    thinkingConfig: { thinkingBudget: 12288 }, // el análisis más denso de todo el pipeline (hookDNA + riesgos + roadmap + scores)
     consensusRuns: 3, // ver runScoringBrainWithConsensus
+    videoFps: VIDEO_INPUT_CONFIG.call3_scoringBrain.fps_recomendado,
   },
 };
-
 
 export const RESEARCH_BRAIN_SCHEMA = {
   type: "OBJECT",
@@ -164,7 +232,7 @@ export const SILICON_AUDIENCE_SCHEMA = {
               propertyOrdering: ["segundo", "decision"],
             },
           },
-         
+
           attentionRetentionStrength: {
             type: "NUMBER",
             minimum: 0,
@@ -257,7 +325,6 @@ export const SCORING_BRAIN_SCHEMA = {
       description: "Diagnóstico específico del hook (primeros segundos).",
       properties: {
 
-        // ①②③ NUEVO — van PRIMERO, antes de razonamiento_pattern/pattern
         segundoDondeAparaceElValorReal: {
           type: "NUMBER",
           description:
@@ -265,6 +332,20 @@ export const SCORING_BRAIN_SCHEMA = {
             "(el producto en acción, la información prometida, el giro, la demostración — no un saludo, no una " +
             "presentación genérica, no un logo). Si el valor real está desde el segundo 0, poné 0. Medilo mirando " +
             "el video, no lo estimes.",
+        },
+
+        // v9: nuevo campo — el File API muestrea video a 1 frame por segundo por
+        // defecto. Un hook con cortes menores a 1s puede no haberse muestreado
+        // completo aunque este pipeline pida un fps más alto para este call.
+        // Este campo obliga a declarar la incertidumbre en vez de rellenarla.
+        confianzaDeMuestreoHook: {
+          type: "STRING",
+          enum: ["alta", "media", "baja"],
+          description:
+            "Qué tan seguro estás de haber visto TODOS los frames relevantes de los primeros 3 segundos. " +
+            "'baja' si detectaste cortes muy rápidos, movimiento brusco, o cualquier indicio de que el video " +
+            "cambia más rápido de lo que pudiste muestrear — en ese caso, decilo también en razonamiento_pattern " +
+            "en vez de inventar una lectura segura de un frame que no llegaste a ver con claridad.",
         },
 
         riesgosDeRetencionDetectados: {
@@ -287,13 +368,13 @@ export const SCORING_BRAIN_SCHEMA = {
           },
         },
 
-        // ── v8 (changelog #14): pattern deja de ser enum ──────
         razonamiento_pattern: {
           type: "STRING",
           description:
             "Antes de nombrar el patrón: ¿qué elemento concreto genera atención en los primeros segundos? " +
             "¿Ese elemento se resuelve, se conecta o queda huérfano respecto al resto del video? Escribí este " +
-            "razonamiento ANTES de completar pattern, attentionStrength y thematicCoherence.",
+            "razonamiento ANTES de completar pattern, attentionStrength y thematicCoherence. Si tu " +
+            "confianzaDeMuestreoHook es 'baja', decilo también acá explícitamente.",
         },
         pattern: {
           type: "STRING",
@@ -328,16 +409,15 @@ export const SCORING_BRAIN_SCHEMA = {
           minimum: 0,
           maximum: 100,
           description:
-            // ── v8 (changelog #16): rúbrica sin checklist de "ingredientes" fijos ──
             "Fuerza del hook — juzgá con tu propio criterio qué tan efectivo es este gancho para detener el scroll " +
             "de alguien que no lo estaba buscando y darle motivo de seguir mirando. No hay checklist de elementos " +
             "obligatorios: un video puede lograrlo por vías que no están en ningún ejemplo previo. " +
-            // ④ NUEVO — referencia a los dos campos nuevos
             "Tené en cuenta lo que vos mismo mediste en segundoDondeAparaceElValorReal y en " +
             "riesgosDeRetencionDetectados: cuanto más tarde aparece el valor real, y cuantos más riesgos de " +
             "severidad alta detectaste, más debería golpear esto al score — pero el peso exacto que le des es " +
             "tu criterio, no una fórmula fija (un video largo de nicho tolera más espera que un short de feed " +
-            "genérico). " +
+            "genérico). Si tu confianzaDeMuestreoHook es 'baja', evitá puntuar en los extremos (0-10 o 90-100): " +
+            "sin certeza de haber visto todo, un puntaje extremo es más riesgoso que uno moderado. " +
             "Guía de tramos, en términos de EFECTIVIDAD real (no de qué ingredientes específicos aparecen) — " +
             "0-20: no hay mecanismo de hook identificable, nada en el video le daría a alguien un motivo para no " +
             "seguir scrolleando. 21-45: hay algo de mecanismo pero es fácil de ignorar en el feed, ejecución débil. " +
@@ -350,9 +430,9 @@ export const SCORING_BRAIN_SCHEMA = {
         optimizedHook: { type: "STRING", description: "Una propuesta concreta de hook mejorado." },
       },
 
-      // propertyOrdering actualizado — fuerza el orden de escritura
       propertyOrdering: [
         "segundoDondeAparaceElValorReal",
+        "confianzaDeMuestreoHook",
         "riesgosDeRetencionDetectados",
         "razonamiento_pattern",
         "pattern",
@@ -378,7 +458,6 @@ export const SCORING_BRAIN_SCHEMA = {
           minimum: 0,
           maximum: 100,
           description:
-            // ── v8 (changelog #16): rúbrica sin checklist rígido de elementos ──
             "Qué tan bien el frame 0 detiene el scroll — juzgá la efectividad real de detención en menos de un " +
             "segundo, no la presencia de una lista fija de ingredientes. faceDetected/textOnScreen/contrastLevel " +
             "son observaciones de apoyo, no una checklist que el frame tenga que cumplir para puntuar alto: un " +
@@ -413,33 +492,33 @@ export const SCORING_BRAIN_SCHEMA = {
     razonamiento_viralScore: { type: "STRING", description: "2-3 frases: qué de la audiencia y del hook pesó más para el score viral. Se genera ANTES de fijar el número." },
     razonamiento_salesScore: { type: "STRING", description: "2-3 frases: qué señal de venta encontró o no encontró. Se genera ANTES de fijar el número." },
     viralScore: {
-  type: "OBJECT",
-  properties: {
-    verdict:      { type: "STRING" },
-    accion_clave: { type: "STRING" },
-    score: {
-      type: "NUMBER",
-      minimum: 0,
-      maximum: 100,
-      description:
-        "Score de potencial viral, rúbrica — 0-20: prácticamente sin mecanismo de retención ni de compartir. " +
-        "21-40: retiene a un perfil aislado pero no genera impulso de compartir. 41-60: retiene a la mayoría de " +
-        "perfiles promedio/nicho pero sin gancho para viralizar más allá de su audiencia habitual. 61-80: combina " +
-        "retención sólida con al menos un factor STEPPS fuerte (emoción, trigger o valor práctico) que empuja el " +
-        "compartido. 81-100: retiene a los 6 perfiles simulados — incluido el escéptico — y genera motivo claro " +
-        "de compartir fuera del nicho de origen. " +
-        "Tiene que ser consistente con hookDNA.riesgosDeRetencionDetectados: si ahí detectaste riesgos de " +
-        "severidad alta, eso tiene que reflejarse en un score más bajo y quedar explicado en " +
-        "razonamiento_viralScore — vos decidís cuánto pesa cada riesgo según el contexto del video, no hay " +
-        "una tabla fija de puntos a descontar. " +
-        "REGLA DE ORO: la retención es un multiplicador, no un promedio. Si en hookDNA.riesgosDeRetencionDetectados " +
-        "marcaste un riesgo de severidad alta ocurrido en los primeros 3 segundos, el score viral NO PUEDE superar " +
-        "los 40 puntos, sin importar qué tan bueno sea el resto del video. Un fallo crítico temprano es una barrera " +
-        "insuperable, no un punto negativo que se compensa con otras virtudes.",
+      type: "OBJECT",
+      properties: {
+        verdict:      { type: "STRING" },
+        accion_clave: { type: "STRING" },
+        score: {
+          type: "NUMBER",
+          minimum: 0,
+          maximum: 100,
+          description:
+            "Score de potencial viral, rúbrica — 0-20: prácticamente sin mecanismo de retención ni de compartir. " +
+            "21-40: retiene a un perfil aislado pero no genera impulso de compartir. 41-60: retiene a la mayoría de " +
+            "perfiles promedio/nicho pero sin gancho para viralizar más allá de su audiencia habitual. 61-80: combina " +
+            "retención sólida con al menos un factor STEPPS fuerte (emoción, trigger o valor práctico) que empuja el " +
+            "compartido. 81-100: retiene a los 6 perfiles simulados — incluido el escéptico — y genera motivo claro " +
+            "de compartir fuera del nicho de origen. " +
+            "Tiene que ser consistente con hookDNA.riesgosDeRetencionDetectados: si ahí detectaste riesgos de " +
+            "severidad alta, eso tiene que reflejarse en un score más bajo y quedar explicado en " +
+            "razonamiento_viralScore — vos decidís cuánto pesa cada riesgo según el contexto del video, no hay " +
+            "una tabla fija de puntos a descontar. " +
+            "REGLA DE ORO: la retención es un multiplicador, no un promedio. Si en hookDNA.riesgosDeRetencionDetectados " +
+            "marcaste un riesgo de severidad alta ocurrido en los primeros 3 segundos, el score viral NO PUEDE superar " +
+            "los 40 puntos, sin importar qué tan bueno sea el resto del video. Un fallo crítico temprano es una barrera " +
+            "insuperable, no un punto negativo que se compensa con otras virtudes.",
+        },
+      },
+      propertyOrdering: ["verdict", "accion_clave", "score"],
     },
-  },
-  propertyOrdering: ["verdict", "accion_clave", "score"],
-},
     salesScore: {
       type: "OBJECT",
       properties: {
@@ -461,29 +540,26 @@ export const SCORING_BRAIN_SCHEMA = {
       propertyOrdering: ["verdict", "accion_clave", "score"],
     },
     honestVerdict: { type: "STRING", description: "El veredicto más honesto posible, en 1-2 frases, sin suavizarlo. Debe ser consistente con roadmap y con viralScore/salesScore — nunca optimista si el roadmap tiene un problema de impacto ALTO o los scores son bajos." },
-// Dentro de SCORING_BRAIN_SCHEMA -> properties
-// Dentro de SCORING_BRAIN_SCHEMA -> properties
-erroresFatales: {
-  type: "ARRAY",
-  minItems: 3,
-  maxItems: 3,
-  description:
-    "Encontrá EXACTAMENTE 3 razones por las cuales un espectador cerraría el video o dejaría de mirarlo. " +
-    "Es obligatorio completar las 3, sin excepción — si el video es bueno y no hay 3 fallas evidentes, " +
-    "elegí las 3 más plausibles de todos modos (por más menores que sean) y marcalas con gravedad 'menor'. " +
-    "Nunca dejes el array con menos de 3 elementos. Ordenalos del más letal al menos letal.",
-  items: {
-    type: "OBJECT",
-    properties: {
-      error:        { type: "STRING", description: "El error, en términos concretos." },
-      timestamp:    { type: "STRING", description: "MM:SS donde ocurre, o 'todo el video' si es estructural." },
-      por_que_mata: { type: "STRING", description: "Por qué esto hace que el espectador se vaya." },
-      gravedad:     { type: "STRING", enum: ["letal", "grave", "menor"] },
+    erroresFatales: {
+      type: "ARRAY",
+      minItems: 3,
+      maxItems: 3,
+      description:
+        "Encontrá EXACTAMENTE 3 razones por las cuales un espectador cerraría el video o dejaría de mirarlo. " +
+        "Es obligatorio completar las 3, sin excepción — si el video es bueno y no hay 3 fallas evidentes, " +
+        "elegí las 3 más plausibles de todos modos (por más menores que sean) y marcalas con gravedad 'menor'. " +
+        "Nunca dejes el array con menos de 3 elementos. Ordenalos del más letal al menos letal.",
+      items: {
+        type: "OBJECT",
+        properties: {
+          error:        { type: "STRING", description: "El error, en términos concretos." },
+          timestamp:    { type: "STRING", description: "MM:SS donde ocurre, o 'todo el video' si es estructural." },
+          por_que_mata: { type: "STRING", description: "Por qué esto hace que el espectador se vaya." },
+          gravedad:     { type: "STRING", enum: ["letal", "grave", "menor"] },
+        },
+        propertyOrdering: ["error", "timestamp", "por_que_mata", "gravedad"],
+      },
     },
-    propertyOrdering: ["error", "timestamp", "por_que_mata", "gravedad"],
-  },
-},
-
     roadmap: {
       type: "ARRAY",
       description: "Solo problemas reales detectados en este video puntual, ordenados por impacto real — nada genérico.",
@@ -604,16 +680,29 @@ erroresFatales: {
     },
   },
   propertyOrdering: [
-  "hookDNA", "scrollStopScore", "steppsScore",
-  "erroresFatales",              // ← nuevo, acá
-  "razonamiento_viralScore", "razonamiento_salesScore",
-  "viralScore", "salesScore", "honestVerdict", "roadmap", "vision",
-  "platformScores", "retentionData", "retentionCurve",
-  "viewsPrediction", "firstHourStrategy", "commentTrigger",
-],
+    "hookDNA", "scrollStopScore", "steppsScore",
+    "erroresFatales",
+    "razonamiento_viralScore", "razonamiento_salesScore",
+    "viralScore", "salesScore", "honestVerdict", "roadmap", "vision",
+    "platformScores", "retentionData", "retentionCurve",
+    "viewsPrediction", "firstHourStrategy", "commentTrigger",
+  ],
 };
+
 // ─────────────────────────────────────────────────────────────
-// CALL 0 — Observador del HOOK (sin cambios respecto a v7)
+// CALL 0 — Observador del HOOK
+//
+// v9: se agrega contexto explícito sobre la tasa de muestreo real
+// del video, fundamentado en documentación oficial de Gemini API
+// (ai.google.dev/gemini-api/docs/video-understanding): el File API
+// muestrea video a 1 frame por segundo por defecto, y advierte que
+// las secuencias de acción rápida pueden perder detalle a esa tasa.
+// Este pipeline debe pasar videoFps más alto para este call (ver
+// VIDEO_INPUT_CONFIG.call0_preClassifier.fps_recomendado = 4) vía
+// videoMetadata.fps en la parte de video del `contents`, pero aun
+// con eso, cortes de fracción de segundo pueden seguir sin verse
+// completos. El prompt necesita que el modelo declare esa duda en
+// vez de rellenarla con una lectura inventada.
 // ─────────────────────────────────────────────────────────────
 export const buildPreClassifierPrompt = (hookWindowSegundos = 5) => `
 <role>
@@ -622,6 +711,8 @@ Sos un observador técnico de video. Tu trabajo es reportar hechos, no opinar ni
 
 <context>
 Tenés acceso directo al video completo. Vas a mirarlo entero, de principio a fin, sin saltear nada — lo necesitás completo para responder [SEÑALES] con precisión, aunque [DESCRIPCION] solo te pida los primeros segundos.
+
+Limitación técnica a tener en cuenta: el muestreo de video de este sistema no captura necesariamente cada instante — es posible que algunos cortes o cambios visuales muy rápidos (menores a medio segundo) no se hayan muestreado por completo. Si en los primeros ${hookWindowSegundos} segundos notás movimiento brusco, corte muy rápido, o cualquier indicio de que pasó algo entre dos frames que no llegaste a ver con nitidez, decilo explícitamente en [DESCRIPCION] y marcá muestreo_incompleto: sí en [SEÑALES] — no completes esos huecos con una suposición que suene segura.
 </context>
 
 <task>
@@ -647,12 +738,17 @@ es_slideshow: <sí|no>
 pregunta_visible: <sí|no>
 texto_en_pantalla_s0: <texto literal o "ninguno">
 transformacion_visible: <sí|no>
+muestreo_incompleto: <sí|no — sí si en el hook hubo algún corte o cambio tan rápido que no pudiste verlo con nitidez>
 [/SEÑALES]
 </task>
 `;
 
 // ─────────────────────────────────────────────────────────────
-// parsePreClassifierResponse — sin cambios de lógica
+// parsePreClassifierResponse
+//
+// v9: se agrega el parseo de muestreo_incompleto (nuevo campo de
+// SEÑALES) para que el resto del pipeline pueda propagar esa
+// incertidumbre en vez de perderla en el paso 0.
 // ─────────────────────────────────────────────────────────────
 export const parsePreClassifierResponse = (rawText) => {
   const descMatch = rawText.match(/\[DESCRIPCION\]([\s\S]*?)\[\/DESCRIPCION\]/);
@@ -705,6 +801,7 @@ export const parsePreClassifierResponse = (rawText) => {
   const pregunta_visible       = parseBool(getRef('pregunta_visible'));
   const texto_en_pantalla_s0   = getRef('texto_en_pantalla_s0')           ?? 'ninguno';
   const transformacion_visible = parseBool(getRef('transformacion_visible'));
+  const muestreo_incompleto    = parseBool(getRef('muestreo_incompleto'));
 
   const atomicas = {
     duration_total_s:        duracion,
@@ -729,17 +826,14 @@ export const parsePreClassifierResponse = (rawText) => {
     pregunta_visible,
     texto_en_pantalla_s0,
     transformacion_visible,
+    muestreo_incompleto,
     atomicas,
     _raw_referencias: refBlock.trim(),
   };
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 1.5 — Research Brain
-//
-// v8: se aclara en el contexto que HOOK_PATTERNS es catálogo
-// cerrado válido ACÁ (resumen agregado de ejemplos ya indexados),
-// a diferencia de CALL 3 donde es solo referencia. Ver changelog #14.
+// CALL 1.5 — Research Brain (sin cambios respecto a v8)
 // ─────────────────────────────────────────────────────────────
 export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
   const pName = {
@@ -776,17 +870,17 @@ export const SILICON_PROFILES = [
     volumen: 'sin_audio',
   },
   {
-  id: 'impaciente',
-  peso: 3, // Súbele el peso en tu lógica de cálculo
-  descripcion: 'Toxic Scroller. Odia que le vendan, odia las intros, odia los logos.',
-  psicologia: { 
-    impatience: 0.99, // Casi total
-    tolerance_to_confusion: 0.0, 
-    tolerance_to_ads: 0.0 
+    id: 'impaciente',
+    peso: 3,
+    descripcion: 'Toxic Scroller. Odia que le vendan, odia las intros, odia los logos.',
+    psicologia: {
+      impatience: 0.99,
+      tolerance_to_confusion: 0.0,
+      tolerance_to_ads: 0.0
+    },
+    retiene_si: 'Shock absoluto o valor masivo en s0.01.',
+    abandona_si: 'Un respiro, un parpadeo, un "Hola", un logo o un texto que no se lee en 0.5s.',
   },
-  retiene_si: 'Shock absoluto o valor masivo en s0.01.',
-  abandona_si: 'Un respiro, un parpadeo, un "Hola", un logo o un texto que no se lee en 0.5s.',
-},
   {
     id: 'promedio',
     peso: 1,
@@ -826,12 +920,7 @@ export const SILICON_PROFILES = [
 ];
 
 // ─────────────────────────────────────────────────────────────
-// CALL 1B — Silicon Audience
-//
-// v8: instrucción de tarea actualizada para pedir explícitamente
-// attentionRetentionStrength y narrativeCoherencePerceived como
-// dos juicios separados por perfil (changelog #15), reforzando lo
-// que ya define el schema.
+// CALL 1B — Silicon Audience (sin cambios estructurales)
 // ─────────────────────────────────────────────────────────────
 export const buildSiliconAudiencePrompt = (hookDescripcion, marketState, platform, duracionSegundos) => {
   const pName = {
@@ -871,7 +960,7 @@ Si algún tramo del video es difícil de interpretar (calidad de imagen baja, co
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 2 — Prediction Market (sin cambios respecto a v7)
+// CALL 2 — Prediction Market (sin cambios respecto a v8)
 // ─────────────────────────────────────────────────────────────
 export const buildPredictionMarketPrompt = (simulacionSilicon, marketState, platform, industria) => {
   const pName = {
@@ -905,10 +994,11 @@ Basándote en todo lo anterior: primero estimá la retención de cada uno de los
 // ─────────────────────────────────────────────────────────────
 // CALL 3 — Scoring Brain
 //
-// v8: agregada instrucción explícita de no forzar el video a un
-// patrón conocido si no encaja (changelog #17), en la misma línea
-// que la instrucción ya existente de v7 sobre no inventar ante
-// ambigüedad. El resto del prompt es idéntico a v7.
+// v9: se agrega contexto explícito sobre la tasa de muestreo de
+// video (misma fundamentación que en CALL 0) y una instrucción
+// para propagar la incertidumbre del hook si CALL 0 la reportó,
+// en vez de que CALL 3 "resuelva" con confianza algo que el propio
+// pipeline ya marcó como potencialmente no muestreado.
 // ─────────────────────────────────────────────────────────────
 export const buildScoringBrainPrompt = (
   hookDescripcion,
@@ -917,7 +1007,8 @@ export const buildScoringBrainPrompt = (
   platform,
   objetivo,
   industria,
-  duracionSegundos
+  duracionSegundos,
+  muestreoIncompleto = false
 ) => `
 <role>
 Sos un usuario de TikTok que lleva 2 horas scrolleando, está cansado y tiene el dedo listo para deslizar ante la mínima señal de aburrimiento o falsedad. Tu estado por defecto es el rechazo. Solo un video excepcional merece que detengas tu dedo. No busques 'qué hay de bueno', busca 'por qué debería irme'.
@@ -928,7 +1019,7 @@ PLATAFORMA: ${platform} | DURACIÓN: ${duracionSegundos}s | INDUSTRIA: ${industr
 
 REFERENCIA DEL HOOK (primeros segundos, detectada en un paso previo — no la tomes como descripción del video completo; observá vos mismo el desarrollo entero antes de puntuar):
 "${hookDescripcion}"
-
+${muestreoIncompleto ? '\nADVERTENCIA DE MUESTREO: el paso previo reportó que el hook tiene cortes o cambios visuales potencialmente más rápidos de lo que el sistema pudo muestrear con nitidez. Al completar hookDNA.confianzaDeMuestreoHook, tené esto en cuenta y evitá puntuar attentionStrength o strength en los extremos si vos tampoco lográs ver ese tramo con claridad.\n' : ''}
 SIMULACIÓN DE AUDIENCIA Y PREDICTION MARKET:
 ${audienceAnalysis}
 
@@ -936,6 +1027,8 @@ BENCHMARK DE MERCADO:
 ${JSON.stringify(researchData)}
 
 Ejemplos de nombres de patrón de hook usados en análisis previos (solo como referencia de nivel de precisión esperado, no como lista obligatoria — hay miles de formatos válidos que no están acá): ${HOOK_PATTERNS.join(", ")}.
+
+Nota técnica: el video puede haberse muestreado a más de 1 frame por segundo para este análisis, pero cortes menores a esa fracción de segundo igual pueden no haberse capturado con nitidez. Si algo en el hook te resulta ambiguo por esto, es más honesto decirlo en confianzaDeMuestreoHook que rellenar con una lectura seria.
 </context>
 
 <task>
@@ -952,13 +1045,20 @@ Antes de fijar honestVerdict: verificá que sea consistente con roadmap (si hay 
 `;
 
 // ─────────────────────────────────────────────────────────────
-// CONSENSO MULTI-RUN (sin cambios respecto a v7)
+// CONSENSO MULTI-RUN
 //
 // Se aplica SOLO a CALL 3. mergeScoringBrainConsensus es pura
 // (fácil de testear); runScoringBrainWithConsensus es el wrapper
 // que efectivamente llama a la API. gemini-proxy/index.ts debería
 // invocar runScoringBrainWithConsensus en vez de un solo
 // generateContent suelto para esta llamada puntual.
+//
+// v9: ahora que GENERATION_CONFIG.call3_scoringBrain fija un
+// thinkingConfig explícito (antes no fijaba nada), el supuesto de
+// "la varianza entre corridas es ruido normal de sampling" es más
+// sólido — antes esa varianza podía venir tanto del sampling como
+// de un presupuesto de razonamiento distinto en cada corrida, sin
+// forma de distinguir una causa de la otra.
 // ─────────────────────────────────────────────────────────────
 
 /**
@@ -1001,6 +1101,13 @@ export const mergeScoringBrainConsensus = (parsedResults) => {
   const varianceViral = Math.max(...viralScores) - Math.min(...viralScores);
   const varianceSales = Math.max(...salesScores) - Math.min(...salesScores);
 
+  // Señal adicional v9: si algún run marcó confianzaDeMuestreoHook
+  // como 'baja', la varianza entre corridas es esperable y no debe
+  // interpretarse como que el modelo "se confunde" sin motivo.
+  const algunRunConMuestreoIncierto = parsedResults.some(
+    p => p?.hookDNA?.confianzaDeMuestreoHook === 'baja'
+  );
+
   merged._consensus_meta = {
     runs: parsedResults.length,
     base_run_index: baseIndex,
@@ -1008,6 +1115,7 @@ export const mergeScoringBrainConsensus = (parsedResults) => {
     sales_scores_raw: salesScores,
     variance_viral: varianceViral,
     variance_sales: varianceSales,
+    muestreo_incierto_en_algun_run: algunRunConMuestreoIncierto,
     // Umbral de 15 puntos: por debajo, tratamos las corridas como
     // "el mismo veredicto con ruido normal de sampling". Por encima,
     // es señal real de video ambiguo — mostrarlo en la UI en vez de
@@ -1042,11 +1150,24 @@ export const applyRiskBasedCap = (result) => {
  * la falta de determinismo bit-a-bit de la Gemini API (persiste
  * incluso con temperature=0 + seed fijo).
  *
+ * v9: se fija explícitamente thinkingConfig (ver GENERATION_CONFIG)
+ * para que las N corridas razonen con un presupuesto consistente
+ * entre sí, y se pasa videoMetadata.fps más alto que el default de
+ * 1 FPS para este call — fundamentado en que Gemini permite fps
+ * dinámico de 0.1 a 60 por request, y que a 1 FPS los cortes de
+ * hook menores a un segundo pueden no muestrearse. El armado real
+ * de `contents` (con el file part ANTES del texto, según indica
+ * la documentación de Gemini para prompts de un solo video) sigue
+ * siendo responsabilidad de `buildContentsFn`.
+ *
  * @param {object} ai - cliente de @google/genai ya inicializado
  * @param {() => any} buildContentsFn - función que arma el `contents`
  *   completo de la llamada (incluyendo cachedContent/fileData +
  *   el texto de buildScoringBrainPrompt) — se invoca una vez por
- *   corrida porque `contents` no debe reusarse mutado entre llamadas
+ *   corrida porque `contents` no debe reusarse mutado entre llamadas.
+ *   IMPORTANTE: la parte de video debe ir ANTES de la parte de texto
+ *   en el array, y debería incluir videoMetadata: { fps: GENERATION_CONFIG.call3_scoringBrain.videoFps }
+ *   cuando el video venga por File API.
  * @param {object} [options]
  * @param {number} [options.runs] - default: GENERATION_CONFIG.call3_scoringBrain.consensusRuns
  * @returns {Promise<object>} resultado consolidado, listo para pasar a App.jsx
@@ -1066,6 +1187,8 @@ export const runScoringBrainWithConsensus = async (
         responseMimeType: config.responseMimeType,
         responseSchema: SCORING_BRAIN_SCHEMA,
         temperature: config.temperature,
+        thinkingConfig: config.thinkingConfig,
+        ...(config.media_resolution ? { mediaResolution: config.media_resolution } : {}),
       },
     })
   );
@@ -1078,7 +1201,7 @@ export const runScoringBrainWithConsensus = async (
 };
 
 // ─────────────────────────────────────────────────────────────
-// Utilidades (sin cambios respecto a v7)
+// Utilidades (sin cambios respecto a v8)
 // ─────────────────────────────────────────────────────────────
 export const calcularCurvaRetencionSilicon = (simulacion, duracionSegundos) => {
   if (!simulacion?.simulacion?.length) return [];
@@ -1212,11 +1335,12 @@ export const buildFlagsDeterministic = (flagsFromStrategy, preFacts, preHookType
     ritmo_visual:              preFacts.ritmo_visual || 'normal',
     cortes_por_minuto:         preFacts.cortes_por_minuto ?? 0,
     hook_descripcion_libre:    preFacts.hook_libre ?? null,
+    muestreo_incompleto:       preFacts.muestreo_incompleto ?? false,
   };
 };
 
 // ═════════════════════════════════════════════════════════════
-// ADMIN — Indexado del corpus histórico (sin cambios respecto a v7)
+// ADMIN — Indexado del corpus histórico (sin cambios respecto a v8)
 // ═════════════════════════════════════════════════════════════
 
 export const ensureFileSearchStore = async (ai, displayName = FILE_SEARCH_STORE_DISPLAY_NAME) => {
