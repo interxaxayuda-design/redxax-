@@ -329,9 +329,17 @@ export const SCORING_BRAIN_SCHEMA = {
           type: "NUMBER",
           description:
             "En qué segundo exacto del video aparece el primer elemento de VALOR REAL para el espectador " +
-            "(el producto en acción, la información prometida, el giro, la demostración — no un saludo, no una " +
-            "presentación genérica, no un logo). Si el valor real está desde el segundo 0, poné 0. Medilo mirando " +
-            "el video, no lo estimes.",
+            "(el producto EN ACCIÓN, la información prometida, el giro, la demostración — no un saludo, no una " +
+            "presentación genérica, no un logo). " +
+            "REGLA EXPLÍCITA — no confundas presencia visual con valor real: que el producto/objeto sea VISIBLE " +
+            "en un frame (ej: alguien lo sostiene, se ve su forma o estructura, está apoyado en una mesa) NO " +
+            "cuenta como valor real si todavía no está haciendo nada ni comunicando nada por sí mismo. El valor " +
+            "real empieza en el segundo en que ese objeto ACTÚA, se usa, se demuestra, cambia algo, o resuelve " +
+            "algo — no en el segundo en que simplemente aparece en cuadro. Ejemplo: si en el segundo 0 se ve un " +
+            "producto quieto en una mano y recién en el segundo 6 se lo ve funcionando o resolviendo el problema " +
+            "que promete resolver, segundoDondeAparaceElValorReal es 6, no 0 — aunque el objeto ya fuera visible " +
+            "desde el segundo 0. Si el valor real está desde el segundo 0 (el objeto ya está en acción desde el " +
+            "inicio), poné 0. Medilo mirando el video con atención a esta distinción, no lo estimes por default en 0.",
         },
 
         // v9: nuevo campo — el File API muestrea video a 1 frame por segundo por
@@ -488,6 +496,35 @@ export const SCORING_BRAIN_SCHEMA = {
         viralCoefficient: { type: "NUMBER", minimum: 0, maximum: 1 },
       },
       propertyOrdering: ["socialCurrency", "triggers", "emotion", "public", "practicalValue", "stories", "dominantFactor", "weakestFactor", "shareMotivation", "viralCoefficient"],
+    },
+    // v10 — NUEVO: la música/audio no tenía ningún campo dedicado en el
+    // schema (solo audio_presente booleano en CALL 0). Sin un campo que
+    // se lo pida explícitamente, el modelo no reporta sobre eso aunque
+    // lo haya "escuchado". Fundamento técnico: cuando el audio viaja
+    // pegado al video (File API), Gemini lo procesa a 1Kbps mono —
+    // suficiente para habla, no para matices musicales finos (género,
+    // textura, mezcla). Por eso el campo pide observaciones robustas
+    // (energía, cambios, sincronía) y no detalle fino de género/mezcla,
+    // y obliga a declarar la confianza en vez de inventar precisión.
+    audioMusical: {
+      type: "OBJECT",
+      description:
+        "Análisis del audio no-hablado (música, efectos, silencio) del video. Nota técnica: el audio de este " +
+        "video llega pegado al video, con compresión fuerte — es confiable para detectar presencia, cambios " +
+        "bruscos y función de la música, pero NO asumas precisión de género musical fino o de mezcla; si no " +
+        "estás seguro, decilo en confianza_analisis_audio en vez de inventar un género o artista específico.",
+      properties: {
+        musica_presente:          { type: "BOOLEAN", description: "Si hay música de fondo (no solo voz/habla ni silencio)." },
+        funcion_de_la_musica:     { type: "STRING", description: "Qué rol cumple la música en este video puntual: ej. 'genera urgencia', 'es el contenido en sí (video musical)', 'de fondo sin protagonismo', 'ausente donde se esperaría', etc. En tus propias palabras." },
+        sincronizada_con_cortes:  { type: "BOOLEAN", description: "Si los cortes de edición están sincronizados con el ritmo/beat de la música, hasta donde puedas percibirlo." },
+        cambio_musical_relevante: { type: "STRING", description: "MM:SS de algún cambio de música relevante (silencio a sonido, drop, cambio de energía) que afecte la retención, o 'ninguno' si no hay." },
+        confianza_analisis_audio: {
+          type: "STRING",
+          enum: ["alta", "media", "baja"],
+          description: "Qué tan confiable es este análisis musical dado que el audio del video suele llegar con compresión fuerte. 'baja' si la música es compleja, con capas, o si hay mucho ruido/habla superpuesta que dificulta separarla.",
+        },
+      },
+      propertyOrdering: ["musica_presente", "funcion_de_la_musica", "sincronizada_con_cortes", "cambio_musical_relevante", "confianza_analisis_audio"],
     },
     razonamiento_viralScore: { type: "STRING", description: "2-3 frases: qué de la audiencia y del hook pesó más para el score viral. Se genera ANTES de fijar el número." },
     razonamiento_salesScore: { type: "STRING", description: "2-3 frases: qué señal de venta encontró o no encontró. Se genera ANTES de fijar el número." },
@@ -681,7 +718,7 @@ export const SCORING_BRAIN_SCHEMA = {
   },
   propertyOrdering: [
     "hookDNA", "scrollStopScore", "steppsScore",
-    "erroresFatales",
+    "erroresFatales", "audioMusical",
     "razonamiento_viralScore", "razonamiento_salesScore",
     "viralScore", "salesScore", "honestVerdict", "roadmap", "vision",
     "platformScores", "retentionData", "retentionCurve",
@@ -739,6 +776,8 @@ pregunta_visible: <sí|no>
 texto_en_pantalla_s0: <texto literal o "ninguno">
 transformacion_visible: <sí|no>
 muestreo_incompleto: <sí|no — sí si en el hook hubo algún corte o cambio tan rápido que no pudiste verlo con nitidez>
+musica_presente: <sí|no — música de fondo, no solo voz/habla>
+musica_cambia_en_hook: <sí|no — si la música cambia de forma notoria (entra, sube, corta) dentro de los primeros ${hookWindowSegundos}s>
 [/SEÑALES]
 </task>
 `;
@@ -802,6 +841,8 @@ export const parsePreClassifierResponse = (rawText) => {
   const texto_en_pantalla_s0   = getRef('texto_en_pantalla_s0')           ?? 'ninguno';
   const transformacion_visible = parseBool(getRef('transformacion_visible'));
   const muestreo_incompleto    = parseBool(getRef('muestreo_incompleto'));
+  const musica_presente        = parseBool(getRef('musica_presente'));
+  const musica_cambia_en_hook  = parseBool(getRef('musica_cambia_en_hook'));
 
   const atomicas = {
     duration_total_s:        duracion,
@@ -827,6 +868,8 @@ export const parsePreClassifierResponse = (rawText) => {
     texto_en_pantalla_s0,
     transformacion_visible,
     muestreo_incompleto,
+    musica_presente,
+    musica_cambia_en_hook,
     atomicas,
     _raw_referencias: refBlock.trim(),
   };
@@ -1008,7 +1051,8 @@ export const buildScoringBrainPrompt = (
   objetivo,
   industria,
   duracionSegundos,
-  muestreoIncompleto = false
+  muestreoIncompleto = false,
+  musicaEnHook = null // { musica_presente, musica_cambia_en_hook } detectado en CALL 0, o null si no está disponible
 ) => `
 <role>
 Sos un usuario de TikTok que lleva 2 horas scrolleando, está cansado y tiene el dedo listo para deslizar ante la mínima señal de aburrimiento o falsedad. Tu estado por defecto es el rechazo. Solo un video excepcional merece que detengas tu dedo. No busques 'qué hay de bueno', busca 'por qué debería irme'.
@@ -1019,7 +1063,7 @@ PLATAFORMA: ${platform} | DURACIÓN: ${duracionSegundos}s | INDUSTRIA: ${industr
 
 REFERENCIA DEL HOOK (primeros segundos, detectada en un paso previo — no la tomes como descripción del video completo; observá vos mismo el desarrollo entero antes de puntuar):
 "${hookDescripcion}"
-${muestreoIncompleto ? '\nADVERTENCIA DE MUESTREO: el paso previo reportó que el hook tiene cortes o cambios visuales potencialmente más rápidos de lo que el sistema pudo muestrear con nitidez. Al completar hookDNA.confianzaDeMuestreoHook, tené esto en cuenta y evitá puntuar attentionStrength o strength en los extremos si vos tampoco lográs ver ese tramo con claridad.\n' : ''}
+${muestreoIncompleto ? '\nADVERTENCIA DE MUESTREO: el paso previo reportó que el hook tiene cortes o cambios visuales potencialmente más rápidos de lo que el sistema pudo muestrear con nitidez. Al completar hookDNA.confianzaDeMuestreoHook, tené esto en cuenta y evitá puntuar attentionStrength o strength en los extremos si vos tampoco lográs ver ese tramo con claridad.\n' : ''}${musicaEnHook?.musica_presente ? `\nREFERENCIA DE AUDIO: el paso previo detectó música de fondo${musicaEnHook.musica_cambia_en_hook ? ', con un cambio notorio dentro del hook' : ''}. Confirmá esto vos mismo al completar audioMusical — recordá que el audio de este video llega comprimido, así que priorizá observaciones robustas (función, sincronía, cambios) por sobre precisión de género.\n` : ''}
 SIMULACIÓN DE AUDIENCIA Y PREDICTION MARKET:
 ${audienceAnalysis}
 
@@ -1034,7 +1078,11 @@ Nota técnica: el video puede haberse muestreado a más de 1 frame por segundo p
 <task>
 Tenés acceso directo al video completo. Basándote en todo lo anterior: analizá primero el hook, el frame 0 (scroll-stop) y el framework STEPPS. Con eso ya observado, escribí tu razonamiento sobre el score viral y el de ventas ANTES de fijar los números — los números son consecuencia de ese razonamiento, no al revés.
 
+Al completar hookDNA.segundoDondeAparaceElValorReal: distinguí con cuidado entre que un objeto/producto sea VISIBLE en pantalla y que esté aportando VALOR REAL (en acción, demostrando algo, resolviendo algo). Un producto quieto en una mano no es lo mismo que ese mismo producto siendo usado — si eso pasa en momentos distintos del video, el segundo del valor real es el de la acción, no el de la primera aparición visual.
+
 No fuerces el video a encajar en un patrón conocido si no encaja bien. Confiá en tu propio criterio sobre qué hace que ESTE video en particular funcione o no — hay miles de formatos válidos que no están en ningún catálogo, y tu trabajo es juzgar el mecanismo real, no clasificarlo contra una lista cerrada. Si el mecanismo combina dos cosas a la vez, describí la combinación en vez de elegir una sola etiqueta que fuerce a que sean mutuamente excluyentes.
+
+Completá audioMusical mirando y escuchando el video completo, no solo el hook — la música puede cambiar de función en distintos tramos (genera expectativa al inicio, urgencia antes del CTA, etc.).
 
 Si hay problemas reales, nombralos sin suavizarlos. El roadmap solo debe incluir problemas que vos mismo detectaste en este video puntual, ordenados por impacto real — nada genérico.
 
