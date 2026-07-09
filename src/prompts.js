@@ -317,6 +317,23 @@ export const SILICON_CHECKPOINT_FINAL_SCHEMA = {
   propertyOrdering: ['decisiones', 'evento_que_mas_retiene', 'evento_que_mas_expulsa', 'patron_abandono', 'patron_retencion'],
 };
 
+const decisionProfileProps = {
+  perfil_id: {
+    type: "STRING",
+    enum: ["curioso_aleatorio", "impaciente", "promedio", "nicho", "esceptico", "comprador"],
+    description: "Cuál de los 6 perfiles está tomando esta decisión.",
+  },
+  razon: {
+    type: "STRING",
+    description: "Por qué este perfil tomó esta decisión en este checkpoint, en su propio lenguaje.",
+  },
+  decision: {
+    type: "STRING",
+    enum: ["RETIENE", "ABANDONA"],
+    description: "Si en este punto exacto del video el perfil sigue mirando o ya se fue.",
+  },
+};
+
 export const PREDICTION_MARKET_SCHEMA = {
   type: "OBJECT",
   description: "Calibración final de scores a partir de la simulación de audiencia y el estado del mercado. La retención por perfil y el razonamiento van antes que los scores para que estén fundamentados, no al revés.",
