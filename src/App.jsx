@@ -1,43 +1,30 @@
 import {
-  BarChart3,
-  BrainCircuit,
-  CheckCircle, CheckSquare,
-  Compass,
-  FileText,
-  Gem,
-  MessageSquare,
-  Microscope,
-  RotateCcw,
-  Send,
-  Square,
-  Target,
-  TrendingUp,
-  Upload,
-  Users,
-  X,
-  Zap
+  BarChart3, BrainCircuit, CheckCircle, CheckSquare, Compass, FileText, Gem,
+  MessageSquare, Microscope, RotateCcw, Send, Square, Target, TrendingUp,
+  Upload, Users, X, Zap
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import logo from './logo.png';
 import {
   buildPreClassifierPrompt,
   buildPredictionMarketPrompt,
+  buildProgressiveCheckpoints,
   buildResearchBrainPrompt,
   buildScoringBrainPrompt,
-  buildSiliconAudiencePrompt,
+  buildSiliconCheckpointPrompt,
   buildSiliconSummary,
   calcularCurvaRetencionSilicon,
+  mergeCheckpointsIntoSiliconAudience,
   NICHE_MOTORS,
   parsePreClassifierResponse,
   PREDICTION_MARKET_SCHEMA,
-  // ← nuevo:
   RESEARCH_BRAIN_SCHEMA,
   SCORING_BRAIN_SCHEMA,
   SILICON_CHECKPOINT_FINAL_SCHEMA,
-  SILICON_CHECKPOINT_SCHEMA
-} from './prompts.js'; // ← acá, sin "virax-"
+  SILICON_CHECKPOINT_SCHEMA,
+} from './prompts.js';
 
-import { createClient } from '@supabase/supabase-js'; //phaseScores  //toggleStep  //const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
+import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso';
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -904,79 +891,64 @@ const marketState = {
   oportunidad:        researchData?.oportunidad_detectada  ?? '',
 };
 
-let audienceSimulation = null;
-let audienceAnalysis   = '';
+const duracionRedondeada = Math.round(duration);
+const checkpoints = buildProgressiveCheckpoints(duracionRedondeada);
 
-try {
-  const analysisId = currentHistoryId || `temp_${Date.now()}`;
-  const duracionRedondeada = Math.round(duration);
-  const checkpoints = buildProgressiveCheckpoints(duracionRedondeada);
-
-  console.log('[CALL 1B] Checkpoints a evaluar:', checkpoints);
-
-  // Una llamada por checkpoint, todas en paralelo — cada una es
-  // independiente (no depende del resultado de la anterior), así
-  // que Promise.all es seguro acá.
-  const llamadasCheckpoint = checkpoints.map((cp, idx) => {
+// Corre los N checkpoints en paralelo vía el proxy. Devuelve null si
+// alguno falla en el parseo — se usa tanto para el intento principal
+// como para el reintento de más abajo.
+const correrCheckpointsSilicon = async () => {
+  const llamadas = checkpoints.map((cp, idx) => {
     const esFinal = idx === checkpoints.length - 1;
-
-    return loggedGeminiCall({
-      analysisId,
-      callName: `CALL_1B_checkpoint_${cp}s`,
+    return supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildSiliconCheckpointPrompt(cp, esFinal, platform, marketState),
         cacheName,
-        // ⚠️ REQUIERE SOPORTE EN gemini-proxy: el proxy tiene que
-        // usar este valor para recortar el video (videoMetadata.endOffset)
-        // al armar el `contents` que le manda a Gemini. Si el proxy
-        // todavía no lo soporta, cada checkpoint va a ver el video
-        // COMPLETO igual, y el propósito de este sistema (que Gemini
-        // no "vea el futuro" del video) no se cumple.
+        // ⚠️ Requiere que gemini-proxy soporte este parámetro y arme
+        // el contents con videoMetadata.endOffset recortado a este
+        // punto. Si el proxy no lo soporta todavía, cada checkpoint
+        // ve el video completo igual.
         endOffsetSegundos: cp,
         expectsJson: true,
         responseSchema: esFinal ? SILICON_CHECKPOINT_FINAL_SCHEMA : SILICON_CHECKPOINT_SCHEMA,
         maxOutputTokens: esFinal ? 4096 : 1024,
         temperature: 0,
       },
-      extractReasoning: (raw, parsed) => ({
-        checkpoint_segundo: cp,
-        es_final: esFinal,
-        decisiones: parsed?.decisiones?.map(d => ({
-          perfil: d.perfil_id,
-          decision: d.decision,
-          razon: d.razon,
-        })),
-      }),
     });
   });
 
-  const resultadosCheckpoint = await Promise.all(llamadasCheckpoint);
-  const parsedPorCheckpoint = resultadosCheckpoint.map(r => r.parsedOutput);
+  const resultados = await Promise.all(llamadas);
 
-  audienceSimulation = mergeCheckpointsIntoSiliconAudience(checkpoints, parsedPorCheckpoint);
+  const parsedPorCheckpoint = resultados.map((r, idx) => {
+    if (r.error) {
+      console.warn(`[CALL 1B] Checkpoint ${checkpoints[idx]}s falló:`, r.error.message);
+      return null;
+    }
+    try {
+      return safeParseJSON(extractGeminiText(r.data), `checkpoint-${checkpoints[idx]}`);
+    } catch (e) {
+      console.warn(`[CALL 1B] Checkpoint ${checkpoints[idx]}s no parseó:`, e.message);
+      return null;
+    }
+  });
 
-  // Diagnóstico: ¿Gemini realmente observó el video en algún checkpoint?
-  const noVioSenales = [
-    'no tengo acceso', 'no puedo ver', 'no puedo acceder',
-    'basándome en los eventos', 'según los datos proporcionados', 'sin poder ver',
-  ];
-  const algunCheckpointNoVio = resultadosCheckpoint.some(r =>
-    noVioSenales.some(s => r.rawText.toLowerCase().includes(s))
-  );
-  if (algunCheckpointNoVio) {
-    console.warn('[CALL 1B] ⚠️ Al menos un checkpoint responde sin haber visto el video');
-  } else {
-    console.log('[CALL 1B] ✅ Todos los checkpoints responden basados en observación real');
-  }
+  if (parsedPorCheckpoint.some(p => p === null)) return null;
 
+  return mergeCheckpointsIntoSiliconAudience(checkpoints, parsedPorCheckpoint);
+};
+
+let audienceSimulation = null;
+let audienceAnalysis   = '';
+
+try {
+  console.log('[CALL 1B] Checkpoints a evaluar:', checkpoints);
+  audienceSimulation = await correrCheckpointsSilicon();
   console.log('[SILICON AUDIENCE] Simulación consolidada:', audienceSimulation);
-
 } catch (e) {
   console.warn('[CALL 1B] Excepción:', e.message);
 }
 
 setAnalysisProgress(55);
-
 console.log('[MARKET STATE]', JSON.stringify(marketState, null, 2));
 
     // ══════════════════════════════════════════════════════════
@@ -990,19 +962,13 @@ console.log('[MARKET STATE]', JSON.stringify(marketState, null, 2));
       try {
         const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
           body: {
-            text: buildPredictionMarketPrompt(
-              audienceSimulation,
-              marketState,
-              platform,
-              industria
-            ),
+            text: buildPredictionMarketPrompt(audienceSimulation, marketState, platform, industria),
             expectsJson:     true,
-             responseSchema:  PREDICTION_MARKET_SCHEMA,   // ← nuevo
+            responseSchema:  PREDICTION_MARKET_SCHEMA,
             maxOutputTokens: 1500,
             temperature:     0,
           }
         });
-
         if (!call2Error) {
           predictionMarket = safeParseJSON(extractGeminiText(call2Data), 'prediction-market');
           console.log('[PREDICTION MARKET]', predictionMarket);
@@ -1016,13 +982,12 @@ console.log('[MARKET STATE]', JSON.stringify(marketState, null, 2));
 
     setAnalysisProgress(65);
 
- 
     if (audienceSimulation && predictionMarket) {
       const summary = buildSiliconSummary(audienceSimulation, predictionMarket);
       audienceAnalysis = `
-SILICON AUDIENCE — 5 PERFILES CONDUCTUALES:
+SILICON AUDIENCE — PERFILES CONDUCTUALES:
 
-Tasa de completado:    ${summary.tasa_completado}% (${Math.round(summary.tasa_completado / 20)}/5 perfiles)
+Tasa de completado:    ${summary.tasa_completado}%
 Tasa de compartido:    ${summary.tasa_compartido}%
 Tasa de guardado:      ${summary.tasa_guardado}%
 Segundo más peligroso: s${summary.segundo_peligroso ?? '—'}
@@ -1052,53 +1017,33 @@ ${(summary.detalle_perfiles || []).map(p =>
       `.trim();
 
     } else {
-  // Fallback: Silicon Audience falló → reintentar UNA vez con el mismo prompt
-  console.warn('[SILICON AUDIENCE] Simulación falló — reintentando una vez');
+      // Fallback: reintentar los checkpoints una vez más
+      console.warn('[SILICON AUDIENCE] Simulación falló — reintentando checkpoints una vez');
 
-  try {
-    const { data: retryData, error: retryError } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildSiliconAudiencePrompt(
-  hookDescripcion,
-  marketState,
-  platform,
-  Math.round(duration)
-),
-        cacheName,
-        expectsJson:     true,
-        maxOutputTokens: 4096,
-        temperature:     0,
+      try {
+        audienceSimulation = await correrCheckpointsSilicon();
+      } catch (e) {
+        console.warn('[SILICON AUDIENCE] Reintento también falló:', e.message);
       }
-    });
 
-    if (!retryError && retryData) {
-      const retryText = extractGeminiText(retryData);
-      audienceSimulation = safeParseJSON(retryText, 'silicon-audience-retry');
-    }
-  } catch (e) {
-    console.warn('[SILICON AUDIENCE] Reintento también falló:', e.message);
-  }
-
-  // Si el reintento funcionó, armamos audienceAnalysis con los datos reales
-  if (audienceSimulation?.simulacion?.length) {
-    const summary = buildSiliconSummary(audienceSimulation, predictionMarket);
-    audienceAnalysis = `
-SILICON AUDIENCE — 5 PERFILES CONDUCTUALES (reintento):
+      if (audienceSimulation?.simulacion?.length) {
+        const summary = buildSiliconSummary(audienceSimulation, predictionMarket);
+        audienceAnalysis = `
+SILICON AUDIENCE — PERFILES CONDUCTUALES (reintento):
 
 Tasa de completado: ${summary.tasa_completado}%
 Segundo más peligroso: s${summary.segundo_peligroso ?? '—'}
 Evento que retiene: ${summary.evento_retiene}
 Evento que expulsa: ${summary.evento_expulsa}
-    `.trim();
-  } else {
-    // Último recurso: texto genérico basado solo en la descripción del video
-    console.warn('[SILICON AUDIENCE] Sin simulación disponible — usando descripción cruda');
-    audienceAnalysis = `No se pudo simular audiencia. Análisis basado únicamente en la descripción del hook:\n\n${hookDescripcion}`;  }
-}
+        `.trim();
+      } else {
+        console.warn('[SILICON AUDIENCE] Sin simulación disponible — usando descripción cruda');
+        audienceAnalysis = `No se pudo simular audiencia. Análisis basado únicamente en la descripción del hook:\n\n${hookDescripcion}`;
+      }
+    }
 
     console.log('[VIRAX] Audience Analysis final:', audienceAnalysis);
     setAnalysisProgress(70);
-
     // ══════════════════════════════════════════════════════════
     // CALL 3 — Scoring Brain (usa cache → Gemini ve el video)
     // ══════════════════════════════════════════════════════════
