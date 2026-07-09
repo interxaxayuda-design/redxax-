@@ -35,7 +35,7 @@ const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 const PLATFORMS = [
   { id: 'tiktok',   label: 'TikTok',               emoji: '🎵' }, //text: `${buildSystemInstructions(platform, followerRange, 'script', {}, selectedObjetivo)}\n\nAnaliza este concepto/guion: ${scriptText}`
   { id: 'reels',    label: 'Instagram Reels',        emoji: '📸' },
-  { id: 'shorts',   label: 'YouTube Shorts',         emoji: '▶️' }, //preHookType
+  { id: 'shorts',   label: 'YouTube Shorts',         emoji: '▶️' }, 
   { id: 'all',      label: 'Todas las plataformas',  emoji: '🌐' },
 ];
 
