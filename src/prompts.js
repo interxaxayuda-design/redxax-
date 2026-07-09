@@ -274,6 +274,49 @@ export const SILICON_AUDIENCE_SCHEMA = {
   propertyOrdering: ["simulacion", "segundo_mas_peligroso", "evento_que_mas_retiene", "evento_que_mas_expulsa", "patron_abandono", "patron_retencion"],
 };
 
+export const SILICON_CHECKPOINT_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    decisiones: {
+      type: 'ARRAY',
+      description: 'Una decisión por cada uno de los 6 perfiles, en este checkpoint.',
+      items: { type: 'OBJECT', properties: decisionProfileProps, propertyOrdering: ['perfil_id', 'razon', 'decision'] },
+    },
+  },
+  propertyOrdering: ['decisiones'],
+};
+ 
+export const SILICON_CHECKPOINT_FINAL_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    decisiones: {
+      type: 'ARRAY',
+      items: {
+        type: 'OBJECT',
+        properties: {
+          ...decisionProfileProps,
+          attentionRetentionStrength: { type: 'NUMBER', minimum: 0, maximum: 100 },
+          narrativeCoherencePerceived: { type: 'NUMBER', minimum: 0, maximum: 100 },
+          completo: { type: 'BOOLEAN' },
+          compartio: { type: 'BOOLEAN' },
+          guardo: { type: 'BOOLEAN' },
+          comento: { type: 'BOOLEAN' },
+        },
+        propertyOrdering: [
+          'perfil_id', 'razon', 'decision',
+          'attentionRetentionStrength', 'narrativeCoherencePerceived',
+          'completo', 'compartio', 'guardo', 'comento',
+        ],
+      },
+    },
+    evento_que_mas_retiene: { type: 'STRING' },
+    evento_que_mas_expulsa: { type: 'STRING' },
+    patron_abandono: { type: 'STRING' },
+    patron_retencion: { type: 'STRING' },
+  },
+  propertyOrdering: ['decisiones', 'evento_que_mas_retiene', 'evento_que_mas_expulsa', 'patron_abandono', 'patron_retencion'],
+};
+
 export const PREDICTION_MARKET_SCHEMA = {
   type: "OBJECT",
   description: "Calibración final de scores a partir de la simulación de audiencia y el estado del mercado. La retención por perfil y el razonamiento van antes que los scores para que estén fundamentados, no al revés.",
@@ -962,45 +1005,140 @@ export const SILICON_PROFILES = [
   },
 ];
 
-// ─────────────────────────────────────────────────────────────
-// CALL 1B — Silicon Audience (sin cambios estructurales)
-// ─────────────────────────────────────────────────────────────
-export const buildSiliconAudiencePrompt = (hookDescripcion, marketState, platform, duracionSegundos) => {
-  const pName = {
-    tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts'
-  }[platform] || platform;
+export const buildProgressiveCheckpoints = (duracionSegundos) => {
+  const candidatos = [1, 2, 3, 5, 8, 12, 17, 24, 32, 45, 60, 90, 120];
+  const checkpoints = candidatos.filter((t) => t < duracionSegundos);
+  checkpoints.push(Math.max(duracionSegundos, 1)); // el video completo siempre es el último
+  return [...new Set(checkpoints)].sort((a, b) => a - b);
+};
 
-  const perfilesStr = SILICON_PROFILES.map(p =>
-    `[${p.id.toUpperCase()}] ${p.descripcion} (peso=${p.peso}, ${p.volumen})`
-  ).join('\n');
-
+export const buildSiliconCheckpointPrompt = (checkpointSegundo, esCheckpointFinal, platform, marketState) => {
+  const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform] || platform;
+  const perfilesStr = SILICON_PROFILES.map((p) => `[${p.id.toUpperCase()}] ${p.descripcion} (${p.volumen ?? 'con_audio'})`).join('\n');
+ 
   return `
 <role>
-Sos un simulador de audiencia real de ${pName}. Vas a encarnar, uno por uno, a seis personas distintas viendo este video.
+Sos un simulador de audiencia real de ${pName}. Vas a encarnar a seis usuarios que están viendo este video EN VIVO, en este preciso instante.
 </role>
-
+ 
 <context>
-DURACIÓN: ${duracionSegundos}s
+El clip que estás viendo es el video original, cortado desde el segundo 0 hasta el segundo ${checkpointSegundo}. No existe "después" para vos en esta llamada: no sabés qué pasa una vez que termina el clip que tenés adelante, de la misma forma en que un espectador real no puede adelantar el video. No inventes ni asumas contenido posterior, aunque te parezca predecible.
+ 
 MERCADO: ${JSON.stringify(marketState)}
-
-REFERENCIA DEL HOOK (detectada en un paso previo, solo los primeros segundos — es un punto de partida, NO una descripción del video completo. Mirá vos mismo el desarrollo entero y confirmá, corregí o ignorá esto si el video te muestra algo distinto):
-"${hookDescripcion}"
-
+ 
 USUARIOS A SIMULAR:
 ${perfilesStr}
 </context>
-
+ 
 <task>
-Tenés acceso directo al video completo. Para cada uno de los 6 usuarios, con total libertad de criterio: mirá el video de punta a punta y decidí en qué momentos concretos ese usuario sigue mirando o se va, y por qué. Tu propia observación manda por sobre la referencia del hook de arriba.
-
-Para cada perfil, juzgá dos cosas por separado, porque son preguntas distintas: (1) qué tan fuerte lo retuvo el mecanismo del video en sí mismo — ritmo, estímulo, curiosidad generada — independientemente de si conectaba con lo que esperaba encontrar; y (2) qué tan conectado percibió, una vez retenido, lo que vio con lo que el video efectivamente entregó o prometía entregar. Un video puede retener fuerte y a la vez sentirse desconectado temáticamente — no promedies esos dos juicios en uno solo.
-
-Después de simular a los 6 por separado, mirá el conjunto: identificá el segundo más peligroso, qué elemento retiene más, qué elemento expulsa más, y el patrón general de abandono y de retención que se repite entre los 6 perfiles.
-
-Si algún tramo del video es difícil de interpretar (calidad de imagen baja, corte muy rápido, audio poco claro), decilo explícitamente en razon_final del perfil correspondiente en vez de inventar una lectura segura que no tenés.
+Para cada uno de los 6 usuarios: decidí si, llegado este punto exacto del video (segundo ${checkpointSegundo}), seguiría mirando (RETIENE) o ya se fue (ABANDONA). Basate únicamente en lo que efectivamente mostró el clip hasta acá — ritmo, promesa cumplida o no, curiosidad generada, fricción encontrada.
+${esCheckpointFinal
+  ? `Este es el ÚLTIMO checkpoint: es el video completo. Además de la decisión, para cada perfil que llegó hasta acá evaluá attentionRetentionStrength, narrativeCoherencePerceived, si completó el video, y si compartiría / guardaría / comentaría. Mirando el conjunto de los 6, identificá también qué elemento retuvo más, qué elemento expulsó más, y los patrones generales de abandono y retención.`
+  : `Este es un checkpoint intermedio: no evalúes todavía si compartiría o guardaría — todavía no vio el video entero.`}
 </task>
 `;
 };
+
+export const runSiliconAudienceProgressive = async (
+  ai,
+  buildVideoPartFn,
+  { duracionSegundos, platform, marketState }
+) => {
+  const checkpoints = buildProgressiveCheckpoints(duracionSegundos);
+  const config = GENERATION_CONFIG.call1b_siliconAudience;
+ 
+  const llamadas = checkpoints.map((cp, idx) => {
+    const esFinal = idx === checkpoints.length - 1;
+    const videoPart = buildVideoPartFn({ endOffset: cp, fps: config.videoFps });
+    const promptText = buildSiliconCheckpointPrompt(cp, esFinal, platform, marketState);
+ 
+    return ai.models.generateContent({
+      model: config.model,
+      contents: [videoPart, { text: promptText }], // video primero, texto después
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: esFinal ? SILICON_CHECKPOINT_FINAL_SCHEMA : SILICON_CHECKPOINT_SCHEMA,
+        temperature: config.temperature,
+        thinkingConfig: config.thinkingConfig,
+        mediaResolution: config.media_resolution,
+      },
+    });
+  });
+ 
+  const responses = await Promise.all(llamadas); // independientes → en paralelo
+  const parsedPorCheckpoint = responses.map((r) => JSON.parse(r.text));
+ 
+  return mergeCheckpointsIntoSiliconAudience(checkpoints, parsedPorCheckpoint);
+};
+ 
+// ─────────────────────────────────────────────────────────────
+// 5. Merge — reconstruye la misma forma que SILICON_AUDIENCE_SCHEMA
+//
+// Regla central: para cada perfil, el PRIMER checkpoint que dice
+// ABANDONA gana. Todo lo que ese mismo perfil "decidió" en checkpoints
+// posteriores se descarta — ya se había ido, no pudo haber visto eso.
+// ─────────────────────────────────────────────────────────────
+export const mergeCheckpointsIntoSiliconAudience = (checkpoints, parsedPorCheckpoint) => {
+  const perfilesIds = SILICON_PROFILES.map((p) => p.id);
+  const finalData = parsedPorCheckpoint[parsedPorCheckpoint.length - 1];
+ 
+  const simulacion = perfilesIds.map((perfilId) => {
+    const eventos = [];
+    let segundoAbandono = null;
+    let razonFinal = '';
+ 
+    for (let i = 0; i < checkpoints.length; i++) {
+      const entry = parsedPorCheckpoint[i]?.decisiones?.find((d) => d.perfil_id === perfilId);
+      if (!entry) continue;
+ 
+      eventos.push({ segundo: checkpoints[i], decision: entry.decision === 'ABANDONA' ? 'ABANDONA' : 'RETIENE' });
+      razonFinal = entry.razon ?? razonFinal;
+ 
+      if (entry.decision === 'ABANDONA') {
+        segundoAbandono = checkpoints[i];
+        break; // ← acá está la regla: se corta, no se sigue leyendo su futuro
+      }
+    }
+ 
+    const completo = segundoAbandono === null;
+    const finalEntry = completo ? finalData?.decisiones?.find((d) => d.perfil_id === perfilId) : null;
+ 
+    return {
+      perfil_id: perfilId,
+      eventos_atencion: eventos,
+      attentionRetentionStrength: finalEntry?.attentionRetentionStrength ?? null,
+      narrativeCoherencePerceived: finalEntry?.narrativeCoherencePerceived ?? null,
+      razon_final: razonFinal,
+      decision_final: completo ? 'RETUVO' : 'ABANDONÓ',
+      completo: finalEntry?.completo ?? completo,
+      compartio: finalEntry?.compartio ?? false,
+      guardo: finalEntry?.guardo ?? false,
+      comento: finalEntry?.comento ?? false,
+    };
+  });
+ 
+  // segundo más peligroso: el que más perfiles eligieron como punto de abandono
+  const conteoAbandono = {};
+  simulacion.forEach((p) => {
+    if (p.decision_final !== 'ABANDONÓ') return;
+    const seg = p.eventos_atencion[p.eventos_atencion.length - 1]?.segundo;
+    if (seg == null) return;
+    conteoAbandono[seg] = (conteoAbandono[seg] ?? 0) + 1;
+  });
+  const segundo_mas_peligroso = Object.keys(conteoAbandono).length
+    ? Number(Object.entries(conteoAbandono).sort((a, b) => b[1] - a[1])[0][0])
+    : null;
+ 
+  return {
+    simulacion,
+    segundo_mas_peligroso,
+    evento_que_mas_retiene: finalData?.evento_que_mas_retiene ?? '',
+    evento_que_mas_expulsa: finalData?.evento_que_mas_expulsa ?? '',
+    patron_abandono: finalData?.patron_abandono ?? '',
+    patron_retencion: finalData?.patron_retencion ?? '',
+  };
+};
+
 
 // ─────────────────────────────────────────────────────────────
 // CALL 2 — Prediction Market (sin cambios respecto a v8)
