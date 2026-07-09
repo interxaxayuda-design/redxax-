@@ -274,18 +274,6 @@ export const SILICON_AUDIENCE_SCHEMA = {
   propertyOrdering: ["simulacion", "segundo_mas_peligroso", "evento_que_mas_retiene", "evento_que_mas_expulsa", "patron_abandono", "patron_retencion"],
 };
 
-export const SILICON_CHECKPOINT_SCHEMA = {
-  type: 'OBJECT',
-  properties: {
-    decisiones: {
-      type: 'ARRAY',
-      description: 'Una decisión por cada uno de los 6 perfiles, en este checkpoint.',
-      items: { type: 'OBJECT', properties: decisionProfileProps, propertyOrdering: ['perfil_id', 'razon', 'decision'] },
-    },
-  },
-  propertyOrdering: ['decisiones'],
-};
- 
 const decisionProfileProps = {
   perfil_id: {
     type: "STRING",
@@ -302,6 +290,20 @@ const decisionProfileProps = {
     description: "Si en este punto exacto del video el perfil sigue mirando o ya se fue.",
   },
 };
+
+export const SILICON_CHECKPOINT_SCHEMA = {
+  type: 'OBJECT',
+  properties: {
+    decisiones: {
+      type: 'ARRAY',
+      description: 'Una decisión por cada uno de los 6 perfiles, en este checkpoint.',
+      items: { type: 'OBJECT', properties: decisionProfileProps, propertyOrdering: ['perfil_id', 'razon', 'decision'] },
+    },
+  },
+  propertyOrdering: ['decisiones'],
+};
+ 
+
 
 export const SILICON_CHECKPOINT_FINAL_SCHEMA = {
   type: 'OBJECT',
