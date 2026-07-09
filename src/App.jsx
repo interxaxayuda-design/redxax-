@@ -33,7 +33,8 @@ import {
   // ← nuevo:
   RESEARCH_BRAIN_SCHEMA,
   SCORING_BRAIN_SCHEMA,
-  SILICON_AUDIENCE_SCHEMA
+  SILICON_CHECKPOINT_FINAL_SCHEMA,
+  SILICON_CHECKPOINT_SCHEMA
 } from './prompts.js'; // ← acá, sin "virax-"
 
 import { createClient } from '@supabase/supabase-js'; //phaseScores  //toggleStep  //const countWords = (str) => str.trim() === '' ? 0 : str.trim().split(/\s+/).length;
@@ -893,7 +894,7 @@ try {
     // ══════════════════════════════════════════════════════════
     // CALL 1B — Silicon Audience (usa cache → Gemini ve el video)
     // ══════════════════════════════════════════════════════════
-    setStatusText("Simulando 5 perfiles de audiencia...");
+    setStatusText("Simulando perfiles de audiencia (por checkpoints)...");
 
 const marketState = {
   novelty_level:      researchData?.fatiga_de_formato ? 'saturado' : 'normal',
@@ -908,58 +909,75 @@ let audienceAnalysis   = '';
 
 try {
   const analysisId = currentHistoryId || `temp_${Date.now()}`;
+  const duracionRedondeada = Math.round(duration);
+  const checkpoints = buildProgressiveCheckpoints(duracionRedondeada);
 
-  const { rawText: call1bRaw, parsedOutput: audienceSimulationResult } = await loggedGeminiCall({
-    analysisId,
-    callName: 'CALL_1B',
-    body: {
-      text: buildSiliconAudiencePrompt(
-        hookDescripcion,
-        marketState,
-        platform,
-        Math.round(duration)
-      ),
-      cacheName,
-      expectsJson: true,
-      responseSchema:  SILICON_AUDIENCE_SCHEMA,   // ← nuevo
-      maxOutputTokens: 4096,
-      temperature: 0,
-    },
-    extractReasoning: (raw, parsed) => ({
-      razones_por_perfil: parsed?.simulacion?.map(p => ({
-        perfil: p.perfil_id,
-        decision: p.decision_final,
-        razon: p.razon_final,
-        eventos: p.eventos_atencion,
-      })),
-      patron_abandono: parsed?.patron_abandono,
-      patron_retencion: parsed?.patron_retencion,
-    }),
+  console.log('[CALL 1B] Checkpoints a evaluar:', checkpoints);
+
+  // Una llamada por checkpoint, todas en paralelo — cada una es
+  // independiente (no depende del resultado de la anterior), así
+  // que Promise.all es seguro acá.
+  const llamadasCheckpoint = checkpoints.map((cp, idx) => {
+    const esFinal = idx === checkpoints.length - 1;
+
+    return loggedGeminiCall({
+      analysisId,
+      callName: `CALL_1B_checkpoint_${cp}s`,
+      body: {
+        text: buildSiliconCheckpointPrompt(cp, esFinal, platform, marketState),
+        cacheName,
+        // ⚠️ REQUIERE SOPORTE EN gemini-proxy: el proxy tiene que
+        // usar este valor para recortar el video (videoMetadata.endOffset)
+        // al armar el `contents` que le manda a Gemini. Si el proxy
+        // todavía no lo soporta, cada checkpoint va a ver el video
+        // COMPLETO igual, y el propósito de este sistema (que Gemini
+        // no "vea el futuro" del video) no se cumple.
+        endOffsetSegundos: cp,
+        expectsJson: true,
+        responseSchema: esFinal ? SILICON_CHECKPOINT_FINAL_SCHEMA : SILICON_CHECKPOINT_SCHEMA,
+        maxOutputTokens: esFinal ? 4096 : 1024,
+        temperature: 0,
+      },
+      extractReasoning: (raw, parsed) => ({
+        checkpoint_segundo: cp,
+        es_final: esFinal,
+        decisiones: parsed?.decisiones?.map(d => ({
+          perfil: d.perfil_id,
+          decision: d.decision,
+          razon: d.razon,
+        })),
+      }),
+    });
   });
 
-  audienceSimulation = audienceSimulationResult;
+  const resultadosCheckpoint = await Promise.all(llamadasCheckpoint);
+  const parsedPorCheckpoint = resultadosCheckpoint.map(r => r.parsedOutput);
 
-  // Diagnóstico: ¿Gemini realmente observó el video?
+  audienceSimulation = mergeCheckpointsIntoSiliconAudience(checkpoints, parsedPorCheckpoint);
+
+  // Diagnóstico: ¿Gemini realmente observó el video en algún checkpoint?
   const noVioSenales = [
     'no tengo acceso', 'no puedo ver', 'no puedo acceder',
     'basándome en los eventos', 'según los datos proporcionados', 'sin poder ver',
   ];
-  const noVio = noVioSenales.some(s => call1bRaw.toLowerCase().includes(s));
-  if (noVio) {
-    console.warn('[CALL 1B] ⚠️ Gemini NO vio el video — responde solo con texto');
+  const algunCheckpointNoVio = resultadosCheckpoint.some(r =>
+    noVioSenales.some(s => r.rawText.toLowerCase().includes(s))
+  );
+  if (algunCheckpointNoVio) {
+    console.warn('[CALL 1B] ⚠️ Al menos un checkpoint responde sin haber visto el video');
   } else {
-    console.log('[CALL 1B] ✅ Respuesta basada en observación real del video');
+    console.log('[CALL 1B] ✅ Todos los checkpoints responden basados en observación real');
   }
 
-  console.log('[SILICON AUDIENCE] Simulación:', audienceSimulation);
+  console.log('[SILICON AUDIENCE] Simulación consolidada:', audienceSimulation);
 
 } catch (e) {
   console.warn('[CALL 1B] Excepción:', e.message);
 }
-   
-    setAnalysisProgress(55);
 
-    console.log('[MARKET STATE]', JSON.stringify(marketState, null, 2));
+setAnalysisProgress(55);
+
+console.log('[MARKET STATE]', JSON.stringify(marketState, null, 2));
 
     // ══════════════════════════════════════════════════════════
     // CALL 2 — Prediction Market (sin video — razona sobre texto)
