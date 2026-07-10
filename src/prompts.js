@@ -31,7 +31,6 @@ export const HOOK_PATTERNS = [
   "transformacion_teaser",      // Muestra un adelanto del resultado antes de explicar cómo se logró
   "conteo_o_lista",              // "3 cosas que...", "el error #1..."
   "confesion_o_secreto",          // Promesa de revelar algo oculto o no dicho antes
-  "bait_desconectado",             // Imagen de impacto sin relación real con el resto del contenido
   "apertura_informativa",           // Presenta el producto/tema directamente, sin mecanismo de gancho
   "debil",                           // No hay mecanismo de hook identificable
 ];
@@ -187,6 +186,22 @@ export const RESEARCH_BRAIN_SCHEMA = {
     },
     patron_hook_dominante: {
       type: "STRING",
+      // sin enum: la base indexada puede tener patrones que no
+      // conocías cuando escribiste esta lista. Describí el patrón
+      // dominante con tus propias palabras, con el mismo nivel de
+      // precisión que estos nombres usados en análisis previos
+      // (solo como referencia, no como catálogo obligatorio):
+      // ${HOOK_PATTERNS.join(", ")}. Si el patrón real que domina
+      // los ejemplos recuperados no se parece a ninguno de esos,
+      // nombralo vos mismo en vez de forzarlo al más parecido.
+      description:
+        `El patrón que más se repite entre los ejemplos ganadores recuperados, descrito con tus propias palabras. ` +
+        `No es un catálogo cerrado — hay miles de patrones posibles y en evolución constante. Ejemplos de nombres ` +
+        `usados en análisis previos (solo como referencia de precisión, no como opciones obligatorias): ` +
+        `${HOOK_PATTERNS.join(", ")}. Si lo que ves en la base no encaja bien en ninguno, nombralo vos mismo.`,
+    },
+    patron_hook_dominante: {
+      type: "STRING",
       enum: HOOK_PATTERNS,
       description: "El patrón (de la taxonomía HOOK_PATTERNS) que más se repite entre los ejemplos ganadores recuperados. Acá SÍ es un catálogo cerrado válido: es un resumen agregado de ejemplos ya catalogados en la base indexada, no la observación directa de un video nuevo.",
     },
@@ -266,8 +281,22 @@ export const SILICON_AUDIENCE_SCHEMA = {
       },
     },
     segundo_mas_peligroso:  { type: "NUMBER", description: "El segundo del video donde más perfiles decidieron abandonar." },
-    evento_que_mas_retiene: { type: "STRING", description: "Qué elemento concreto del video retuvo a más perfiles." },
-    evento_que_mas_expulsa: { type: "STRING", description: "Qué elemento concreto del video expulsó a más perfiles." },
+    evento_que_mas_retiene: {
+  type: "OBJECT",
+  properties: {
+    descripcion: { type: "STRING", description: "Qué elemento concreto del video retuvo a más perfiles." },
+    timestamp:   { type: "STRING", description: "MM:SS exacto donde ocurre ese elemento en el video." },
+  },
+  propertyOrdering: ["descripcion", "timestamp"],
+},
+evento_que_mas_expulsa: {
+  type: "OBJECT",
+  properties: {
+    descripcion: { type: "STRING", description: "Qué elemento concreto del video expulsó a más perfiles." },
+    timestamp:   { type: "STRING", description: "MM:SS exacto donde ocurre ese elemento en el video." },
+  },
+  propertyOrdering: ["descripcion", "timestamp"],
+},
     patron_abandono:        { type: "STRING", description: "Patrón general que explica por qué abandonan los que abandonan, mirando los 6 perfiles en conjunto." },
     patron_retencion:       { type: "STRING", description: "Patrón general que explica por qué se quedan los que se quedan, mirando los 6 perfiles en conjunto." },
   },
@@ -662,19 +691,27 @@ export const SCORING_BRAIN_SCHEMA = {
       },
     },
     roadmap: {
-      type: "ARRAY",
-      description: "Solo problemas reales detectados en este video puntual, ordenados por impacto real — nada genérico.",
-      items: {
-        type: "OBJECT",
-        properties: {
-          problema:  { type: "STRING" },
-          impacto:   { type: "STRING", enum: ["ALTO", "MEDIO", "BAJO"] },
-          solucion:  { type: "STRING" },
-          resultado: { type: "STRING", description: "Resultado esperado si se aplica la solución." },
-        },
-        propertyOrdering: ["problema", "impacto", "solucion", "resultado"],
+  type: "ARRAY",
+  description: "Solo problemas reales detectados en este video puntual, ordenados por impacto real — nada genérico.",
+  items: {
+    type: "OBJECT",
+    properties: {
+      problema:  { type: "STRING" },
+      timestamp: {
+        type: "STRING",
+        description:
+          "MM:SS exacto donde ocurre este problema puntual, o 'estructural' si el problema afecta al video " +
+          "entero por igual (ej: ritmo general, ausencia total de audio) y no tiene un momento único. " +
+          "Este campo existe para poder verificar tu análisis contra el video real — si no podés ubicar un " +
+          "momento concreto, decilo en vez de inventar uno.",
       },
+      impacto:   { type: "STRING", enum: ["ALTO", "MEDIO", "BAJO"] },
+      solucion:  { type: "STRING" },
+      resultado: { type: "STRING", description: "Resultado esperado si se aplica la solución." },
     },
+    propertyOrdering: ["problema", "timestamp", "impacto", "solucion", "resultado"],
+  },
+},
     vision: {
       type: "OBJECT",
       properties: {
@@ -954,7 +991,7 @@ Sos un investigador de tendencias de contenido para redes sociales, con acceso a
 
 <context>
 Plataforma: ${pName}. Nicho: "${industria}". Objetivo del creador: ${objetivo}.
-Para patron_hook_dominante, usá siempre uno de estos nombres exactos (acá sí es un catálogo cerrado, porque es un resumen agregado de ejemplos ya catalogados en la base, no la observación de un video nuevo): ${HOOK_PATTERNS.join(", ")}.
+Para patron_hook_dominante no hay una lista cerrada de nombres válidos — describí el patrón dominante que encontraste en la base indexada con tus propias palabras, tan preciso como puedas. Los nombres usados en análisis previos son solo referencia de nivel de precisión, no opciones obligatorias.
 </context>
 
 <task>
@@ -1055,6 +1092,10 @@ ${perfilesStr}
 Para cada uno de los 6 usuarios: decidí si, llegado este punto exacto del video (segundo ${checkpointSegundo}), seguiría mirando (RETIENE) o ya se fue (ABANDONA). Basate únicamente en lo que efectivamente mostró el clip hasta acá — ritmo, promesa cumplida o no, curiosidad generada, fricción encontrada.
 ${esCheckpointFinal
   ? `Este es el ÚLTIMO checkpoint: es el video completo. Además de la decisión, para cada perfil que llegó hasta acá evaluá attentionRetentionStrength, narrativeCoherencePerceived, si completó el video, y si compartiría / guardaría / comentaría. Mirando el conjunto de los 6, identificá también qué elemento retuvo más, qué elemento expulsó más, y los patrones generales de abandono y retención.`
+  // dentro del bloque esCheckpointFinal:
+`... Mirando el conjunto de los 6, identificá también qué elemento retuvo más y qué elemento expulsó más, ` +
+`CADA UNO con su timestamp MM:SS exacto — esto se usa para verificar tu análisis contra el video real, así ` +
+`que no lo dejes ambiguo ni inventes un momento si no estás seguro. ...`
   : `Este es un checkpoint intermedio: no evalúes todavía si compartiría o guardaría — todavía no vio el video entero.`}
 </task>
 `;
@@ -1153,8 +1194,8 @@ export const mergeCheckpointsIntoSiliconAudience = (checkpoints, parsedPorCheckp
   return {
     simulacion,
     segundo_mas_peligroso,
-    evento_que_mas_retiene: finalData?.evento_que_mas_retiene ?? '',
-    evento_que_mas_expulsa: finalData?.evento_que_mas_expulsa ?? '',
+    evento_que_mas_retiene: finalData?.evento_que_mas_retiene ?? { descripcion: '', timestamp: '' },
+    evento_que_mas_expulsa: finalData?.evento_que_mas_expulsa ?? { descripcion: '', timestamp: '' },
     patron_abandono: finalData?.patron_abandono ?? '',
     patron_retencion: finalData?.patron_retencion ?? '',
   };
