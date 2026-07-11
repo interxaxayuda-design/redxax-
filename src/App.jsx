@@ -1,27 +1,18 @@
 import {
-  BarChart3, BrainCircuit, CheckCircle, CheckSquare, Compass, FileText, Gem,
-  MessageSquare, Microscope, RotateCcw, Send, Square, Target, TrendingUp,
-  Upload, Users, X, Zap
+  BrainCircuit,
+  FileText, Gem,
+  MessageSquare, Microscope, RotateCcw, Send,
+  Target, TrendingUp,
+  Upload,
+  X
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import logo from './logo.png';
 import {
-  buildPreClassifierPrompt,
-  buildPredictionMarketPrompt,
-  buildProgressiveCheckpoints,
-  buildResearchBrainPrompt,
-  buildScoringBrainPrompt,
-  buildSiliconCheckpointPrompt,
-  buildSiliconSummary,
-  calcularCurvaRetencionSilicon,
-  mergeCheckpointsIntoSiliconAudience,
-  NICHE_MOTORS,
-  parsePreClassifierResponse,
-  PREDICTION_MARKET_SCHEMA,
-  RESEARCH_BRAIN_SCHEMA,
-  SCORING_BRAIN_SCHEMA,
-  SILICON_CHECKPOINT_FINAL_SCHEMA,
-  SILICON_CHECKPOINT_SCHEMA,
+  buildDesarrolloAnalysisPrompt,
+  buildFinalReviewPrompt,
+  buildHookAnalysisPrompt,
+  REVIEW_CONFIG,
 } from './prompts.js';
 
 import { createClient } from '@supabase/supabase-js';
@@ -327,10 +318,7 @@ const App = () => {
   const [selectedObjetivo, setSelectedObjetivo] = useState('ventas');
   const [selectedNicho, setSelectedNicho] = useState('producto_fisico');
   const [pendingVideoFile, setPendingVideoFile] = useState(null);
-  const [pendingVideoUrl, setPendingVideoUrl] = useState(null);
-  const [perception, setPerception] = useState(null);
-  const [videoMeta, setVideoMeta] = useState(null);  //const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
-
+  const [pendingVideoUrl, setPendingVideoUrl] = useState(null); 
   const [scriptText, setScriptText] = useState('');
   const [completedSteps, setCompletedSteps] = useState([]);
   const [currentHistoryId, setCurrentHistoryId] = useState(null);
@@ -519,9 +507,9 @@ const saveChatToHistory = async (messages) => {
 };
 
   const saveAnalysisToHistory = async (result, mode) => {
-    const userId = localStorage.getItem('redxax_user_id');
-    if (!userId) return;
-    const title = `${result.vision?.niche || 'Contenido'} — ${result.vision?.type || mode}`;
+  const userId = localStorage.getItem('redxax_user_id');
+  if (!userId) return;
+  const title = `${result.industria || 'Contenido'} — ${result.platform || mode}`;
     const { data, error } = await supabase
       .from('analysis_history')
       .insert({ user_id: userId, title, mode, analysis_data: result })
@@ -531,27 +519,6 @@ const saveChatToHistory = async (messages) => {
       setCurrentHistoryId(data.id);
     } //className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all"
   };
-
-  // Guardar predicción para calibración futura
-const trackPrediction = async (result) => {
-  const userId = localStorage.getItem('redxax_user_id');   //TREND CONTEXT const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic);
-  await supabase.from('prediction_tracking').insert({
-    user_id: userId,
-    predicted_score: result.potentialScore,
-    niche: result.vision?.niche,
-    platform: result.platformScores ? Object.keys(result.platformScores)[0] : 'unknown',
-    cut_rate: result.cutRateData?.cutsPerMinute,
-    hook_score: result.hookScore,
-    predicted_retention_3s: result.retentionData?.at3s,
-    created_at: new Date().toISOString(),
-    actual_views: null,
-    actual_viral: null
-  });
-};  //const scores = buildPenalties(flagsDeterministic)  //catch (err)  //const parsedFinal = applyDeterministicScoring(parsed, flagsDeterministic)
-
-// ============================================================
-// UTILITY FUNCTIONS — Parsing y extracción //{isTyping && <div className="text-[10px] text-zinc-500 animate-pulse font-black uppercase ml-2 italic tracking-widest">Calculando respuesta técnica...</div>}
-// ============================================================
 
 const extractFlags = (strategyText) => {
   try {
@@ -684,538 +651,142 @@ const { data: call0Data, error: call0Error } = await supabase.functions.invoke('
 
 //videoDescription
 
-const runDeepAnalysis = async () => {
-  if (!videoMeta || !perception) {
-    alert("Faltan datos de calibración.");
+const runDeepAnalysis = async (videoFile, platform, industria) => {
+  if (videoFile.size > 45 * 1024 * 1024) {
+    alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB.`);
     return;
   }
 
-  const { storagePath, mimeType, duration, platform } = videoMeta;
-  const industria   = perception.industria;
-  const nicheConfig = perception.motor_key ? NICHE_MOTORS[perception.motor_key] : null;
-
-  const cost     = 100;
-  const approved = await deductGems(cost, `video:${Math.ceil(duration / 60)}`);
+  const cost = 60; // bajado de 100 — pasamos de ~15 calls a 3
+  const approved = await deductGems(cost, 'video');
   if (!approved) return;
 
   setStep('analyzing');
-  setStatusText("Iniciando auditoría profunda...");
-  setAnalysisProgress(5);
+  setAnalysisMode('video');
+  setStatusText("Subiendo video...");
+  setAnalysisProgress(10);
 
-  // ─────────────────────────────────────────────────────────────
-  // Variables de cache — se llenan en el PASO 0 y se usan en
-  // todas las calls siguientes que necesitan ver el video.
-  // El finally las limpia siempre, haya error o no.
-  // ─────────────────────────────────────────────────────────────
-  let cacheName    = null;   // nombre del context cache de Gemini
-  let cacheFileUri = null;   // fileUri del video en File API (para debug)
-  let cacheFileName = null;  // fileName del archivo (para cleanup)
+  const safeName = videoFile?.name
+    ?.normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9._-]/g, '') || 'video.mp4';
+
+  const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
+  const mimeType = videoFile.type || 'video/mp4';
+
+  let fileUri = null;
+  let fileName = null; // nombre del archivo en Gemini File API, para borrarlo después
 
   try {
+    const { error: uploadError } = await supabase.storage
+      .from('videos')
+      .upload(storagePath, videoFile, { contentType: mimeType, upsert: true });
+    if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
-    // ══════════════════════════════════════════════════════════
-    // PASO 0 — Crear el Context Cache
-    //
-    // El video se sube a File API y se tokeniza UNA SOLA VEZ.
-    // Todas las calls que necesitan ver el video (CALL 0, 1B, 3)
-    // referencian este cache por nombre → mismos KV tensors →
-    // variabilidad de observación eliminada.
-    // ══════════════════════════════════════════════════════════
-    setStatusText("Preparando análisis de video...");
-    setAnalysisProgress(8);
+    setStatusText("Preparando video para análisis...");
+    setAnalysisProgress(20);
 
-    // ── REEMPLAZAR POR ESTO: ──
-const { data: cacheData, error: cacheError } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    createCacheOnly: true,
-    storagePath,
-    videoMimeType:   mimeType,
-  }
-});
-
-
-console.error('[CACHE] cacheError:', JSON.stringify(cacheError));
-console.error('[CACHE] cacheData:', JSON.stringify(cacheData));
-
-// Leer el body real del error si Supabase lo wrapeó
-let cacheErrorDetail = null;
-if (cacheError) {
-  try {
-    cacheErrorDetail = await cacheError.context?.text?.();
-  } catch (_) {}
-  console.error('[CACHE] Body real del error:', cacheErrorDetail);
-}
-
-if (!cacheData?.cacheName) {
-  throw new Error(
-    cacheErrorDetail ??
-    cacheError?.message ??
-    cacheData?.detail ??
-    cacheData?.error ??
-    'respuesta vacía del proxy'
-  );
-}
-
-    cacheName    = cacheData.cacheName;
-    cacheFileUri = cacheData.fileUri;
-    cacheFileName = cacheData.fileName;
-
-    console.log('[VIRAX] ✅ Cache creado:', {
-      cacheName,
-      cacheFileUri,
-      cacheFileName,
+    // Sube UNA VEZ a Gemini File API, sin cachear (no cachear porque
+    // hook y desarrollo necesitan fps distintos — el cache fija el fps).
+    const { data: uploadData, error: uploadGeminiError } = await supabase.functions.invoke('gemini-proxy', {
+      body: { uploadOnly: true, storagePath, videoMimeType: mimeType }
     });
+    if (uploadGeminiError || !uploadData?.fileUri) {
+      throw new Error(uploadGeminiError?.message || 'No se pudo subir el video a Gemini');
+    }
+    fileUri = uploadData.fileUri;
+    fileName = uploadData.fileName;
 
-    // ══════════════════════════════════════════════════════════
-    // CALL 0 — Observador puro (usa cache)
-    //
-    // Reutiliza preFacts de runNeuralAnalysis si ya existen.
-    // Solo re-ejecuta si no hay descripción (caso edge: si el
-    // usuario llegó a validation sin pasar por calibración).
-    // ══════════════════════════════════════════════════════════
-    setStatusText("Observando el video...");
-    setAnalysisProgress(15);
+    setStatusText("Analizando el hook...");
+    setAnalysisProgress(35);
 
-    let preFacts         = videoMeta?.preFacts ?? {};
-let hookDescripcion  = preFacts.descripcion_raw ?? '';   // ahora solo describe el hook, no todo el video
+    const cfg = REVIEW_CONFIG;
 
-    if (!hookDescripcion) {
-      // Edge case: no hay descripción previa → ejecutar CALL 0
-      console.warn('[VIRAX] descripcion_raw vacía — ejecutando CALL 0 con cache');
-
-      const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
+    // CALL 1 y CALL 2 en paralelo — no dependen entre sí
+    const [hookRes, desarrolloRes] = await Promise.all([
+      supabase.functions.invoke('gemini-proxy', {
         body: {
-          text:            buildPreClassifierPrompt(),
-          cacheName,                 // ← usa el cache, NO storagePath
+          text: buildHookAnalysisPrompt(platform, industria, selectedObjetivo),
+          fileUri,
+          videoMimeType: mimeType,
+          videoFps: cfg.hook.videoFps,
+          expectsJson: false,
+          temperature: cfg.hook.temperature,
+          maxOutputTokens: 1500,
+        }
+      }),
+      supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo),
+          fileUri,
+          videoMimeType: mimeType,
+          videoFps: cfg.desarrollo.videoFps,
+          expectsJson: false,
+          temperature: cfg.desarrollo.temperature,
           maxOutputTokens: 2000,
-          expectsJson:     false,
-          temperature:     0,
         }
-      });
+      }),
+    ]);
 
-      if (call0Error) throw new Error(`CALL 0 falló: ${call0Error.message}`);
+    if (hookRes.error) throw new Error(`Análisis de hook falló: ${hookRes.error.message}`);
+    if (desarrolloRes.error) throw new Error(`Análisis de desarrollo falló: ${desarrolloRes.error.message}`);
 
-      const call0Parsed = parsePreClassifierResponse(extractGeminiText(call0Data));
-      hookDescripcion  = call0Parsed.descripcion_raw ?? '';
-      preFacts          = { ...preFacts, ...call0Parsed };
+    const hookAnalysis = extractGeminiText(hookRes.data);
+    const desarrolloAnalysis = extractGeminiText(desarrolloRes.data);
 
-      console.log('[VIRAX] CALL 0 ejecutado ✅', {
-  descripcion: hookDescripcion.slice(0, 150),
-});
-    } else {
-      console.log('[VIRAX] ✅ descripcion_raw reutilizada de calibración:', {
-  descripcion: hookDescripcion.slice(0, 150),
-});
-    }
+    setAnalysisProgress(75);
+    setStatusText("Preparando devolución final...");
 
-    setAnalysisProgress(25);
-
-    // ══════════════════════════════════════════════════════════
-    // CALL 1.5 — Research Brain (sin video — solo texto + search)
-    // ══════════════════════════════════════════════════════════
-    setStatusText("Investigando benchmark del nicho...");
-
-    const isBenchmarkFresh = (updatedAt, maxDays = 7) => {
-  if (!updatedAt) return false;
-  const ageMs = Date.now() - new Date(updatedAt).getTime();
-  return ageMs < maxDays * 24 * 60 * 60 * 1000;
-};
-
-let nichoBenchmark = null;
-let benchmarkFresh  = false;
-try {
-  const { data: benchmarkRow } = await supabase
-    .from('niche_benchmarks')
-    .select('benchmark_json, updated_at')
-    .eq('industria', industria)
-    .eq('platform', platform)
-    .eq('region', 'AR')
-    .single();
-  nichoBenchmark = benchmarkRow?.benchmark_json ?? null;
-  benchmarkFresh  = isBenchmarkFresh(benchmarkRow?.updated_at);
-} catch (e) {
-  console.warn('[BENCHMARK] Error al leer:', e.message);
-}
-
-let researchData = {};
-try {
-  if (benchmarkFresh) {
-    console.log('[RESEARCH] Benchmark fresco — sin búsqueda en vivo, reutilizando cache');
-    researchData = nichoBenchmark;
-  } else {
-    const { data: call1_5Data, error: call1_5Error } = await supabase.functions.invoke('gemini-proxy', {
+    // CALL 3 — sin video, solo combina los dos textos anteriores
+    const { data: finalData, error: finalError } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text:            buildResearchBrainPrompt(platform, industria, selectedObjetivo, nichoBenchmark),
-        expectsJson:     true,
-         responseSchema:  RESEARCH_BRAIN_SCHEMA,   // ← nuevo
-        useSearch:       true,
-        maxOutputTokens: 2048,
-        temperature:     0,
+        text: buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, selectedObjetivo),
+        expectsJson: false,
+        temperature: cfg.sintesis.temperature,
+        maxOutputTokens: 2000,
       }
     });
-    if (!call1_5Error) {
-      researchData = safeParseJSON(extractGeminiText(call1_5Data), 'research') || {};
+    if (finalError) throw new Error(`Síntesis final falló: ${finalError.message}`);
 
-      // ── Guardar en cache para el próximo análisis del mismo nicho+plataforma ──
-      try {
-        await supabase.from('niche_benchmarks').upsert({
-          industria,
-          platform,
-          region: 'AR',
-          benchmark_json: researchData,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'industria,platform,region' });
-        console.log('[BENCHMARK] Guardado en cache ✅');
-      } catch (e) {
-        console.warn('[BENCHMARK] Error al guardar:', e.message);
-      }
-    }
-    console.log('[RESEARCH] data:', researchData);
-  }
-} catch (e) {
-  console.warn('[CALL 1.5] Fallback research:', e.message);
-}
-
-    setAnalysisProgress(40);
-
-    // ══════════════════════════════════════════════════════════
-    // CALL 1B — Silicon Audience (usa cache → Gemini ve el video)
-    // ══════════════════════════════════════════════════════════
-    setStatusText("Simulando perfiles de audiencia (por checkpoints)...");
-
-const marketState = {
-  novelty_level:      researchData?.fatiga_de_formato ? 'saturado' : 'normal',
-  audience_fatigue:   researchData?.errores_hook_comunes   ?? [],
-  currently_rewarded: researchData?.top_formatos_ganadores ?? [],
-  patron_dominante:   researchData?.patron_hook_dominante  ?? '',
-  oportunidad:        researchData?.oportunidad_detectada  ?? '',
-};
-
-const duracionRedondeada = Math.round(duration);
-const checkpoints = buildProgressiveCheckpoints(duracionRedondeada);
-
-// Corre los N checkpoints en paralelo vía el proxy. Devuelve null si
-// alguno falla en el parseo — se usa tanto para el intento principal
-// como para el reintento de más abajo.
-const correrCheckpointsSilicon = async () => {
-  const llamadas = checkpoints.map((cp, idx) => {
-    const esFinal = idx === checkpoints.length - 1;
-    return supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildSiliconCheckpointPrompt(cp, esFinal, platform, marketState),
-        cacheName,
-        // ⚠️ Requiere que gemini-proxy soporte este parámetro y arme
-        // el contents con videoMetadata.endOffset recortado a este
-        // punto. Si el proxy no lo soporta todavía, cada checkpoint
-        // ve el video completo igual.
-        endOffsetSegundos: cp,
-        expectsJson: true,
-        responseSchema: esFinal ? SILICON_CHECKPOINT_FINAL_SCHEMA : SILICON_CHECKPOINT_SCHEMA,
-        maxOutputTokens: esFinal ? 4096 : 1024,
-        temperature: 0,
-      },
-    });
-  });
-
-  const resultados = await Promise.all(llamadas);
-
-  const parsedPorCheckpoint = resultados.map((r, idx) => {
-    if (r.error) {
-      console.warn(`[CALL 1B] Checkpoint ${checkpoints[idx]}s falló:`, r.error.message);
-      return null;
-    }
-    try {
-      return safeParseJSON(extractGeminiText(r.data), `checkpoint-${checkpoints[idx]}`);
-    } catch (e) {
-      console.warn(`[CALL 1B] Checkpoint ${checkpoints[idx]}s no parseó:`, e.message);
-      return null;
-    }
-  });
-
-  if (parsedPorCheckpoint.some(p => p === null)) return null;
-
-  return mergeCheckpointsIntoSiliconAudience(checkpoints, parsedPorCheckpoint);
-};
-
-let audienceSimulation = null;
-let audienceAnalysis   = '';
-
-try {
-  console.log('[CALL 1B] Checkpoints a evaluar:', checkpoints);
-  audienceSimulation = await correrCheckpointsSilicon();
-  console.log('[SILICON AUDIENCE] Simulación consolidada:', audienceSimulation);
-} catch (e) {
-  console.warn('[CALL 1B] Excepción:', e.message);
-}
-
-setAnalysisProgress(55);
-console.log('[MARKET STATE]', JSON.stringify(marketState, null, 2));
-
-    // ══════════════════════════════════════════════════════════
-    // CALL 2 — Prediction Market (sin video — razona sobre texto)
-    // ══════════════════════════════════════════════════════════
-    setStatusText("Calculando predicción de mercado...");
-
-    let predictionMarket = null;
-
-    if (audienceSimulation?.simulacion?.length) {
-      try {
-        const { data: call2Data, error: call2Error } = await supabase.functions.invoke('gemini-proxy', {
-          body: {
-            text: buildPredictionMarketPrompt(audienceSimulation, marketState, platform, industria),
-            expectsJson:     true,
-            responseSchema:  PREDICTION_MARKET_SCHEMA,
-            maxOutputTokens: 1500,
-            temperature:     0,
-          }
-        });
-        if (!call2Error) {
-          predictionMarket = safeParseJSON(extractGeminiText(call2Data), 'prediction-market');
-          console.log('[PREDICTION MARKET]', predictionMarket);
-        } else {
-          console.warn('[CALL 2] Error:', call2Error.message);
-        }
-      } catch (e) {
-        console.warn('[CALL 2] Excepción:', e.message);
-      }
-    }
-
-    setAnalysisProgress(65);
-
-    if (audienceSimulation && predictionMarket) {
-      const summary = buildSiliconSummary(audienceSimulation, predictionMarket);
-      audienceAnalysis = `
-SILICON AUDIENCE — PERFILES CONDUCTUALES:
-
-Tasa de completado:    ${summary.tasa_completado}%
-Tasa de compartido:    ${summary.tasa_compartido}%
-Tasa de guardado:      ${summary.tasa_guardado}%
-Segundo más peligroso: s${summary.segundo_peligroso ?? '—'}
-Evento que retiene:    ${summary.evento_retiene}
-Evento que expulsa:    ${summary.evento_expulsa}
-
-RETENCIÓN POR PERFIL:
-${Object.entries(summary.retencion_por_perfil).map(([k, v]) =>
-  `  ${k.padEnd(12)}: ${v.retencion_pct}% — ${v.razon}`
-).join('\n')}
-
-PREDICTION MARKET:
-  Probabilidad viral:  ${predictionMarket.probabilidad_viral}%
-  Confianza:           ${predictionMarket.confianza_prediccion}
-  viralScore:          ${predictionMarket.viralScore}
-  salesScore:          ${predictionMarket.salesScore}
-  Razón:               ${predictionMarket.razon_principal_score}
-
-PATRONES:
-  Abandono:   ${summary.patron_abandono}
-  Retención:  ${summary.patron_retencion}
-
-DETALLE POR PERFIL:
-${(summary.detalle_perfiles || []).map(p =>
-  `  ${p.perfil_id.padEnd(12)}: ${p.decision_final} | completo: ${p.completo} | compartió: ${p.compartio} | ${p.razon_final}`
-).join('\n')}
-      `.trim();
-
-    } else {
-      // Fallback: reintentar los checkpoints una vez más
-      console.warn('[SILICON AUDIENCE] Simulación falló — reintentando checkpoints una vez');
-
-      try {
-        audienceSimulation = await correrCheckpointsSilicon();
-      } catch (e) {
-        console.warn('[SILICON AUDIENCE] Reintento también falló:', e.message);
-      }
-
-      if (audienceSimulation?.simulacion?.length) {
-        const summary = buildSiliconSummary(audienceSimulation, predictionMarket);
-        audienceAnalysis = `
-SILICON AUDIENCE — PERFILES CONDUCTUALES (reintento):
-
-Tasa de completado: ${summary.tasa_completado}%
-Segundo más peligroso: s${summary.segundo_peligroso ?? '—'}
-Evento que retiene: ${summary.evento_retiene}
-Evento que expulsa: ${summary.evento_expulsa}
-        `.trim();
-      } else {
-        console.warn('[SILICON AUDIENCE] Sin simulación disponible — usando descripción cruda');
-        audienceAnalysis = `No se pudo simular audiencia. Análisis basado únicamente en la descripción del hook:\n\n${hookDescripcion}`;
-      }
-    }
-
-    console.log('[VIRAX] Audience Analysis final:', audienceAnalysis);
-    setAnalysisProgress(70);
-    // ══════════════════════════════════════════════════════════
-    // CALL 3 — Scoring Brain (usa cache → Gemini ve el video)
-    // ══════════════════════════════════════════════════════════
-    setStatusText("Generando reporte final...");
-    setAnalysisProgress(78);
-
-    const { data: call3Data, error: call3Error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildScoringBrainPrompt(
-        hookDescripcion,
-        audienceAnalysis,
-        researchData,
-        platform,
-        selectedObjetivo,
-        industria,
-        Math.round(duration)
-      ),
-        cacheName,               // ← Gemini ve el video desde el mismo cache
-        expectsJson:     true,
-        responseSchema:  SCORING_BRAIN_SCHEMA,   // ← nuevo
-        maxOutputTokens: 4096,
-        temperature:     0,
-      }
-    });
-
-    if (call3Error) throw new Error(`CALL 3 falló: ${call3Error.message}`);
-
-    const outputParsed = safeParseJSON(extractGeminiText(call3Data), 'scoring-output') || {};
-    setAnalysisProgress(95);
-    setStatusText("Estructurando reporte...");
-
-    console.log('[VIRAX] Output CALL 3:', {
-      viralScore: outputParsed.viralScore?.score,
-      salesScore: outputParsed.salesScore?.score,
-      hookStr:    outputParsed.hookDNA?.strength,
-    });
-
-    // ── Ensamblado de scores finales ─────────────────────────
-    // Prediction Market da la base, CALL 3 refina.
-    // Tomamos el mínimo para no inflar scores.
-    const viralScoreFinal = Math.min(
-      predictionMarket?.viralScore  ?? 100,
-      outputParsed.viralScore?.score ?? 100
-    );
-
-    const salesScoreFinal = predictionMarket?.salesScore
-      ?? outputParsed.salesScore?.score
-      ?? 0;
-
-    console.log('=== VIRAX SCORE DEBUG ===');
-    console.log('Silicon simulacion:', audienceSimulation?.simulacion?.map(p => ({
-      perfil: p.perfil_id, decision: p.decision_final, completo: p.completo
-    })));
-    console.log('Prediction Market raw:', {
-      viralScore: predictionMarket?.viralScore,
-      salesScore: predictionMarket?.salesScore,
-      razon:      predictionMarket?.razon_principal_score,
-    });
-    console.log('CALL 3 raw:', {
-      viralScore: outputParsed?.viralScore?.score,
-      salesScore: outputParsed?.salesScore?.score,
-    });
-    console.log('Scores finales:', { viralScoreFinal, salesScoreFinal });
+    const reviewText = extractGeminiText(finalData);
 
     const finalResult = {
-      viralScore: {
-        score:        viralScoreFinal,
-        titulo:       'Potencial Viral',
-        verdict:      outputParsed.viralScore?.verdict      ?? predictionMarket?.razon_principal_score ?? '',
-        accion_clave: outputParsed.viralScore?.accion_clave ?? predictionMarket?.accion_clave_viral    ?? '',
-        cap_reason:   null,
-      },
-      salesScore: {
-        score:        salesScoreFinal,
-        titulo:       'Potencial de Ventas',
-        verdict:      outputParsed.salesScore?.verdict      ?? predictionMarket?.razon_principal_score ?? '',
-        accion_clave: outputParsed.salesScore?.accion_clave ?? predictionMarket?.accion_clave_ventas   ?? '',
-      },
-      scrollStopScore: outputParsed.scrollStopScore ?? { score: 0, verdict: '' },
-      hookDNA:         outputParsed.hookDNA         ?? {},
-      steppsScore:     outputParsed.steppsScore     ?? {},
-      honestVerdict:   outputParsed.honestVerdict   ?? '',
-      roadmap:         outputParsed.roadmap         ?? [],
-      objetivo:        selectedObjetivo,
-
-      vision: {
-        niche:    outputParsed.vision?.niche    || industria || 'General',
-        type:     outputParsed.vision?.type     || 'Video',
-        audience: outputParsed.vision?.audience || '—',
-        promise:  outputParsed.vision?.promise  || '—',
-      },
-
-      potentialScore: Math.round((viralScoreFinal + salesScoreFinal) / 2),
-      performanceScenario: viralScoreFinal >= 70 ? 'ALTO POTENCIAL'
-                         : viralScoreFinal >= 45 ? 'POTENCIAL MEDIO'
-                         : 'BAJO POTENCIAL',
-
-      platformScores:    outputParsed.platformScores    ?? null,
-      retentionData:     outputParsed.retentionData     ?? null,
-      retentionCurve:    audienceSimulation
-        ? calcularCurvaRetencionSilicon(audienceSimulation, Math.round(duration))
-        : (outputParsed.retentionCurve ?? null),
-      viewsPrediction:   outputParsed.viewsPrediction   ?? null,
-      firstHourStrategy: outputParsed.firstHourStrategy ?? null,
-      commentTrigger:    outputParsed.commentTrigger    ?? null,
-
-      
-      _hook_gate:         null,
-      _viral_cap:         null,
-      _research_data:     researchData,
-      _video_desc: hookDescripcion,
-      _silicon_summary:   audienceSimulation
-        ? buildSiliconSummary(audienceSimulation, predictionMarket)
-        : null,
-      _prediction_market: predictionMarket ?? null,
-      _eventos_video:     [],
-      _market_state:      marketState,
+      reviewText,
+      hookAnalysis,
+      desarrolloAnalysis,
+      industria,
+      platform,
+      objetivo: selectedObjetivo,
     };
 
     setAiResult(finalResult);
-    setCompletedSteps([]);
     setChatMessages([{
       role: 'bot',
-      text: `Análisis completado. Viral: ${viralScoreFinal}/100 | Ventas: ${salesScoreFinal}/100. ¿Qué sección repasamos primero?`
+      text: 'Ya vi tu video. ¿Sobre qué parte querés que profundicemos?'
     }]);
 
     setAnalysisProgress(100);
     await saveAnalysisToHistory(finalResult, 'video');
-    await trackPrediction(finalResult);
     setTimeout(() => setStep('results'), 500);
 
   } catch (err) {
-    console.error('Error en análisis profundo:', err);
-    alert(`❌ Error al procesar reporte: ${err.message || err}`);
+    console.error('Error en análisis:', err);
+    alert(`❌ Error al procesar el video: ${err.message || err}`);
     setStep('upload');
 
   } finally {
-    // ──────────────────────────────────────────────────────────
-    // CLEANUP — siempre se ejecuta, haya error o no.
-    // Orden: primero el cache, luego el archivo, luego Supabase.
-    // ──────────────────────────────────────────────────────────
-
-    // 1. Eliminar el context cache de Gemini
-    if (cacheName) {
+    if (fileName) {
       try {
-        await supabase.functions.invoke('gemini-proxy', {
-          body: { deleteCacheOnly: true, cacheName }
-        });
-        console.log('[VIRAX] ✅ Context cache eliminado:', cacheName);
+        await supabase.functions.invoke('gemini-proxy', { body: { deleteOnly: true, fileName } });
       } catch (e) {
-        console.warn('[VIRAX] No se pudo eliminar el cache:', e);
+        console.warn('No se pudo eliminar el archivo de Gemini File API:', e);
       }
     }
-
-    // 2. Eliminar el archivo de Gemini File API
-    if (cacheFileName) {
-      try {
-        await supabase.functions.invoke('gemini-proxy', {
-          body: { deleteOnly: true, fileName: cacheFileName }
-        });
-        console.log('[VIRAX] ✅ Archivo eliminado de Google File API:', cacheFileName);
-      } catch (e) {
-        console.warn('[VIRAX] No se pudo eliminar el archivo de File API:', e);
-      }
-    }
-
-    // 3. Eliminar el video de Supabase Storage
     try {
       await supabase.storage.from('videos').remove([storagePath]);
-      console.log('[VIRAX] ✅ Video eliminado de Supabase Storage');
     } catch (e) {
-      console.warn('[VIRAX] No se pudo eliminar el video de Supabase:', e);
+      console.warn('No se pudo eliminar el video de Supabase:', e);
     }
   }
 };
@@ -1327,7 +898,6 @@ GUION A ANALIZAR:
 
     setAnalysisProgress(100);
     await saveAnalysisToHistory(finalResult, 'script');
-    await trackPrediction(finalResult);
     setTimeout(() => setStep('results'), 500);
 
   } catch (err) {
@@ -1349,89 +919,14 @@ const sendMessage = async () => {
   try {
     // ── Contexto enriquecido para el chat ──
     const aiContext = {
-  // ── SCORES FINALES ──
-  vision:           aiResult?.vision,
-  salesScore:       aiResult?.salesScore,
-  viralScore:       aiResult?.viralScore,
-  potentialScore:   aiResult?.potentialScore,
-  hookDNA:          aiResult?.hookDNA,
-  honestVerdict:    aiResult?.honestVerdict,
-  roadmap:          aiResult?.roadmap,
-  steppsScore:      aiResult?.steppsScore,
-  retentionData:    aiResult?.retentionData,
-  platformScores:   aiResult?.platformScores,
-  scrollStopScore:  aiResult?.scrollStopScore,
-  commentTrigger:   aiResult?.commentTrigger,
-  viewsPrediction:  aiResult?.viewsPrediction,
-  firstHourStrategy: aiResult?.firstHourStrategy,
-
-  // ── BRAIN 0: OBSERVADOR ──
-  // Lo que Gemini vio y describió en CALL 0
-  observador_descripcion: aiResult?._video_desc,
-
-  // ── BRAIN 1.5: RESEARCH ──
-  // Qué encontró sobre el nicho en 2026
-  research_nicho: aiResult?._research_data,
-
-  // ── BRAIN 1B: SILICON AUDIENCE ──
-  // Qué decidió cada perfil y por qué
-  silicon_audience: aiResult?._silicon_summary
-    ? {
-        tasa_completado:      aiResult._silicon_summary.tasa_completado,
-        tasa_compartido:      aiResult._silicon_summary.tasa_compartido,
-        segundo_peligroso:    aiResult._silicon_summary.segundo_peligroso,
-        evento_retiene:       aiResult._silicon_summary.evento_retiene,
-        evento_expulsa:       aiResult._silicon_summary.evento_expulsa,
-        patron_abandono:      aiResult._silicon_summary.patron_abandono,
-        patron_retencion:     aiResult._silicon_summary.patron_retencion,
-        detalle_por_perfil:   aiResult._silicon_summary.detalle_perfiles?.map(p => ({
-          perfil:        p.perfil_id,
-          decision:      p.decision_final,
-          completo:      p.completo,
-          compartio:     p.compartio,
-          razon:         p.razon_final,
-          momentos_clave: p.eventos_atencion,
-        })),
-      }
-    : null,
-
-  // ── BRAIN 2: PREDICTION MARKET ──
-  // La apuesta calibrada y la retención por perfil
-  prediction_market: aiResult?._prediction_market
-    ? {
-        probabilidad_viral:   aiResult._prediction_market.probabilidad_viral,
-        viralScore_sugerido:  aiResult._prediction_market.viralScore,
-        salesScore_sugerido:  aiResult._prediction_market.salesScore,
-        confianza:            aiResult._prediction_market.confianza_prediccion,
-        razon_principal:      aiResult._prediction_market.razon_principal_score,
-        retencion_por_perfil: aiResult._prediction_market.retencion_por_perfil,
-      }
-    : null,
-
-  // ── JS DETERMINÍSTICO ──
-  // Qué calculó el código sin IA
-  hook_gate: aiResult?._hook_gate
-    ? {
-        passed:       aiResult._hook_gate.passed,
-        penaltyLevel: aiResult._hook_gate.penaltyLevel,
-        razon:        aiResult._hook_gate.reason,
-      }
-    : null,
-
-  viral_cap: aiResult?._viral_cap
-    ? {
-        cap:    aiResult._viral_cap.cap,
-        razon:  aiResult._viral_cap.reason,
-      }
-    : null,
-
-  // ── EVENTOS DEL VIDEO ──
-  // Lo que el Observador estructuró para Silicon Audience
-  eventos_video: aiResult?._eventos_video,
-
-  // ── MARKET STATE ──
-  market_state: aiResult?._market_state,
+  reviewText: aiResult?.reviewText,
+  hookAnalysis: aiResult?.hookAnalysis,
+  desarrolloAnalysis: aiResult?.desarrolloAnalysis,
+  industria: aiResult?.industria,
+  platform: aiResult?.platform,
+  objetivo: aiResult?.objetivo,
 };
+
    const systemPrompt = `
 Sos VIRAX Coach — un consultor de contenido que ayuda a creadores a mejorar
 videos concretos, con acceso completo a todos los brains del sistema VIRAX.
@@ -2169,914 +1664,30 @@ ${currentMessage.text}
 
 {/* PHASE SCORES */}
 <div className="space-y-3">
-  {aiResult.salesScore && aiResult.viralScore && (() => {
-    const primero = objetivo === 'viral' ? aiResult.viralScore : aiResult.salesScore;
-    const segundo = objetivo === 'viral' ? aiResult.salesScore : aiResult.viralScore;
-
-    const colorPrimero = (() => {
-      const s = primero.score;
-      if (s >= 70) return {
-        aurora: 'rgba(120,80,255,0.18), rgba(80,50,200,0.08), rgba(200,80,255,0.12)',
-        topEdge: 'rgba(180,140,255,0.8)',
-        border: 'rgba(130,100,255,0.25)',
-        bg: '#0d0b1e',
-        chip: { bg: 'rgba(160,120,255,0.15)', border: 'rgba(160,120,255,0.3)', color: '#c4a8ff', dot: '#a78bfa' },
-        fill: 'linear-gradient(90deg,#7c3aed,#a855f7,#e879f9)',
-        fillGlow: 'rgba(168,85,247,0.5)',
-        dotGlow: 'rgba(232,121,249,0.8)',
-        dotColor: '#e879f9',
-        accionBg: 'rgba(120,80,255,0.12)',
-        accionBorder: 'rgba(130,90,255,0.25)',
-        accionColor: 'rgba(210,190,255,0.8)',
-        arrowColor: '#a78bfa',
-        titleColor: '#f0eaff',
-        verdictColor: 'rgba(200,180,255,0.6)',
-        arc1: '#7c3aed', arc2: '#e879f9',
-        numColor: '#e0d4ff',
-        denColor: 'rgba(180,160,255,0.5)',
-      };
-      if (s >= 45) return {
-        aurora: 'rgba(200,160,30,0.15), rgba(180,120,20,0.06), rgba(240,180,30,0.10)',
-        topEdge: 'rgba(255,210,80,0.7)',
-        border: 'rgba(200,160,40,0.25)',
-        bg: '#131008',
-        chip: { bg: 'rgba(200,160,40,0.15)', border: 'rgba(200,160,40,0.3)', color: '#fcd34d', dot: '#fbbf24' },
-        fill: 'linear-gradient(90deg,#b45309,#d97706,#fbbf24)',
-        fillGlow: 'rgba(251,191,36,0.4)',
-        dotGlow: 'rgba(252,211,77,0.8)',
-        dotColor: '#fcd34d',
-        accionBg: 'rgba(180,130,20,0.12)',
-        accionBorder: 'rgba(200,160,40,0.25)',
-        accionColor: 'rgba(255,230,160,0.8)',
-        arrowColor: '#fbbf24',
-        titleColor: '#fff8e0',
-        verdictColor: 'rgba(255,220,140,0.6)',
-        arc1: '#b45309', arc2: '#fbbf24',
-        numColor: '#fff0c0',
-        denColor: 'rgba(255,200,80,0.5)',
-      };
-      return {
-        aurora: 'rgba(200,40,40,0.15), rgba(160,20,20,0.06), rgba(220,60,60,0.10)',
-        topEdge: 'rgba(255,120,120,0.7)',
-        border: 'rgba(200,60,60,0.25)',
-        bg: '#130808',
-        chip: { bg: 'rgba(200,60,60,0.15)', border: 'rgba(200,60,60,0.3)', color: '#fca5a5', dot: '#f87171' },
-        fill: 'linear-gradient(90deg,#991b1b,#dc2626,#f87171)',
-        fillGlow: 'rgba(248,113,113,0.4)',
-        dotGlow: 'rgba(252,165,165,0.8)',
-        dotColor: '#fca5a5',
-        accionBg: 'rgba(180,30,30,0.12)',
-        accionBorder: 'rgba(200,60,60,0.25)',
-        accionColor: 'rgba(255,190,190,0.8)',
-        arrowColor: '#f87171',
-        titleColor: '#ffe0e0',
-        verdictColor: 'rgba(255,180,180,0.6)',
-        arc1: '#991b1b', arc2: '#f87171',
-        numColor: '#ffe0e0',
-        denColor: 'rgba(255,150,150,0.5)',
-      };
-    })();
-
-    const colorSegundo = segundo.score >= 70
-      ? { fill: 'linear-gradient(90deg,#16a34a,#22c55e,#4ade80)', glow: 'rgba(74,222,128,0.4)', dot: '#4ade80', dotGlow: 'rgba(74,222,128,0.7)', bg: '#0a1a12', border: 'rgba(40,180,100,0.2)', topEdge: 'rgba(80,220,130,0.6)', numColor: '#4ade80', titleColor: '#d4f5e4', subColor: 'rgba(120,220,160,0.5)', hintColor: 'rgba(120,220,160,0.5)', accionColor: 'rgba(140,240,180,0.65)', badgeBg: 'rgba(30,160,80,0.15)', badgeBorder: 'rgba(50,200,100,0.3)', aurora: 'rgba(30,180,80,0.1), rgba(20,140,60,0.04), rgba(50,200,100,0.08)' }
-      : segundo.score >= 45
-      ? { fill: 'linear-gradient(90deg,#b45309,#d97706,#fbbf24)', glow: 'rgba(251,191,36,0.4)', dot: '#fcd34d', dotGlow: 'rgba(252,211,77,0.7)', bg: '#131008', border: 'rgba(200,160,40,0.2)', topEdge: 'rgba(255,210,80,0.6)', numColor: '#fcd34d', titleColor: '#fff8e0', subColor: 'rgba(255,210,120,0.5)', hintColor: 'rgba(255,210,120,0.5)', accionColor: 'rgba(255,230,160,0.65)', badgeBg: 'rgba(180,130,20,0.15)', badgeBorder: 'rgba(200,160,40,0.3)', aurora: 'rgba(200,160,30,0.1), rgba(180,120,20,0.04), rgba(240,180,30,0.08)' }
-      : { fill: 'linear-gradient(90deg,#991b1b,#dc2626,#f87171)', glow: 'rgba(248,113,113,0.4)', dot: '#fca5a5', dotGlow: 'rgba(252,165,165,0.7)', bg: '#130808', border: 'rgba(200,60,60,0.2)', topEdge: 'rgba(255,120,120,0.6)', numColor: '#fca5a5', titleColor: '#ffe0e0', subColor: 'rgba(255,150,150,0.5)', hintColor: 'rgba(255,150,150,0.5)', accionColor: 'rgba(255,190,190,0.65)', badgeBg: 'rgba(180,30,30,0.15)', badgeBorder: 'rgba(200,60,60,0.3)', aurora: 'rgba(200,40,40,0.1), rgba(160,20,20,0.04), rgba(220,60,60,0.08)' };
-
-    return (
-      <div className="space-y-3">
-        <style>{`
-          @keyframes virax-aurora {
-            0%   { background-position: 0% 50%; }
-            50%  { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-          }
-          @keyframes virax-shimmer-sweep {
-            0%   { transform: translateX(-100%) skewX(-15deg); opacity: 0; }
-            40%  { opacity: 1; }
-            100% { transform: translateX(300%) skewX(-15deg); opacity: 0; }
-          }
-          @keyframes virax-pulse-ring {
-            0%   { transform: scale(1);   opacity: 0.5; }
-            100% { transform: scale(1.7); opacity: 0; }
-          }
-          @keyframes virax-bar-enter {
-            from { width: 0; }
-          }
-          @keyframes virax-float-dot {
-            0%, 100% { transform: translateY(0px); }
-            50%       { transform: translateY(-3px); }
-          }
-          .virax-card-primary {
-            position: relative;
-            border-radius: 22px;
-            padding: 20px 20px 18px;
-            overflow: hidden;
-          }
-          .virax-card-primary .virax-aurora-layer {
-            position: absolute;
-            inset: 0;
-            background-size: 300% 300%;
-            animation: virax-aurora 6s ease infinite;
-          }
-          .virax-card-primary .virax-top-edge {
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1px;
-          }
-          .virax-shimmer-wrap {
-            position: absolute;
-            inset: 0;
-            border-radius: 22px;
-            overflow: hidden;
-            pointer-events: none;
-          }
-          .virax-shimmer-wrap::after {
-            content: '';
-            position: absolute;
-            top: -100%; left: -60%;
-            width: 40%; height: 300%;
-            background: linear-gradient(105deg, transparent, rgba(255,255,255,0.06), transparent);
-            animation: virax-shimmer-sweep 4.5s ease-in-out 1.5s infinite;
-          }
-          .virax-inner { position: relative; z-index: 1; }
-          .virax-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 3px 10px;
-            border-radius: 100px;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-bottom: 12px;
-          }
-          .virax-chip-dot {
-            width: 5px; height: 5px;
-            border-radius: 50%;
-            animation: virax-float-dot 2s ease-in-out infinite;
-          }
-          .virax-track {
-            height: 5px;
-            border-radius: 100px;
-            background: rgba(255,255,255,0.07);
-            overflow: visible;
-            position: relative;
-          }
-          .virax-track-fill {
-            height: 100%;
-            border-radius: 100px;
-            position: relative;
-            animation: virax-bar-enter 1s cubic-bezier(0.22,1,0.36,1) forwards;
-          }
-          .virax-card-secondary {
-            position: relative;
-            border-radius: 18px;
-            padding: 16px 18px;
-            overflow: hidden;
-          }
-          .virax-card-secondary .virax-aurora-layer {
-            position: absolute;
-            inset: 0;
-            background-size: 300% 300%;
-            animation: virax-aurora 8s ease 2s infinite;
-          }
-          .virax-card-secondary .virax-top-edge {
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1px;
-          }
-          .virax-track-secondary {
-            height: 4px;
-            border-radius: 100px;
-            background: rgba(255,255,255,0.06);
-            overflow: visible;
-            position: relative;
-            z-index: 1;
-          }
-          .virax-track-fill-secondary {
-            height: 100%;
-            border-radius: 100px;
-            position: relative;
-            animation: virax-bar-enter 1.1s 0.2s cubic-bezier(0.22,1,0.36,1) both;
-          }
-          .virax-card-combined {
-            position: relative;
-            border-radius: 16px;
-            padding: 13px 18px;
-            overflow: hidden;
-            background: #0e0e14;
-            border: 0.5px solid rgba(255,255,255,0.08);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-          }
-          .virax-card-combined::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, rgba(120,80,255,0.06) 0%, rgba(30,160,80,0.04) 100%);
-          }
-          .virax-ring {
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            border: 1px solid rgba(168,85,247,0.3);
-            animation: virax-pulse-ring 2.5s ease-out infinite;
-          }
-          .virax-ring:nth-child(2) { animation-delay: 0.8s; }
-          .virax-gradient-text {
-            background: linear-gradient(135deg, #a855f7, #4ade80);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-          }
-        `}</style>
-
-        {/* ── CARD PRIMARIA ── */}
-        <div
-          className="virax-card-primary"
-          style={{ background: colorPrimero.bg, border: `1px solid ${colorPrimero.border}` }}
-        >
-          <div
-            className="virax-aurora-layer"
-            style={{ background: `linear-gradient(135deg, ${colorPrimero.aurora})` }}
-          />
-          <div
-            className="virax-top-edge"
-            style={{ background: `linear-gradient(90deg, transparent, ${colorPrimero.topEdge}, transparent)` }}
-          />
-          <div className="virax-shimmer-wrap" />
-          <div className="virax-inner">
-            <div
-              className="virax-chip"
-              style={{ background: colorPrimero.chip.bg, border: `0.5px solid ${colorPrimero.chip.border}`, color: colorPrimero.chip.color }}
-            >
-              <span className="virax-chip-dot" style={{ background: colorPrimero.chip.dot }} />
-              {objetivo === 'ambas' ? 'Objetivo Principal' : 'Tu Objetivo'}
-            </div>
-
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-[18px] font-black italic tracking-tight leading-tight" style={{ color: colorPrimero.titleColor }}>
-                  {primero.titulo}
-                </p>
-                <p className="text-[12px] font-bold italic mt-1 leading-relaxed max-w-[185px]" style={{ color: colorPrimero.verdictColor }}>
-                  {primero.verdict}
-                </p>
-              </div>
-              <div className="relative flex-shrink-0" style={{ width: 62, height: 62 }}>
-                <canvas
-                  id={`virax-arc-${objetivo}`}
-                  width={62}
-                  height={62}
-                  ref={(canvas) => {
-                    if (!canvas) return;
-                    const ctx = canvas.getContext('2d');
-                    const cx = 31, cy = 31, r = 26, lw = 4;
-                    const start = -Math.PI / 2;
-                    const end = start + (2 * Math.PI * primero.score / 100);
-                    ctx.clearRect(0, 0, 62, 62);
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, r, 0, 2 * Math.PI);
-                    ctx.strokeStyle = 'rgba(255,255,255,0.07)';
-                    ctx.lineWidth = lw;
-                    ctx.stroke();
-                    const grad = ctx.createLinearGradient(5, 5, 57, 57);
-                    grad.addColorStop(0, colorPrimero.arc1);
-                    grad.addColorStop(1, colorPrimero.arc2);
-                    ctx.beginPath();
-                    ctx.arc(cx, cy, r, start, end);
-                    ctx.strokeStyle = grad;
-                    ctx.lineWidth = lw;
-                    ctx.lineCap = 'round';
-                    ctx.shadowColor = colorPrimero.arc2;
-                    ctx.shadowBlur = 8;
-                    ctx.stroke();
-                  }}
-                  style={{ position: 'absolute', inset: 0 }}
-                />
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-[22px] font-black italic leading-none" style={{ color: colorPrimero.numColor }}>
-                    {primero.score}
-                  </span>
-                  <span className="text-[10px] font-bold" style={{ color: colorPrimero.denColor }}>/100</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-3">
-              <div className="flex justify-between mb-[5px]">
-                <span className="text-[10px] font-black uppercase tracking-[0.07em]" style={{ color: colorPrimero.verdictColor }}>Potencia</span>
-                <span className="text-[10px] font-black uppercase tracking-[0.07em]" style={{ color: colorPrimero.verdictColor }}>{primero.score}%</span>
-              </div>
-              <div className="virax-track">
-                <div
-                  className="virax-track-fill"
-                  style={{
-                    width: `${primero.score}%`,
-                    background: colorPrimero.fill,
-                    boxShadow: `0 0 12px ${colorPrimero.fillGlow}`,
-                  }}
-                >
-                  <div style={{
-                    position: 'absolute', right: -1, top: '50%', transform: 'translateY(-50%)',
-                    width: 9, height: 9, borderRadius: '50%',
-                    background: colorPrimero.dotColor,
-                    boxShadow: `0 0 8px ${colorPrimero.dotGlow}, 0 0 16px ${colorPrimero.fillGlow}`,
-                  }} />
-                </div>
-              </div>
-            </div>
-
-            {primero.accion_clave && (
-              <div
-                className="flex items-start gap-2 rounded-[14px] p-[10px_13px] text-[12px] leading-relaxed"
-                style={{ background: colorPrimero.accionBg, border: `0.5px solid ${colorPrimero.accionBorder}`, color: colorPrimero.accionColor }}
-              >
-                <span className="flex-shrink-0 text-[14px] mt-[1px]" style={{ color: colorPrimero.arrowColor }}>→</span>
-                {primero.accion_clave}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* ── CARD SECUNDARIA ── */}
-        <div
-          className="virax-card-secondary"
-          style={{ background: colorSegundo.bg, border: `1px solid ${colorSegundo.border}` }}
-        >
-          <div
-            className="virax-aurora-layer"
-            style={{ background: `linear-gradient(135deg, ${colorSegundo.aurora})` }}
-          />
-          <div
-            className="virax-top-edge"
-            style={{ background: `linear-gradient(90deg, transparent, ${colorSegundo.topEdge}, transparent)` }}
-          />
-          <div className="flex items-center justify-between gap-3 mb-[10px]" style={{ position: 'relative', zIndex: 1 }}>
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.07em] mb-[3px]" style={{ color: colorSegundo.subColor }}>
-                También medimos
-              </p>
-              <p className="text-[15px] font-black italic tracking-tight" style={{ color: colorSegundo.titleColor }}>
-                {segundo.titulo}
-              </p>
-            </div>
-            <div
-              className="flex items-baseline gap-[2px] px-3 py-[5px] rounded-full flex-shrink-0"
-              style={{ background: colorSegundo.badgeBg, border: `0.5px solid ${colorSegundo.badgeBorder}` }}
-            >
-              <span className="text-[20px] font-black italic leading-none" style={{ color: colorSegundo.numColor }}>{segundo.score}</span>
-              <span className="text-[10px] font-bold" style={{ color: colorSegundo.subColor }}>/100</span>
-            </div>
-          </div>
-          <div className="virax-track-secondary">
-            <div
-              className="virax-track-fill-secondary"
-              style={{
-                width: `${segundo.score}%`,
-                background: colorSegundo.fill,
-                boxShadow: `0 0 10px ${colorSegundo.glow}`,
-              }}
-            >
-              <div style={{
-                position: 'absolute', right: -1, top: '50%', transform: 'translateY(-50%)',
-                width: 8, height: 8, borderRadius: '50%',
-                background: colorSegundo.dot,
-                boxShadow: `0 0 8px ${colorSegundo.dotGlow}`,
-              }} />
-            </div>
-          </div>
-          {segundo.verdict && (
-            <p className="text-[11px] font-bold italic mt-2 leading-relaxed" style={{ color: colorSegundo.hintColor, position: 'relative', zIndex: 1 }}>
-              {segundo.verdict}
-            </p>
-          )}
-          {segundo.accion_clave && (
-            <p className="text-[11px] font-bold italic mt-[5px]" style={{ color: colorSegundo.accionColor, position: 'relative', zIndex: 1 }}>
-              → {segundo.accion_clave}
-            </p>
-          )}
-        </div>
-
-        {/* ── CARD COMBINADA ── */}
-        <div className="virax-card-combined">
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <p className="text-[10px] font-black uppercase tracking-[0.08em]" style={{ color: 'rgba(200,200,220,0.4)' }}>
-              Score combinado
-            </p>
-            <p className="text-[11px] font-bold italic mt-[2px]" style={{ color: 'rgba(200,200,220,0.25)', letterSpacing: '0.04em' }}>
-              {aiResult.performanceScenario}
-            </p>
-          </div>
-          <div className="flex items-baseline gap-[3px]" style={{ position: 'relative', zIndex: 1 }}>
-            <span className="text-[30px] font-black italic leading-none virax-gradient-text">
-              {aiResult.potentialScore}
-            </span>
-            <span className="text-[13px] font-bold" style={{ color: 'rgba(200,200,220,0.25)' }}>/100</span>
-          </div>
-          <div style={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', width: 36, height: 36, pointerEvents: 'none' }}>
-            <div className="virax-ring" />
-            <div className="virax-ring" />
-          </div>
-        </div>
-
-      
-        {/* ── FACTORES EXTERNOS ── */}
-        <ShinyCard tilt={tilt} className="bg-yellow-500/[0.03] border border-yellow-500/20 rounded-[2.5rem] p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <span className="text-yellow-400 text-base">⚠️</span>
-            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-yellow-400">
-              Este score evalúa el video, no tu cuenta
-            </p>
-          </div>
-          <p className="text-xs font-bold italic text-slate-400 mb-5 leading-relaxed">
-            El contenido es solo una parte de la viralidad (Próximas actuzalizaciones, se integra Investigación de tu contenido para una mayor precisión.). Estos 7 factores externos
-            pueden reducir el potencial real hasta un <span className="text-yellow-300 font-black">40%</span> si no los tenés en cuenta:
-          </p>
-          <div className="space-y-3">
-            {[
-              {
-                icon: '',
-                titulo: 'Audio sin tendencia',
-                desc: '¿Usaste un sonido que está de moda ahora? Si no, el algoritmo te muestra a menos gente aunque el video sea muy bueno.'
-              },
-              {
-                icon: '',
-                titulo: 'Engagement en la primera hora',
-                desc: 'Likes, comentarios y guardados en los primeros 60 minutos le dicen al algoritmo que el video vale la pena. Sin eso, se frena solo.'
-              },
-              {
-                icon: '',
-                titulo: 'Falta de consistencia',
-                desc: 'Las cuentas que postean regularmente tienen más alcance porque el algoritmo ya las conoce y confía en ellas.'
-              },
-              {
-                icon: '',
-                titulo: 'Fatiga de formato',
-                desc: 'Si todos tus videos se ven igual, tu audiencia empieza a ignorarlos. El algoritmo lo nota y deja de mostrarte. Cambiar el estilo de vez en cuando resetea la atención.'
-              },
-              {
-                icon: '',
-                titulo: 'Shadowban silencioso',
-                desc: 'Tu cuenta puede estar penalizada sin que te avisaron. Señales: tus videos dejaron de llegar a gente nueva de golpe. Causas comunes: hashtags prohibidos, música con copyright, o postear demasiado seguido.'
-              },
-              {
-                icon: '',
-                titulo: 'Hashtags mal usados',
-                desc: 'Los hashtags incorrectos o prohibidos no solo no ayudan, te penalizan. Usar siempre los mismos activa filtros de spam. Menos hashtags, más relevantes, es mejor.'
-              },
-              {
-                icon: '',
-                titulo: 'Audiencia equivocada',
-                desc: 'Si tu cuenta mezcla temas muy distintos, el algoritmo no sabe a quién mostrarte y te distribuye a gente que no le interesa tu contenido. Eso baja la retención y frena todo.'
-              },
-            ].map((factor, i) => (
-              <div key={i} className="flex items-start gap-3 bg-black/30 border border-white/5 rounded-[1.5rem] p-4">
-                <span className="text-lg mt-0.5 shrink-0">{factor.icon}</span>
-                <div>
-                  <p className="text-xs font-black italic text-white mb-0.5">{factor.titulo}</p>
-                  <p className="text-[11px] font-bold italic text-slate-500 leading-relaxed">{factor.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </ShinyCard>
-
-      </div>
-    );
-  })()}
-        {/* SCROLL STOP SCORE */}
-{aiResult.scrollStopScore && (
-  <ShinyCard tilt={tilt} className={`rounded-[2rem] border p-5 ${
-    aiResult.scrollStopScore.score >= 70
-      ? 'border-green-500/30 bg-green-500/5'
-      : aiResult.scrollStopScore.score >= 45
-      ? 'border-yellow-500/30 bg-yellow-500/5'
-      : 'border-red-500/40 bg-red-500/[0.08]'
-  }`}>
-    <div className="flex items-center justify-between mb-3">
-      <div>
-        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500 mb-1">Scroll-Stop Power</p>
-        <p className="text-[10px] font-bold italic text-slate-400">Frame 0 Analysis</p>
-      </div>
-      <span className={`text-3xl font-black italic tabular-nums ${
-        aiResult.scrollStopScore.score >= 70 ? 'text-green-400' :
-        aiResult.scrollStopScore.score >= 45 ? 'text-yellow-400' : 'text-red-400'
-      }`}>{aiResult.scrollStopScore.score}%</span>
-    </div>
-    <div className="grid grid-cols-3 gap-2 mb-3">
-      {[
-        { label: 'Cara', value: aiResult.scrollStopScore.faceDetected, type: 'bool' },
-        { label: 'Texto', value: aiResult.scrollStopScore.textOnScreen, type: 'bool' },
-        { label: 'Contraste', value: aiResult.scrollStopScore.contrastLevel, type: 'text' },
-      ].map((item, i) => (
-        <div key={i} className="bg-black/40 rounded-[1rem] p-2.5 text-center">
-          <p className="text-[8px] font-black uppercase tracking-wider text-slate-500 mb-1">{item.label}</p>
-          {item.type === 'bool' ? (
-            <span className={`text-xs font-black ${item.value ? 'text-green-400' : 'text-red-400'}`}>
-              {item.value ? '✓ SÍ' : '✗ NO'}
-            </span>
-          ) : (
-            <span className={`text-xs font-black capitalize ${
-              item.value === 'alto' ? 'text-green-400' :
-              item.value === 'medio' ? 'text-yellow-400' : 'text-red-400'
-            }`}>{item.value}</span>
-          )}
-        </div>
-      ))}
-    </div>
-    {aiResult.scrollStopScore.emotionVisible && aiResult.scrollStopScore.emotionVisible !== 'ninguna' && (
-      <p className="text-[10px] font-bold italic text-slate-400">
-        Emoción detectada: <span className="text-white">{aiResult.scrollStopScore.emotionVisible}</span>
-        {aiResult.scrollStopScore.emotionIntensity && ` (intensidad ${aiResult.scrollStopScore.emotionIntensity}/10)`}
-      </p>
-    )}
-    <p className="text-[10px] font-bold italic text-slate-500 mt-1">{aiResult.scrollStopScore.verdict}</p>
-  </ShinyCard>
-)}
-
-        {/* Tarjetas de fases */}
-        {aiResult.phaseScores && Object.values(aiResult.phaseScores).map((phase, i) => {
-          if (!phase) return null;
-          const isCritical = phase.score < 50;
-          return (
-            <ShinyCard key={i} tilt={tilt} className={`rounded-[2rem] border p-5 transition-all ${
-              isCritical
-                ? 'border-red-500/40 bg-red-500/[0.08]'
-                : phase.score >= 75
-                ? 'border-green-500/30 bg-green-500/5'
-                : 'border-white/10 bg-white/[0.02]'
-            }`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  {isCritical && (
-                    <span className="bg-red-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">
-                      CRÍTICO
-                    </span>
-                  )}
-                  <p className={`text-xs font-black uppercase tracking-wider ${isCritical ? 'text-red-400' : 'text-slate-300'}`}>
-                    {phase.label}
-                  </p>
-                </div>
-                <span className={`text-2xl font-black italic tabular-nums ${
-                  isCritical ? 'text-red-400' : phase.score >= 75 ? 'text-green-400' : 'text-yellow-400'
-                }`}>
-                  {phase.score}%
-                </span>
-              </div>
-              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden mb-2">
-                <div
-                  className={`h-full rounded-full transition-all duration-700 ${
-                    isCritical ? 'bg-gradient-to-r from-red-600 to-red-400'
-                    : phase.score >= 75 ? 'bg-gradient-to-r from-green-500 to-emerald-400'
-                    : 'bg-gradient-to-r from-yellow-500 to-amber-400'
-                  }`}
-                  style={{ width: `${phase.score}%` }}
-                />
-              </div>
-              <p className={`text-xs font-bold italic ${isCritical ? 'text-red-300/80' : 'text-slate-400'}`}>
-                {phase.verdict}
-              </p>
-              {isCritical && phase.consequence && (
-                <div className="mt-3 flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-[1rem] p-3">
-                  <span className="text-red-400 text-xs mt-0.5">⚠</span>
-                  <p className="text-red-300 text-[11px] font-bold leading-relaxed">{phase.consequence}</p>
-                </div>
-              )}
-            </ShinyCard>
-          );
-        })}
-
-        {/* Trend context */}
-        {aiResult.trendContext && (
-          <ShinyCard tilt={tilt} className="bg-black/30 border border-white/5 rounded-[2rem] p-5">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-3 h-3 text-green-400" />
-              <p className="text-[9px] font-black uppercase tracking-[0.4em] text-green-400">Tendencias Detectadas</p>
-            </div>
-            <p className="text-xs font-bold italic leading-relaxed text-slate-400">"{aiResult.trendContext}"</p>
-          </ShinyCard>
-        )}
-
-        {/* COMMENT TRIGGER */}
-{aiResult.commentTrigger && (
   <ShinyCard tilt={tilt} className="bg-black/30 border border-white/5 rounded-[2rem] p-5">
-    <div className="flex items-center justify-between mb-3">
-      <div className="flex items-center gap-2">
-        <MessageSquare className="w-3 h-3 text-blue-400" />
-        <p className="text-[9px] font-black uppercase tracking-[0.4em] text-blue-400">Trigger de Comentarios</p>
-      </div>
-      <span className={`text-xl font-black italic tabular-nums ${
-        aiResult.commentTrigger.probability >= 65 ? 'text-green-400' :
-        aiResult.commentTrigger.probability >= 35 ? 'text-yellow-400' : 'text-red-400'
-      }`}>{aiResult.commentTrigger.probability}%</span>
-    </div>
-    <span className="inline-block text-[9px] font-black uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 text-blue-300 px-3 py-1 rounded-full mb-2 capitalize">
-      {aiResult.commentTrigger.triggerType}
-    </span>
-    {aiResult.commentTrigger.suggestedCTA && (
-      <p className="text-[10px] font-bold italic text-slate-400 mt-2">
-        CTA sugerido: <span className="text-white">"{aiResult.commentTrigger.suggestedCTA}"</span>
-      </p>
-    )}
-  </ShinyCard>
-)}
-
-        {/* Veredicto */}
-        <ShinyCard tilt={tilt} className="bg-black/30 border border-white/5 rounded-[2rem] p-5">
-          <div className="flex items-center gap-2 mb-2">
-            <Target className={`w-3 h-3 ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`} />
-            <p className={`text-[9px] font-black uppercase tracking-[0.4em] ${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'}`}>Veredicto</p>
-          </div>
-          <p className="text-xs font-bold italic leading-relaxed text-slate-300">"{aiResult.honestVerdict}"</p>
-        </ShinyCard>
-      </div>
-    </div>
-
-    <div className="lg:col-span-8 space-y-6">
-
-      {/* VIEWS PREDICTION + FIRST HOUR */}
-{(aiResult.viewsPrediction || aiResult.firstHourStrategy) && (
-  <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/10 p-8 rounded-[3.5rem] space-y-6">
-    <div className="flex items-center gap-3">
-      <Users className="text-blue-400 w-5 h-5" />
-      <h3 className="text-xl font-black italic uppercase tracking-tighter">Proyección & Estrategia</h3>
-    </div>
-    
-    {aiResult.viewsPrediction && (
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'Sin viralidad', value: aiResult.viewsPrediction.scenario_low, color: 'text-slate-400', bg: 'bg-white/[0.03] border-white/10' },
-          { label: 'Viralidad mod.', value: aiResult.viewsPrediction.scenario_mid, color: 'text-yellow-400', bg: 'bg-yellow-500/5 border-yellow-500/20' },
-          { label: 'Viral real', value: aiResult.viewsPrediction.scenario_high, color: 'text-green-400', bg: 'bg-green-500/5 border-green-500/20' },
-        ].map((s, i) => (
-          <div key={i} className={`rounded-[1.5rem] p-4 border ${s.bg} text-center`}>
-            <p className="text-[8px] font-black uppercase tracking-wider text-slate-500 mb-1">{s.label}</p>
-            <p className={`text-sm font-black italic ${s.color}`}>{s.value}</p>
-          </div>
-        ))}
-      </div>
-    )}
-    {aiResult.viewsPrediction?.probability_viral && (
-      <p className="text-center text-[10px] font-black uppercase tracking-widest text-slate-500">
-        Probabilidad de viral real: <span className="text-white">{aiResult.viewsPrediction.probability_viral}</span>
-      </p>
-    )}
-
-    {aiResult.firstHourStrategy && (
-      <div className="border-t border-white/5 pt-5 space-y-3">
-        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-blue-400">Estrategia Primera Hora Post-Publicación</p>
-        {[
-          { icon: '🕐', label: 'Horario óptimo', value: aiResult.firstHourStrategy.optimalPostTime },
-          { icon: '⚡', label: 'Acción inmediata', value: aiResult.firstHourStrategy.firstActionAfterPost },
-          { icon: '💬', label: 'Primer comentario', value: `"${aiResult.firstHourStrategy.commentSeed}"` },
-          { icon: '🚀', label: 'Boost engagement', value: aiResult.firstHourStrategy.engagementBoost },
-        ].map((item, i) => (
-          <div key={i} className="flex items-start gap-3 bg-black/30 rounded-[1.5rem] p-4 border border-white/5">
-            <span className="text-base mt-0.5">{item.icon}</span>
-            <div>
-              <p className="text-[9px] font-black uppercase tracking-wider text-slate-500 mb-0.5">{item.label}</p>
-              <p className="text-xs font-bold italic text-slate-300">{item.value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-    )}
-  </ShinyCard>  //potentialScore  //AX
-)}
-
-      {/* PLATFORM SCORES */}
-      {aiResult.platformScores && (
-        <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/10 p-10 rounded-[4rem] space-y-6">
-          <div className="flex items-center gap-4">
-            <TrendingUp className="text-green-400" />
-            <h3 className="text-2xl font-black italic uppercase tracking-tighter">Score por Plataforma</h3>
-          </div>
-          <div className="space-y-4">
-            {[
-              { key: 'tiktok',  label: 'TikTok',          emoji: '🎵' },
-              { key: 'reels',   label: 'Instagram Reels',  emoji: '📸' },
-              { key: 'shorts',  label: 'YouTube Shorts',   emoji: '▶️' },
-            ].map(({ key, label, emoji }) => {
-              const p = aiResult.platformScores[key];
-              if (!p) return null;
-              return (
-                <div key={key} className="bg-black/30 rounded-[2rem] p-6 border border-white/5">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <span className="text-xl">{emoji}</span>
-                      <div>
-                        <p className="font-black italic text-white text-sm">{label}</p>
-                        <p className="text-slate-500 text-[10px] font-bold uppercase tracking-wider">{p.verdict}</p>
-                      </div>
-                    </div>
-                    <span className={`text-2xl font-black italic tabular-nums ${platformColors[key]}`}>
-                      {p.score}%
-                    </span>
-                  </div>
-                  <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden mb-3">
-                    <div
-                      className={`h-full rounded-full transition-all duration-700 ${
-                        key === 'tiktok' ? 'bg-gradient-to-r from-pink-500 to-red-500' :
-                        key === 'reels'  ? 'bg-gradient-to-r from-purple-500 to-pink-500' :
-                        'bg-gradient-to-r from-red-500 to-orange-500'
-                      }`}
-                      style={{ width: `${p.score}%` }}
-                    />
-                  </div>
-                  <p className="text-slate-400 text-xs font-bold italic">💡 {p.topTip}</p>
-                </div>
-              );
-            })}
-          </div>
-        </ShinyCard> //Score general 
-      )}
-
-      {/* HOOK DNA */}
-{aiResult.hookDNA && (
-  <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/10 p-8 rounded-[3.5rem]">
-    <div className="flex items-center gap-3 mb-6">
-      <div className="bg-gradient-to-br from-orange-500 to-red-600 p-2 rounded-xl">
-        <Zap className="w-4 h-4 text-white" fill="white" />
-      </div>
-      <h3 className="text-xl font-black italic uppercase tracking-tighter">Hook DNA</h3>
-      <span className={`ml-auto text-2xl font-black italic tabular-nums ${
-        aiResult.hookDNA.strength >= 70 ? 'text-green-400' :
-        aiResult.hookDNA.strength >= 45 ? 'text-yellow-400' : 'text-red-400'
-      }`}>{aiResult.hookDNA.strength}%</span>
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
-      <div className="bg-black/40 rounded-[1.5rem] p-4 border border-white/5">
-        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500 mb-2">Patrón Detectado</p>
-        <p className="text-sm font-black italic text-white capitalize">{aiResult.hookDNA.pattern}</p>
-      </div>
-      <div className="bg-black/40 rounded-[1.5rem] p-4 border border-white/5">
-        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500 mb-2">Elemento Faltante</p>
-        <p className="text-sm font-bold italic text-orange-300">{aiResult.hookDNA.missingElement}</p>
-      </div>
-    </div>
-    {aiResult.hookDNA.optimizedHook && (
-      <div className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-[1.5rem] p-5">
-        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-orange-400 mb-2">✦ Hook Optimizado por REDXAX</p>
-        <p className="text-sm font-bold italic text-white leading-relaxed">"{aiResult.hookDNA.optimizedHook}"</p>
-      </div>
-    )}  
-  </ShinyCard>
-)}      
-
-{/* STEPPS VIRAL COEFFICIENT */}
-{aiResult.steppsScore && (
-  <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/10 p-8 rounded-[3.5rem]">
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-3">
-        <BrainCircuit className="text-indigo-400 w-5 h-5" />
-        <h3 className="text-xl font-black italic uppercase tracking-tighter">STEPPS Score</h3>
-        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 ml-1">Wharton Framework</span>
-      </div>
-      <div className="text-right">
-        <span className={`text-3xl font-black italic tabular-nums ${
-          aiResult.steppsScore.viralCoefficient >= 7.5 ? 'text-green-400' :
-          aiResult.steppsScore.viralCoefficient >= 5 ? 'text-yellow-400' : 'text-red-400'
-        }`}>{aiResult.steppsScore.viralCoefficient?.toFixed(1)}</span>
-        <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">/10.0</p>
-      </div>
-    </div>
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-5">
-      {[
-        { key: 'socialCurrency', label: 'Social Currency', icon: '💎' },
-        { key: 'triggers', label: 'Triggers', icon: '⚡' },
-        { key: 'emotion', label: 'Emoción', icon: '🔥' },
-        { key: 'public', label: 'Público', icon: '👁' },
-        { key: 'practicalValue', label: 'Valor Práctico', icon: '🛠' },
-        { key: 'stories', label: 'Narrativa', icon: '📖' },
-      ].map(({ key, label, icon }) => {
-        const val = aiResult.steppsScore[key];
-        return (
-          <div key={key} className="bg-black/40 rounded-[1.5rem] p-3 border border-white/5">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm">{icon}</span>
-              <span className={`text-lg font-black italic tabular-nums ${
-                val >= 7 ? 'text-green-400' : val >= 5 ? 'text-yellow-400' : 'text-red-400'
-              }`}>{val}</span>
-            </div>
-            <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden mb-1.5">
-              <div className={`h-full rounded-full ${
-                val >= 7 ? 'bg-green-400' : val >= 5 ? 'bg-yellow-400' : 'bg-red-400'
-              }`} style={{ width: `${val * 10}%` }} />
-            </div>
-            <p className="text-[9px] font-black uppercase tracking-wider text-slate-500">{label}</p>
-          </div>
-        );
-      })}
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      <div className="bg-green-500/10 border border-green-500/20 rounded-[1.5rem] p-4">
-        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-green-400 mb-1">✦ Fortaleza</p>
-        <p className="text-xs font-bold italic text-slate-300">{aiResult.steppsScore.dominantFactor}</p>
-      </div>
-      <div className="bg-red-500/10 border border-red-500/20 rounded-[1.5rem] p-4">
-        <p className="text-[9px] font-black uppercase tracking-[0.3em] text-red-400 mb-1">✦ Punto Débil</p>
-        <p className="text-xs font-bold italic text-slate-300">{aiResult.steppsScore.weakestFactor}</p>
-      </div>
-    </div>
-    <div className="mt-4 flex items-center justify-between">
-      <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">Motivación de sharing</p>
-      <span className="text-xs font-black italic text-indigo-300 capitalize bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full">
-        {aiResult.steppsScore.shareMotivation}
+    <div className="flex flex-wrap gap-2">
+      <span className="text-[10px] font-black uppercase bg-purple-500/10 border border-purple-500/20 text-purple-300 px-3 py-1 rounded-full">
+        {aiResult.industria}
+      </span>
+      <span className="text-[10px] font-black uppercase bg-white/5 border border-white/10 text-slate-400 px-3 py-1 rounded-full">
+        {aiResult.platform}
       </span>
     </div>
   </ShinyCard>
-)}
+</div>
+</div>
 
-      {/* VISIÓN */}
-      <ShinyCard tilt={tilt} className="bg-white/[0.03] border border-white/5 p-10 rounded-[3.5rem] space-y-6">
-        <div className="flex items-center gap-4">
-          <Compass className={analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'} />
-          <h3 className="text-2xl font-black italic uppercase tracking-tighter">La Visión</h3>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 border-t border-white/5 pt-6">
-          <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Nicho</p><p className="text-sm font-bold italic text-white">{aiResult.vision.niche}</p></div>
-          <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Tipo</p><p className="text-sm font-bold italic text-white">{aiResult.vision.type}</p></div>
-          <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Público</p><p className="text-sm font-bold italic text-white">{aiResult.vision.audience}</p></div>
-          <div><p className="text-[9px] font-black uppercase text-slate-500 mb-1">Promesa</p><p className="text-sm font-bold italic text-white">{aiResult.vision.promise}</p></div>
-        </div>
-      </ShinyCard>
-{/* RETENCIÓN */}
-{aiResult.retentionData && (
+    <div className="lg:col-span-8 space-y-6">
   <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/10 p-10 rounded-[4rem]">
-    <div className="flex items-center justify-between mb-10">
-      <div className="flex items-center gap-4">
-        <BarChart3 className={analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'} />
-        <h3 className="text-xl font-black italic uppercase tracking-tight">Proyección de Retención</h3>
-      </div>
-      <div className="grid grid-cols-3 gap-8">
-        <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">3s</p><p className="text-xl font-black italic">{aiResult.retentionData?.at3s ?? '—'}</p></div>
-        <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">10s</p><p className="text-xl font-black italic">{aiResult.retentionData?.at10s ?? '—'}</p></div>
-        <div className="text-center"><p className="text-[8px] font-black text-slate-500 uppercase mb-1">Final</p><p className="text-xl font-black italic">{aiResult.retentionData?.final ?? '—'}</p></div>
-      </div>
+    <div className="flex items-center gap-4 mb-6">
+      <Target className="text-purple-400 w-5 h-5" />
+      <h3 className="text-2xl font-black italic uppercase tracking-tighter">Devolución</h3>
     </div>
-    <div className="relative h-48 w-full flex items-end gap-1 px-2 border-b border-white/5">
-      {(aiResult.retentionCurve || []).map((val, i) => (
-        <div key={i} className="flex-1 group relative flex flex-col items-center justify-end h-full">
-          <div
-            className={`w-full rounded-t-lg transition-all duration-700 ${val < 40 ? 'bg-red-500/30 border-red-500/40' : (analysisMode === 'video' ? 'bg-purple-600/30 border-purple-600/40' : 'bg-indigo-600/30 border-indigo-600/40')} border-x border-t`}
-            style={{ height: `${val}%` }}
-          />
-        </div>
-      ))}
+    <div className="text-sm leading-relaxed text-slate-300">
+      {renderBotText(aiResult.reviewText)}
     </div>
   </ShinyCard>
-)}
-
-      {/* HOJA DE RUTA */}
-<ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/5 p-10 rounded-[3.5rem] space-y-8">
-  <div className="flex items-center gap-4">
-    <CheckCircle className="text-green-500" />
-    <h3 className="text-2xl font-black italic uppercase tracking-tighter">Hoja de Ruta</h3>
-  </div>
-  <div className="space-y-4">
-    {(aiResult.roadmap || []).map((step, i) => {
-      const isCompleted = completedSteps.includes(i);
-      return (
-        <div key={i} onClick={() => toggleStep(i)}
-          className={`p-6 rounded-[2.5rem] transition-all cursor-pointer border ${isCompleted ? 'bg-green-500/10 border-green-500/30 opacity-50' : 'bg-black/40 border-white/5 hover:border-purple-500/30'}`}>
-          
-          {/* Header con impacto */}
-          <div className="flex items-center gap-3 mb-3">
-            <div className={`shrink-0 transition-colors ${isCompleted ? 'text-green-400' : 'text-slate-600'}`}>
-              {isCompleted ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
-            </div>
-            <span className={`text-xs font-black uppercase px-3 py-1 rounded-full ${
-              step.impacto === 'ALTO' ? 'bg-red-500/20 text-red-400' :
-              step.impacto === 'MEDIO' ? 'bg-yellow-500/20 text-yellow-400' :
-              'bg-blue-500/20 text-blue-400'
-            }`}>
-              {step.impacto}
-            </span>
-          </div>
-
-          {/* Contenido */}
-          <div className={`space-y-2 ${isCompleted ? 'opacity-50' : ''}`}>
-            <p className="text-sm font-bold text-slate-300">
-              <strong>Problema:</strong> {step.problema}
-            </p>
-            <p className="text-sm text-slate-400">
-              <strong>Solución:</strong> {step.solucion}
-            </p>
-            <p className="text-sm text-slate-400">
-              <strong>Resultado:</strong> {step.resultado}
-            </p>
-          </div>
-        </div>
-      );
-    })}
-  </div>
-</ShinyCard>
-
-      {/* CHAT */}
+  
 {!showChat ? (
   <button onClick={() => setShowChat(true)} className="w-full flex items-center justify-center gap-3 p-8 bg-zinc-600/10 hover:bg-zinc-600/20 border border-white/10 rounded-[3rem] text-slate-400 font-black italic uppercase tracking-tighter transition-all">
     <MessageSquare className="w-5 h-5" /> Consultoría Técnica de Visión
@@ -3197,10 +1808,10 @@ ${currentMessage.text}
             setAnalysisMode(item.mode);
             setCompletedSteps([]);
             setChatMessages(
-              item.chat_messages?.length > 0
-                ? item.chat_messages
-                : [{ role: 'bot', text: `Análisis cargado: ${item.analysis_data.vision?.niche || 'contenido'}. Potencial: ${item.analysis_data.potentialScore}%.` }]
-            );
+  item.chat_messages?.length > 0
+    ? item.chat_messages
+    : [{ role: 'bot', text: `Análisis cargado: ${item.analysis_data.industria || 'contenido'}.` }]
+);
             setStep('results');
           }}
           className="group flex items-center gap-3 bg-white/[0.03] hover:bg-white/[0.07] border border-white/10 hover:border-purple-500/30 px-5 py-3 rounded-full transition-all"
