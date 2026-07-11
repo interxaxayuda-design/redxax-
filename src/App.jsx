@@ -9,7 +9,11 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import logo from './logo.png';
 import {
-  REVIEW_CONFIG
+  REVIEW_CONFIG,
+  buildDesarrolloAnalysisPrompt,
+  buildFinalReviewPrompt,
+  buildHookAnalysisPrompt,
+  buildNicheSuggestionPrompt,
 } from './prompts.js';
 
 import { createClient } from '@supabase/supabase-js';
@@ -333,6 +337,8 @@ const App = () => {
   const [gems, setGems] = useState(null);
   const [showGemStore, setShowGemStore] = useState(false);
   const [gemError, setGemError] = useState(null);
+  const [uploadedVideoPath, setUploadedVideoPath] = useState(null);
+  const [uploadedVideoMime, setUploadedVideoMime] = useState(null);
 
   // ← DESPUÉS de todos los useState
   const CHAT_MESSAGE_LIMIT = 20;
@@ -558,6 +564,9 @@ const runNicheSuggestion = async (videoFile, platform) => {
       .from('videos').upload(storagePath, videoFile, { contentType: mimeType, upsert: true });
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
+    setUploadedVideoPath(storagePath);   // ← agregar acá
+    setUploadedVideoMime(mimeType);      // ← agregar acá
+
     const { data, error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildNicheSuggestionPrompt(),
@@ -580,6 +589,108 @@ const runNicheSuggestion = async (videoFile, platform) => {
     console.warn('No se pudo sugerir nicho, seguimos sin sugerencia:', err.message);
     setNichoSugerido(''); // el usuario completa a mano, no bloqueamos el flujo
     setStep('validation');
+  }
+};
+
+const runDeepAnalysis = async (videoFile, platform, industria) => {
+  const cost = 100; // ajustá el costo real
+  const approved = await deductGems(cost, 'video_deep_analysis');
+  if (!approved) return;
+
+  setStep('analyzing');
+  setAnalysisMode('video');
+  setAnalysisProgress(20);
+  setStatusText('Analizando el hook...');
+
+  try {
+    let storagePath = uploadedVideoPath;
+    let mimeType = uploadedVideoMime;
+
+    // Fallback: si por algo no quedó subido antes, lo subimos ahora
+    if (!storagePath) {
+      const safeName = videoFile?.name
+        ?.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '') || 'video.mp4';
+      storagePath = `temp-analysis/${Date.now()}-${safeName}`;
+      mimeType = videoFile.type || 'video/mp4';
+      const { error: uploadError } = await supabase.storage
+        .from('videos').upload(storagePath, videoFile, { contentType: mimeType, upsert: true });
+      if (uploadError) throw new Error('Error subiendo video: ' + uploadError.message);
+    }
+
+    const cfg = REVIEW_CONFIG;
+
+    const [hookRes, desarrolloRes] = await Promise.all([
+      supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildHookAnalysisPrompt(platform, industria, selectedObjetivo),
+          storagePath,
+          videoMimeType: mimeType,
+          videoFps: cfg.hook.videoFps,
+          temperature: cfg.hook.temperature,
+          expectsJson: false,
+          maxOutputTokens: 2048,
+        },
+      }),
+      supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo),
+          storagePath,
+          videoMimeType: mimeType,
+          videoFps: cfg.desarrollo.videoFps,
+          temperature: cfg.desarrollo.temperature,
+          expectsJson: false,
+          maxOutputTokens: 2048,
+        },
+      }),
+    ]);
+
+    if (hookRes.error) throw new Error(hookRes.error.message);
+    if (desarrolloRes.error) throw new Error(desarrolloRes.error.message);
+
+    const hookAnalysis = extractGeminiText(hookRes.data);
+    const desarrolloAnalysis = extractGeminiText(desarrolloRes.data);
+
+    setAnalysisProgress(70);
+    setStatusText('Redactando la devolución final...');
+
+    const { data: sintesisData, error: sintesisError } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, selectedObjetivo),
+        // sin storagePath: la síntesis no necesita ver el video de nuevo
+        temperature: cfg.sintesis.temperature,
+        expectsJson: false,
+        maxOutputTokens: 3072,
+      },
+    });
+    if (sintesisError) throw new Error(sintesisError.message);
+
+    const reviewText = extractGeminiText(sintesisData);
+
+    const finalResult = {
+      reviewText,
+      hookAnalysis,
+      desarrolloAnalysis,
+      industria,
+      platform,
+      objetivo: selectedObjetivo,
+    };
+
+    setAiResult(finalResult);
+    setCompletedSteps([]);
+    setChatMessages([{
+      role: 'bot',
+      text: '¡Listo! Analicé el video completo. ¿Sobre qué parte querés que profundicemos?',
+    }]);
+
+    setAnalysisProgress(100);
+    await saveAnalysisToHistory(finalResult, 'video');
+    setTimeout(() => setStep('results'), 300);
+
+  } catch (err) {
+    console.error('Error en análisis de video:', err);
+    alert('Error en el análisis: ' + err.message);
+    setStep('upload');
   }
 };
 
