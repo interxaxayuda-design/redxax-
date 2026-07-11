@@ -184,26 +184,17 @@ export const RESEARCH_BRAIN_SCHEMA = {
       type: "STRING",
       description: "Ejemplos reales recuperados de la base indexada, con el mecanismo psicológico detrás de cada uno. Si no hay ejemplos suficientes en la base, decilo acá en vez de inventar.",
     },
+    // Sin enum: la base indexada puede tener patrones que no
+    // conocías cuando escribiste HOOK_PATTERNS. Se describe con
+    // las propias palabras del modelo; los nombres previos son
+    // solo referencia de precisión, no catálogo obligatorio.
     patron_hook_dominante: {
       type: "STRING",
-      // sin enum: la base indexada puede tener patrones que no
-      // conocías cuando escribiste esta lista. Describí el patrón
-      // dominante con tus propias palabras, con el mismo nivel de
-      // precisión que estos nombres usados en análisis previos
-      // (solo como referencia, no como catálogo obligatorio):
-      // ${HOOK_PATTERNS.join(", ")}. Si el patrón real que domina
-      // los ejemplos recuperados no se parece a ninguno de esos,
-      // nombralo vos mismo en vez de forzarlo al más parecido.
       description:
         `El patrón que más se repite entre los ejemplos ganadores recuperados, descrito con tus propias palabras. ` +
         `No es un catálogo cerrado — hay miles de patrones posibles y en evolución constante. Ejemplos de nombres ` +
         `usados en análisis previos (solo como referencia de precisión, no como opciones obligatorias): ` +
         `${HOOK_PATTERNS.join(", ")}. Si lo que ves en la base no encaja bien en ninguno, nombralo vos mismo.`,
-    },
-    patron_hook_dominante: {
-      type: "STRING",
-      enum: HOOK_PATTERNS,
-      description: "El patrón (de la taxonomía HOOK_PATTERNS) que más se repite entre los ejemplos ganadores recuperados. Acá SÍ es un catálogo cerrado válido: es un resumen agregado de ejemplos ya catalogados en la base indexada, no la observación directa de un video nuevo.",
     },
     top_formatos_ganadores: { type: "STRING", description: "Formatos de video que están funcionando mejor ahora mismo en este nicho y plataforma." },
     errores_hook_comunes:   { type: "STRING", description: "Errores de hook recurrentes, basados en los ejemplos marcados como 'malo' en la base." },
@@ -263,8 +254,7 @@ export const SILICON_AUDIENCE_SCHEMA = {
             maximum: 100,
             description:
               "Qué tan conectado percibió ESTE perfil lo que retuvo su atención con lo que el video efectivamente " +
-              "entregó después (o prometía entregar). Puede ser alto en atención y bajo en coherencia — por ejemplo, " +
-              "un shock visual que engancha pero no tiene relación real con el resto del contenido.",
+              "entregó después (o prometía entregar). Juzgalo con tu propio criterio.",
           },
           razon_final:    { type: "STRING", description: "Por qué este perfil tomó su decisión final, en su propio lenguaje. Si algún momento del video fue difícil de interpretar, decilo acá en vez de inventar una lectura segura." },
           decision_final: { type: "STRING", enum: ["RETUVO", "ABANDONÓ"], description: "Resultado final: si terminó viendo el video o lo abandonó en algún punto." },
@@ -282,21 +272,21 @@ export const SILICON_AUDIENCE_SCHEMA = {
     },
     segundo_mas_peligroso:  { type: "NUMBER", description: "El segundo del video donde más perfiles decidieron abandonar." },
     evento_que_mas_retiene: {
-  type: "OBJECT",
-  properties: {
-    descripcion: { type: "STRING", description: "Qué elemento concreto del video retuvo a más perfiles." },
-    timestamp:   { type: "STRING", description: "MM:SS exacto donde ocurre ese elemento en el video." },
-  },
-  propertyOrdering: ["descripcion", "timestamp"],
-},
-evento_que_mas_expulsa: {
-  type: "OBJECT",
-  properties: {
-    descripcion: { type: "STRING", description: "Qué elemento concreto del video expulsó a más perfiles." },
-    timestamp:   { type: "STRING", description: "MM:SS exacto donde ocurre ese elemento en el video." },
-  },
-  propertyOrdering: ["descripcion", "timestamp"],
-},
+      type: "OBJECT",
+      properties: {
+        descripcion: { type: "STRING", description: "Qué elemento concreto del video retuvo a más perfiles." },
+        timestamp:   { type: "STRING", description: "MM:SS exacto donde ocurre ese elemento en el video." },
+      },
+      propertyOrdering: ["descripcion", "timestamp"],
+    },
+    evento_que_mas_expulsa: {
+      type: "OBJECT",
+      properties: {
+        descripcion: { type: "STRING", description: "Qué elemento concreto del video expulsó a más perfiles." },
+        timestamp:   { type: "STRING", description: "MM:SS exacto donde ocurre ese elemento en el video." },
+      },
+      propertyOrdering: ["descripcion", "timestamp"],
+    },
     patron_abandono:        { type: "STRING", description: "Patrón general que explica por qué abandonan los que abandonan, mirando los 6 perfiles en conjunto." },
     patron_retencion:       { type: "STRING", description: "Patrón general que explica por qué se quedan los que se quedan, mirando los 6 perfiles en conjunto." },
   },
@@ -331,9 +321,12 @@ export const SILICON_CHECKPOINT_SCHEMA = {
   },
   propertyOrdering: ['decisiones'],
 };
- 
 
-
+// evento_que_mas_retiene / evento_que_mas_expulsa van como objeto
+// {descripcion, timestamp} — misma forma que SILICON_AUDIENCE_SCHEMA
+// y lo que mergeCheckpointsIntoSiliconAudience espera leer. Antes
+// estaban como STRING plano acá, lo que hacía que el timestamp
+// nunca llegara a pedirse en la llamada real a Gemini.
 export const SILICON_CHECKPOINT_FINAL_SCHEMA = {
   type: 'OBJECT',
   properties: {
@@ -357,15 +350,27 @@ export const SILICON_CHECKPOINT_FINAL_SCHEMA = {
         ],
       },
     },
-    evento_que_mas_retiene: { type: 'STRING' },
-    evento_que_mas_expulsa: { type: 'STRING' },
+    evento_que_mas_retiene: {
+      type: 'OBJECT',
+      properties: {
+        descripcion: { type: 'STRING', description: 'Qué elemento concreto del video retuvo a más perfiles.' },
+        timestamp:   { type: 'STRING', description: 'MM:SS exacto donde ocurre ese elemento en el video.' },
+      },
+      propertyOrdering: ['descripcion', 'timestamp'],
+    },
+    evento_que_mas_expulsa: {
+      type: 'OBJECT',
+      properties: {
+        descripcion: { type: 'STRING', description: 'Qué elemento concreto del video expulsó a más perfiles.' },
+        timestamp:   { type: 'STRING', description: 'MM:SS exacto donde ocurre ese elemento en el video.' },
+      },
+      propertyOrdering: ['descripcion', 'timestamp'],
+    },
     patron_abandono: { type: 'STRING' },
     patron_retencion: { type: 'STRING' },
   },
   propertyOrdering: ['decisiones', 'evento_que_mas_retiene', 'evento_que_mas_expulsa', 'patron_abandono', 'patron_retencion'],
 };
-
-
 
 export const PREDICTION_MARKET_SCHEMA = {
   type: "OBJECT",
@@ -498,12 +503,16 @@ export const SCORING_BRAIN_SCHEMA = {
           maximum: 100,
           description: "Qué tan fuerte es el elemento de atención inicial identificado en razonamiento_pattern, independientemente de si se resuelve después.",
         },
-        narrativeCoherencePerceived: {
-        type: "NUMBER",
-        minimum: 0,
-        maximum: 100,
-        description: "Qué tan conectado percibió ESTE perfil lo que retuvo su atención con lo que el video efectivamente entregó después. Juzgalo con tu propio criterio.",
-},
+        thematicCoherence: {
+          type: "NUMBER",
+          minimum: 0,
+          maximum: 100,
+          description:
+            "Qué tan bien conecta ese elemento de atención inicial con el resto del video. OJO: esto NO es lo mismo que " +
+            "'conexión temática literal'. Dos elementos aparentemente desconectados pueden ser un mecanismo de hook " +
+            "deliberado y efectivo (curiosity gap, incongruencia, recontextualización). Juzgalo con tu propio criterio " +
+            "de qué hace que una apertura funcione o no — no asumas que desconexión inicial equivale a baja coherencia.",
+        },
 
         strength: {
           type: "NUMBER",
@@ -590,7 +599,7 @@ export const SCORING_BRAIN_SCHEMA = {
       },
       propertyOrdering: ["socialCurrency", "triggers", "emotion", "public", "practicalValue", "stories", "dominantFactor", "weakestFactor", "shareMotivation", "viralCoefficient"],
     },
-    // v10 — NUEVO: la música/audio no tenía ningún campo dedicado en el
+    // v10 — la música/audio no tenía ningún campo dedicado en el
     // schema (solo audio_presente booleano en CALL 0). Sin un campo que
     // se lo pida explícitamente, el modelo no reporta sobre eso aunque
     // lo haya "escuchado". Fundamento técnico: cuando el audio viaja
@@ -637,15 +646,9 @@ export const SCORING_BRAIN_SCHEMA = {
             "retención sólida con al menos un factor STEPPS fuerte (emoción, trigger o valor práctico) que empuja el " +
             "compartido. 81-100: retiene a los 6 perfiles simulados — incluido el escéptico — y genera motivo claro " +
             "de compartir fuera del nicho de origen. " +
-            // SACAR esto de la description de viralScore.score:
-"Tiene que ser consistente con hookDNA.riesgosDeRetencionDetectados: si ahí detectaste riesgos de " +
-"severidad alta, eso tiene que reflejarse en un score más bajo y quedar explicado en " +
-"razonamiento_viralScore — vos decidís cuánto pesa cada riesgo según el contexto del video, no hay " +
-"una tabla fija de puntos a descontar. " +
-"REGLA DE ORO: la retención es un multiplicador, no un promedio. Si en hookDNA.riesgosDeRetencionDetectados " +
-"marcaste un riesgo de severidad alta ocurrido en los primeros 3 segundos, el score viral NO PUEDE superar " +
-"los 40 puntos, sin importar qué tan bueno sea el resto del video. Un fallo crítico temprano es una barrera " +
-"insuperable, no un punto negativo que se compensa con otras virtudes."
+            "Tiene que ser consistente con hookDNA.riesgosDeRetencionDetectados: si ahí detectaste riesgos, eso " +
+            "debe reflejarse en el número y quedar explicado en razonamiento_viralScore, con el peso que vos " +
+            "consideres correcto según el contexto real de este video.",
         },
       },
       propertyOrdering: ["verdict", "accion_clave", "score"],
@@ -656,29 +659,26 @@ export const SCORING_BRAIN_SCHEMA = {
         verdict:      { type: "STRING" },
         accion_clave: { type: "STRING" },
         score: {
-  type: "NUMBER",
-  minimum: 0,
-  maximum: 100,
-  description:
-    "Score de potencial viral, rúbrica — 0-20: prácticamente sin mecanismo de retención ni de compartir. " +
-    "21-40: retiene a un perfil aislado pero no genera impulso de compartir. 41-60: retiene a la mayoría de " +
-    "perfiles promedio/nicho pero sin gancho para viralizar más allá de su audiencia habitual. 61-80: combina " +
-    "retención sólida con al menos un factor STEPPS fuerte (emoción, trigger o valor práctico) que empuja el " +
-    "compartido. 81-100: retiene a los 6 perfiles simulados — incluido el escéptico — y genera motivo claro " +
-    "de compartir fuera del nicho de origen. " +
-    "Tiene que ser consistente con hookDNA.riesgosDeRetencionDetectados: si ahí detectaste riesgos, eso debe " +
-    "reflejarse en el número y quedar explicado en razonamiento_viralScore, con el peso que vos consideres " +
-    "correcto según el contexto real de este video.",
-},
+          type: "NUMBER",
+          minimum: 0,
+          maximum: 100,
+          description:
+            "Score de potencial de ventas, rúbrica — 0-20: no hay señal de venta identificable (producto/oferta " +
+            "ausente o irreconocible). 21-40: producto visible pero sin dolor planteado, sin CTA, o sin claridad de " +
+            "qué se vende. 41-60: dolor y producto presentes pero falta urgencia o señal de confianza. 61-80: dolor " +
+            "claro, producto claro, señal de confianza del nicho presente, CTA implícito o explícito. 81-100: ciclo " +
+            "completo dolor→solución→confianza→CTA sin fricción, con el perfil 'comprador' entendiendo qué comprar " +
+            "y por qué ahora.",
+        },
       },
       propertyOrdering: ["verdict", "accion_clave", "score"],
     },
     honestVerdict: { type: "STRING", description: "El veredicto más honesto posible, en 1-2 frases, sin suavizarlo. Debe ser consistente con roadmap y con viralScore/salesScore — nunca optimista si el roadmap tiene un problema de impacto ALTO o los scores son bajos." },
     erroresFatales: {
-  type: "ARRAY",
-  minItems: 0,
-  maxItems: 3,
-  description: "Encontrá hasta 3 razones reales por las cuales un espectador dejaría de mirar este video, ordenadas de la más letal a la menos letal. Si no hay 3, no rellenes el cupo.",
+      type: "ARRAY",
+      minItems: 0,
+      maxItems: 3,
+      description: "Encontrá hasta 3 razones reales por las cuales un espectador dejaría de mirar este video, ordenadas de la más letal a la menos letal. Si no hay 3, no rellenes el cupo.",
       items: {
         type: "OBJECT",
         properties: {
@@ -691,27 +691,27 @@ export const SCORING_BRAIN_SCHEMA = {
       },
     },
     roadmap: {
-  type: "ARRAY",
-  description: "Solo problemas reales detectados en este video puntual, ordenados por impacto real — nada genérico.",
-  items: {
-    type: "OBJECT",
-    properties: {
-      problema:  { type: "STRING" },
-      timestamp: {
-        type: "STRING",
-        description:
-          "MM:SS exacto donde ocurre este problema puntual, o 'estructural' si el problema afecta al video " +
-          "entero por igual (ej: ritmo general, ausencia total de audio) y no tiene un momento único. " +
-          "Este campo existe para poder verificar tu análisis contra el video real — si no podés ubicar un " +
-          "momento concreto, decilo en vez de inventar uno.",
+      type: "ARRAY",
+      description: "Solo problemas reales detectados en este video puntual, ordenados por impacto real — nada genérico.",
+      items: {
+        type: "OBJECT",
+        properties: {
+          problema:  { type: "STRING" },
+          timestamp: {
+            type: "STRING",
+            description:
+              "MM:SS exacto donde ocurre este problema puntual, o 'estructural' si el problema afecta al video " +
+              "entero por igual (ej: ritmo general, ausencia total de audio) y no tiene un momento único. " +
+              "Este campo existe para poder verificar tu análisis contra el video real — si no podés ubicar un " +
+              "momento concreto, decilo en vez de inventar uno.",
+          },
+          impacto:   { type: "STRING", enum: ["ALTO", "MEDIO", "BAJO"] },
+          solucion:  { type: "STRING" },
+          resultado: { type: "STRING", description: "Resultado esperado si se aplica la solución." },
+        },
+        propertyOrdering: ["problema", "timestamp", "impacto", "solucion", "resultado"],
       },
-      impacto:   { type: "STRING", enum: ["ALTO", "MEDIO", "BAJO"] },
-      solucion:  { type: "STRING" },
-      resultado: { type: "STRING", description: "Resultado esperado si se aplica la solución." },
     },
-    propertyOrdering: ["problema", "timestamp", "impacto", "solucion", "resultado"],
-  },
-},
     vision: {
       type: "OBJECT",
       properties: {
@@ -829,18 +829,6 @@ export const SCORING_BRAIN_SCHEMA = {
 
 // ─────────────────────────────────────────────────────────────
 // CALL 0 — Observador del HOOK
-//
-// v9: se agrega contexto explícito sobre la tasa de muestreo real
-// del video, fundamentado en documentación oficial de Gemini API
-// (ai.google.dev/gemini-api/docs/video-understanding): el File API
-// muestrea video a 1 frame por segundo por defecto, y advierte que
-// las secuencias de acción rápida pueden perder detalle a esa tasa.
-// Este pipeline debe pasar videoFps más alto para este call (ver
-// VIDEO_INPUT_CONFIG.call0_preClassifier.fps_recomendado = 4) vía
-// videoMetadata.fps en la parte de video del `contents`, pero aun
-// con eso, cortes de fracción de segundo pueden seguir sin verse
-// completos. El prompt necesita que el modelo declare esa duda en
-// vez de rellenarla con una lectura inventada.
 // ─────────────────────────────────────────────────────────────
 export const buildPreClassifierPrompt = (hookWindowSegundos = 5) => `
 <role>
@@ -883,13 +871,6 @@ musica_cambia_en_hook: <sí|no — si la música cambia de forma notoria (entra,
 </task>
 `;
 
-// ─────────────────────────────────────────────────────────────
-// parsePreClassifierResponse
-//
-// v9: se agrega el parseo de muestreo_incompleto (nuevo campo de
-// SEÑALES) para que el resto del pipeline pueda propagar esa
-// incertidumbre en vez de perderla en el paso 0.
-// ─────────────────────────────────────────────────────────────
 export const parsePreClassifierResponse = (rawText) => {
   const descMatch = rawText.match(/\[DESCRIPCION\]([\s\S]*?)\[\/DESCRIPCION\]/);
   const descripcion_raw = descMatch ? descMatch[1].trim() : '';
@@ -977,7 +958,7 @@ export const parsePreClassifierResponse = (rawText) => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// CALL 1.5 — Research Brain (sin cambios respecto a v8)
+// CALL 1.5 — Research Brain
 // ─────────────────────────────────────────────────────────────
 export const buildResearchBrainPrompt = (platform, industria, objetivo) => {
   const pName = {
@@ -1001,7 +982,7 @@ Buscá en la base indexada los hooks reales (buenos y malos) más relevantes par
 };
 
 // ─────────────────────────────────────────────────────────────
-// SILICON AUDIENCE — Perfiles (datos, no prompts) — sin cambios
+// SILICON AUDIENCE — Perfiles (datos, no prompts)
 // ─────────────────────────────────────────────────────────────
 export const SILICON_PROFILES = [
   {
@@ -1073,29 +1054,25 @@ export const buildProgressiveCheckpoints = (duracionSegundos) => {
 export const buildSiliconCheckpointPrompt = (checkpointSegundo, esCheckpointFinal, platform, marketState) => {
   const pName = { tiktok: 'TikTok', reels: 'Instagram Reels', shorts: 'YouTube Shorts', all: 'TikTok/Reels/Shorts' }[platform] || platform;
   const perfilesStr = SILICON_PROFILES.map((p) => `[${p.id.toUpperCase()}] ${p.descripcion} (${p.volumen ?? 'con_audio'})`).join('\n');
- 
+
   return `
 <role>
 Sos un simulador de audiencia real de ${pName}. Vas a encarnar a seis usuarios que están viendo este video EN VIVO, en este preciso instante.
 </role>
- 
+
 <context>
 El clip que estás viendo es el video original, cortado desde el segundo 0 hasta el segundo ${checkpointSegundo}. No existe "después" para vos en esta llamada: no sabés qué pasa una vez que termina el clip que tenés adelante, de la misma forma en que un espectador real no puede adelantar el video. No inventes ni asumas contenido posterior, aunque te parezca predecible.
- 
+
 MERCADO: ${JSON.stringify(marketState)}
- 
+
 USUARIOS A SIMULAR:
 ${perfilesStr}
 </context>
- 
+
 <task>
 Para cada uno de los 6 usuarios: decidí si, llegado este punto exacto del video (segundo ${checkpointSegundo}), seguiría mirando (RETIENE) o ya se fue (ABANDONA). Basate únicamente en lo que efectivamente mostró el clip hasta acá — ritmo, promesa cumplida o no, curiosidad generada, fricción encontrada.
 ${esCheckpointFinal
-  ? `Este es el ÚLTIMO checkpoint: es el video completo. Además de la decisión, para cada perfil que llegó hasta acá evaluá attentionRetentionStrength, narrativeCoherencePerceived, si completó el video, y si compartiría / guardaría / comentaría. Mirando el conjunto de los 6, identificá también qué elemento retuvo más, qué elemento expulsó más, y los patrones generales de abandono y retención.`
-  // dentro del bloque esCheckpointFinal:
-`... Mirando el conjunto de los 6, identificá también qué elemento retuvo más y qué elemento expulsó más, ` +
-`CADA UNO con su timestamp MM:SS exacto — esto se usa para verificar tu análisis contra el video real, así ` +
-`que no lo dejes ambiguo ni inventes un momento si no estás seguro. ...`
+  ? `Este es el ÚLTIMO checkpoint: es el video completo. Además de la decisión, para cada perfil que llegó hasta acá evaluá attentionRetentionStrength, narrativeCoherencePerceived, si completó el video, y si compartiría / guardaría / comentaría. Mirando el conjunto de los 6, identificá también qué elemento retuvo más y qué elemento expulsó más, CADA UNO con su timestamp MM:SS exacto — esto se usa para verificar tu análisis contra el video real, así que no lo dejes ambiguo ni inventes un momento si no estás seguro. Identificá también los patrones generales de abandono y retención.`
   : `Este es un checkpoint intermedio: no evalúes todavía si compartiría o guardaría — todavía no vio el video entero.`}
 </task>
 `;
@@ -1108,12 +1085,12 @@ export const runSiliconAudienceProgressive = async (
 ) => {
   const checkpoints = buildProgressiveCheckpoints(duracionSegundos);
   const config = GENERATION_CONFIG.call1b_siliconAudience;
- 
+
   const llamadas = checkpoints.map((cp, idx) => {
     const esFinal = idx === checkpoints.length - 1;
     const videoPart = buildVideoPartFn({ endOffset: cp, fps: config.videoFps });
     const promptText = buildSiliconCheckpointPrompt(cp, esFinal, platform, marketState);
- 
+
     return ai.models.generateContent({
       model: config.model,
       contents: [videoPart, { text: promptText }], // video primero, texto después
@@ -1126,15 +1103,15 @@ export const runSiliconAudienceProgressive = async (
       },
     });
   });
- 
+
   const responses = await Promise.all(llamadas); // independientes → en paralelo
   const parsedPorCheckpoint = responses.map((r) => JSON.parse(r.text));
- 
+
   return mergeCheckpointsIntoSiliconAudience(checkpoints, parsedPorCheckpoint);
 };
- 
+
 // ─────────────────────────────────────────────────────────────
-// 5. Merge — reconstruye la misma forma que SILICON_AUDIENCE_SCHEMA
+// Merge — reconstruye la misma forma que SILICON_AUDIENCE_SCHEMA
 //
 // Regla central: para cada perfil, el PRIMER checkpoint que dice
 // ABANDONA gana. Todo lo que ese mismo perfil "decidió" en checkpoints
@@ -1143,28 +1120,28 @@ export const runSiliconAudienceProgressive = async (
 export const mergeCheckpointsIntoSiliconAudience = (checkpoints, parsedPorCheckpoint) => {
   const perfilesIds = SILICON_PROFILES.map((p) => p.id);
   const finalData = parsedPorCheckpoint[parsedPorCheckpoint.length - 1];
- 
+
   const simulacion = perfilesIds.map((perfilId) => {
     const eventos = [];
     let segundoAbandono = null;
     let razonFinal = '';
- 
+
     for (let i = 0; i < checkpoints.length; i++) {
       const entry = parsedPorCheckpoint[i]?.decisiones?.find((d) => d.perfil_id === perfilId);
       if (!entry) continue;
- 
+
       eventos.push({ segundo: checkpoints[i], decision: entry.decision === 'ABANDONA' ? 'ABANDONA' : 'RETIENE' });
       razonFinal = entry.razon ?? razonFinal;
- 
+
       if (entry.decision === 'ABANDONA') {
         segundoAbandono = checkpoints[i];
         break; // ← acá está la regla: se corta, no se sigue leyendo su futuro
       }
     }
- 
+
     const completo = segundoAbandono === null;
     const finalEntry = completo ? finalData?.decisiones?.find((d) => d.perfil_id === perfilId) : null;
- 
+
     return {
       perfil_id: perfilId,
       eventos_atencion: eventos,
@@ -1178,7 +1155,7 @@ export const mergeCheckpointsIntoSiliconAudience = (checkpoints, parsedPorCheckp
       comento: finalEntry?.comento ?? false,
     };
   });
- 
+
   // segundo más peligroso: el que más perfiles eligieron como punto de abandono
   const conteoAbandono = {};
   simulacion.forEach((p) => {
@@ -1190,7 +1167,7 @@ export const mergeCheckpointsIntoSiliconAudience = (checkpoints, parsedPorCheckp
   const segundo_mas_peligroso = Object.keys(conteoAbandono).length
     ? Number(Object.entries(conteoAbandono).sort((a, b) => b[1] - a[1])[0][0])
     : null;
- 
+
   return {
     simulacion,
     segundo_mas_peligroso,
@@ -1201,9 +1178,8 @@ export const mergeCheckpointsIntoSiliconAudience = (checkpoints, parsedPorCheckp
   };
 };
 
-
 // ─────────────────────────────────────────────────────────────
-// CALL 2 — Prediction Market (sin cambios respecto a v8)
+// CALL 2 — Prediction Market
 // ─────────────────────────────────────────────────────────────
 export const buildPredictionMarketPrompt = (simulacionSilicon, marketState, platform, industria) => {
   const pName = {
@@ -1214,6 +1190,13 @@ export const buildPredictionMarketPrompt = (simulacionSilicon, marketState, plat
     `${p.perfil_id}: ${p.decision_final} | completo:${p.completo} | compartió:${p.compartio} | ${p.razon_final}`
   ).join('\n');
 
+  const eventoRetiene = simulacionSilicon.evento_que_mas_retiene?.descripcion
+    ? `${simulacionSilicon.evento_que_mas_retiene.descripcion} (${simulacionSilicon.evento_que_mas_retiene.timestamp || 's/d'})`
+    : '—';
+  const eventoExpulsa = simulacionSilicon.evento_que_mas_expulsa?.descripcion
+    ? `${simulacionSilicon.evento_que_mas_expulsa.descripcion} (${simulacionSilicon.evento_que_mas_expulsa.timestamp || 's/d'})`
+    : '—';
+
   return `
 <role>
 Sos el prediction market de ${pName} para el nicho "${industria}": calibrás el score final combinando evidencia dura, no una impresión general.
@@ -1222,7 +1205,7 @@ Sos el prediction market de ${pName} para el nicho "${industria}": calibrás el 
 <context>
 SIMULACIÓN DE AUDIENCIA:
 ${resumen}
-Segundo más peligroso: ${simulacionSilicon.segundo_mas_peligroso ?? '—'} | Retiene: ${simulacionSilicon.evento_que_mas_retiene} | Expulsa: ${simulacionSilicon.evento_que_mas_expulsa}
+Segundo más peligroso: ${simulacionSilicon.segundo_mas_peligroso ?? '—'} | Retiene: ${eventoRetiene} | Expulsa: ${eventoExpulsa}
 Patrón de abandono: ${simulacionSilicon.patron_abandono ?? '—'} | Patrón de retención: ${simulacionSilicon.patron_retencion ?? '—'}
 
 ESTADO DEL MERCADO: ${JSON.stringify(marketState)}
@@ -1236,12 +1219,6 @@ Basándote en todo lo anterior: primero estimá la retención de cada uno de los
 
 // ─────────────────────────────────────────────────────────────
 // CALL 3 — Scoring Brain
-//
-// v9: se agrega contexto explícito sobre la tasa de muestreo de
-// video (misma fundamentación que en CALL 0) y una instrucción
-// para propagar la incertidumbre del hook si CALL 0 la reportó,
-// en vez de que CALL 3 "resuelva" con confianza algo que el propio
-// pipeline ya marcó como potencialmente no muestreado.
 // ─────────────────────────────────────────────────────────────
 export const buildScoringBrainPrompt = (
   hookDescripcion,
@@ -1297,30 +1274,9 @@ Antes de fijar honestVerdict: verificá que sea consistente con roadmap (si hay 
 //
 // Se aplica SOLO a CALL 3. mergeScoringBrainConsensus es pura
 // (fácil de testear); runScoringBrainWithConsensus es el wrapper
-// que efectivamente llama a la API. gemini-proxy/index.ts debería
-// invocar runScoringBrainWithConsensus en vez de un solo
-// generateContent suelto para esta llamada puntual.
-//
-// v9: ahora que GENERATION_CONFIG.call3_scoringBrain fija un
-// thinkingConfig explícito (antes no fijaba nada), el supuesto de
-// "la varianza entre corridas es ruido normal de sampling" es más
-// sólido — antes esa varianza podía venir tanto del sampling como
-// de un presupuesto de razonamiento distinto en cada corrida, sin
-// forma de distinguir una causa de la otra.
+// que efectivamente llama a la API.
 // ─────────────────────────────────────────────────────────────
 
-/**
- * Consolida N resultados ya parseados de SCORING_BRAIN_SCHEMA en
- * un único resultado, usando la mediana de viralScore.score y
- * salesScore.score. La corrida base (de donde salen todos los
- * campos cualitativos: hookDNA, roadmap, honestVerdict, etc.) es
- * la que tiene el viralScore.score más cercano a la mediana — no
- * simplemente la primera — para no arrastrar el razonamiento de
- * una corrida atípica.
- *
- * @param {Array<object>} parsedResults - outputs ya parseados (JSON.parse) de N corridas de CALL 3
- * @returns {object|null} resultado consolidado con _consensus_meta agregado
- */
 export const mergeScoringBrainConsensus = (parsedResults) => {
   if (!parsedResults?.length) return null;
   if (parsedResults.length === 1) return parsedResults[0];
@@ -1349,9 +1305,6 @@ export const mergeScoringBrainConsensus = (parsedResults) => {
   const varianceViral = Math.max(...viralScores) - Math.min(...viralScores);
   const varianceSales = Math.max(...salesScores) - Math.min(...salesScores);
 
-  // Señal adicional v9: si algún run marcó confianzaDeMuestreoHook
-  // como 'baja', la varianza entre corridas es esperable y no debe
-  // interpretarse como que el modelo "se confunde" sin motivo.
   const algunRunConMuestreoIncierto = parsedResults.some(
     p => p?.hookDNA?.confianzaDeMuestreoHook === 'baja'
   );
@@ -1364,62 +1317,16 @@ export const mergeScoringBrainConsensus = (parsedResults) => {
     variance_viral: varianceViral,
     variance_sales: varianceSales,
     muestreo_incierto_en_algun_run: algunRunConMuestreoIncierto,
-    // Umbral de 15 puntos: por debajo, tratamos las corridas como
-    // "el mismo veredicto con ruido normal de sampling". Por encima,
-    // es señal real de video ambiguo — mostrarlo en la UI en vez de
-    // esconder la incertidumbre detrás de un número falso de preciso.
     confianza_consenso: (varianceViral <= 15 && varianceSales <= 15) ? 'alta' : 'baja',
   };
 
   return merged;
 };
 
-// ← ACÁ va la nueva función
-export const applyRiskBasedCap = (result) => {
-  const riesgos = result?.hookDNA?.riesgosDeRetencionDetectados ?? [];
-  const hayRiesgoAltoTemprano = riesgos.some(r => {
-    if (r.severidad_estimada !== 'alta') return false;
-    const [mm, ss] = (r.timestamp || '00:00').split(':').map(Number);
-    return (mm * 60 + ss) <= 3;
-  });
+// NOTA: applyRiskBasedCap fue eliminada — el score viral queda
+// enteramente a criterio de la IA, sin piso ni techo impuesto
+// después de que ya razonó.
 
-  if (hayRiesgoAltoTemprano && result.viralScore.score > 40) {
-    const original = result.viralScore.score;
-    result.viralScore.score = 40;
-    result.viralScore.verdict += ` [Cap aplicado: riesgo severidad alta en los primeros 3s]`;
-    result._cap_meta = { motivo: 'riesgo_severidad_alta_temprano', score_llm_original: original };
-  }
-  return result;
-};
-
-/**
- * Corre CALL 3 (Scoring Brain) N veces en paralelo con el mismo
- * contenido y consolida por mediana. Mitigación documentada contra
- * la falta de determinismo bit-a-bit de la Gemini API (persiste
- * incluso con temperature=0 + seed fijo).
- *
- * v9: se fija explícitamente thinkingConfig (ver GENERATION_CONFIG)
- * para que las N corridas razonen con un presupuesto consistente
- * entre sí, y se pasa videoMetadata.fps más alto que el default de
- * 1 FPS para este call — fundamentado en que Gemini permite fps
- * dinámico de 0.1 a 60 por request, y que a 1 FPS los cortes de
- * hook menores a un segundo pueden no muestrearse. El armado real
- * de `contents` (con el file part ANTES del texto, según indica
- * la documentación de Gemini para prompts de un solo video) sigue
- * siendo responsabilidad de `buildContentsFn`.
- *
- * @param {object} ai - cliente de @google/genai ya inicializado
- * @param {() => any} buildContentsFn - función que arma el `contents`
- *   completo de la llamada (incluyendo cachedContent/fileData +
- *   el texto de buildScoringBrainPrompt) — se invoca una vez por
- *   corrida porque `contents` no debe reusarse mutado entre llamadas.
- *   IMPORTANTE: la parte de video debe ir ANTES de la parte de texto
- *   en el array, y debería incluir videoMetadata: { fps: GENERATION_CONFIG.call3_scoringBrain.videoFps }
- *   cuando el video venga por File API.
- * @param {object} [options]
- * @param {number} [options.runs] - default: GENERATION_CONFIG.call3_scoringBrain.consensusRuns
- * @returns {Promise<object>} resultado consolidado, listo para pasar a App.jsx
- */
 export const runScoringBrainWithConsensus = async (
   ai,
   buildContentsFn,
@@ -1444,11 +1351,11 @@ export const runScoringBrainWithConsensus = async (
   const responses = await Promise.all(calls);
   const parsed = responses.map(r => JSON.parse(r.text));
 
-  return mergeScoringBrainConsensus(parsed); // ← sin applyRiskBasedCap
+  return mergeScoringBrainConsensus(parsed);
 };
 
 // ─────────────────────────────────────────────────────────────
-// Utilidades (sin cambios respecto a v8)
+// Utilidades
 // ─────────────────────────────────────────────────────────────
 export const calcularCurvaRetencionSilicon = (simulacion, duracionSegundos) => {
   if (!simulacion?.simulacion?.length) return [];
@@ -1479,8 +1386,8 @@ export const buildSiliconSummary = (simulacion, predictionMarket) => {
     tasa_compartido:      Math.round((compartieron / total) * 100),
     tasa_guardado:        Math.round((guardaron    / total) * 100),
     segundo_peligroso:    simulacion.segundo_mas_peligroso  ?? null,
-    evento_retiene:       simulacion.evento_que_mas_retiene ?? '',
-    evento_expulsa:       simulacion.evento_que_mas_expulsa ?? '',
+    evento_retiene:       simulacion.evento_que_mas_retiene ?? { descripcion: '', timestamp: '' },
+    evento_expulsa:       simulacion.evento_que_mas_expulsa ?? { descripcion: '', timestamp: '' },
     patron_abandono:      simulacion.patron_abandono        ?? '',
     patron_retencion:     simulacion.patron_retencion       ?? '',
     retencion_por_perfil: predictionMarket?.retencion_por_perfil ?? {},
@@ -1490,7 +1397,7 @@ export const buildSiliconSummary = (simulacion, predictionMarket) => {
   };
 };
 
-// ── JS — Hook Gate — sin cambios ───────────────────────────────
+// ── JS — Hook Gate ───────────────────────────────
 export const deriveHookGateStatus = (preFacts) => {
   const gate     = preFacts?.hook_gate;
   const hookType = preFacts?.hook_type_detectado ?? '';
@@ -1587,7 +1494,7 @@ export const buildFlagsDeterministic = (flagsFromStrategy, preFacts, preHookType
 };
 
 // ═════════════════════════════════════════════════════════════
-// ADMIN — Indexado del corpus histórico (sin cambios respecto a v8)
+// ADMIN — Indexado del corpus histórico
 // ═════════════════════════════════════════════════════════════
 
 export const ensureFileSearchStore = async (ai, displayName = FILE_SEARCH_STORE_DISPLAY_NAME) => {
