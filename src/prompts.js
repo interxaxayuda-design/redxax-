@@ -498,12 +498,12 @@ export const SCORING_BRAIN_SCHEMA = {
           maximum: 100,
           description: "Qué tan fuerte es el elemento de atención inicial identificado en razonamiento_pattern, independientemente de si se resuelve después.",
         },
-        thematicCoherence: {
-          type: "NUMBER",
-          minimum: 0,
-          maximum: 100,
-          description: "Qué tan bien conecta ese elemento de atención inicial con el resto del video (vs. quedar huérfano o ser un cebo desconectado).",
-        },
+        narrativeCoherencePerceived: {
+        type: "NUMBER",
+        minimum: 0,
+        maximum: 100,
+        description: "Qué tan conectado percibió ESTE perfil lo que retuvo su atención con lo que el video efectivamente entregó después. Juzgalo con tu propio criterio.",
+},
 
         strength: {
           type: "NUMBER",
@@ -637,14 +637,15 @@ export const SCORING_BRAIN_SCHEMA = {
             "retención sólida con al menos un factor STEPPS fuerte (emoción, trigger o valor práctico) que empuja el " +
             "compartido. 81-100: retiene a los 6 perfiles simulados — incluido el escéptico — y genera motivo claro " +
             "de compartir fuera del nicho de origen. " +
-            "Tiene que ser consistente con hookDNA.riesgosDeRetencionDetectados: si ahí detectaste riesgos de " +
-            "severidad alta, eso tiene que reflejarse en un score más bajo y quedar explicado en " +
-            "razonamiento_viralScore — vos decidís cuánto pesa cada riesgo según el contexto del video, no hay " +
-            "una tabla fija de puntos a descontar. " +
-            "REGLA DE ORO: la retención es un multiplicador, no un promedio. Si en hookDNA.riesgosDeRetencionDetectados " +
-            "marcaste un riesgo de severidad alta ocurrido en los primeros 3 segundos, el score viral NO PUEDE superar " +
-            "los 40 puntos, sin importar qué tan bueno sea el resto del video. Un fallo crítico temprano es una barrera " +
-            "insuperable, no un punto negativo que se compensa con otras virtudes.",
+            // SACAR esto de la description de viralScore.score:
+"Tiene que ser consistente con hookDNA.riesgosDeRetencionDetectados: si ahí detectaste riesgos de " +
+"severidad alta, eso tiene que reflejarse en un score más bajo y quedar explicado en " +
+"razonamiento_viralScore — vos decidís cuánto pesa cada riesgo según el contexto del video, no hay " +
+"una tabla fija de puntos a descontar. " +
+"REGLA DE ORO: la retención es un multiplicador, no un promedio. Si en hookDNA.riesgosDeRetencionDetectados " +
+"marcaste un riesgo de severidad alta ocurrido en los primeros 3 segundos, el score viral NO PUEDE superar " +
+"los 40 puntos, sin importar qué tan bueno sea el resto del video. Un fallo crítico temprano es una barrera " +
+"insuperable, no un punto negativo que se compensa con otras virtudes."
         },
       },
       propertyOrdering: ["verdict", "accion_clave", "score"],
@@ -655,30 +656,29 @@ export const SCORING_BRAIN_SCHEMA = {
         verdict:      { type: "STRING" },
         accion_clave: { type: "STRING" },
         score: {
-          type: "NUMBER",
-          minimum: 0,
-          maximum: 100,
-          description:
-            "Score de potencial de ventas, rúbrica — 0-20: no hay señal de venta identificable (producto/oferta " +
-            "ausente o irreconocible). 21-40: producto visible pero sin dolor planteado, sin CTA, o sin claridad de " +
-            "qué se vende. 41-60: dolor y producto presentes pero falta urgencia o señal de confianza. 61-80: dolor " +
-            "claro, producto claro, señal de confianza del nicho presente, CTA implícito o explícito. 81-100: ciclo " +
-            "completo dolor→solución→confianza→CTA sin fricción, con el perfil 'comprador' entendiendo qué comprar " +
-            "y por qué ahora.",
-        },
+  type: "NUMBER",
+  minimum: 0,
+  maximum: 100,
+  description:
+    "Score de potencial viral, rúbrica — 0-20: prácticamente sin mecanismo de retención ni de compartir. " +
+    "21-40: retiene a un perfil aislado pero no genera impulso de compartir. 41-60: retiene a la mayoría de " +
+    "perfiles promedio/nicho pero sin gancho para viralizar más allá de su audiencia habitual. 61-80: combina " +
+    "retención sólida con al menos un factor STEPPS fuerte (emoción, trigger o valor práctico) que empuja el " +
+    "compartido. 81-100: retiene a los 6 perfiles simulados — incluido el escéptico — y genera motivo claro " +
+    "de compartir fuera del nicho de origen. " +
+    "Tiene que ser consistente con hookDNA.riesgosDeRetencionDetectados: si ahí detectaste riesgos, eso debe " +
+    "reflejarse en el número y quedar explicado en razonamiento_viralScore, con el peso que vos consideres " +
+    "correcto según el contexto real de este video.",
+},
       },
       propertyOrdering: ["verdict", "accion_clave", "score"],
     },
     honestVerdict: { type: "STRING", description: "El veredicto más honesto posible, en 1-2 frases, sin suavizarlo. Debe ser consistente con roadmap y con viralScore/salesScore — nunca optimista si el roadmap tiene un problema de impacto ALTO o los scores son bajos." },
     erroresFatales: {
-      type: "ARRAY",
-      minItems: 3,
-      maxItems: 3,
-      description:
-        "Encontrá EXACTAMENTE 3 razones por las cuales un espectador cerraría el video o dejaría de mirarlo. " +
-        "Es obligatorio completar las 3, sin excepción — si el video es bueno y no hay 3 fallas evidentes, " +
-        "elegí las 3 más plausibles de todos modos (por más menores que sean) y marcalas con gravedad 'menor'. " +
-        "Nunca dejes el array con menos de 3 elementos. Ordenalos del más letal al menos letal.",
+  type: "ARRAY",
+  minItems: 0,
+  maxItems: 3,
+  description: "Encontrá hasta 3 razones reales por las cuales un espectador dejaría de mirar este video, ordenadas de la más letal a la menos letal. Si no hay 3, no rellenes el cupo.",
       items: {
         type: "OBJECT",
         properties: {
@@ -1444,8 +1444,7 @@ export const runScoringBrainWithConsensus = async (
   const responses = await Promise.all(calls);
   const parsed = responses.map(r => JSON.parse(r.text));
 
-  const merged = mergeScoringBrainConsensus(parsed);
-  return applyRiskBasedCap(merged); // ← la única línea nueva acá
+  return mergeScoringBrainConsensus(parsed); // ← sin applyRiskBasedCap
 };
 
 // ─────────────────────────────────────────────────────────────
