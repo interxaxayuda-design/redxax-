@@ -9,10 +9,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import logo from './logo.png';
 import {
-  buildDesarrolloAnalysisPrompt,
-  buildFinalReviewPrompt,
-  buildHookAnalysisPrompt,
-  REVIEW_CONFIG,
+  REVIEW_CONFIG
 } from './prompts.js';
 
 import { createClient } from '@supabase/supabase-js';
@@ -542,252 +539,47 @@ const stripFlags = (strategyText) =>
 
 
 
-// ============================================================
-// runNeuralAnalysis + runDeepAnalysis — CORREGIDOS
-//
-// Cambios vs versión anterior:
-//   1. temperature: 0.3 en CALL 1 (no más 0 en análisis subjetivo)
-//   2. buildCognitiveScanPrompt pierde el 3er parámetro fewShotExamples
-//      (ahora viene de la constante FEW_SHOTS en prompts.js)
-//   3. Bloque JS de failures eliminado — ya no afecta el viralScore
-//   4. penaltyCount y penalty eliminados — Gemini da el score, JS no lo toca
-//   5. scoringRaw usa rawViralScore directamente, sin restar penalties
-//   6. viralCapData sigue aplicando el cap como TECHO (esto se mantiene)
-//   7. researchData pasado a buildCognitiveScanPrompt para calibración
-//   8. Log mejorado para debugging
-// ===========================================================
-const runNeuralAnalysis = async (url, platform, followerRange, videoFile) => {
-  if (videoFile.size > 45 * 1024 * 1024) {
-    alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB.`);
-    return;
-  }
+const [nichoSugerido, setNichoSugerido] = useState('');
 
-  const duration = await new Promise((resolve) => {
-    const v = document.createElement('video');
-    v.src = url;
-    v.onloadedmetadata = () => resolve(v.duration);
-  });
-
+const runNicheSuggestion = async (videoFile, platform) => {
   setStep('analyzing');
   setAnalysisMode('video');
-  setStatusText("Preparando video...");
-  setAnalysisProgress(5);
+  setStatusText("Viendo el video...");
+  setAnalysisProgress(15);
 
   const safeName = videoFile?.name
-    ?.normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9._-]/g, '') || 'video.mp4';
-
+    ?.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '') || 'video.mp4';
   const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
   const mimeType = videoFile.type || 'video/mp4';
 
-  console.log('[VIRAX] Subiendo:', videoFile.name, videoFile.size, 'bytes', mimeType);
-
   try {
-    setStatusText("Subiendo video...");
-    setAnalysisProgress(10);
-
     const { error: uploadError } = await supabase.storage
-      .from('videos')
-      .upload(storagePath, videoFile, { contentType: mimeType, upsert: true });
-
+      .from('videos').upload(storagePath, videoFile, { contentType: mimeType, upsert: true });
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
-    console.log('[VIRAX] Video subido:', storagePath);
 
-    setStatusText("Extrayendo señales del video...");
-    setAnalysisProgress(18);
-
-   // En runNeuralAnalysis, reemplazá el bloque CALL 0:
-const { data: call0Data, error: call0Error } = await supabase.functions.invoke('gemini-proxy', {
+    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text:          buildPreClassifierPrompt(),
+        text: buildNicheSuggestionPrompt(),
         storagePath,
         videoMimeType: mimeType,
-        duration:      Math.round(duration),
-        maxOutputTokens: 1800,
-        expectsJson:   false,   // ← CAMBIO: ya no es JSON puro
-        temperature:   0,
-      }
-    });
- 
-    if (call0Error) {
-      let rawBody = '';
-      try { rawBody = await call0Error.context?.text?.(); } catch (_) {}
-      console.error('[CALL 0 ERROR] Status:', call0Error.message);
-      console.error('[CALL 0 ERROR] Body real:', rawBody);
-      throw new Error(`CALL 0 falló: ${rawBody || call0Error.message}`);
-    }
- 
-    // ← CAMBIO: nuevo parser sin JSON
-    const call0RawText = extractGeminiText(call0Data);
-    const preFacts = parsePreClassifierResponse(call0RawText);
-    console.log('[VIRAX] Pre-facts (calibración):', preFacts);
- 
-    // DESPUÉS:
-  setPerception({
-  industria: preFacts.industria || selectedNicho,
-});
- 
-    setVideoMeta({
-      storagePath,
-      mimeType,
-      duration,
-      preFacts,
-      platform,
-      followerRange,
-    });
-
-    setAnalysisProgress(100);
-    setTimeout(() => setStep('validation'), 500);
-
-  } catch (err) {
-    console.error('Error en fase de calibración:', err);
-    alert(`❌ Error al pre-clasificar: ${err?.message || String(err)}`);
-    await supabase.storage.from('videos').remove([storagePath]);
-    setStep('upload');
-  }
-};
-
-//videoDescription
-
-const runDeepAnalysis = async (videoFile, platform, industria) => {
-  if (videoFile.size > 45 * 1024 * 1024) {
-    alert(`El video pesa ${(videoFile.size / 1024 / 1024).toFixed(1)}MB. El límite es 50MB.`);
-    return;
-  }
-
-  const cost = 60; // bajado de 100 — pasamos de ~15 calls a 3
-  const approved = await deductGems(cost, 'video');
-  if (!approved) return;
-
-  setStep('analyzing');
-  setAnalysisMode('video');
-  setStatusText("Subiendo video...");
-  setAnalysisProgress(10);
-
-  const safeName = videoFile?.name
-    ?.normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '_')
-    .replace(/[^a-zA-Z0-9._-]/g, '') || 'video.mp4';
-
-  const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
-  const mimeType = videoFile.type || 'video/mp4';
-
-  let fileUri = null;
-  let fileName = null; // nombre del archivo en Gemini File API, para borrarlo después
-
-  try {
-    const { error: uploadError } = await supabase.storage
-      .from('videos')
-      .upload(storagePath, videoFile, { contentType: mimeType, upsert: true });
-    if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
-
-    setStatusText("Preparando video para análisis...");
-    setAnalysisProgress(20);
-
-    // Sube UNA VEZ a Gemini File API, sin cachear (no cachear porque
-    // hook y desarrollo necesitan fps distintos — el cache fija el fps).
-    const { data: uploadData, error: uploadGeminiError } = await supabase.functions.invoke('gemini-proxy', {
-      body: { uploadOnly: true, storagePath, videoMimeType: mimeType }
-    });
-    if (uploadGeminiError || !uploadData?.fileUri) {
-      throw new Error(uploadGeminiError?.message || 'No se pudo subir el video a Gemini');
-    }
-    fileUri = uploadData.fileUri;
-    fileName = uploadData.fileName;
-
-    setStatusText("Analizando el hook...");
-    setAnalysisProgress(35);
-
-    const cfg = REVIEW_CONFIG;
-
-    // CALL 1 y CALL 2 en paralelo — no dependen entre sí
-    const [hookRes, desarrolloRes] = await Promise.all([
-      supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: buildHookAnalysisPrompt(platform, industria, selectedObjetivo),
-          fileUri,
-          videoMimeType: mimeType,
-          videoFps: cfg.hook.videoFps,
-          expectsJson: false,
-          temperature: cfg.hook.temperature,
-          maxOutputTokens: 1500,
-        }
-      }),
-      supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo),
-          fileUri,
-          videoMimeType: mimeType,
-          videoFps: cfg.desarrollo.videoFps,
-          expectsJson: false,
-          temperature: cfg.desarrollo.temperature,
-          maxOutputTokens: 2000,
-        }
-      }),
-    ]);
-
-    if (hookRes.error) throw new Error(`Análisis de hook falló: ${hookRes.error.message}`);
-    if (desarrolloRes.error) throw new Error(`Análisis de desarrollo falló: ${desarrolloRes.error.message}`);
-
-    const hookAnalysis = extractGeminiText(hookRes.data);
-    const desarrolloAnalysis = extractGeminiText(desarrolloRes.data);
-
-    setAnalysisProgress(75);
-    setStatusText("Preparando devolución final...");
-
-    // CALL 3 — sin video, solo combina los dos textos anteriores
-    const { data: finalData, error: finalError } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, selectedObjetivo),
+        videoFps: REVIEW_CONFIG.nicheSuggestion.videoFps,
         expectsJson: false,
-        temperature: cfg.sintesis.temperature,
-        maxOutputTokens: 2000,
+        temperature: REVIEW_CONFIG.nicheSuggestion.temperature,
+        maxOutputTokens: 30,
       }
     });
-    if (finalError) throw new Error(`Síntesis final falló: ${finalError.message}`);
+    if (error) throw new Error(error.message);
 
-    const reviewText = extractGeminiText(finalData);
-
-    const finalResult = {
-      reviewText,
-      hookAnalysis,
-      desarrolloAnalysis,
-      industria,
-      platform,
-      objetivo: selectedObjetivo,
-    };
-
-    setAiResult(finalResult);
-    setChatMessages([{
-      role: 'bot',
-      text: 'Ya vi tu video. ¿Sobre qué parte querés que profundicemos?'
-    }]);
-
+    const sugerido = extractGeminiText(data).trim();
+    setNichoSugerido(sugerido || '');
     setAnalysisProgress(100);
-    await saveAnalysisToHistory(finalResult, 'video');
-    setTimeout(() => setStep('results'), 500);
+    setTimeout(() => setStep('validation'), 300);
 
   } catch (err) {
-    console.error('Error en análisis:', err);
-    alert(`❌ Error al procesar el video: ${err.message || err}`);
-    setStep('upload');
-
-  } finally {
-    if (fileName) {
-      try {
-        await supabase.functions.invoke('gemini-proxy', { body: { deleteOnly: true, fileName } });
-      } catch (e) {
-        console.warn('No se pudo eliminar el archivo de Gemini File API:', e);
-      }
-    }
-    try {
-      await supabase.storage.from('videos').remove([storagePath]);
-    } catch (e) {
-      console.warn('No se pudo eliminar el video de Supabase:', e);
-    }
+    console.warn('No se pudo sugerir nicho, seguimos sin sugerencia:', err.message);
+    setNichoSugerido(''); // el usuario completa a mano, no bloqueamos el flujo
+    setStep('validation');
   }
 };
 
@@ -1434,129 +1226,56 @@ ${currentMessage.text}
           ← Volver
         </button>
         <button
-          disabled={!selectedPlatform || !selectedFollowerRange || !selectedNicho}
-          onClick={() => {
-            if (analysisMode === 'video' && pendingVideoUrl) {
-             runNeuralAnalysis(pendingVideoUrl, selectedPlatform, selectedFollowerRange, pendingVideoFile); // ← cambiás esta línea
-            } else {
-              runScriptAnalysis(selectedPlatform, selectedFollowerRange);
-            }
-          }}
-          className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all"
-        >
-          Iniciar Análisis →
-        </button>
+  disabled={!selectedPlatform || !selectedFollowerRange}
+  onClick={() => {
+    if (analysisMode === 'video' && pendingVideoFile) {
+      runNicheSuggestion(pendingVideoFile, selectedPlatform);
+    } else {
+      runScriptAnalysis(selectedPlatform, selectedFollowerRange);
+    }
+  }}
+  className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all"
+>
+  Iniciar Análisis →
+</button>
       </div>
     </div>
   </div>
 )}
 
-{/* ── 3. PANTALLA DE VALIDACIÓN ESTRATÉGICA CORREGIDA ── */}
-{step === 'validation' && (() => {
-  // 1. Listas estándar de respaldo
-  const STANDARD_NICHOS = [
-    "Producto físico",
-    "Curso / Info",
-    "Servicio",
-    "Inmobiliaria",
-    "App / Software",
-    "Restaurante / Comida",
-    "Otro / General"
-  ];
+{step === 'validation' && (
+  <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-10 duration-500">
+    <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-8 md:p-12 shadow-2xl">
+      <div className="mb-10 text-center">
+        <h3 className="text-3xl font-black italic uppercase tracking-tighter">Confirmá el nicho</h3>
+        <p className="text-slate-400 mt-3 font-medium">
+          {nichoSugerido ? 'Esto es lo que detectamos — corregilo si hace falta.' : 'No pudimos sugerir un nicho, escribilo vos.'}
+        </p>
+      </div>
 
-  const STANDARD_PALANCAS = [
-    "Dolor / Ahorro de tiempo",
-    "Curiosidad / Retención",
-    "Estatus / Identidad",
-    "FOMO / Urgencia"
-  ];
+      <textarea
+        rows={2}
+        value={nichoSugerido}
+        onChange={(e) => setNichoSugerido(e.target.value)}
+        placeholder="Ej. Estética facial, comida rápida, fitness..."
+        className="bg-transparent text-lg text-white font-bold outline-none border-b border-white/10 focus:border-purple-500 pb-1 w-full resize-none mb-10"
+      />
 
-  return (
-    <div className="max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-10 duration-500">
-      <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-8 md:p-12 shadow-2xl">
-        
-        {/* Header del bloque */}
-        <div className="mb-10 text-center">
-          <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-            <span>🧠</span> Motor VIRAX calibrado
-          </div>
-          <h3 className="text-3xl font-black italic uppercase tracking-tighter">
-            Verificación de Estrategia
-          </h3>
-          <p className="text-slate-400 mt-3 font-medium">
-            Confirmá o editá el ángulo que interpretó la IA antes de lanzar la auditoría profunda.
-          </p>
-        </div>
-
-        {/* Inputs Premium Editables */}
-        <div className="space-y-6 mb-10">
-          
-          {/* Campo: Nicho / Industria */}
-          <div className="group flex flex-col space-y-3 p-5 rounded-[2rem] border border-white/[0.07] bg-white/[0.02] hover:border-purple-500/20 transition-all duration-300">
-            <div className="flex justify-between items-center">
-              <label className="text-[10px] font-black uppercase tracking-wider text-slate-500 group-hover:text-purple-400 transition-colors">
-                Nicho / Industria (Hacé clic para editar)
-              </label>
-              <span className="text-[9px] font-bold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
-                Editable 📝
-              </span>
-            </div>
-            
-            {/* Se cambió a textarea para permitir saltos de línea sin cortar palabras */}
-            <textarea 
-              rows={2}
-              value={perception?.industria || ''}
-              onChange={(e) => setPerception({...perception, industria: e.target.value})}
-              placeholder="Ej. Estética masculina, E-commerce de zapatillas..."
-              className="bg-transparent text-lg text-white font-bold outline-none border-b border-white/10 focus:border-purple-500 pb-1 transition-colors w-full resize-none break-words whitespace-pre-wrap leading-relaxed"
-            />
-
-            {/* Sugerencias en Chips */}
-            <div className="pt-1">
-              <p className="text-[9px] font-bold text-slate-600 uppercase tracking-wider mb-2">Alternativas rápidas:</p>
-              <div className="flex flex-wrap gap-1.5">
-                {STANDARD_NICHOS.map((nicho) => (
-                  <button
-                    key={nicho}
-                    type="button"
-                    onClick={() => setPerception({...perception, industria: nicho})}
-                    className={`px-3 py-1 rounded-full text-[11px] font-medium transition-all break-words text-left ${
-                      perception?.industria === nicho 
-                        ? 'bg-purple-500/20 border border-purple-500/40 text-purple-300' 
-                        : 'bg-white/[0.02] border border-white/[0.05] text-slate-400 hover:bg-white/[0.08] hover:text-slate-200'
-                    }`}
-                  >
-                    {nicho}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-
-        </div>
-
-        {/* Botones de Acción de la parte inferior */}
-        <div className="flex justify-between items-center">
-          <button 
-            onClick={() => setStep('upload')}
-            className="text-sm font-bold text-slate-400 hover:text-white transition-colors uppercase tracking-widest"
-          >
-            ← Volver
-          </button>
-          
-          <button
-            onClick={runDeepAnalysis}
-            className="bg-purple-600 hover:bg-purple-500 text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all hover:scale-[1.02] active:scale-[0.98]"
-          >
-            Confirmar y Analizar →
-          </button>
-        </div>
-
+      <div className="flex justify-between items-center">
+        <button onClick={() => setStep('upload')} className="text-sm font-bold text-slate-400 hover:text-white uppercase tracking-widest">
+          ← Volver
+        </button>
+        <button
+          disabled={!nichoSugerido.trim()}
+          onClick={() => runDeepAnalysis(pendingVideoFile, selectedPlatform, nichoSugerido.trim())}
+          className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider"
+        >
+          Confirmar y Analizar →
+        </button>
       </div>
     </div>
-  ); //PALANCA QUE QUIERE ACTIVAR: ${palancaObjetivo}
-})()}
+  </div>
+)}
 
         {/* ── SCRIPT INPUT ── */}
         {step === 'script_input' && (

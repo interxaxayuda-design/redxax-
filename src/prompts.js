@@ -1,46 +1,4 @@
-// ─────────────────────────────────────────────────────────────
-// CALL 0 — Observador del HOOK
-// ─────────────────────────────────────────────────────────────
-export const buildPreClassifierPrompt = (hookWindowSegundos = 5) => `
-<role>
-Sos un observador técnico de video. Tu trabajo es reportar hechos, no opinar ni evaluar.
-</role>
 
-<context>
-Tenés acceso directo al video completo. Vas a mirarlo entero, de principio a fin, sin saltear nada — lo necesitás completo para responder [SEÑALES] con precisión, aunque [DESCRIPCION] solo te pida los primeros segundos.
-
-Limitación técnica a tener en cuenta: el muestreo de video de este sistema no captura necesariamente cada instante — es posible que algunos cortes o cambios visuales muy rápidos (menores a medio segundo) no se hayan muestreado por completo. Si en los primeros ${hookWindowSegundos} segundos notás movimiento brusco, corte muy rápido, o cualquier indicio de que pasó algo entre dos frames que no llegaste a ver con nitidez, decilo explícitamente en [DESCRIPCION] y marcá muestreo_incompleto: sí en [SEÑALES] — no completes esos huecos con una suposición que suene segura.
-</context>
-
-<task>
-[DESCRIPCION]
-Describí ÚNICAMENTE lo que pasa en los primeros ${hookWindowSegundos} segundos (el hook / la apertura): imagen, audio, texto en pantalla, ritmo de corte, qué promesa o pattern interrupt se instala ahí. Prestá atención especial a si el video corta o interrumpe justo antes de mostrar algo que visualmente prometía mostrar (por ejemplo: se ve una piedra a punto de caer al agua y corta antes del impacto) — es una técnica de hook específica y vale la pena registrarla si aparece.
-NO describas ni resumas el resto del video en este bloque. El desarrollo completo lo va a observar cada análisis siguiente de forma directa e independiente.
-Máximo 250 palabras.
-[/DESCRIPCION]
-
-[SEÑALES]
-Estas señales sí requieren el video completo. Para cualquier marca de tiempo usá el formato MM:SS (ej: 00:07) — es el formato que interpretás con más precisión.
-duracion: <segundos totales, número>
-industria_detectada: <tu criterio, máximo 4 palabras>
-elemento_en_s0: <qué aparece en el primer frame>
-payoff_segundo: <MM:SS del punto más fuerte de todo el video>
-audio_presente: <sí|no>
-audio_desde_inicio: <sí|no>
-tiene_rehook: <sí|no>
-cortes_por_10s: <número>
-logo_en_frame_0: <sí|no>
-voz_ia: <sí|no>
-es_slideshow: <sí|no>
-pregunta_visible: <sí|no>
-texto_en_pantalla_s0: <texto literal o "ninguno">
-transformacion_visible: <sí|no>
-muestreo_incompleto: <sí|no — sí si en el hook hubo algún corte o cambio tan rápido que no pudiste verlo con nitidez>
-musica_presente: <sí|no — música de fondo, no solo voz/habla>
-musica_cambia_en_hook: <sí|no — si la música cambia de forma notoria (entra, sube, corta) dentro de los primeros ${hookWindowSegundos}s>
-[/SEÑALES]
-</task>
-`;
 
 // ═════════════════════════════════════════════════════════════
 // VIRAX — 3 calls: hook, desarrollo, síntesis final
@@ -53,6 +11,13 @@ export const REVIEW_CONFIG = {
     media_resolution: "default",
     thinkingConfig: { thinkingBudget: 4096 },
     videoFps: 4, // cortes rápidos del hook se pierden a 1 FPS por defecto
+  },
+   nicheSuggestion: {
+    model: "gemini-2.5-flash",
+    temperature: 0.3,
+    media_resolution: "default",
+    thinkingConfig: { thinkingBudget: 512 }, // súper liviano, es solo una etiqueta
+    videoFps: 1,
   },
   desarrollo: {
     model: "gemini-2.5-flash",
@@ -73,6 +38,13 @@ const contextoComun = (platform, industria, objetivo) => {
   const pName = { tiktok: "TikTok", reels: "Instagram Reels", shorts: "YouTube Shorts", all: "TikTok, Reels y Shorts" }[platform] || platform;
   return `editor y estratega de contenido con experiencia real en ${pName}, analizando un video de ${industria || "un nicho no especificado"}. Objetivo del creador: ${objetivo || "no especificado"}.`;
 };
+
+export const buildNicheSuggestionPrompt = () => `
+Mirá este video y decime, en 2 a 4 palabras como mucho, a qué nicho o industria pertenece (ej: "estética facial", "comida rápida", "fitness / suplementos", "inmobiliaria"). 
+
+Respondé ÚNICAMENTE con esas 2-4 palabras, sin explicación, sin punto final, sin comillas.
+`;
+
 
 export const buildHookAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
 Sos un ${contextoComun(platform, industria, objetivo)}
