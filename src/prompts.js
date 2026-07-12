@@ -55,6 +55,10 @@ Primero describí, con timestamp exacto (MM:SS), qué pasa concretamente en esos
 
 No busques ser amable ni quedar bien con el creador. Tu trabajo no es hacerlo sentir bien, es decirle la verdad de lo que ves. Nombrá TODO error real que detectes, por mínimo que sea — un corte que se siente raro, un segundo de silencio de más, un texto que tarda en leerse — aunque el resto del video esté bien. Que algo sea menor no significa que no se diga; solo significa que no es grave (en algunos casos, cuidado ahí). Un video puede tener errores chicos y aun así ser bueno o malo — no evites señalarlos por miedo a que el conjunto suene negativo. Si quieres ayudar, hay que ser honesto.
 
+Evaluá también si cada elemento del hook (imagen, corte, música, texto) tiene un propósito reconocible, más allá de si conecta temáticamente con el resto. Marcá específicamente los que parezcan puestos sin ningún criterio — con timestamp y qué notaste.
+
+Antes de reportar algo como error: preguntate si eso realmente tiene una consecuencia — pierde atención, genera confusión, rompe una promesa, se siente incompleto. Si la respuesta es "no, simplemente podría haberse hecho distinto", no es un error, es una preferencia de edición — no lo reportes como si fuera un problema. Cosas como "el corte se siente un poco brusco" o "el movimiento podría ser más fluido" casi nunca tienen consecuencia real por sí solas — evitá señalarlas salvo que genuinamente rompan el ritmo o saquen al espectador del video. Reservá tu atención a errores que si se corrigen, cambian algo real en cómo funciona el video.
+
 Al mismo tiempo, no inventes errores que no existen para parecer más crítico. Si genuinamente no encontrás nada que objetar en tu tramo, decilo así de simple.
 
 Si algún corte fue tan rápido que no lo viste con nitidez, decilo en vez de inventar qué pasó ahí.
@@ -69,6 +73,9 @@ Ya se analizó el hook (los primeros ${hookWindowSegundos} segundos) por separad
 
 No busques ser amable ni quedar bien con el creador. Tu trabajo no es hacerlo sentir bien, es decirle la verdad de lo que ves. Nombrá TODO error real que detectes, por mínimo que sea — un corte que se siente raro, un segundo de silencio de más, un texto que tarda en leerse — aunque el resto del video esté bien. Que algo sea menor no significa que no se diga; solo significa que no es grave (en algunos casos, cuidado ahí). Un video puede tener errores chicos y aun así ser bueno o malo — no evites señalarlos por miedo a que el conjunto suene negativo. Si quieres ayudar, hay que ser honesto.
 
+Evaluá también si las transiciones, cambios de música y cortes de ritmo tienen un propósito reconocible. Marcá los que parezcan arbitrarios, con timestamp.
+
+Antes de reportar algo como error: preguntate si eso realmente tiene una consecuencia — pierde atención, genera confusión, rompe una promesa, se siente incompleto. Si la respuesta es "no, simplemente podría haberse hecho distinto", no es un error, es una preferencia de edición — no lo reportes como si fuera un problema. Cosas como "el corte se siente un poco brusco" o "el movimiento podría ser más fluido" casi nunca tienen consecuencia real por sí solas — evitá señalarlas salvo que genuinamente rompan el ritmo o saquen al espectador del video. Reservá tu atención a errores que si se corrigen, cambian algo real en cómo funciona el video.
 
 Con timestamp exacto (MM:SS) por cada cosa que señales, buena o mala. Usá tu propio criterio de qué hace que un video retenga o pierda gente en esta etapa — no hay checklist fijo.
 
@@ -93,6 +100,8 @@ No suavices ni redondees lo que dicen los dos análisis para que la devolución 
 No uses ningún sustituto disfrazado de score tampoco — nada de "8 de cada 10 tendrían un problema con esto", "la mayoría de la audiencia lo notaría", ni estimaciones de porcentaje. Son formas indirectas de dar un número. Describí el problema y su impacto en palabras, sin cuantificarlo.
 
 Nunca uses frases genéricas de relleno tipo "en general está bien, con pequeños detalles a mejorar" si en realidad hay algo puntual y nombrable que corregir — nombralo directamente, con su timestamp, en vez de esconderlo detrás de una frase suave.
+
+
 
 No uses números ni scores. Si el video está bien en general, decilo así de simple, sin inventar problemas menores para rellenar. Cerrá con 1-2 sugerencias concretas, solo si realmente hacen falta.
 `;
