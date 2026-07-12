@@ -24,7 +24,7 @@ export const REVIEW_CONFIG = {
     temperature: 0.5,
     media_resolution: "default",
     thinkingConfig: { thinkingBudget: 5120 },
-    videoFps: 1, // el resto del video no suele tener cortes tan rápidos — no hace falta pagar 4fps acá
+    videoFps: 4, // el resto del video no suele tener cortes tan rápidos — no hace falta pagar 4fps acá
   },
   sintesis: {
     model: "gemini-2.5-flash",
@@ -55,6 +55,11 @@ Primero describí, con timestamp exacto (MM:SS), qué pasa concretamente en esos
 
 No busques ser amable ni quedar bien con el creador. Tu trabajo no es hacerlo sentir bien, es decirle la verdad de lo que ves. Nombrá TODO error real que detectes, por mínimo que sea — un corte que se siente raro, un segundo de silencio de más, un texto que tarda en leerse — aunque el resto del video esté bien. Que algo sea menor no significa que no se diga; solo significa que no es grave (en algunos casos, cuidado ahí). Un video puede tener errores chicos y aun así ser bueno o malo — no evites señalarlos por miedo a que el conjunto suene negativo. Si quieres ayudar, hay que ser honesto.
 
+Distinguí entre habla en cámara, texto superpuesto y subtítulos — no los confundas. Si no estás seguro de audio o de un texto en pantalla, decilo como incertidumbre en vez de afirmar.
+Calibrá tu criterio según el tipo de video — no le exijas lo mismo a un storytelling que a una demostración técnica.
+
+Al mismo tiempo, no inventes errores que no existen para parecer más crítico. Si genuinamente no encontrás nada que objetar en tu tramo, decilo así de simple.
+
 Evaluá también si cada elemento del hook (imagen, corte, música, texto) tiene un propósito reconocible, más allá de si conecta temáticamente con el resto. Marcá específicamente los que parezcan puestos sin ningún criterio — con timestamp y qué notaste.
 
 Antes de reportar algo como error: preguntate si eso realmente tiene una consecuencia — pierde atención, genera confusión, rompe una promesa, se siente incompleto. Si la respuesta es "no, simplemente podría haberse hecho distinto", no es un error, es una preferencia de edición — no lo reportes como si fuera un problema. Cosas como "el corte se siente un poco brusco" o "el movimiento podría ser más fluido" casi nunca tienen consecuencia real por sí solas — evitá señalarlas salvo que genuinamente rompan el ritmo o saquen al espectador del video. Reservá tu atención a errores que si se corrigen, cambian algo real en cómo funciona el video.
@@ -72,6 +77,11 @@ Sos un ${contextoComun(platform, industria, objetivo)}
 Ya se analizó el hook (los primeros ${hookWindowSegundos} segundos) por separado. Tu tarea ahora es analizar el resto del video, desde ese punto hasta el final — el desarrollo, el ritmo, si cumple lo que prometía, el cierre y el CTA si lo hay.
 
 No busques ser amable ni quedar bien con el creador. Tu trabajo no es hacerlo sentir bien, es decirle la verdad de lo que ves. Nombrá TODO error real que detectes, por mínimo que sea — un corte que se siente raro, un segundo de silencio de más, un texto que tarda en leerse — aunque el resto del video esté bien. Que algo sea menor no significa que no se diga; solo significa que no es grave (en algunos casos, cuidado ahí). Un video puede tener errores chicos y aun así ser bueno o malo — no evites señalarlos por miedo a que el conjunto suene negativo. Si quieres ayudar, hay que ser honesto.
+
+Distinguí entre habla en cámara, texto superpuesto y subtítulos — no los confundas. Si no estás seguro de audio o de un texto en pantalla, decilo como incertidumbre en vez de afirmar.
+Calibrá tu criterio según el tipo de video — no le exijas lo mismo a un storytelling que a una demostración técnica.
+
+Con timestamp exacto (MM:SS) por cada cosa que señales, buena o mala. Usá tu propio criterio de qué hace que un video retenga o pierda gente en esta etapa — no hay checklist fijo.
 
 Evaluá también si las transiciones, cambios de música y cortes de ritmo tienen un propósito reconocible. Marcá los que parezcan arbitrarios, con timestamp.
 
