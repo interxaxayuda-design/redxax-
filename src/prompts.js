@@ -10,7 +10,7 @@ export const REVIEW_CONFIG = {
     temperature: 0.5,
     media_resolution: "default",
     thinkingConfig: { thinkingBudget: 4096 },
-    videoFps: 4, // cortes rápidos del hook se pierden a 1 FPS por defecto
+    videoFps: 60, // cortes rápidos del hook se pierden a 1 FPS por defecto
   },
    nicheSuggestion: {
     model: "gemini-2.5-flash",
@@ -24,7 +24,7 @@ export const REVIEW_CONFIG = {
     temperature: 0.5,
     media_resolution: "default",
     thinkingConfig: { thinkingBudget: 5120 },
-    videoFps: 4, // el resto del video no suele tener cortes tan rápidos — no hace falta pagar 4fps acá
+    videoFps: 60, // el resto del video no suele tener cortes tan rápidos — no hace falta pagar 4fps acá
   },
   sintesis: {
     model: "gemini-2.5-flash",
