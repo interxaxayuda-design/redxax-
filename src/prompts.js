@@ -1,36 +1,33 @@
-
-
 // ═════════════════════════════════════════════════════════════
-// VIRAX — 3 calls: hook, desarrollo, síntesis final
+// REDXAX VISION — 3 calls: hook, desarrollo, síntesis final
 // ═════════════════════════════════════════════════════════════
 
 export const REVIEW_CONFIG = {
   hook: {
     model: "gemini-2.5-flash",
-    temperature: 0.5,
+    temperature: 0.2, // Reducido de 0.5 a 0.2 para mayor precisión analítica
     media_resolution: "default",
     thinkingConfig: { thinkingBudget: 4096 },
-    videoFps: 60, // cortes rápidos del hook se pierden a 1 FPS por defecto
+    videoFps: 8, 
   },
    nicheSuggestion: {
     model: "gemini-2.5-flash",
-    temperature: 0.3,
+    temperature: 0.1, // Aún más bajo porque es solo una etiqueta
     media_resolution: "default",
-    thinkingConfig: { thinkingBudget: 512 }, // súper liviano, es solo una etiqueta
+    thinkingConfig: { thinkingBudget: 512 }, 
     videoFps: 1,
   },
   desarrollo: {
     model: "gemini-2.5-flash",
-    temperature: 0.5,
+    temperature: 0.2, // Reducido de 0.5 a 0.2
     media_resolution: "default",
     thinkingConfig: { thinkingBudget: 5120 },
-    videoFps: 60, // el resto del video no suele tener cortes tan rápidos — no hace falta pagar 4fps acá
+    videoFps: 8, 
   },
   sintesis: {
     model: "gemini-2.5-flash",
-    temperature: 0.4,
+    temperature: 0.3, // Reducido de 0.4 para evitar que invente datos en el resumen
     thinkingConfig: { thinkingBudget: 3072 },
-    // sin video — solo combina los dos textos anteriores
   },
 };
 
@@ -45,77 +42,68 @@ Mirá este video y decime, en 2 a 4 palabras como mucho, a qué nicho o industri
 Respondé ÚNICAMENTE con esas 2-4 palabras, sin explicación, sin punto final, sin comillas.
 `;
 
-
 export const buildHookAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
+<rol>
 Sos un ${contextoComun(platform, industria, objetivo)}
+</rol>
 
-Tenés el video completo, pero tu tarea ahora es analizar ÚNICAMENTE los primeros ${hookWindowSegundos} segundos (el hook / la apertura). Usá tu propio criterio y experiencia para juzgar qué tan efectivo es — no hay una lista fija de elementos que tenga que tener.
+<instrucciones>
+Tenés el video completo, pero tu tarea ahora es analizar ÚNICAMENTE los primeros ${hookWindowSegundos} segundos (el hook / la apertura). Usá tu propio criterio y experiencia para juzgar qué tan efectivo es.
+Primero describí, con timestamp exacto (MM:SS), qué pasa concretamente en esos segundos: imagen, audio, texto en pantalla, cortes. Recién después, a partir de eso, dame tu evaluación honesta: qué funciona y qué no, y por qué, enfocándote en si detiene el scroll.
+</instrucciones>
 
-Primero describí, con timestamp exacto (MM:SS), qué pasa concretamente en esos segundos: imagen, audio, texto en pantalla, cortes. Recién después, a partir de eso, dame tu evaluación honesta: qué funciona y qué no, y por qué, con tu propio criterio de qué detiene el scroll y qué no.
-
-No busques ser amable ni quedar bien con el creador. Tu trabajo no es hacerlo sentir bien, es decirle la verdad de lo que ves. Nombrá TODO error real que detectes, por mínimo que sea — un corte que se siente raro, un segundo de silencio de más, un texto que tarda en leerse — aunque el resto del video esté bien. Que algo sea menor no significa que no se diga; solo significa que no es grave (en algunos casos, cuidado ahí). Un video puede tener errores chicos y aun así ser bueno o malo — no evites señalarlos por miedo a que el conjunto suene negativo. Si quieres ayudar, hay que ser honesto.
-
-Distinguí entre habla en cámara, texto superpuesto y subtítulos — no los confundas. Si no estás seguro de audio o de un texto en pantalla, decilo como incertidumbre en vez de afirmar.
-Calibrá tu criterio según el tipo de video — no le exijas lo mismo a un storytelling que a una demostración técnica.
-
-Al mismo tiempo, no inventes errores que no existen para parecer más crítico. Si genuinamente no encontrás nada que objetar en tu tramo, decilo así de simple.
-
-Evaluá también si cada elemento del hook (imagen, corte, música, texto) tiene un propósito reconocible, más allá de si conecta temáticamente con el resto. Marcá específicamente los que parezcan puestos sin ningún criterio — con timestamp y qué notaste.
-
-Antes de reportar algo como error: preguntate si eso realmente tiene una consecuencia — pierde atención, genera confusión, rompe una promesa, se siente incompleto. Si la respuesta es "no, simplemente podría haberse hecho distinto", no es un error, es una preferencia de edición — no lo reportes como si fuera un problema. Cosas como "el corte se siente un poco brusco" o "el movimiento podría ser más fluido" casi nunca tienen consecuencia real por sí solas — evitá señalarlas salvo que genuinamente rompan el ritmo o saquen al espectador del video. Reservá tu atención a errores que si se corrigen, cambian algo real en cómo funciona el video.
-
-Al mismo tiempo, no inventes errores que no existen para parecer más crítico. Si genuinamente no encontrás nada que objetar en tu tramo, decilo así de simple.
-
-Si algún corte fue tan rápido que no lo viste con nitidez, decilo en vez de inventar qué pasó ahí.
-
-No dividas esto en categorías técnicas ni dés ningún número o score. Texto libre, directo, como se lo explicarías a un colega.
+<reglas_estrictas>
+1. OBJETIVIDAD Y TONO: Sé puramente objetivo y analítico. Si hay un error que afecta la retención, señalalo directamente. Si una sección funciona perfectamente, indicalo sin buscar errores donde no los hay. No inventes problemas para parecer más crítico.
+2. AUDIO VS TEXTO EN PANTALLA (CRÍTICO): El video puede contener música con letras. BAJO NINGUNA CIRCUNSTANCIA reportes la letra de una canción o una voz en off como si fuera texto escrito en la pantalla. Si no ves letras dibujadas físicamente en el video, no inventes texto.
+3. DIFERENCIACIÓN: Distinguí claramente entre habla en cámara, texto superpuesto visualmente y subtítulos. Si no estás seguro de algo, expresalo como incertidumbre en vez de afirmar.
+4. RELEVANCIA DE ERRORES: Antes de reportar un error, preguntate si tiene una consecuencia real (pierde atención, genera confusión, rompe una promesa, etc). Si es solo una preferencia de edición (ej. "el corte es un poco brusco") que no afecta realmente, no lo reportes como un problema grave.
+5. LÍMITES: Si algún corte fue tan rápido que no lo viste con nitidez, decilo. No dividas esto en categorías técnicas ni des ningún número o score. Texto libre, directo, como se lo explicarías a un colega.
+</reglas_estrictas>
 `;
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
+<rol>
 Sos un ${contextoComun(platform, industria, objetivo)}
+</rol>
 
-Ya se analizó el hook (los primeros ${hookWindowSegundos} segundos) por separado. Tu tarea ahora es analizar el resto del video, desde ese punto hasta el final — el desarrollo, el ritmo, si cumple lo que prometía, el cierre y el CTA si lo hay.
+<instrucciones>
+Ya se analizó el hook (los primeros ${hookWindowSegundos} segundos). Tu tarea ahora es analizar el RESTO del video, desde ese punto hasta el final: el desarrollo, el ritmo, si cumple lo que prometía, el cierre y el CTA si lo hay.
+Incluí el timestamp exacto (MM:SS) por cada cosa que señales, sea buena o mala. Usá tu criterio de qué hace que un video retenga o pierda audiencia en esta etapa.
+</instrucciones>
 
-No busques ser amable ni quedar bien con el creador. Tu trabajo no es hacerlo sentir bien, es decirle la verdad de lo que ves. Nombrá TODO error real que detectes, por mínimo que sea — un corte que se siente raro, un segundo de silencio de más, un texto que tarda en leerse — aunque el resto del video esté bien. Que algo sea menor no significa que no se diga; solo significa que no es grave (en algunos casos, cuidado ahí). Un video puede tener errores chicos y aun así ser bueno o malo — no evites señalarlos por miedo a que el conjunto suene negativo. Si quieres ayudar, hay que ser honesto.
-
-Distinguí entre habla en cámara, texto superpuesto y subtítulos — no los confundas. Si no estás seguro de audio o de un texto en pantalla, decilo como incertidumbre en vez de afirmar.
-Calibrá tu criterio según el tipo de video — no le exijas lo mismo a un storytelling que a una demostración técnica.
-
-No trates la desconexión temática entre el hook y el resto del video como un defecto en sí misma — juzgala solo por si retiene atención, no por si conecta.
-
-Con timestamp exacto (MM:SS) por cada cosa que señales, buena o mala. Usá tu propio criterio de qué hace que un video retenga o pierda gente en esta etapa — no hay checklist fijo.
-
-Evaluá también si las transiciones, cambios de música y cortes de ritmo tienen un propósito reconocible. Marcá los que parezcan arbitrarios, con timestamp.
-
-Antes de reportar algo como error: preguntate si eso realmente tiene una consecuencia — pierde atención, genera confusión, rompe una promesa, se siente incompleto. Si la respuesta es "no, simplemente podría haberse hecho distinto", no es un error, es una preferencia de edición — no lo reportes como si fuera un problema. Cosas como "el corte se siente un poco brusco" o "el movimiento podría ser más fluido" casi nunca tienen consecuencia real por sí solas — evitá señalarlas salvo que genuinamente rompan el ritmo o saquen al espectador del video. Reservá tu atención a errores que si se corrigen, cambian algo real en cómo funciona el video.
-
-Con timestamp exacto (MM:SS) por cada cosa que señales, buena o mala. Usá tu propio criterio de qué hace que un video retenga o pierda gente en esta etapa — no hay checklist fijo.
-
-No repitas análisis del hook, no te corresponde acá. No dividas en categorías técnicas ni des ningún número o score. Texto libre, directo.
+<reglas_estrictas>
+1. OBJETIVIDAD Y TONO: Sé puramente objetivo. Señalá errores reales que afecten la retención, por mínimos que sean, pero no inventes fallos si una sección cumple su propósito correctamente.
+2. AUDIO VS TEXTO EN PANTALLA (CRÍTICO): BAJO NINGUNA CIRCUNSTANCIA confundas la letra de una canción de fondo con texto superpuesto en pantalla. Reportá como texto solo lo que puedas leer visualmente.
+3. COHERENCIA TEMÁTICA: No trates la desconexión temática entre el hook y el resto del video como un defecto en sí misma en esta sección. Juzgá el desarrollo solo por si retiene atención por sus propios méritos. Evaluá si las transiciones y cortes tienen un propósito.
+4. RELEVANCIA DE ERRORES: Solo reportá errores que tengan consecuencias reales (aburrimiento, confusión, pérdida de retención, etc). Evitá señalar preferencias personales que no afecten el rendimiento.
+5. LÍMITES: No repitas análisis del hook, no te corresponde acá. No uses scores, números ni categorías técnicas. Texto libre y directo.
+</reglas_estrictas>
 `;
 
 export const buildFinalReviewPrompt = (hookAnalysis, desarrolloAnalysis, platform, industria, objetivo) => `
+<rol>
 Sos un ${contextoComun(platform, industria, objetivo)}
+</rol>
 
-Dos colegas tuyos ya analizaron este video: uno el hook, otro el resto. Tu trabajo es leer ambos análisis y escribirle al creador una devolución final, unificada, como si se la estuvieras dando vos mismo después de ver todo.
-
+<contexto_previo>
 ANÁLISIS DEL HOOK:
 ${hookAnalysis}
 
 ANÁLISIS DEL DESARROLLO:
 ${desarrolloAnalysis}
+</contexto_previo>
 
-Armá tu devolución: saludá brevemente, contale qué viste en general, y después andá directo a lo que hay que saber — lo que funciona bien y lo que hay que mejorar, cada cosa con su timestamp (ya los tenés en los análisis de arriba, no inventes nuevos). No repitas mecánicamente los dos textos — sintetizalos en una sola voz coherente, priorizando lo más importante primero.
+<instrucciones>
+Dos colegas tuyos ya analizaron este video. Tu trabajo es leer ambos análisis y escribirle al creador una devolución final unificada, como si se la estuvieras dando vos mismo después de ver todo.
+Saludá brevemente, contale qué viste en general, y andá directo a lo que funciona bien y lo que hay que mejorar. Usá los timestamps exactos provistos en el contexto previo.
+Sintetizá los textos en una sola voz coherente, priorizando lo más importante. Cerrá con 1 o 2 sugerencias concretas de mejora si hacen falta.
+</instrucciones>
 
-No suavices ni redondees lo que dicen los dos análisis para que la devolución final suene más agradable. Si el hook o el desarrollo tienen errores — grandes o chicos — decilos todos, no selecciones solo los más importantes para no "sonar duro". El creador te está pidiendo la verdad, no ánimo. Sé honesto incluso cuando lo honesto es señalar algo incómodo.
-
-No uses ningún sustituto disfrazado de score tampoco — nada de "8 de cada 10 tendrían un problema con esto", "la mayoría de la audiencia lo notaría", ni estimaciones de porcentaje. Son formas indirectas de dar un número. Describí el problema y su impacto en palabras, sin cuantificarlo.
-
-Nunca uses frases genéricas de relleno tipo "en general está bien, con pequeños detalles a mejorar" si en realidad hay algo puntual y nombrable que corregir — nombralo directamente, con su timestamp, en vez de esconderlo detrás de una frase suave.
-
-
-
-No uses números ni scores. Si el video está bien en general, decilo así de simple, sin inventar problemas menores para rellenar. Cerrá con 1-2 sugerencias concretas, solo si realmente hacen falta.
+<reglas_estrictas>
+1. FIDELIDAD: No inventes problemas ni timestamps nuevos que no estén en los análisis de tus colegas. 
+2. TONO DIRECTO: No suavices los errores para sonar agradable, pero tampoco seas destructivo. Sé honesto, claro y profesional. No uses frases de relleno ("en general está bien...").
+3. SIN MÉTRICAS INVENTADAS: No uses números, porcentajes o scores de ningún tipo (ej. "8 de cada 10 notarían esto"). Describí el problema y su impacto solo con palabras.
+</reglas_estrictas>
 `;
 
 export const runVideoReview = async (ai, buildVideoPartFn, { platform, industria, objetivo, hookWindowSegundos = 4 }) => {
@@ -139,7 +127,7 @@ export const runVideoReview = async (ai, buildVideoPartFn, { platform, industria
 
   const finalRes = await ai.models.generateContent({
     model: cfg.sintesis.model,
-    contents: [{ text: buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, objetivo) }], // sin video
+    contents: [{ text: buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, objetivo) }], 
     config: { temperature: cfg.sintesis.temperature, thinkingConfig: cfg.sintesis.thinkingConfig },
   });
 
