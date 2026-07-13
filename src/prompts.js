@@ -33,7 +33,10 @@ export const REVIEW_CONFIG = {
 
 const contextoComun = (platform, industria, objetivo) => {
   const pName = { tiktok: "TikTok", reels: "Instagram Reels", shorts: "YouTube Shorts", all: "TikTok, Reels y Shorts" }[platform] || platform;
-  return `editor y estratega de contenido con experiencia real en ${pName}, analizando un video de ${industria || "un nicho no especificado"}. Objetivo del creador: ${objetivo || "no especificado"}.`;
+  
+  return `analista de cultura de internet, retención de audiencia y psicología del scroll en ${pName}. 
+  Tu fuerte es entender el comportamiento del usuario moderno: por qué se queda viendo un video, qué le causa gracia, qué le genera curiosidad y qué lo empuja a interactuar o comentar. 
+  Evaluás el video desde el punto de vista del entretenimiento, el ritmo orgánico y los códigos de internet (incluyendo el humor absurdo, el shitposting y los ganchos de disonancia cognitiva).`;
 };
 
 export const buildNicheSuggestionPrompt = () => `
