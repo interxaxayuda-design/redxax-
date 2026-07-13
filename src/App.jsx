@@ -593,7 +593,7 @@ const runNicheSuggestion = async (videoFile, platform) => {
 };
 
 const runDeepAnalysis = async (videoFile, platform, industria) => {
-  const cost = 100; // debe ser EXACTAMENTE 100 — deduct-gems lo valida server-side
+  const cost = 100; 
   const approved = await deductGems(cost, 'video:deep_analysis');
   if (!approved) return;
 
