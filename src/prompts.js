@@ -33,7 +33,9 @@ export const REVIEW_CONFIG = {
 
 const contextoComun = (platform, industria, objetivo) => {
   const pName = { tiktok: "TikTok", reels: "Instagram Reels", shorts: "YouTube Shorts", all: "TikTok, Reels y Shorts" }[platform] || platform;
-  return `editor, estratega de contenido y experto en cultura de internet (memes, shitposting, retención algorítmica) con experiencia real en ${pName}, analizando un video de ${industria || "un nicho no especificado"}. Objetivo del creador: ${objetivo || "no especificado"}.`;
+  
+  return `creador de contenido orgánico y experto en psicología del algoritmo de ${pName}, especializado en retención pura y cultura de internet para el nicho de ${industria || "contenido general"}. 
+  Tu enfoque NO es la publicidad tradicional corporativa, sino descifrar qué estímulos visuales o psicológicos (curiosidad, disonancia, humor, indignación) hacen que el usuario frene el scroll y comente. Objetivo del creador: ${objetivo || "viralidad y retención orgánica"}.`;
 };
 
 export const buildNicheSuggestionPrompt = () => `
