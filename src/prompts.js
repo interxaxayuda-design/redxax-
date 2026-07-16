@@ -32,10 +32,23 @@ export const REVIEW_CONFIG = {
 };
 
 const contextoComun = (platform, industria, objetivo) => {
-  const pName = { tiktok: "TikTok", reels: "Instagram Reels", shorts: "YouTube Shorts", all: "TikTok, Reels y Shorts" }[platform] || platform;
-  
-  return `creador de contenido orgánico y experto en psicología del algoritmo de ${pName}, especializado en retención pura y cultura de internet para el nicho de ${industria || "contenido general"}. 
-  Tu enfoque NO es la publicidad tradicional corporativa, sino descifrar qué estímulos visuales o psicológicos (curiosidad, disonancia, humor, indignación) hacen que el usuario frene el scroll y comente. Objetivo del creador: ${objetivo || "viralidad y retención orgánica"}.`;
+  const pName = {
+    tiktok: "TikTok",
+    reels: "Instagram Reels",
+    shorts: "YouTube Shorts",
+    all: "TikTok, Instagram Reels y YouTube Shorts"
+  }[platform] || platform;
+
+  return `especialista en análisis de contenido para ${pName}, con amplio conocimiento sobre cómo reaccionan los usuarios reales al consumir videos cortos en estas plataformas.
+
+Tu tarea es analizar el video desde la perspectiva de la audiencia real mientras hace scroll. No lo evalúes como una publicidad tradicional, un comercial o una pieza audiovisual siguiendo reglas clásicas de narrativa o edición.
+
+Basate en tu conocimiento general sobre el comportamiento de los usuarios de ${pName} y juzgá cada decisión creativa por el efecto que probablemente produzca en la audiencia (atención, curiosidad, comprensión, emoción, humor, sorpresa, conversación, rechazo, abandono, etc), no por si cumple convenciones narrativas tradicionales.
+
+Analizá cada video de forma independiente, utilizando tu propio criterio y sin asumir que una decisión creativa es buena o mala por sí misma. Considerá siempre el contexto, la intención aparente del creador y la reacción más probable de la audiencia.
+
+Nicho: ${industria || "contenido general"}.
+Objetivo del creador: ${objetivo || "no especificado"}.`;
 };
 
 export const buildNicheSuggestionPrompt = () => `
@@ -76,9 +89,8 @@ Incluí el timestamp exacto (MM:SS) por cada cosa que señales, sea buena o mala
 <reglas_estrictas>
 1. OBJETIVIDAD Y TONO: Sé puramente objetivo. Señalá errores reales que afecten la retención, por mínimos que sean, pero no inventes fallos si una sección cumple su propósito correctamente.
 2. AUDIO VS TEXTO EN PANTALLA (CRÍTICO): BAJO NINGUNA CIRCUNSTANCIA confundas la letra de una canción de fondo con texto superpuesto en pantalla. Reportá como texto solo lo que puedas leer visualmente.
-3. COHERENCIA TEMÁTICA: No trates la desconexión temática entre el hook y el resto del video como un defecto en sí misma en esta sección. Juzgá el desarrollo solo por si retiene atención por sus propios méritos. Evaluá si las transiciones y cortes tienen un propósito.
-4. RELEVANCIA DE ERRORES: Solo reportá errores que tengan consecuencias reales (aburrimiento, confusión, pérdida de retención, etc). Evitá señalar preferencias personales que no afecten el rendimiento.
-5. LÍMITES: No repitas análisis del hook, no te corresponde acá. No uses scores, números ni categorías técnicas. Texto libre y directo.
+3. RELEVANCIA DE ERRORES: Solo reportá errores que tengan consecuencias reales (aburrimiento, confusión, pérdida de retención, etc). Evitá señalar preferencias personales que no afecten el rendimiento.
+4. LÍMITES: No repitas análisis del hook, no te corresponde acá. No uses scores, números ni categorías técnicas. Texto libre y directo.
 </reglas_estrictas>
 `;
 
