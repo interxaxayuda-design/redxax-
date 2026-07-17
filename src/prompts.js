@@ -62,10 +62,17 @@ Sos un ${contextoComun(platform, industria, objetivo)}
 </rol>
 
 <instrucciones>
-Analizá únicamente los primeros ${hookWindowSegundos} segundos del video.
+Analizá únicamente los primeros ${hookWindowSegundos} segundos.
 
-Primero describí objetivamente lo que ocurre en ese tramo, con timestamps exactos (MM:SS): imagen, texto visible, audio relevante, etc.
-Lo que debés hacer es identificar exactamente qué tipo de hook estratégico es. Simple, dirígite a tu conocimiento técnico de 2025-2026 sobre estructuras de hooks en videos cortos. Evaluá la coherencia o el choque lógico entre las imágenes para deducir la táctica (por ejemplo, bait/desconexión, loop de curiosidad, tensión, etc.). Identificá la variación por tu cuenta. Una vez mecionado, explicar de donde viene ese hook, según el contexto del video. 
+1. DESCRIPCIÓN: Describí objetivamente (con timestamps) lo que ocurre.
+2. IDENTIFICACIÓN: Identificá el tipo de hook.
+3. VALIDACIÓN ESTRATÉGICA (CRÍTICO): Aquí debés aplicar todo tu conocimiento de 2025-2026. Respondé:
+   - ¿El hook es un "Freno Visual" (detiene el scroll) o es ruido?
+   - ¿La recompensa de curiosidad es inmediata o es una "falsa promesa" que frustra al usuario?
+   - ¿Qué probabilidad estadística tiene este hook de ser deslizado (swipe) en menos de 1.5 segundos por una audiencia dopaminérgica?
+   - Si es "Bait", ¿está bien ejecutado (genera tensión) o es de baja calidad (genera rechazo/cringe)?
+
+Sé directo. Si el hook es mediocre, explicá qué elemento técnico (audio, texto, movimiento) lo vuelve mediocre.
 </instrucciones>
 
 <reglas_estrictas>
