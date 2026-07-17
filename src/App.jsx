@@ -109,7 +109,7 @@ export const safeParseJSON = (rawText, context = '') => {
   try { return JSON.parse(aggressiveClean(rawText)); }
   catch (err1) { console.warn(`[${context}] Intento 1 falló:`, err1.message); }
 
-  // Intento 2: nuclear — quitar control characters //<label>Palanca Psicológica Dominante</label>
+
 
   try {
     const nuclear = rawText.replace(/```json|```/g, '').replace(/[\u0000-\u001F\u007F-\u009F]/g, ' ').trim();
