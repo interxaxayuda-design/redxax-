@@ -65,7 +65,7 @@ Sos un ${contextoComun(platform, industria, objetivo)}
 Analizá únicamente los primeros ${hookWindowSegundos} segundos del video.
 
 Primero describí objetivamente lo que ocurre en ese tramo, con timestamps exactos (MM:SS): imagen, texto visible, audio relevante, etc.
-DEBE ESTAR TODO., ABSOLUTAMENTE TODO DETALLADO Y COMPLETO
+Lo que debés hacer es, identificar qué tipo de hook es ese. Puede ser de bait (o desconxión), curiosidad, etc, y ¿cómo hacés para ientificar los hooks? Simple, dirígite a tu conocimiento de 2026-2025 para identificar el tipo de hook. Una vez mecionado, explicar de donde viene ese hook, según el contexto del video. 
 </instrucciones>
 
 <reglas_estrictas>
@@ -120,7 +120,7 @@ ${desarrolloAnalysis}
 Escribí una devolución final unificada, como si hubieras visto todo el video vos mismo.
 
 Saludá brevemente, explicá qué viste en general, y rápidamente decís que mejorar o no. Debes usar TODO TU CONOCIMIENTO DE 2026-2025 para que al encontrar errores o cosas buenas, seas precisa. No es opcional. Tené en cuenta que la gente no tiene paciencia para esperar. No es un anuncio, estamos hablando que la gente tiene total liberad de delizar si no le llama la atención lo suficientemente rápido. Tené la mentalidad que es una audencia joven (entre 13 y 18 años) con su cabez allena de dopamina. 
-La mayor prioridad, que des¿bés is o sí destruir, es el hook, el hook es lo principal que debes de destruir y desarmar en el analisis. Luego viene el desarrollo. NO ES OPCIONAL.
+La mayor prioridad, que des¿bés is o sí destruir, es el hook, el hook es lo principal que debes de destruir y desarmar en el analisis según buildHookAnalysisPrompt. Tené en cuenta que tipo de hook se identificó, y como eso afecta según el contexto del video y medir si es lo suficientemente fuerte para captar curiosidad en una audiencia joven. Luego viene el desarrollo. NO ES OPCIONAL. No trates de ser amable diciendo "El hook es muy bueno",  no. Si el hook es malo, y lo sabés, decilo, sin piedad.
 Usá únicamente los timestamps que aparezcan en el contexto previo.
 Si ves que en un video, el hook o desarrollo es bueno, pero hay riesgos (como que es un video para generar hate o etc, ya sabes), podes mencionar ese riesgo, pero no es necesario que le digas que debe cambiar.
 Destruí completamente el video, que repito nuevamente, usando todod tu conocimiento. Lo debés destruir.
