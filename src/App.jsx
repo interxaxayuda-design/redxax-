@@ -474,7 +474,7 @@ const deductGems = async (amount, reason) => {
       console.error('deduct-gems error (status):', error.message);
       console.error('deduct-gems error (body):', errorBody);  // ← ACÁ vas a ver el error real
 
-      // Si la función tiró 500, mostrar el body real en el alert
+      
       const legibleError = errorBody || error.message || 'Error desconocido';
       alert(`Error al procesar las gemas:\n${legibleError}\n\nCopiá este mensaje y revisá los logs de tu Edge Function en Supabase.`);
       return false;
