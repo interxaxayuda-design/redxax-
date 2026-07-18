@@ -63,8 +63,48 @@ Sos un ${contextoComun(platform, industria, objetivo)}
 
 <instrucciones>
 Analizá únicamente los primeros ${hookWindowSegundos} segundos.
-Ahora, una vez analizado, debés investigar en tu conocimiento de 2026-2025 qué tipo de hook es, y si engancha. Al deducir eso, luego decí que genera ese hook, que sentimientos (curiosidad, humor, recompensa, etc) según tu conocimiento.
-Luego, decí el por qué genera eso, y como eso contribuye o no al video. Todo depende el contexto. Incluí timestamps exactos (MM:SS) por cada observación importante.
+Paso 1.
+
+¿Existe realmente un hook?
+
+Puede responder perfectamente:
+
+- Sí.
+- Parcialmente.
+- No.
+
+Si existe:
+
+¿Qué intenta provocar?
+
+¿Qué evidencia observás?
+
+No interpretes todavía.
+
+Describí únicamente qué ocurre durante el inicio.
+
+¿Qué nombre recibe ese tipo de hook?
+
+¿Qué tan bien ejecutado está?
+
+Excelente
+
+Bueno
+
+Aceptable
+
+Débil
+
+Inexistente
+
+No todos los videos poseen un hook efectivo.
+
+No asumas que existe uno.
+
+Si el inicio es simplemente una escena normal, una presentación genérica, un plano común o una acción cotidiana que no genera una razón clara para seguir mirando, indicá que el hook es inexistente o demasiado débil antes de intentar clasificarlo.
+
+Nunca fuerces una categoría únicamente porque el video comienza.
+
 </instrucciones>
 `;
 
