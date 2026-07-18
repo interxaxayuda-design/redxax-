@@ -50,42 +50,77 @@ Nicho: ${industria || "contenido general"}.
 Objetivo del creador: ${objetivo || "no especificado"}.`;
 };
 
-export const buildNicheSuggestionPrompt = () => `
-Mirá este video y decime, en 2 a 4 palabras como mucho, a qué nicho o industria pertenece.
-
-Respondé ÚNICAMENTE con esas 2 a 4 palabras, sin explicación, sin punto final, sin comillas.
-`;
-
 export const buildHookAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 3) => `
 <rol>
-Sos un ${contextoComun(platform, industria, objetivo)}
+Sos un ${contextoComun(platform, industria, objetivo)}.
+Tu trabajo no es etiquetar hooks. Tu trabajo es entender cómo reacciona la atención del espectador durante los primeros segundos del video.
 </rol>
 
 <instrucciones>
-Analizá únicamente los primeros ${hookWindowSegundos} segundos.
-Paso 1.
 
-¿Existe realmente un hook?
+Analizá únicamente los primeros ${hookWindowSegundos} segundos.
+
+Reconstruí la experiencia del espectador paso por paso.
+
+No empieces clasificando el hook.
+
+Primero analizá qué ocurre realmente.
+
+Seguí este orden de razonamiento:
+
+1. Describí objetivamente qué ocurre durante el inicio.
+No interpretes todavía.
+Incluí timestamps únicamente cuando sean relevantes.
+
+2. Determiná si realmente existe un hook.
 
 Puede responder perfectamente:
 
-- Sí.
-- Parcialmente.
-- No.
+• Sí.
+• Parcialmente.
+• No.
 
-Si existe:
+No todos los videos poseen un hook.
 
-¿Qué intenta provocar?
+Si el inicio consiste solamente en una presentación común, una escena cotidiana, un plano genérico o una acción que no genera una razón clara para seguir mirando, indicá que el hook es inexistente o demasiado débil antes de intentar clasificarlo.
 
-¿Qué evidencia observás?
+Nunca fuerces una categoría.
 
-No interpretes todavía.
+3. Si existe un hook, explicá:
 
-Describí únicamente qué ocurre durante el inicio.
+• qué intenta provocar en el espectador;
+• qué expectativa genera;
+• qué mecanismo psicológico utiliza;
+• qué evidencia observable respalda esa interpretación.
 
-¿Qué nombre recibe ese tipo de hook?
+No conviertas hipótesis en hechos.
 
-¿Qué tan bien ejecutado está?
+Si existen varias interpretaciones posibles, mencioná la más respaldada por la evidencia.
+
+4. Analizá todos los elementos que realmente influyen en ese hook.
+
+Solo si afectan la experiencia del espectador, evaluá cómo contribuyen:
+
+• imagen;
+• movimiento;
+• narrativa;
+• música;
+• voz;
+• sonido;
+• texto;
+• ritmo;
+• edición;
+• cualquier otro elemento relevante.
+
+Si alguno no aporta nada al hook, simplemente ignoralo.
+
+5. Recién ahora clasificá el hook.
+
+Indicá qué tipo de hook representa según tu conocimiento sobre TikTok, Reels y Shorts (2025-2026).
+
+La clasificación debe surgir como consecuencia del análisis, no al revés.
+
+6. Evaluá su ejecución.
 
 Excelente
 
@@ -97,82 +132,174 @@ Débil
 
 Inexistente
 
-No todos los videos poseen un hook efectivo.
+Explicá por qué.
 
-No asumas que existe uno.
-
-Si el inicio es simplemente una escena normal, una presentación genérica, un plano común o una acción cotidiana que no genera una razón clara para seguir mirando, indicá que el hook es inexistente o demasiado débil antes de intentar clasificarlo.
-
-Nunca fuerces una categoría únicamente porque el video comienza.
+La calidad del hook depende de si realmente genera una razón para detener el scroll y continuar mirando, no solamente del tipo de hook utilizado.
 
 </instrucciones>
+
+<reglas_estrictas>
+
+1. Separá siempre:
+- observación;
+- mecanismo psicológico;
+- conclusión.
+
+2. No asumas que todo inicio posee un hook.
+
+3. No confundas sorpresa con confusión.
+
+4. No confundas curiosidad con falta de contexto.
+
+5. No inventes intenciones del creador.
+
+6. No afirmes emociones del espectador como hechos absolutos.
+
+7. Basá todas las conclusiones únicamente en evidencia observable.
+
+</reglas_estrictas>
 `;
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
 <rol>
-Sos un ${contextoComun(platform, industria, objetivo)}
+Sos un ${contextoComun(platform, industria, objetivo)}.
+Tu trabajo es reconstruir cómo evoluciona la atención del espectador después del hook.
 </rol>
 
 <instrucciones>
 
-Ya se analizó el hook.
-
 Analizá únicamente desde ${hookWindowSegundos} segundos hasta el final.
 
-No vuelvas a evaluar el hook.
+No vuelvas a analizar el hook.
 
-Tu objetivo es reconstruir cómo evoluciona la atención del espectador durante el resto del video.
+Pensá como un espectador que ya decidió quedarse.
 
-Para cada observación importante:
-
-1. Describí objetivamente qué ocurre (con timestamp).
-
-2. Explicá qué intenta provocar esa escena en el espectador
-(curiosidad, recompensa, sorpresa, comprensión, emoción, expectativa, etc.).
-
-3. Explicá si realmente lo consigue y por qué.
-
-4. Explicá cómo esa escena afecta la continuidad del video.
+Ahora analizá por qué continúa mirando... o por qué deja de hacerlo.
 
 No critiques automáticamente.
 
-Si una parte mantiene bien la atención, explicá por qué.
+Reconstruí la experiencia del espectador escena por escena.
 
-Si una parte rompe el ritmo, explicá cuál es el mecanismo que provoca esa pérdida de interés.
+Para cada momento importante:
 
-Diferenciá siempre:
+1. Describí objetivamente qué ocurre.
+Incluí timestamp únicamente cuando sea relevante.
 
-• observación
-• mecanismo psicológico
-• conclusión
+2. Explicá qué intenta provocar esa escena.
+
+Puede ser:
+
+• curiosidad;
+• recompensa;
+• tensión;
+• emoción;
+• comprensión;
+• humor;
+• sorpresa;
+• identificación;
+• expectativa;
+• información;
+• venta;
+• u otro mecanismo observable.
+
+3. Explicá si realmente lo consigue.
+
+Justificá siempre la respuesta.
 
 No conviertas hipótesis en hechos.
 
-Analizá el desarrollo como una secuencia continua.
+4. Explicá cómo esa escena afecta la continuidad del video.
 
 Preguntate constantemente:
 
-"Después de esta escena, ¿el espectador tiene una razón para seguir mirando?"
+"Después de esta escena...
 
-Si la respuesta es sí, explicá cuál.
+¿el espectador tiene una razón para seguir mirando?"
 
-Si la respuesta es no, explicá exactamente qué desapareció
-(curiosidad, tensión, recompensa, novedad, información, emoción, etc.).
+Si la respuesta es sí:
 
-Incluí timestamps exactos (MM:SS) únicamente cuando exista una observación relevante.
+explicá cuál.
 
-No asumas que todo cambio de plano mejora la retención.
+Si la respuesta es no:
 
-No asumas que un video pierde interés únicamente porque sea lento.
+explicá exactamente qué desapareció.
 
-Evaluá el propósito de cada escena dentro del contexto completo del video.
+Puede ser:
+
+• curiosidad;
+• tensión;
+• novedad;
+• emoción;
+• información;
+• expectativa;
+• recompensa;
+• claridad;
+• u otro elemento relevante.
+
+Analizá el video como una historia continua.
+
+Determiná si existe una narrativa.
+
+Puede ser:
+
+• fuerte;
+• simple;
+• mínima;
+• inexistente.
+
+No todos los videos necesitan una narrativa compleja.
+
+Si existe una narrativa, evaluá:
+
+• cómo evoluciona;
+• si mantiene coherencia;
+• si cumple la expectativa creada anteriormente.
+
+Analizá únicamente los elementos que realmente afectan la experiencia del espectador.
+
+Solo si influyen en la retención, evaluá el aporte de:
+
+• narrativa;
+• música;
+• voz;
+• efectos de sonido;
+• edición;
+• ritmo;
+• texto;
+• cambios visuales;
+• cualquier otro elemento relevante.
+
+Si alguno no modifica la experiencia del espectador, ignoralo.
+
+No asumas que:
+
+• todo cambio de plano mejora la retención;
+• todo video lento pierde atención;
+• toda edición rápida genera interés.
+
+Evaluá siempre el propósito de cada recurso dentro del contexto completo del video.
+
 </instrucciones>
 
 <reglas_estrictas>
-1. OBJETIVIDAD: Señalá solo efectos que impacten retención, comprensión o confianza.
-2. AUDIO VS TEXTO: No confundas música, letra o voz con texto visual.
-3. RELEVANCIA: No critiques por gusto personal de edición si no afecta la respuesta de audiencia.
-4. LÍMITES: No uses scores, números ni categorías técnicas. Texto libre y directo.
+
+1. Separá siempre:
+- observación;
+- mecanismo psicológico;
+- conclusión.
+
+2. Señalá únicamente efectos que realmente afecten la retención, comprensión o confianza.
+
+3. No confundas música, voz o letra con texto visual.
+
+4. No critiques decisiones de edición únicamente por preferencias estéticas.
+
+5. No inventes problemas inexistentes.
+
+6. No uses métricas, porcentajes ni scores.
+
+7. Basá todas las conclusiones en evidencia observable del video.
+
 </reglas_estrictas>
 `;
 
