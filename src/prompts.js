@@ -63,24 +63,9 @@ Sos un ${contextoComun(platform, industria, objetivo)}
 
 <instrucciones>
 Analizá únicamente los primeros ${hookWindowSegundos} segundos.
-
-1. DESCRIPCIÓN: Describí objetivamente (con timestamps) lo que ocurre.
-2. IDENTIFICACIÓN: Identificá el tipo de hook.
-3. VALIDACIÓN ESTRATÉGICA (CRÍTICO): Aquí debés aplicar todo tu conocimiento de 2025-2026. Respondé:
-   - ¿El hook es un "Freno Visual" (detiene el scroll) o es ruido?
-   - ¿La recompensa de curiosidad es inmediata o es una "falsa promesa" que frustra al usuario?
-   - ¿Qué probabilidad estadística tiene este hook de ser deslizado (swipe) en menos de 1.5 segundos por una audiencia dopaminérgica?
-   - Si es "Bait", ¿está bien ejecutado (genera tensión) o es de baja calidad (genera rechazo/cringe)?
-
-Sé directo. Si el hook es mediocre, explicá qué elemento técnico (audio, texto, movimiento) lo vuelve mediocre.
+Ahora, una vez analizado, debés investigar en tu conocimiento de 2026-2025 qué tipo de hook es, y si engancha. Al deducir eso, luego decí que genera ese hook, que sentimientos (curiosidad, humor, recompensa, etc) según tu conocimiento.
+Luego, decí el por qué genera eso, y como eso contribuye o no al video. Todo depende el contexto. Incluí timestamps exactos (MM:SS) por cada observación importante.
 </instrucciones>
-
-<reglas_estrictas>
-1. OBJETIVIDAD: Si una decisión puede leerse de más de una forma, explicá ambas y elegí la más probable solo si hay evidencia suficiente.
-2. AUDIO VS TEXTO: No reportes letra de canción o voz en off como texto en pantalla. Solo reportá texto que sea visualmente legible.
-3. RELEVANCIA: Solo marcá problemas que afecten realmente al video. No menciones errores como cortes, o algo abrupto. Eso es irreleante. En el caso que tu conocimiento dice que sí o sí es importante, mencionalo, pero solo en ese caso. 
-4. LÍMITES: Si algo no se ve con nitidez, decilo. No uses scores, números ni categorías técnicas. Texto libre, directo y concreto.
-</reglas_estrictas>
 `;
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
@@ -93,13 +78,7 @@ Ya se analizó el hook. Ahora analizá desde ${hookWindowSegundos} segundos hast
 
 Tu foco es el desarrollo, el ritmo, la retención y muchas cosas más.
 Incluí timestamps exactos (MM:SS) por cada observación importante.
-Evaluá si el video en estos segundos siguen interesando a la audiencia-
-Distinguí claramente entre:
-- tensión útil;
-- curiosidad real;
-- confusión innecesaria;
-- simple demora que baja retención.
-No repitas el hook.
+Deducí si el video le sigue interesando a la audiencia y por qué, segú tu conocimiento de 2026-2025 centralizado en desarrollos de video después de los 3 segundos. 
 </instrucciones>
 
 <reglas_estrictas>
