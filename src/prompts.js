@@ -50,6 +50,12 @@ Nicho: ${industria || "contenido general"}.
 Objetivo del creador: ${objetivo || "no especificado"}.`;
 };
 
+export const buildNicheSuggestionPrompt = () => `
+Mirá este video y decime, en 2 a 4 palabras como mucho, a qué nicho o industria pertenece.
+
+Respondé ÚNICAMENTE con esas 2 a 4 palabras, sin explicación, sin punto final, sin comillas.
+`;
+
 export const buildHookAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 3) => `
 <rol>
 Sos un ${contextoComun(platform, industria, objetivo)}.
