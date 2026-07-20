@@ -415,13 +415,12 @@ function InlineRotatingWord({ words, interval = 2600 }) {
     return () => { clearInterval(cycle); clearTimeout(outTimer); };
   }, [interval, words.length]);
 
-  // Ancho fijo = el de la palabra más larga, para que el resto del texto no se mueva
   const longest = words.reduce((a, b) => (b.length > a.length ? b : a), '');
 
   return (
-    <span className="relative inline-block align-baseline text-left" style={{ minWidth: `${longest.length}ch` }}>
-      {/* Fantasma invisible que reserva el espacio */}
-      <span className="invisible">{longest}</span>
+    <span className="relative inline-block align-baseline whitespace-nowrap" style={{ minWidth: `${longest.length}ch` }}>
+      {/* Fantasma invisible: reserva el ancho y NUNCA envuelve a otra línea */}
+      <span className="invisible whitespace-nowrap">{longest}</span>
       <span
         className="absolute left-0 top-0 text-purple-400 whitespace-nowrap"
         style={{
@@ -1275,10 +1274,10 @@ ${currentMessage.text}
       <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
         <Microscope className="w-3 h-3" /> Precisión 500% — Analista Neutro
       </div>
-      <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4 leading-tight max-w-5xl mx-auto">
-        Sabé por qué tu video{' '}
-        <InlineRotatingWord words={['va a explotar', 'se va a estancar', 'necesita un cambio']} />
-      </h1>
+      <h1 className="text-2xl sm:text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4 leading-tight max-w-5xl mx-auto whitespace-nowrap">
+  Sabé por qué tu video{' '}
+  <InlineRotatingWord words={['va a explotar', 'se va a estancar', 'necesita un cambio']} />
+</h1>
       <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
         La IA analiza tu video y te dice exactamente<br/>
         <span className="text-slate-500">qué está funcionando y qué te está frenando.</span>
