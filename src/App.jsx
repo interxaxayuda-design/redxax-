@@ -364,116 +364,37 @@ function DottedBackground() {
   return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }} />;
 }
 
-function MorphingTitle({ phrases, interval = 3000, className = '' }) {
-  const canvasRef = useRef(null);
-  const containerRef = useRef(null);
-  const stateRef = useRef({ particles: [], phraseIndex: 0, phase: 'idle', phaseStart: 0 });
-
-  const sampleTextPoints = (text, width, height) => {
-    const off = document.createElement('canvas');
-    off.width = width;
-    off.height = height;
-    const octx = off.getContext('2d');
-    octx.fillStyle = '#fff';
-    octx.textAlign = 'center';
-    octx.textBaseline = 'middle';
-
-    let fontSize = height * 0.5;
-    octx.font = `900 italic ${fontSize}px sans-serif`;
-    while (octx.measureText(text).width > width * 0.94 && fontSize > 10) {
-      fontSize -= 2;
-      octx.font = `900 italic ${fontSize}px sans-serif`;
-    }
-    octx.fillText(text, width / 2, height / 2);
-
-    const data = octx.getImageData(0, 0, width, height).data;
-    const step = 4; // ↓ más partículas (más costo) | ↑ menos partículas (más performance)
-    const points = [];
-    for (let y = 0; y < height; y += step) {
-      for (let x = 0; x < width; x += step) {
-        if (data[(y * width + x) * 4 + 3] > 128) points.push({ x, y });
-      }
-    }
-    return points;
-  };
+function FadeTitle({ phrases, interval = 3000, className = '' }) {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    const ctx = canvas.getContext('2d');
+    let outTimer;
+    const cycle = setInterval(() => {
+      setVisible(false); // dispara el fade-out + blur
+      outTimer = setTimeout(() => {
+        setIndex(i => (i + 1) % phrases.length);
+        setVisible(true); // fade-in de la nueva frase
+      }, 450); // debe coincidir con la duración de la transición de abajo
+    }, interval);
 
-    const buildParticlesFor = (index, immediate) => {
-      const points = sampleTextPoints(phrases[index], canvas.width, canvas.height);
-      stateRef.current.particles = points.map(p => ({
-        x: immediate ? p.x : p.x + (Math.random() - 0.5) * 300,
-        y: immediate ? p.y : p.y + (Math.random() - 0.5) * 300,
-        tx: p.x, ty: p.y, ox: p.x, oy: p.y,
-        r: 1 + Math.random() * 1.4,
-      }));
-    };
-
-    const resize = () => {
-      const rect = container.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      buildParticlesFor(stateRef.current.phraseIndex, true);
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    const easeOut = t => 1 - Math.pow(1 - t, 3);
-    const easeIn = t => t * t * t;
-    let raf;
-
-    const loop = (now) => {
-      const st = stateRef.current;
-      if (!st.phaseStart) st.phaseStart = now;
-      const elapsed = now - st.phaseStart;
-
-      if (st.phase === 'idle' && elapsed > interval) { st.phase = 'out'; st.phaseStart = now; }
-      else if (st.phase === 'out' && elapsed > 500) {
-        st.phraseIndex = (st.phraseIndex + 1) % phrases.length;
-        buildParticlesFor(st.phraseIndex, false);
-        st.phase = 'in'; st.phaseStart = now;
-      } else if (st.phase === 'in' && elapsed > 700) { st.phase = 'idle'; st.phaseStart = now; }
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const outT = st.phase === 'out' ? Math.min(elapsed / 500, 1) : 0;
-      const inT = st.phase === 'in' ? Math.min(elapsed / 700, 1) : 1;
-
-      st.particles.forEach(p => {
-        let x, y, alpha, blur;
-        if (st.phase === 'out') {
-          const t = easeOut(outT);
-          x = p.ox + (p.ox - canvas.width / 2) * t * 0.6;
-          y = p.oy + (p.oy - canvas.height / 2) * t * 0.6;
-          alpha = 1 - t; blur = t * 14;
-        } else if (st.phase === 'in') {
-          const t = easeIn(inT);
-          x = p.x + (p.tx - p.x) * t;
-          y = p.y + (p.ty - p.y) * t;
-          alpha = t; blur = (1 - t) * 14;
-        } else { x = p.tx; y = p.ty; alpha = 1; blur = 0; }
-
-        ctx.globalAlpha = alpha;
-        ctx.filter = blur > 0.5 ? `blur(${blur}px)` : 'none';
-        ctx.beginPath();
-        ctx.arc(x, y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
-        ctx.fill();
-      });
-      ctx.globalAlpha = 1;
-      ctx.filter = 'none';
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-
-    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
-  }, [phrases, interval]);
+    return () => { clearInterval(cycle); clearTimeout(outTimer); };
+  }, [interval, phrases.length]);
 
   return (
-    <div ref={containerRef} className={className} style={{ width: '100%', height: '160px' }}>
-      <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+    <div className={`flex items-center justify-center ${className}`} style={{ height: '160px' }}>
+      <h2
+        className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4"
+        style={{
+          transition: 'opacity 0.45s cubic-bezier(0.22,1,0.36,1), filter 0.45s cubic-bezier(0.22,1,0.36,1), transform 0.45s cubic-bezier(0.22,1,0.36,1)',
+          opacity: visible ? 1 : 0,
+          filter: visible ? 'blur(0px)' : 'blur(12px)',
+          transform: visible ? 'translateY(0px)' : 'translateY(-16px)',
+          willChange: 'opacity, filter, transform',
+        }}
+      >
+        {phrases[index]}
+      </h2>
     </div>
   );
 }
@@ -1323,9 +1244,9 @@ ${currentMessage.text}
           'No dejes que te detengan',
           'Puedes hacerlo',
         ]}
-        interval={3000}
-        className="mx-auto max-w-5xl"
-      />
+       interval={3000}
+  className="mx-auto max-w-5xl"
+/>
       <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
         La IA analiza tu video y te dice exactamente<br/>
         <span className="text-slate-500">qué está funcionando y qué te está frenando.</span>
