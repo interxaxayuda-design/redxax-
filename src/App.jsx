@@ -376,7 +376,7 @@ function InlineRotatingWord({ words, interval = 2600 }) {
       outTimer = setTimeout(() => {
         setIndex(i => (i + 1) % words.length);
         setVisible(true);
-      }, 150);
+      }, 350);
     }, interval);
     return () => { clearInterval(cycle); clearTimeout(outTimer); };
   }, [interval, words.length]);
