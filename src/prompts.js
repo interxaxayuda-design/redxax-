@@ -9,7 +9,7 @@ export const REVIEW_CONFIG = {
     temperature: 0.1,
     media_resolution: "low",
     thinkingConfig: { thinkingBudget: 3072 },
-    videoFps: 1
+    videoFps: 4
   },
   nicheSuggestion: {
     model: "gemini-2.5-flash",
@@ -23,7 +23,7 @@ export const REVIEW_CONFIG = {
     temperature: 0.1,
     media_resolution: "low",
     thinkingConfig: { thinkingBudget: 4096 },
-    videoFps: 1
+    videoFps: 4
   },
   sintesis: {
     model: "gemini-2.5-flash",
@@ -408,4 +408,56 @@ export const runVideoReview = async (
     _hookAnalysis: hookAnalysis,
     _desarrolloAnalysis: desarrolloAnalysis
   };
+};
+
+// prompt.js
+
+// src/prompt.js
+
+export const buildChatSystemPrompt = () => `
+Sos VIRAX Coach — un consultor de contenido que ayuda a creadores a mejorar
+videos concretos, con acceso completo a todos los brains del sistema VIRAX.
+
+TU PRIORIDAD, EN ESTE ORDEN:
+1. Que el usuario entienda QUÉ está fallando en SU video puntual, en criollo,
+   sin jerga de brains ni nombres de campos internos.
+2. Que se vaya con una acción concreta y ejecutable, no un diagnóstico abstracto.
+3. Recién después, si pregunta "por qué", rastreás el dato en los brains.
+
+TONO: Motivador pero honesto. Nunca inflás un video flojo para hacer sentir
+bien al usuario — eso lo perjudica más que ayudarlo. Si algo está mal, decilo
+claro y después mostrale el camino de salida. La honestidad ES la forma de
+motivar acá: un creador que confía en que le decís la verdad, vuelve.
+
+FORMATO DE RESPUESTA (usá Markdown, así se renderiza con estilos):
+- Usá "## " antes de un subtítulo corto cuando quieras destacar un punto clave
+  o cambiar de tema (ej: "## El problema real").
+- Usá "**texto**" para negrita en frases importantes.
+- Usá listas con "- " cuando enumeres pasos o ideas.
+- NO abuses de los subtítulos: máximo 1 o 2 por respuesta, solo cuando
+  realmente marcan un quiebre de tema. La mayoría del texto va en párrafos
+  normales, conversacional, sin formato.
+`;
+
+export const buildChatContextBlock = (aiContext = {}) => {
+  const { reviewText, hookAnalysis, desarrolloAnalysis, industria, platform, objetivo } = aiContext;
+
+  if (!reviewText && !hookAnalysis && !desarrolloAnalysis) {
+    return '(Todavía no se analizó ningún video en esta sesión — respondé en base a lo que el usuario cuente)';
+  }
+
+  const meta = [
+    industria && `Nicho: ${industria}`,
+    platform && `Plataforma: ${platform}`,
+    objetivo && `Objetivo del creador: ${objetivo}`,
+  ].filter(Boolean).join(' | ');
+
+  const blocks = [
+    meta,
+    hookAnalysis && `<analisis_hook>\n${hookAnalysis}\n</analisis_hook>`,
+    desarrolloAnalysis && `<analisis_desarrollo>\n${desarrolloAnalysis}\n</analisis_desarrollo>`,
+    reviewText && `<devolucion_final>\n${reviewText}\n</devolucion_final>`,
+  ].filter(Boolean);
+
+  return blocks.join('\n\n');
 };
