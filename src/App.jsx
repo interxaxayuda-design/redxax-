@@ -8,13 +8,11 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import logo from './logo.png';
-import { buildChatContextBlock, buildChatSystemPrompt } from './prompt';
 import {
-  REVIEW_CONFIG,
-  buildDesarrolloAnalysisPrompt,
+  REVIEW_CONFIG, buildChatContextBlock, buildChatSystemPrompt, buildDesarrolloAnalysisPrompt,
   buildFinalReviewPrompt,
   buildHookAnalysisPrompt,
-  buildNicheSuggestionPrompt,
+  buildNicheSuggestionPrompt
 } from './prompts.js';
 
 import { createClient } from '@supabase/supabase-js';
