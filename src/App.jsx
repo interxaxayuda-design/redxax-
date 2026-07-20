@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import logo from './logo.png';
+import { buildChatContextBlock, buildChatSystemPrompt } from './prompt';
 import {
   REVIEW_CONFIG,
   buildDesarrolloAnalysisPrompt,
@@ -308,6 +309,171 @@ function CopyButton({ text }) {
         </>
       )}
     </button>
+  );
+}
+
+function DottedBackground() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    let raf, t = 0;
+    const spacing = 26;
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const draw = () => {
+      t += 0.004;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const cols = Math.ceil(canvas.width / spacing) + 1;
+      const rows = Math.ceil(canvas.height / spacing) + 1;
+
+      // Centro que se mueve lento y de forma orgánica
+      const cx = canvas.width * (0.5 + 0.35 * Math.sin(t * 0.7));
+      const cy = canvas.height * (0.5 + 0.35 * Math.cos(t * 0.5));
+      const maxDist = Math.hypot(canvas.width, canvas.height) * 0.5;
+
+      for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+          const x = i * spacing, y = j * spacing;
+          const dist = Math.hypot(x - cx, y - cy);
+          const proximity = Math.max(0, 1 - dist / maxDist);
+          const radius = 0.6 + proximity * 1.8;
+          const alpha = 0.04 + proximity * 0.22;
+
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(168, 85, 247, ${alpha})`; // combina con tu paleta purple
+          ctx.fill();
+        }
+      }
+      raf = requestAnimationFrame(draw);
+    };
+    draw();
+
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, []);
+
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }} />;
+}
+
+function MorphingTitle({ phrases, interval = 3000, className = '' }) {
+  const canvasRef = useRef(null);
+  const containerRef = useRef(null);
+  const stateRef = useRef({ particles: [], phraseIndex: 0, phase: 'idle', phaseStart: 0 });
+
+  const sampleTextPoints = (text, width, height) => {
+    const off = document.createElement('canvas');
+    off.width = width;
+    off.height = height;
+    const octx = off.getContext('2d');
+    octx.fillStyle = '#fff';
+    octx.textAlign = 'center';
+    octx.textBaseline = 'middle';
+
+    let fontSize = height * 0.5;
+    octx.font = `900 italic ${fontSize}px sans-serif`;
+    while (octx.measureText(text).width > width * 0.94 && fontSize > 10) {
+      fontSize -= 2;
+      octx.font = `900 italic ${fontSize}px sans-serif`;
+    }
+    octx.fillText(text, width / 2, height / 2);
+
+    const data = octx.getImageData(0, 0, width, height).data;
+    const step = 4; // ↓ más partículas (más costo) | ↑ menos partículas (más performance)
+    const points = [];
+    for (let y = 0; y < height; y += step) {
+      for (let x = 0; x < width; x += step) {
+        if (data[(y * width + x) * 4 + 3] > 128) points.push({ x, y });
+      }
+    }
+    return points;
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    const ctx = canvas.getContext('2d');
+
+    const buildParticlesFor = (index, immediate) => {
+      const points = sampleTextPoints(phrases[index], canvas.width, canvas.height);
+      stateRef.current.particles = points.map(p => ({
+        x: immediate ? p.x : p.x + (Math.random() - 0.5) * 300,
+        y: immediate ? p.y : p.y + (Math.random() - 0.5) * 300,
+        tx: p.x, ty: p.y, ox: p.x, oy: p.y,
+        r: 1 + Math.random() * 1.4,
+      }));
+    };
+
+    const resize = () => {
+      const rect = container.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+      buildParticlesFor(stateRef.current.phraseIndex, true);
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const easeOut = t => 1 - Math.pow(1 - t, 3);
+    const easeIn = t => t * t * t;
+    let raf;
+
+    const loop = (now) => {
+      const st = stateRef.current;
+      if (!st.phaseStart) st.phaseStart = now;
+      const elapsed = now - st.phaseStart;
+
+      if (st.phase === 'idle' && elapsed > interval) { st.phase = 'out'; st.phaseStart = now; }
+      else if (st.phase === 'out' && elapsed > 500) {
+        st.phraseIndex = (st.phraseIndex + 1) % phrases.length;
+        buildParticlesFor(st.phraseIndex, false);
+        st.phase = 'in'; st.phaseStart = now;
+      } else if (st.phase === 'in' && elapsed > 700) { st.phase = 'idle'; st.phaseStart = now; }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const outT = st.phase === 'out' ? Math.min(elapsed / 500, 1) : 0;
+      const inT = st.phase === 'in' ? Math.min(elapsed / 700, 1) : 1;
+
+      st.particles.forEach(p => {
+        let x, y, alpha, blur;
+        if (st.phase === 'out') {
+          const t = easeOut(outT);
+          x = p.ox + (p.ox - canvas.width / 2) * t * 0.6;
+          y = p.oy + (p.oy - canvas.height / 2) * t * 0.6;
+          alpha = 1 - t; blur = t * 14;
+        } else if (st.phase === 'in') {
+          const t = easeIn(inT);
+          x = p.x + (p.tx - p.x) * t;
+          y = p.y + (p.ty - p.y) * t;
+          alpha = t; blur = (1 - t) * 14;
+        } else { x = p.tx; y = p.ty; alpha = 1; blur = 0; }
+
+        ctx.globalAlpha = alpha;
+        ctx.filter = blur > 0.5 ? `blur(${blur}px)` : 'none';
+        ctx.beginPath();
+        ctx.arc(x, y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      ctx.filter = 'none';
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, [phrases, interval]);
+
+  return (
+    <div ref={containerRef} className={className} style={{ width: '100%', height: '160px' }}>
+      <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
+    </div>
   );
 }
 
@@ -820,54 +986,37 @@ const sendMessage = async () => {
   setIsTyping(true);
 
   try {
-    // ── Contexto enriquecido para el chat ──
+    // ── FIX: nombres correctos, coinciden con lo que devuelve runVideoReview ──
     const aiContext = {
-  reviewText: aiResult?.reviewText,
-  hookAnalysis: aiResult?.hookAnalysis,
-  desarrolloAnalysis: aiResult?.desarrolloAnalysis,
-  industria: aiResult?.industria,
-  platform: aiResult?.platform,
-  objetivo: aiResult?.objetivo,
-};
+      reviewText: aiResult?.reviewText,
+      hookAnalysis: aiResult?._hookAnalysis,
+      desarrolloAnalysis: aiResult?._desarrolloAnalysis,
+      industria: aiResult?.industria,
+      platform: aiResult?.platform,
+      objetivo: aiResult?.objetivo,
+    };
 
-   const systemPrompt = `
-Sos VIRAX Coach — un consultor de contenido que ayuda a creadores a mejorar
-videos concretos, con acceso completo a todos los brains del sistema VIRAX.
+    const systemPrompt = buildChatSystemPrompt();
+    const contextBlock = buildChatContextBlock(aiContext);
 
-TU PRIORIDAD, EN ESTE ORDEN:
-1. Que el usuario entienda QUÉ está fallando en SU video puntual, en criollo,
-   sin jerga de brains ni nombres de campos internos.
-2. Que se vaya con una acción concreta y ejecutable, no un diagnóstico abstracto.
-3. Recién después, si pregunta "por qué", rastreás el dato en los brains.
+    // DESPUÉS (con límite):
+    const MAX_HISTORY_TURNS = 8;
+    const history = newMessages.slice(0, -1).slice(-MAX_HISTORY_TURNS);
+    const currentMessage = newMessages[newMessages.length - 1];
 
-TONO: Motivador pero honesto. Nunca inflás un video flojo para hacer sentir
-bien al usuario — eso lo perjudica más que ayudarlo. Si algo está mal, decilo
-claro y después mostrale el camino de salida. La honestidad ES la forma de
-motivar acá: un creador que confía en que le decís la verdad, vuelve.
+    const historyFormatted = history
+      .map(m => `${m.role === 'user' ? '👤 USUARIO' : '🤖 VIRAX'}: ${m.text}`)
+      .join('\n\n');
 
-FORMATO DE RESPUESTA (usá Markdown, así se renderiza con estilos):
-- Usá "## " antes de un subtítulo corto cuando quieras destacar un punto clave
-  o cambiar de tema (ej: "## El problema real").
-- Usá "**texto**" para negrita en frases importantes.
-- Usá listas con "- " cuando enumeres pasos o ideas.
-- NO abuses de los subtítulos: máximo 1 o 2 por respuesta, solo cuando
-  realmente marcan un quiebre de tema. La mayoría del texto va en párrafos
-  normales, conversacional, sin formato.
-`;
-
-    // Separá claramente historial de mensaje actual
-const history = newMessages.slice(0, -1); // todo menos el último
-const currentMessage = newMessages[newMessages.length - 1]; // solo el último
-
-const historyFormatted = history
-  .map(m => `${m.role === 'user' ? '👤 USUARIO' : '🤖 VIRAX'}: ${m.text}`)
-  .join('\n\n');
-
-const fullPrompt = `
+    // ── FIX: el contexto ahora SÍ está en el prompt final ──
+    const fullPrompt = `
 ${systemPrompt}
 
 ════════════════════════════════
-HISTORIAL:
+CONTEXTO DEL VIDEO ANALIZADO:
+${contextBlock}
+════════════════════════════════
+HISTORIAL DE CONVERSACIÓN:
 ${historyFormatted || '(primera interacción)'}
 ════════════════════════════════
 
@@ -877,11 +1026,7 @@ ${currentMessage.text}
 🤖 VIRAX RESPONDE:`;
 
     const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: fullPrompt,
-        maxOutputTokens: 2048,  // más espacio para respuestas ricas
-        temperature: 0.75,      // un poco más creativo que antes
-      }
+      body: { text: fullPrompt, maxOutputTokens: 2048, temperature: 0.75 }
     });
 
     if (error) {
@@ -889,7 +1034,6 @@ ${currentMessage.text}
       try { rawBody = await error.context?.text?.(); } catch (_) {}
       throw new Error(rawBody || error.message || 'Error en Edge Function');
     }
-
     if (!data) throw new Error('Respuesta vacía del proxy');
 
     const botResponse =
@@ -917,6 +1061,7 @@ ${currentMessage.text}
     setIsTyping(false);
   }
 };
+
   const progressPercent = (userCount / 500) * 100;
 
   const platformColors = {
@@ -935,6 +1080,7 @@ ${currentMessage.text}
 
   return (
     <div className="min-h-screen bg-[#020203] text-white font-sans selection:bg-purple-500/50 overflow-x-hidden">
+      <DottedBackground />
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-5%] left-[-5%] w-[45%] h-[45%] bg-purple-600/[0.04] blur-[120px] rounded-full" />
         <div className="absolute bottom-[-5%] right-[-5%] w-[45%] h-[45%] bg-blue-600/[0.04] blur-[120px] rounded-full" />
@@ -1168,14 +1314,17 @@ ${currentMessage.text}
       <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
         <Microscope className="w-3 h-3" /> Precisión 500% — Analista Neutro
       </div>
-      <h2 className="text-7xl md:text-9xl font-black italic tracking-tighter leading-none uppercase">
-        <span className="block title-line1">
-          No es <span className="gold-viral">viral</span><br/>lo que necesitás.
-        </span>
-        <span className="block title-line2">
-          Son <span className="shimmer-ventas">Ventas.</span>
-        </span>
-      </h2>
+      <MorphingTitle
+        phrases={[
+          'Empieza a potenciar tus videos ahora mismo 💪',
+          'Empieza hoy',
+          'Transforma la calidad de tus videos',
+          'No dejes que te detengan',
+          'Puedes hacerlo',
+        ]}
+        interval={3000}
+        className="mx-auto max-w-5xl"
+      />
       <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
         La IA analiza tu video y te dice exactamente<br/>
         <span className="text-slate-500">qué está funcionando y qué te está frenando.</span>
