@@ -364,40 +364,6 @@ function DottedBackground() {
   return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }} />;
 }
 
-function FadeTitle({ phrases, interval = 3000, className = '' }) {
-  const [index, setIndex] = useState(0);
-  const [visible, setVisible] = useState(true);
-
-  useEffect(() => {
-    let outTimer;
-    const cycle = setInterval(() => {
-      setVisible(false); // dispara el fade-out + blur
-      outTimer = setTimeout(() => {
-        setIndex(i => (i + 1) % phrases.length);
-        setVisible(true); // fade-in de la nueva frase
-      }, 450); // debe coincidir con la duración de la transición de abajo
-    }, interval);
-
-    return () => { clearInterval(cycle); clearTimeout(outTimer); };
-  }, [interval, phrases.length]);
-
-  return (
-    <div className={`flex items-center justify-center ${className}`} style={{ height: '160px' }}>
-      <h2
-        className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4"
-        style={{
-          transition: 'opacity 0.45s cubic-bezier(0.22,1,0.36,1), filter 0.45s cubic-bezier(0.22,1,0.36,1), transform 0.45s cubic-bezier(0.22,1,0.36,1)',
-          opacity: visible ? 1 : 0,
-          filter: visible ? 'blur(0px)' : 'blur(12px)',
-          transform: visible ? 'translateY(0px)' : 'translateY(-16px)',
-          willChange: 'opacity, filter, transform',
-        }}
-      >
-        {phrases[index]}
-      </h2>
-    </div>
-  );
-}
 
 function InlineRotatingWord({ words, interval = 2600 }) {
   const [index, setIndex] = useState(0);
@@ -410,7 +376,7 @@ function InlineRotatingWord({ words, interval = 2600 }) {
       outTimer = setTimeout(() => {
         setIndex(i => (i + 1) % words.length);
         setVisible(true);
-      }, 350);
+      }, 150);
     }, interval);
     return () => { clearInterval(cycle); clearTimeout(outTimer); };
   }, [interval, words.length]);
@@ -1272,7 +1238,7 @@ ${currentMessage.text}
         }
       `}</style>
       <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-        <Microscope className="w-3 h-3" /> Precisión 500% — Analista Neutro
+        <Microscope className="w-3 h-3" /> INTEGRADA CON IA 
       </div>
       <h1 className="text-2xl sm:text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4 leading-tight max-w-5xl mx-auto whitespace-nowrap">
   Sabé por qué tu video{' '}
