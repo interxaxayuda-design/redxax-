@@ -41,7 +41,7 @@ const FOLLOWER_RANGES = [
   { id: 'mega',  label: 'Mega cuenta',     range: '500K+',       emoji: '👑' },
 ];
 
-export function extractGeminiText(data) {//const flagsDeterministic = {
+export function extractGeminiText(data) {
   if (data?.error) {
     throw new Error(`Edge Function error: ${data.error} — ${data.message ?? data.raw ?? ''}`);
   }
