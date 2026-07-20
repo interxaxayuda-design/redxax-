@@ -399,6 +399,38 @@ function FadeTitle({ phrases, interval = 3000, className = '' }) {
   );
 }
 
+function InlineRotatingWord({ words, interval = 2600 }) {
+  const [index, setIndex] = useState(0);
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    let outTimer;
+    const cycle = setInterval(() => {
+      setVisible(false);
+      outTimer = setTimeout(() => {
+        setIndex(i => (i + 1) % words.length);
+        setVisible(true);
+      }, 350);
+    }, interval);
+    return () => { clearInterval(cycle); clearTimeout(outTimer); };
+  }, [interval, words.length]);
+  return (
+    <span
+      className="inline-block text-purple-400"
+      style={{
+        transition: 'opacity 0.35s ease, filter 0.35s ease, transform 0.35s ease',
+        opacity: visible ? 1 : 0,
+        filter: visible ? 'blur(0px)' : 'blur(6px)',
+        transform: visible ? 'translateY(0px)' : 'translateY(-6px)',
+        willChange: 'opacity, filter, transform',
+      }}
+    >
+      {words[index]}
+    </span>
+  );
+}
+
+
+
 const App = () => {
   const [step, setStep] = useState('upload');
   const [analysisMode, setAnalysisMode] = useState('video');
@@ -1236,17 +1268,10 @@ ${currentMessage.text}
       <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
         <Microscope className="w-3 h-3" /> Precisión 500% — Analista Neutro
       </div>
-      <FadeTitle
-        phrases={[
-          'Empieza a potenciar tus videos ahora mismo 💪',
-          'Empieza hoy',
-          'Transforma la calidad de tus videos',
-          'No dejes que te detengan',
-          'Puedes hacerlo',
-        ]}
-       interval={3000}
-  className="mx-auto max-w-5xl"
-/>
+      <h1 className="text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4 leading-tight max-w-5xl mx-auto">
+        Sabé por qué tu video{' '}
+        <InlineRotatingWord words={['va a explotar', 'se va a estancar', 'necesita un cambio']} />
+      </h1>
       <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
         La IA analiza tu video y te dice exactamente<br/>
         <span className="text-slate-500">qué está funcionando y qué te está frenando.</span>
