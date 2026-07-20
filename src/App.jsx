@@ -402,6 +402,7 @@ function FadeTitle({ phrases, interval = 3000, className = '' }) {
 function InlineRotatingWord({ words, interval = 2600 }) {
   const [index, setIndex] = useState(0);
   const [visible, setVisible] = useState(true);
+
   useEffect(() => {
     let outTimer;
     const cycle = setInterval(() => {
@@ -413,23 +414,29 @@ function InlineRotatingWord({ words, interval = 2600 }) {
     }, interval);
     return () => { clearInterval(cycle); clearTimeout(outTimer); };
   }, [interval, words.length]);
+
+  // Ancho fijo = el de la palabra más larga, para que el resto del texto no se mueva
+  const longest = words.reduce((a, b) => (b.length > a.length ? b : a), '');
+
   return (
-    <span
-      className="inline-block text-purple-400"
-      style={{
-        transition: 'opacity 0.35s ease, filter 0.35s ease, transform 0.35s ease',
-        opacity: visible ? 1 : 0,
-        filter: visible ? 'blur(0px)' : 'blur(6px)',
-        transform: visible ? 'translateY(0px)' : 'translateY(-6px)',
-        willChange: 'opacity, filter, transform',
-      }}
-    >
-      {words[index]}
+    <span className="relative inline-block align-baseline text-left" style={{ minWidth: `${longest.length}ch` }}>
+      {/* Fantasma invisible que reserva el espacio */}
+      <span className="invisible">{longest}</span>
+      <span
+        className="absolute left-0 top-0 text-purple-400 whitespace-nowrap"
+        style={{
+          transition: 'opacity 0.35s ease, filter 0.35s ease, transform 0.35s ease',
+          opacity: visible ? 1 : 0,
+          filter: visible ? 'blur(0px)' : 'blur(6px)',
+          transform: visible ? 'translateY(0px)' : 'translateY(-6px)',
+          willChange: 'opacity, filter, transform',
+        }}
+      >
+        {words[index]}
+      </span>
     </span>
   );
 }
-
-
 
 const App = () => {
   const [step, setStep] = useState('upload');
