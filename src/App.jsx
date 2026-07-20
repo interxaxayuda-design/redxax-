@@ -1276,7 +1276,7 @@ ${currentMessage.text}
       </div>
       <h1 className="text-2xl sm:text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4 leading-tight max-w-5xl mx-auto whitespace-nowrap">
   Sabé por qué tu video{' '}
-  <InlineRotatingWord words={['va a explotar', 'se va a estancar', 'necesita un cambio']} />
+  <InlineRotatingWord words={['va a explotar 🔥', 'se va a estancar ⚠️', 'necesita un cambio 💪']} />
 </h1>
       <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
         La IA analiza tu video y te dice exactamente<br/>
