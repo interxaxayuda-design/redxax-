@@ -1397,7 +1397,7 @@ ${currentMessage.text}
   <div className="absolute inset-0 bg-black/55 z-[1] rounded-[4rem]" />
 
   <div className="relative z-0 opacity-40">
-    <FileText className="w-16 h-16 text-slate-800 mx-auto mb-6" />
+    <Microscope className="w-16 h-16 text-slate-800 mx-auto mb-6" />
     <p className="text-3xl font-black italic tracking-tighter uppercase">Laboratorio de ideas</p>
     <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Empieza a construir tu video</p>
   </div>
