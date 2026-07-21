@@ -484,6 +484,45 @@ function GemToast({ notice, onClose }) {
   );
 }
 
+function ComingSoonRibbon({ text = 'Próximamente' }) {
+  const containerRef = useRef(null);
+  const [ribbon, setRibbon] = useState({ width: 0, angle: 0 });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const measure = () => {
+      const { width, height } = el.getBoundingClientRect();
+      const diagonal = Math.hypot(width, height);
+      const angleDeg = Math.atan2(height, width) * (180 / Math.PI);
+      setRibbon({ width: diagonal, angle: angleDeg });
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  return (
+    <div ref={containerRef} className="absolute inset-0 overflow-hidden pointer-events-none rounded-[4rem]">
+      <div
+        className="absolute left-1/2 top-1/2 flex items-center justify-center bg-orange-500 shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
+        style={{
+          width: `${ribbon.width}px`,
+          height: '46px',
+          transform: `translate(-50%, -50%) rotate(${ribbon.angle}deg)`,
+        }}
+      >
+        <span className="text-white font-black uppercase tracking-[0.35em] text-sm whitespace-nowrap">
+          {text}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 const App = () => {
   const [step, setStep] = useState('upload');
   const [analysisMode, setAnalysisMode] = useState('video');
@@ -1342,12 +1381,20 @@ ${currentMessage.text}
       </p>
     </div>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto px-4">
-      <div onClick={() => setStep('script_input')}
-        className="group relative block border-2 border-dashed border-white/10 hover:border-indigo-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
-        <FileText className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-indigo-400 group-hover:scale-110 transition-all duration-500" />
-        <p className="text-3xl font-black italic tracking-tighter uppercase">Validar Guion</p>
-        <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 0: Estructura y Texto</p>
-      </div>
+     <div
+  className="group relative block border-2 border-dashed border-white/10 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 overflow-hidden shadow-2xl cursor-not-allowed select-none"
+>
+  {/* Overlay oscuro */}
+  <div className="absolute inset-0 bg-black/55 z-[1] rounded-[4rem]" />
+
+  <div className="relative z-0 opacity-40">
+    <FileText className="w-16 h-16 text-slate-800 mx-auto mb-6" />
+    <p className="text-3xl font-black italic tracking-tighter uppercase">Validar Guion</p>
+    <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 0: Estructura y Texto</p>
+  </div>
+
+  <ComingSoonRibbon text="Próximamente" />
+</div>
       <label className="group relative block border-2 border-dashed border-white/10 hover:border-purple-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
         <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-purple-400 group-hover:scale-110 transition-all duration-500" />
         <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
