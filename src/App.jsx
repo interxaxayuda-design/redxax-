@@ -508,14 +508,23 @@ function ComingSoonRibbon({ text = 'Próximamente' }) {
   return (
     <div ref={containerRef} className="absolute inset-0 overflow-hidden pointer-events-none rounded-[4rem] z-[2]">
       <div
-        className="absolute left-1/2 top-1/2 flex items-center justify-center bg-orange-500 shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
+        className="absolute left-1/2 top-1/2 flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
         style={{
           width: `${ribbon.width}px`,
           height: '46px',
           transform: `translate(-50%, -50%) rotate(${ribbon.angle}deg)`,
+          background: `repeating-linear-gradient(
+            45deg,
+            #f97316 0px,
+            #f97316 22px,
+            #0a0a0a 22px,
+            #0a0a0a 44px
+          )`,
         }}
       >
-        <span className="text-black font-black uppercase tracking-[0.35em] text-sm whitespace-nowrap">
+        <span
+          className="font-black uppercase tracking-[0.35em] text-sm whitespace-nowrap px-4 py-1 bg-black/85 text-orange-400"
+        >
           {text}
         </span>
       </div>
