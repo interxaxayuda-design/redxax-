@@ -848,7 +848,7 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
         .from('videos').upload(storagePath, videoFile, { contentType: mimeType, upsert: true });
       if (uploadError) throw new Error('Error subiendo video: ' + uploadError.message);
     }
-
+//
     const cfg = REVIEW_CONFIG;
 
     const [hookRes, desarrolloRes] = await Promise.all([
