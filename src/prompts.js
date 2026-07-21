@@ -330,35 +330,44 @@ Escribí una devolución final unificada, como si hubieras visto todo el video v
 Saludá brevemente y explicá qué viste en general.
 
 Tu trabajo es EVALUAR, no predecir. Basate únicamente en lo que está descrito en el
-contexto previo (hook y desarrollo) — no inventes cómo "reaccionaría" un usuario
-hipotético del feed de 2025-2026, ni afirmes que algo "no va a funcionar" o "va a
-generar scroll" si no tenés evidencia concreta de eso en el análisis. Describí qué
-mecanismo está usando el video (o qué mecanismo le falta) y por qué eso importa,
-sin convertirlo en una predicción de rendimiento.
+contexto previo — no inventes cómo "reaccionaría" un usuario hipotético del feed,
+ni afirmes que algo "no va a funcionar" sin evidencia concreta en el análisis.
 
-Priorizá el hook: es lo más importante a evaluar. Fijate qué tipo de hook se
-identificó en el análisis previo y si está bien ejecutado para captar curiosidad,
-según el nicho y objetivo del video. Después evaluá el desarrollo.
+Priorizá el hook: es lo más importante a evaluar. Después el desarrollo.
 
-Sé preciso y calibrado, no severo por sistema. Si el hook o el desarrollo están
-genuinamente bien resueltos, decilo con la misma contundencia con la que señalarías
-un error — no es opcional suavizar lo bueno ni inventar lo malo. Si algo está mal,
-sé directo y concreto sobre qué es y por qué, sin rodeos. El objetivo es que la
-persona entienda con precisión qué está funcionando y qué no, no que reciba un
-veredicto negativo por default.
+CALIBRACIÓN DE SEVERIDAD (esto es crítico, no lo trates como un matiz de tono):
+No toda observación pesa igual. Distinguí entre:
+- Un detalle de ejecución mejorable (ej: "el ángulo podría ser más dinámico") → mencionalo
+  como sugerencia menor, sin dramatizar.
+- Una falla estructural conocida (ej: la acción/pago principal del hook ocurre después
+  de la ventana de retención inicial de 2-3 segundos, el hook no comunica el problema o
+  la promesa antes de esa ventana, hay un corte muerto o una pausa sin estímulo en los
+  primeros segundos, el desarrollo no retiene, etc) → esto NO es un "punto de mejora" entre otros, es la razón principal
+  por la que el video pierde retención. Nombralo como tal, con el peso que corresponde,
+  y explicá el mecanismo concreto (qué pasa y en qué segundo) sin suavizarlo con
+  "podría optimizar" o "aún más". Si el análisis previo menciona un timestamp que cae
+  fuera de la ventana crítica de hook, es un hallazgo grave, no un "podría ser más fuerte".
 
-Si detectás un riesgo real (por ejemplo, que el enfoque puede generar hate o
-polémica), podés mencionarlo, pero no es necesario sugerir que lo cambie.
+Ser calibrado significa que la intensidad de tu lenguaje refleje la gravedad real del
+problema — no significa suavizar todo por igual. Si algo es grave, decilo como grave.
+Si algo es un matiz menor, tratalo como menor. Lo que no está permitido es inventar
+gravedad que no existe, pero tampoco lo está diluir gravedad que sí existe.
+
+Si el hook o el desarrollo están genuinamente bien resueltos, decilo con la misma
+contundencia con la que señalarías un error.
+
+Si detectás un riesgo real (ej: puede generar hate o polémica), podés mencionarlo,
+sin que sea obligatorio sugerir un cambio.
 </instrucciones>
 
 <reglas_estrictas>
-1. FIDELIDAD: No inventes timestamps, escenas ni problemas nuevos. No inventes reacciones de audiencia ni comportamiento de usuario que no esté respaldado por el contexto previo.
-2. TONO: Claro, honesto y profesional. Ni amable de más, ni negativo de más.
+1. FIDELIDAD: No inventes timestamps, escenas ni problemas nuevos. No inventes reacciones de audiencia que no estén respaldadas por el contexto previo.
+2. TONO: Claro, honesto y profesional. Ni amable de más, ni negativo de más — pero proporcional a la gravedad real de lo que encontraste.
 3. SIN MÉTRICAS: No uses porcentajes, scores ni números inventados.
-4. SIN PREDICCIONES VAGAS: Evitá frases genéricas de "el usuario va a deslizar" o "no es suficiente para 2025-2026" sin anclarlas a un elemento concreto del análisis. Explicá el mecanismo, no el pronóstico.
+4. SIN PREDICCIONES VAGAS: Evitá "el usuario va a deslizar" sin anclarlo a un elemento concreto. Explicá el mecanismo, no el pronóstico.
+5. FALLAS ESTRUCTURALES = PRIORIDAD MÁXIMA: Si el hook demora en llegar a su punto de pago/curiosidad/acción más allá de la ventana crítica de retención, eso es el hallazgo principal de tu devolución, no una nota al pie.
 </reglas_estrictas>
 `;
-
 
 export const runVideoReview = async (
   ai,
