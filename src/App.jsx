@@ -1398,8 +1398,8 @@ ${currentMessage.text}
 
   <div className="relative z-0 opacity-40">
     <FileText className="w-16 h-16 text-slate-800 mx-auto mb-6" />
-    <p className="text-3xl font-black italic tracking-tighter uppercase">Validar Guion</p>
-    <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 0: Estructura y Texto</p>
+    <p className="text-3xl font-black italic tracking-tighter uppercase">Laboratorio de ideas</p>
+    <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Empieza a construir tu video</p>
   </div>
 
   <ComingSoonRibbon text="Próximamente" />
@@ -1407,7 +1407,7 @@ ${currentMessage.text}
       <label className="group relative block border-2 border-dashed border-white/10 hover:border-purple-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
         <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-purple-400 group-hover:scale-110 transition-all duration-500" />
         <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
-        <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Edición y Ritmo</p>
+        <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Corrigue tu video</p>
         <input type="file" className="hidden" accept="video/*" onChange={(e) => {
           const file = e.target.files[0];
           if (file) {
