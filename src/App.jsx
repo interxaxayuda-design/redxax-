@@ -770,7 +770,7 @@ const runNicheSuggestion = async (videoFile, platform) => {
 
   } catch (err) {
     console.warn('No se pudo sugerir nicho, seguimos sin sugerencia:', err.message);
-    setNichoSugerido(''); // el usuario completa a mano, no bloqueamos el flujo
+    setNichoSugerido(''); 
     setStep('validation');
   }
 };
