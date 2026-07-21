@@ -403,6 +403,72 @@ function InlineRotatingWord({ words, interval = 2600 }) {
   );
 }
 
+function GemToast({ notice, onClose }) {
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [notice, onClose]);
+
+  if (!notice) return null;
+
+  const styles = {
+    error: {
+      border: 'border-red-500/30',
+      bg: 'bg-red-500/[0.07]',
+      icon: 'text-red-400',
+      glow: 'shadow-[0_0_30px_rgba(239,68,68,0.15)]',
+    },
+    warning: {
+      border: 'border-yellow-500/30',
+      bg: 'bg-yellow-500/[0.07]',
+      icon: 'text-yellow-400',
+      glow: 'shadow-[0_0_30px_rgba(234,179,8,0.15)]',
+    },
+    info: {
+      border: 'border-purple-500/30',
+      bg: 'bg-purple-500/[0.07]',
+      icon: 'text-purple-400',
+      glow: 'shadow-[0_0_30px_rgba(168,85,247,0.15)]',
+    },
+  };
+  const s = styles[notice.type] || styles.info;
+
+  return (
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] animate-in fade-in slide-in-from-top-4 duration-300 w-[92%] max-w-md">
+      <div className={`relative flex items-start gap-3 p-4 pr-3 rounded-[1.75rem] border ${s.border} ${s.bg} ${s.glow} backdrop-blur-xl`}>
+        <div className={`w-9 h-9 rounded-full bg-black/30 border ${s.border} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+          <Gem className={`w-4 h-4 ${s.icon}`} fill="currentColor" />
+        </div>
+        <div className="flex-1 pt-0.5">
+          {notice.title && (
+            <p className="text-[11px] font-black uppercase tracking-wider text-white/90 mb-0.5">
+              {notice.title}
+            </p>
+          )}
+          <p className="text-[13px] font-medium text-white/60 leading-snug">
+            {notice.message}
+          </p>
+          {notice.action && (
+            <button
+              onClick={notice.action.onClick}
+              className={`mt-2 text-[11px] font-black uppercase tracking-wider ${s.icon} hover:opacity-70 transition-opacity`}
+            >
+              {notice.action.label} →
+            </button>
+          )}
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-full hover:bg-white/10 transition-colors flex-shrink-0"
+        >
+          <X className="w-3.5 h-3.5 text-white/30" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const App = () => {
   const [step, setStep] = useState('upload');
   const [analysisMode, setAnalysisMode] = useState('video');
@@ -417,6 +483,7 @@ const App = () => {
   const [currentHistoryId, setCurrentHistoryId] = useState(null);
   const [history, setHistory] = useState([]);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
+  const [gemNotice, setGemNotice] = useState(null); 
   const [analysisProgress, setAnalysisProgress] = useState(0);
   const [aiResult, setAiResult] = useState(null);
   const [userCount, setUserCount] = useState(0);
@@ -556,29 +623,34 @@ const deductGems = async (amount, reason) => {
     });
 
     if (error) {
-      // ── ESTO ES LO QUE CAMBIA: leer el body real del error ──
       let errorBody = '';
-      try {
-        // Supabase guarda la Response original en error.context
-        errorBody = await error.context?.text?.();
-      } catch (_) {}
-
+      try { errorBody = await error.context?.text?.(); } catch (_) {}
       console.error('deduct-gems error (status):', error.message);
-      console.error('deduct-gems error (body):', errorBody);  // ← ACÁ vas a ver el error real
+      console.error('deduct-gems error (body):', errorBody);
 
-      
-      const legibleError = errorBody || error.message || 'Error desconocido';
-      alert(`Error al procesar las gemas:\n${legibleError}\n\nCopiá este mensaje y revisá los logs de tu Edge Function en Supabase.`);
+      setGemNotice({
+        type: 'error',
+        title: 'Error al procesar gemas',
+        message: errorBody || error.message || 'Algo salió mal. Intentá de nuevo en unos segundos.',
+      });
       return false;
     }
 
     if (!data?.success) {
       if (data?.error === 'Saldo insuficiente') {
-        alert(`Gemas insuficientes. Tenés ${data.balance} y necesitás ${amount}.`);
-        setShowGemStore(true);
+        setGemNotice({
+          type: 'warning',
+          title: 'Gemas insuficientes',
+          message: `Tenés ${data.balance} 💎 y necesitás ${amount} 💎 para este análisis.`,
+          action: { label: 'Recargar gemas', onClick: () => { setShowGemStore(true); setGemNotice(null); } },
+        });
       } else {
         console.error('deduct-gems logic error:', data);
-        alert(`Error al procesar las gemas: ${data?.error || 'Error desconocido'}. Intentá de nuevo.`);
+        setGemNotice({
+          type: 'error',
+          title: 'Error al procesar gemas',
+          message: data?.error || 'Intentá de nuevo en unos segundos.',
+        });
       }
       return false;
     }
@@ -588,7 +660,11 @@ const deductGems = async (amount, reason) => {
 
   } catch (err) {
     console.error('deduct-gems exception:', err);
-    alert('Error inesperado al procesar las gemas. Intentá de nuevo.');
+    setGemNotice({
+      type: 'error',
+      title: 'Error inesperado',
+      message: 'No pudimos procesar las gemas. Intentá de nuevo.',
+    });
     return false;
   }
 };
@@ -1007,6 +1083,7 @@ ${currentMessage.text}
   return (
     <div className="min-h-screen bg-[#020203] text-white font-sans selection:bg-purple-500/50 overflow-x-hidden">
       <DottedBackground />
+      <GemToast notice={gemNotice} onClose={() => setGemNotice(null)} />
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-5%] left-[-5%] w-[45%] h-[45%] bg-purple-600/[0.04] blur-[120px] rounded-full" />
         <div className="absolute bottom-[-5%] right-[-5%] w-[45%] h-[45%] bg-blue-600/[0.04] blur-[120px] rounded-full" />
