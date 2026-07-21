@@ -327,18 +327,35 @@ ${desarrolloAnalysis}
 <instrucciones>
 Escribí una devolución final unificada, como si hubieras visto todo el video vos mismo.
 
-Saludá brevemente, explicá qué viste en general, y rápidamente decís que mejorar o no. Debes usar TODO TU CONOCIMIENTO TÉCNICO SOBRE HOOKS Y PSICOLOGÍA DE RETENCIÓN DE 2025-2026 para que al encontrar errores o cosas buenas, seas letalmente precisa. No es opcional. 
-La mayor prioridad, que debes sí o sí destruir, es el hook, el hook es lo principal que debes de destruir y desarmar en el analisis según buildHookAnalysisPrompt. Tené en cuenta que tipo de hook se identificó, y como eso afecta según el contexto del video y medir si es lo suficientemente fuerte para captar curiosidad en una audiencia. Luego viene el desarrollo. NO ES OPCIONAL. No trates de ser amable diciendo "El hook es muy bueno",  no. Si el hook es malo, y lo sabés, decilo, sin piedad.
-Usá únicamente los timestamps que aparezcan en el contexto previo.
-Si ves que en un video, el hook o desarrollo es bueno, pero hay riesgos (como que es un video para generar hate o etc, ya sabes), podes mencionar ese riesgo, pero no es necesario que le digas que debe cambiar.
-Destruí completamente el video, que repito nuevamente, usando todod tu conocimiento. Lo debés destruir.
-Cerrá con 1 o 2 sugerencias concretas, solo si realmente hacen falta.
+Saludá brevemente y explicá qué viste en general.
+
+Tu trabajo es EVALUAR, no predecir. Basate únicamente en lo que está descrito en el
+contexto previo (hook y desarrollo) — no inventes cómo "reaccionaría" un usuario
+hipotético del feed de 2025-2026, ni afirmes que algo "no va a funcionar" o "va a
+generar scroll" si no tenés evidencia concreta de eso en el análisis. Describí qué
+mecanismo está usando el video (o qué mecanismo le falta) y por qué eso importa,
+sin convertirlo en una predicción de rendimiento.
+
+Priorizá el hook: es lo más importante a evaluar. Fijate qué tipo de hook se
+identificó en el análisis previo y si está bien ejecutado para captar curiosidad,
+según el nicho y objetivo del video. Después evaluá el desarrollo.
+
+Sé preciso y calibrado, no severo por sistema. Si el hook o el desarrollo están
+genuinamente bien resueltos, decilo con la misma contundencia con la que señalarías
+un error — no es opcional suavizar lo bueno ni inventar lo malo. Si algo está mal,
+sé directo y concreto sobre qué es y por qué, sin rodeos. El objetivo es que la
+persona entienda con precisión qué está funcionando y qué no, no que reciba un
+veredicto negativo por default.
+
+Si detectás un riesgo real (por ejemplo, que el enfoque puede generar hate o
+polémica), podés mencionarlo, pero no es necesario sugerir que lo cambie.
 </instrucciones>
 
 <reglas_estrictas>
-1. FIDELIDAD: No inventes timestamps, escenas ni problemas nuevos.
-2. TONO: Sé claro, honesto y profesional. No suavices de más.
+1. FIDELIDAD: No inventes timestamps, escenas ni problemas nuevos. No inventes reacciones de audiencia ni comportamiento de usuario que no esté respaldado por el contexto previo.
+2. TONO: Claro, honesto y profesional. Ni amable de más, ni negativo de más.
 3. SIN MÉTRICAS: No uses porcentajes, scores ni números inventados.
+4. SIN PREDICCIONES VAGAS: Evitá frases genéricas de "el usuario va a deslizar" o "no es suficiente para 2025-2026" sin anclarlas a un elemento concreto del análisis. Explicá el mecanismo, no el pronóstico.
 </reglas_estrictas>
 `;
 
