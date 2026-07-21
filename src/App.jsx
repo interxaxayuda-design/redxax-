@@ -404,68 +404,83 @@ function InlineRotatingWord({ words, interval = 2600 }) {
 }
 
 function GemToast({ notice, onClose }) {
+  const [rendered, setRendered] = useState(null);
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => {
+    if (notice) {
+      setRendered(notice);
+      setClosing(false);
+    } else if (rendered) {
+      setClosing(true);
+      const timer = setTimeout(() => setRendered(null), 250);
+      return () => clearTimeout(timer);
+    }
+  }, [notice]);
+
   useEffect(() => {
     if (!notice) return;
     const timer = setTimeout(onClose, 5000);
     return () => clearTimeout(timer);
   }, [notice, onClose]);
 
-  if (!notice) return null;
+  if (!rendered) return null;
 
   const styles = {
-    error: {
-      border: 'border-red-500/30',
-      bg: 'bg-red-500/[0.07]',
-      icon: 'text-red-400',
-      glow: 'shadow-[0_0_30px_rgba(239,68,68,0.15)]',
-    },
-    warning: {
-      border: 'border-yellow-500/30',
-      bg: 'bg-yellow-500/[0.07]',
-      icon: 'text-yellow-400',
-      glow: 'shadow-[0_0_30px_rgba(234,179,8,0.15)]',
-    },
-    info: {
-      border: 'border-purple-500/30',
-      bg: 'bg-purple-500/[0.07]',
-      icon: 'text-purple-400',
-      glow: 'shadow-[0_0_30px_rgba(168,85,247,0.15)]',
-    },
+    error:   { border: 'border-red-500/30',    bg: 'bg-red-500/[0.07]',    icon: 'text-red-400',    glow: 'shadow-[0_0_30px_rgba(239,68,68,0.15)]' },
+    warning: { border: 'border-yellow-500/30', bg: 'bg-yellow-500/[0.07]', icon: 'text-yellow-400', glow: 'shadow-[0_0_30px_rgba(234,179,8,0.15)]' },
+    info:    { border: 'border-purple-500/30', bg: 'bg-purple-500/[0.07]', icon: 'text-purple-400', glow: 'shadow-[0_0_30px_rgba(168,85,247,0.15)]' },
   };
-  const s = styles[notice.type] || styles.info;
+  const s = styles[rendered.type] || styles.info;
 
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] animate-in fade-in slide-in-from-top-4 duration-300 w-[92%] max-w-md">
-      <div className={`relative flex items-start gap-3 p-4 pr-3 rounded-[1.75rem] border ${s.border} ${s.bg} ${s.glow} backdrop-blur-xl`}>
-        <div className={`w-9 h-9 rounded-full bg-black/30 border ${s.border} flex items-center justify-center flex-shrink-0 mt-0.5`}>
-          <Gem className={`w-4 h-4 ${s.icon}`} fill="currentColor" />
-        </div>
-        <div className="flex-1 pt-0.5">
-          {notice.title && (
-            <p className="text-[11px] font-black uppercase tracking-wider text-white/90 mb-0.5">
-              {notice.title}
+    <>
+      <style>{`
+        @keyframes toastIn {
+          from { opacity: 0; transform: translate(-50%, -16px) scale(0.96); }
+          to   { opacity: 1; transform: translate(-50%, 0px)   scale(1);    }
+        }
+        @keyframes toastOut {
+          from { opacity: 1; transform: translate(-50%, 0px)   scale(1);    }
+          to   { opacity: 0; transform: translate(-50%, -16px) scale(0.96); }
+        }
+      `}</style>
+      <div
+        className="fixed top-6 left-1/2 z-[200] w-[92%] max-w-md"
+        style={{
+          animation: closing
+            ? 'toastOut 0.25s ease forwards'
+            : 'toastIn 0.3s cubic-bezier(0.22,1,0.36,1) forwards',
+        }}
+      >
+        <div className={`relative flex items-start gap-3 p-4 pr-3 rounded-[1.75rem] border ${s.border} ${s.bg} ${s.glow} backdrop-blur-xl`}>
+          <div className={`w-9 h-9 rounded-full bg-black/30 border ${s.border} flex items-center justify-center flex-shrink-0 mt-0.5`}>
+            <Gem className={`w-4 h-4 ${s.icon}`} fill="currentColor" />
+          </div>
+          <div className="flex-1 pt-0.5">
+            {rendered.title && (
+              <p className="text-[11px] font-black uppercase tracking-wider text-white/90 mb-0.5">
+                {rendered.title}
+              </p>
+            )}
+            <p className="text-[13px] font-medium text-white/60 leading-snug">
+              {rendered.message}
             </p>
-          )}
-          <p className="text-[13px] font-medium text-white/60 leading-snug">
-            {notice.message}
-          </p>
-          {notice.action && (
-            <button
-              onClick={notice.action.onClick}
-              className={`mt-2 text-[11px] font-black uppercase tracking-wider ${s.icon} hover:opacity-70 transition-opacity`}
-            >
-              {notice.action.label} →
-            </button>
-          )}
+            {rendered.action && (
+              <button
+                onClick={rendered.action.onClick}
+                className={`mt-2 text-[11px] font-black uppercase tracking-wider ${s.icon} hover:opacity-70 transition-opacity`}
+              >
+                {rendered.action.label} →
+              </button>
+            )}
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/10 transition-colors flex-shrink-0">
+            <X className="w-3.5 h-3.5 text-white/30" />
+          </button>
         </div>
-        <button
-          onClick={onClose}
-          className="p-1.5 rounded-full hover:bg-white/10 transition-colors flex-shrink-0"
-        >
-          <X className="w-3.5 h-3.5 text-white/30" />
-        </button>
       </div>
-    </div>
+    </>
   );
 }
 
