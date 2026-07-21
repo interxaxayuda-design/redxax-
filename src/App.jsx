@@ -330,7 +330,7 @@ function DottedBackground() {
     window.addEventListener('resize', resize);
 
     const draw = () => {
-      t += 0.004;
+      t += 0.01;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       const cols = Math.ceil(canvas.width / spacing) + 1;
       const rows = Math.ceil(canvas.height / spacing) + 1;
