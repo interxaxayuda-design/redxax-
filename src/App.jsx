@@ -1215,7 +1215,7 @@ ${currentMessage.text}
 <img
   src={logo}
   alt="Virax logo"
-  className="w-14 h-14 rounded-full object-contain shadow-lg"
+  className="w-11 h-11 rounded-full object-contain shadow-lg"
 />
     <div className="flex flex-col leading-tight">
       <h1 className="virax-text text-2xl font-black tracking-tighter italic uppercase">
