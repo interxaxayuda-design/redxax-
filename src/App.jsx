@@ -506,7 +506,7 @@ function ComingSoonRibbon({ text = 'Próximamente' }) {
   }, []);
 
   return (
-    <div ref={containerRef} className="absolute inset-0 overflow-hidden pointer-events-none rounded-[4rem]">
+    <div ref={containerRef} className="absolute inset-0 overflow-hidden pointer-events-none rounded-[4rem] z-[2]">
       <div
         className="absolute left-1/2 top-1/2 flex items-center justify-center bg-orange-500 shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
         style={{
@@ -515,7 +515,7 @@ function ComingSoonRibbon({ text = 'Próximamente' }) {
           transform: `translate(-50%, -50%) rotate(${ribbon.angle}deg)`,
         }}
       >
-        <span className="text-white font-black uppercase tracking-[0.35em] text-sm whitespace-nowrap">
+        <span className="text-black font-black uppercase tracking-[0.35em] text-sm whitespace-nowrap">
           {text}
         </span>
       </div>
