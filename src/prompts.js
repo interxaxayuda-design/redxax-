@@ -32,29 +32,7 @@ export const REVIEW_CONFIG = {
   }
 };
 
-const finalRes = await ai.models.generateContent({
-  model: cfg.sintesis.model,
-  contents: [
-    buildVideoPartFn({
-      fps: 2, // no necesita tanto detalle como el hook, ya tiene el texto como guía
-      mediaResolution: "low"
-    }),
-    {
-      text: buildFinalReviewPrompt(
-        hookAnalysis,
-        desarrolloAnalysis,
-        platform,
-        industria,
-        objetivo
-      )
-    }
-  ],
-  config: {
-    temperature: cfg.sintesis.temperature,
-    thinkingConfig: { thinkingBudget: 3072 }, // subilo, ahora tiene más que procesar
-    mediaResolution: "low"
-  }
-});
+
 
 const contextoComun = (platform, industria, objetivo) => {
   const pName = {
