@@ -65,35 +65,25 @@ Tu trabajo no es etiquetar hooks. Tu trabajo es entender cómo reacciona la aten
 </rol>
 
 <instrucciones>
-
 Analizá únicamente los primeros ${hookWindowSegundos} segundos.
-
 Reconstruí la experiencia del espectador paso por paso.
-
 No empieces clasificando el hook.
-
 Primero analizá qué ocurre realmente.
 
 Seguí este orden de razonamiento:
 
-1. Describí objetivamente qué ocurre durante el inicio.
+1. Describí objetivamente qué ocurre durante el inicio. Incluí timestamps únicamente cuando sean relevantes.
 
-Incluí timestamps únicamente cuando sean relevantes.
+2. Basándote en tu conocimiento actualizado sobre mecánicas de hooks en feeds (que puede incluir gap de curiosidad, resultado o pago inmediato, pattern interrupt, shock, relatabilidad, tensión narrativa, o cualquier otro mecanismo real que reconozcas — no te limites a una lista cerrada), determiná qué mecanismo está usando este hook específico y si ese mecanismo, tal como está ejecutado, retiene o no retiene.
 
-Ahora, usa todo tu conocimiento sobre hooks, para determinar que tipo de hook es ese (engache, bait, curiosidad, etc)
-
-Una vez descrito eso, escribí lo que ocurre en los primeros segundos y etiquetá el tipo de hook.
-
-
+3. No evalúes el hook contra un mecanismo que no está intentando usar. Si el hook funciona por resolución inmediata, evalualo como resolución inmediata — no le reproches falta de intriga si la intriga nunca fue su estrategia.
 
 </instrucciones>
 
 <reglas_estrictas>
 1. No inventes intenciones del creador.
-
-
 2. Basá todas las conclusiones únicamente en evidencia observable.
-
+3. No asumas que hay un único tipo de hook "correcto". Evaluá el hook en sus propios términos.
 </reglas_estrictas>
 `;
 
@@ -254,22 +244,23 @@ ${desarrolloAnalysis}
 </contexto_previo>
 
 <instrucciones>
-Imaginá que una vez que tenés todo ese contexto, debés decir (no predecir ni dar hechos) qué es lo que no funciona. Antes de pensar a escirbir, debes sí o sí biscar en tu conocimiento más actualizado acerca de los comportamientos de los usuarios en los feeds para poder ver lo que no funciona y por qué. No inventes para quedar profesional, por que podrías confundir al usuario (con usuario me refiero aquel que analiza el video que estás analizando para potenciar su video y ese usuario va a estar contento. No me refiero a usuario del feed) y tampoco suavises problemas (por que harás que el pobre usuario se frustre). Si quieres realmente ayudar, haz lo que te digo. Cualquier problema que veas, sea mínimo, nombralo.
-Una vez que veas todos aquellos problemas (puede ser 1, 2 o hasta incluso 10), debés decir qué peso tiene. No es lo mismo un pequeño problema de un color mal puesto o transición abrupta que un hook que no genere intriga. Me sigues?
-Tampoco trates de hacer un gran problema en algo que nadie le da atención. Por ejemplo, un video de un ASMR, a veces tu me solías escribir que "Las uñas es ruido visual" o cualquier otra cosa, primero, debés entender qué es lo que le presta atención al usuario. Ya sé que lo sabes, pero, te lo digo para que lo tengas en cuenta.
-Ahora imagina que ya has escrito todos los problemas. Ahora, tenés que identificar cosas buenas, que ayudan a la retención, engache y dopamina en un feed de 2026.
-REGLAS:   
-No seas amable, se honesto y directo.
-No inventes problemas y no suavices problemas. Tené en cuenta que si haces esto, podrías meterte en problemas.
-Se coherente, y has que el usuario entienda cada palabra que dices.
+Con este contexto, usá tu conocimiento actualizado sobre comportamiento de usuarios en feeds para identificar qué funciona y qué no funciona en este video. No busques encontrar problemas: busca la verdad. Si un elemento es real y afecta la retención negativamente, nombralo. Si no hay problemas relevantes en alguna sección, decilo explícitamente en vez de forzar un hallazgo menor a la categoría de "problema" — un análisis que dice "el hook no tiene debilidades relevantes" es tan válido y útil como uno que encuentra diez.
+
+Antes de escribir cada problema, preguntate: ¿este mismo elemento aparece también como algo que ayuda a la retención en el contexto previo? Si es así, no los listes como cosas separadas y contradictorias — resolvé la tensión: explicá por qué ese elemento funciona en el balance general, o por qué a pesar de tener un lado positivo, el efecto neto es negativo. Nunca entregues un "punto débil" y un "punto fuerte" que se contradigan sin resolver esa contradicción.
+
+Para cada problema real que encuentres, asigná un peso (alto/medio/bajo) proporcional a su impacto real en retención — no trates una transición abrupta igual que una falla que corta la retención por completo.
+
+No le apliques a un video una expectativa que no le corresponde. Un ASMR no se evalúa con los mismos criterios que un hook de venta directa. Entendé primero a qué le presta atención el espectador de ESE tipo de contenido específico antes de señalar algo como problema.
+
+Después de los problemas, identificá qué elementos genuinamente ayudan a la retención, engagement y dopamina en el feed actual.
 </instrucciones>
 
 <reglas_estrictas>
 1. FIDELIDAD: No inventes timestamps, escenas ni problemas nuevos. No inventes reacciones de audiencia que no estén respaldadas por el contexto previo.
-2. TONO: Claro, honesto y profesional. Ni amable de más, ni negativo de más — pero proporcional a la gravedad real de lo que encontraste.
+2. TONO: Claro, honesto y directo. Proporcional a la gravedad real de lo que encontraste — ni inflado, ni suavizado.
 3. SIN MÉTRICAS: No uses porcentajes, scores ni números inventados.
 4. SIN PREDICCIONES VAGAS: Evitá "el usuario va a deslizar" sin anclarlo a un elemento concreto. Explicá el mecanismo, no el pronóstico.
-5. FALLAS ESTRUCTURALES = PRIORIDAD MÁXIMA: Si el hook demora en llegar a su punto de pago/curiosidad/acción más allá de la ventana crítica de retención, eso es el hallazgo principal de tu devolución, no una nota al pie.
+5. NO FUERCES CANTIDAD: la cantidad de problemas o fortalezas depende del video, no de una expectativa previa. Un video puede tener un solo problema real, o ninguno.
 </reglas_estrictas>
 `;
 
