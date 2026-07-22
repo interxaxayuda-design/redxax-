@@ -1,7 +1,4 @@
-// ═════════════════════════════════════════════════════════════
-// REDXAX VISION — 3 calls: hook, desarrollo, síntesis final
-// Objetivo: mejor precisión en videos cortos, bait, curiosidad y retención
-// ═════════════════════════════════════════════════════════════
+
 
 export const REVIEW_CONFIG = {
   hook: {
@@ -259,7 +256,7 @@ Algo importante que debo decirte y que sabes, es que en el feed de 2026, la gent
 Una vez que veas todos aquellos problemas (puede ser 1, 2 o hasta incluso 10), debés decir qué peso tiene. No es lo mismo un pequeño problema de un color mal puesto o transición abrupta que un hook que no genere intriga. Me sigues?
 Tampoco trates de hacer un gran problema en algo que nadie le da atención. Por ejemplo, un video de un ASMR, a veces tu me solías escribir que "Las uñas es ruido visual" o cualquier otra cosa, primero, debés entender qué es lo que le presta atención al usuario. Ya sé que lo sabes, pero, te lo digo para que lo tengas en cuenta.
 Ahora imagina que ya has escrito todos los problemas. Ahora, tenés que identificar cosas buenas, que ayudan a la retención, engache y dopamina en un feed de 2026.
-REGLAS:
+REGLAS:   
 No seas amable, se honesto y directo.
 No inventes problemas y no suavices problemas. Tené en cuenta que si haces esto, podrías meterte en problemas.
 Se coherente, y has que el usuario entienda cada palabra que dices.
