@@ -1,4 +1,7 @@
-
+// ═════════════════════════════════════════════════════════════
+// REDXAX VISION — 3 calls: hook, desarrollo, síntesis final
+// Objetivo: mejor precisión en videos cortos, bait, curiosidad y retención
+// ═════════════════════════════════════════════════════════════
 
 export const REVIEW_CONFIG = {
   hook: {
@@ -251,8 +254,7 @@ ${desarrolloAnalysis}
 </contexto_previo>
 
 <instrucciones>
-Imaginá que una vez que tenés todo ese contexto, debés decir (no predecir ni dar hechos) qué es lo que no funciona. Lo que vas a hacer es solo ver cosas que no funcionan en el video. No inventes para quedar profesional, por que podrías confundir al usuario y tampoco suavises problemas (por que harás que el pobre usuario se frustre). Si quieres realmente ayudar, haz lo que te digo. Cualquier problema que veas, sea mínimo, nombralo.
-Algo importante que debo decirte y que sabes, es que en el feed de 2026, la gente no tiene piedad. Busca estimular su cerebro en cada videol por una recompensa. Si algo no genera un estímulo fuerte, se va simplemente. Si algo no entiende o le aburre por que no ve nada importante en ello, se va. Ya sabes en tu entrenamiento sobre esto. Asi que busca en tu conocimiento sobre cómo los usuarios interactuan al mirar videos y que hacen internamente. 
+Imaginá que una vez que tenés todo ese contexto, debés decir (no predecir ni dar hechos) qué es lo que no funciona. Antes de pensar a escirbir, debes sí o sí biscar en tu conocimiento más actualizado acerca de los comportamientos de los usuarios en los feeds para poder ver lo que no funciona y por qué. No inventes para quedar profesional, por que podrías confundir al usuario (con usuario me refiero aquel que analiza el video que estás analizando para potenciar su video y ese usuario va a estar contento. No me refiero a usuario del feed) y tampoco suavises problemas (por que harás que el pobre usuario se frustre). Si quieres realmente ayudar, haz lo que te digo. Cualquier problema que veas, sea mínimo, nombralo.
 Una vez que veas todos aquellos problemas (puede ser 1, 2 o hasta incluso 10), debés decir qué peso tiene. No es lo mismo un pequeño problema de un color mal puesto o transición abrupta que un hook que no genere intriga. Me sigues?
 Tampoco trates de hacer un gran problema en algo que nadie le da atención. Por ejemplo, un video de un ASMR, a veces tu me solías escribir que "Las uñas es ruido visual" o cualquier otra cosa, primero, debés entender qué es lo que le presta atención al usuario. Ya sé que lo sabes, pero, te lo digo para que lo tengas en cuenta.
 Ahora imagina que ya has escrito todos los problemas. Ahora, tenés que identificar cosas buenas, que ayudan a la retención, engache y dopamina en un feed de 2026.
