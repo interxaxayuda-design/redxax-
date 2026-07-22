@@ -32,6 +32,30 @@ export const REVIEW_CONFIG = {
   }
 };
 
+const finalRes = await ai.models.generateContent({
+  model: cfg.sintesis.model,
+  contents: [
+    buildVideoPartFn({
+      fps: 2, // no necesita tanto detalle como el hook, ya tiene el texto como guía
+      mediaResolution: "low"
+    }),
+    {
+      text: buildFinalReviewPrompt(
+        hookAnalysis,
+        desarrolloAnalysis,
+        platform,
+        industria,
+        objetivo
+      )
+    }
+  ],
+  config: {
+    temperature: cfg.sintesis.temperature,
+    thinkingConfig: { thinkingBudget: 3072 }, // subilo, ahora tiene más que procesar
+    mediaResolution: "low"
+  }
+});
+
 const contextoComun = (platform, industria, objetivo) => {
   const pName = {
     tiktok: "TikTok",
@@ -66,18 +90,9 @@ Tu trabajo no es etiquetar hooks. Tu trabajo es entender cómo reacciona la aten
 
 <instrucciones>
 Analizá únicamente los primeros ${hookWindowSegundos} segundos.
-Reconstruí la experiencia del espectador paso por paso.
-No empieces clasificando el hook.
-Primero analizá qué ocurre realmente.
-
-Seguí este orden de razonamiento:
-
-1. Describí objetivamente qué ocurre durante el inicio. Incluí timestamps únicamente cuando sean relevantes.
-
-2. Basándote en tu conocimiento actualizado sobre mecánicas de hooks en feeds (que puede incluir gap de curiosidad, resultado o pago inmediato, pattern interrupt, shock, relatabilidad, tensión narrativa, o cualquier otro mecanismo real que reconozcas — no te limites a una lista cerrada), determiná qué mecanismo está usando este hook específico y si ese mecanismo, tal como está ejecutado, retiene o no retiene.
-
-3. No evalúes el hook contra un mecanismo que no está intentando usar. Si el hook funciona por resolución inmediata, evalualo como resolución inmediata — no le reproches falta de intriga si la intriga nunca fue su estrategia.
-
+Lo que debés hacer es reconocer el tipo de hook y ver si funciona en el feed en 2026. Tu trabajo es simple. Tenés acceso completo a tu conocimiento para consultar sobre hooks virales que funcionan, etc.
+La idea no es que predigas, si no que analices esos segundos, y digas cual es el problema. Puede haber un problema o ninguno. 
+Investigá en tu conocimiento sobre reacciones de audiencia, y con lo que aprendés, podes decir por que el hook puede funcionar o no, ya que a la gente le gustan las recompensas rápidas.
 </instrucciones>
 
 <reglas_estrictas>
@@ -232,7 +247,7 @@ Evaluá siempre el propósito de cada recurso dentro del contexto completo del v
 
 export const buildFinalReviewPrompt = (hookAnalysis, desarrolloAnalysis, platform, industria, objetivo) => `
 <rol>
-Sos un ${contextoComun(platform, industria, objetivo)}
+Sos un redactor profesional
 </rol>
 
 <contexto_previo>
@@ -244,15 +259,7 @@ ${desarrolloAnalysis}
 </contexto_previo>
 
 <instrucciones>
-Con este contexto, usá tu conocimiento actualizado sobre comportamiento de usuarios en feeds para identificar qué funciona y qué no funciona en este video. No busques encontrar problemas: busca la verdad. Si un elemento es real y afecta la retención negativamente, nombralo. Si no hay problemas relevantes en alguna sección, decilo explícitamente en vez de forzar un hallazgo menor a la categoría de "problema" — un análisis que dice "el hook no tiene debilidades relevantes" es tan válido y útil como uno que encuentra diez.
-
-Antes de escribir cada problema, preguntate: ¿este mismo elemento aparece también como algo que ayuda a la retención en el contexto previo? Si es así, no los listes como cosas separadas y contradictorias — resolvé la tensión: explicá por qué ese elemento funciona en el balance general, o por qué a pesar de tener un lado positivo, el efecto neto es negativo. Nunca entregues un "punto débil" y un "punto fuerte" que se contradigan sin resolver esa contradicción.
-
-Para cada problema real que encuentres, asigná un peso (alto/medio/bajo) proporcional a su impacto real en retención — no trates una transición abrupta igual que una falla que corta la retención por completo.
-
-No le apliques a un video una expectativa que no le corresponde. Un ASMR no se evalúa con los mismos criterios que un hook de venta directa. Entendé primero a qué le presta atención el espectador de ESE tipo de contenido específico antes de señalar algo como problema.
-
-Después de los problemas, identificá qué elementos genuinamente ayudan a la retención, engagement y dopamina en el feed actual.
+Según el conexto, debés redactar y ordenar todo lo que dijieron hookAnalysis y desarrolloAnalysis. Tenés que hacer que el usuario entienda cada palabra que decís. 
 </instrucciones>
 
 <reglas_estrictas>
