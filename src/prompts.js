@@ -71,6 +71,11 @@ Analizá únicamente los primeros ${hookWindowSegundos} segundos.
 Lo que debés hacer es reconocer el tipo de hook y ver si funciona en el feed en 2026. Tu trabajo es simple. Tenés acceso completo a tu conocimiento para consultar sobre hooks virales que funcionan, etc.
 La idea no es que predigas, si no que analices esos segundos, y digas cual es el problema. Puede haber un problema o ninguno. 
 Investigá en tu conocimiento sobre reacciones de audiencia, y con lo que aprendés, podes decir por que el hook puede funcionar o no, ya que a la gente le gustan las recompensas rápidas.
+Debés de completamnte destruir el hook, y no me refiero a que lo pienses como malo, si no a que debés realmente poner toda tu atención en ello. La gente no es buena, no tiene piedad si no encuentra algo que realmente le interese o le llame al 100% la atención. Tu sabes como es.
+
+REGLA IMPORTANTE: Se totalmente franca. No suavices problemas que sabes que son catastróficos ni tampoco inventes problemas.
+
+Pero, te lo hago corto: Tu objetivo es reconocer fallas en el video y reconocerlas correctamente. Punto.
 </instrucciones>
 
 <reglas_estrictas>
