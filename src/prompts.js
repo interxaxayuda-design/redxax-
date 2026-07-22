@@ -77,93 +77,22 @@ Primero analizá qué ocurre realmente.
 Seguí este orden de razonamiento:
 
 1. Describí objetivamente qué ocurre durante el inicio.
-No interpretes todavía.
+
 Incluí timestamps únicamente cuando sean relevantes.
 
-2. Determiná si realmente existe un hook.
+Ahora, usa todo tu conocimiento sobre hooks, para determinar que tipo de hook es ese (engache, bait, curiosidad, etc)
 
-Puede responder perfectamente:
+Una vez descrito eso, escribí lo que ocurre en los primeros segundos y etiquetá el tipo de hook.
 
-• Sí.
-• Parcialmente.
-• No.
 
-No todos los videos poseen un hook.
-
-Si el inicio consiste solamente en una presentación común, una escena cotidiana, un plano genérico o una acción que no genera una razón clara para seguir mirando, indicá que el hook es inexistente o demasiado débil antes de intentar clasificarlo.
-
-Nunca fuerces una categoría.
-
-3. Si existe un hook, explicá:
-
-• qué intenta provocar en el espectador;
-• qué expectativa genera;
-• qué mecanismo psicológico utiliza;
-• qué evidencia observable respalda esa interpretación.
-
-No conviertas hipótesis en hechos.
-
-Si existen varias interpretaciones posibles, mencioná la más respaldada por la evidencia.
-
-4. Analizá todos los elementos que realmente influyen en ese hook.
-
-Solo si afectan la experiencia del espectador, evaluá cómo contribuyen:
-
-• imagen;
-• movimiento;
-• narrativa;
-• música;
-• voz;
-• sonido;
-• texto;
-• ritmo;
-• edición;
-• cualquier otro elemento relevante.
-
-Si alguno no aporta nada al hook, simplemente ignoralo.
-
-5. Recién ahora clasificá el hook.
-
-Indicá qué tipo de hook representa según tu conocimiento sobre TikTok, Reels y Shorts (2025-2026).
-
-La clasificación debe surgir como consecuencia del análisis, no al revés.
-
-6. Evaluá su ejecución.
-
-Excelente
-
-Bueno
-
-Aceptable
-
-Débil
-
-Inexistente
-
-Explicá por qué.
-
-La calidad del hook depende de si realmente genera una razón para detener el scroll y continuar mirando, no solamente del tipo de hook utilizado.
 
 </instrucciones>
 
 <reglas_estrictas>
+1. No inventes intenciones del creador.
 
-1. Separá siempre:
-- observación;
-- mecanismo psicológico;
-- conclusión.
 
-2. No asumas que todo inicio posee un hook.
-
-3. No confundas sorpresa con confusión.
-
-4. No confundas curiosidad con falta de contexto.
-
-5. No inventes intenciones del creador.
-
-6. No afirmes emociones del espectador como hechos absolutos.
-
-7. Basá todas las conclusiones únicamente en evidencia observable.
+2. Basá todas las conclusiones únicamente en evidencia observable.
 
 </reglas_estrictas>
 `;
@@ -326,6 +255,7 @@ ${desarrolloAnalysis}
 
 <instrucciones>
 Imaginá que una vez que tenés todo ese contexto, debés decir (no predecir ni dar hechos) qué es lo que no funciona. Lo que vas a hacer es solo ver cosas que no funcionan en el video. No inventes para quedar profesional, por que podrías confundir al usuario y tampoco suavises problemas (por que harás que el pobre usuario se frustre). Si quieres realmente ayudar, haz lo que te digo. Cualquier problema que veas, sea mínimo, nombralo.
+Algo importante que debo decirte y que sabes, es que en el feed de 2026, la gente no tiene piedad. Busca estimular su cerebro en cada video. Si algo no genera un estiímulo fuerte, se va simplemente.
 Una vez que veas todos aquellos problemas (puede ser 1, 2 o hasta incluso 10), debés decir qué peso tiene. No es lo mismo un pequeño problema de un color mal puesto o transición abrupta que un hook que no genere intriga. Me sigues?
 Tampoco trates de hacer un gran problema en algo que nadie le da atención. Por ejemplo, un video de un ASMR, a veces tu me solías escribir que "Las uñas es ruido visual" o cualquier otra cosa, primero, debés entender qué es lo que le presta atención al usuario. Ya sé que lo sabes, pero, te lo digo para que lo tengas en cuenta.
 Ahora imagina que ya has escrito todos los problemas. Ahora, tenés que identificar cosas buenas, que ayudan a la retención, engache y dopamina en un feed de 2026.
