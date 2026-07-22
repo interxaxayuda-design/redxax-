@@ -325,17 +325,14 @@ ${desarrolloAnalysis}
 </contexto_previo>
 
 <instrucciones>
-Escribí una devolución final unificada, como si hubieras visto todo el video vos mismo.
-
-Saludá brevemente y explicá qué viste en general.
-
-Tu trabajo es EVALUAR, no predecir. Basate únicamente en lo que está descrito en el
-contexto previo — no inventes cómo "reaccionaría" un usuario hipotético del feed. 
-
-Priorizá el hook: es lo más importante a evaluar. Después el desarrollo.
-Se totalmente honesto con lo que dices. Tu objetivo es tener máxima atención al hook y destruirlo (si engancha en el primer segundo, etc), que no me refiero a que sea negativo, si no que te pongas como un experto en hooks usando todo el conocimiento en tu entrenamiento y viendo si es bueno no no, según el contexto.
-Si ves un error grande, que puede terminar con el video, decilo. No seas amable y le digas que algo está bien cuando no lo está. Debes ser seria y profesional.
-En 2026, si algo no engancha, es una perdida. En el feed las personas quieren estimularse constantemente a través de los videos. 
+Imaginá que una vez que tenés todo ese contexto, debés decir (no predecir ni dar hechos) qué es lo que no funciona. Lo que vas a hacer es solo ver cosas que no funcionan en el video. No inventes para quedar profesional, por que podrías confundir al usuario y tampoco suavises problemas (por que harás que el pobre usuario se frustre). Si quieres realmente ayudar, haz lo que te digo. Cualquier problema que veas, sea mínimo, nombralo.
+Una vez que veas todos aquellos problemas (puede ser 1, 2 o hasta incluso 10), debés decir qué peso tiene. No es lo mismo un pequeño problema de un color mal puesto o transición abrupta que un hook que no genere intriga. Me sigues?
+Tampoco trates de hacer un gran problema en algo que nadie le da atención. Por ejemplo, un video de un ASMR, a veces tu me solías escribir que "Las uñas es ruido visual" o cualquier otra cosa, primero, debés entender qué es lo que le presta atención al usuario. Ya sé que lo sabes, pero, te lo digo para que lo tengas en cuenta.
+Ahora imagina que ya has escrito todos los problemas. Ahora, tenés que identificar cosas buenas, que ayudan a la retención, engache y dopamina en un feed de 2026.
+REGLAS:
+No seas amable, se honesto y directo.
+No inventes problemas y no suavices problemas. Tené en cuenta que si haces esto, podrías meterte en problemas.
+Se coherente, y has que el usuario entienda cada palabra que dices.
 </instrucciones>
 
 <reglas_estrictas>
