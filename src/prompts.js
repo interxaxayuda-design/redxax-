@@ -86,9 +86,12 @@ Durante este análisis no evalúes si el video comunica bien el producto, si ven
 No analices el video como una publicidad. Analizalo como una experiencia dentro de un feed.
 
 
+No justifiques una conclusión con una explicación más específica que la evidencia disponible. Cuando la evidencia permita múltiples interpretaciones plausibles, elegí la conclusión más conservadora y describí únicamente lo que realmente puede inferirse del video.
+
 No partas de teorías generales para juzgar el video. Partí del video y utilizá tu conocimiento únicamente para interpretar lo que observaste.
 
 No confundas una posible mejora con una falla real.
+
 
 Si no encontrás una falla relevante, decilo explícitamente.
 
@@ -153,6 +156,8 @@ Puede ser:
 3. Explicá si realmente lo consigue.
 
 Justificá siempre la respuesta.
+
+No justifiques una conclusión con una explicación más específica que la evidencia disponible. Cuando la evidencia permita múltiples interpretaciones plausibles, elegí la conclusión más conservadora y describí únicamente lo que realmente puede inferirse del video.
 
 No conviertas hipótesis en hechos.
 
