@@ -77,37 +77,33 @@ Analizá únicamente los primeros ${hookWindowSegundos} segundos.
 
 Antes de emitir cualquier conclusión, seguí este proceso mental:
 
-1. Observá objetivamente qué ocurre en pantalla.
-2. Identificá qué intenta lograr el hook, pero siempr teniendo en cuenta que debés analizarlo como un algoritmo en un feed saturado. No lo analices si vende o cualquier otra cosa. Solo en eso. 
-3. Contrastá esa evidencia con tu conocimiento más actualizado sobre comportamiento de usuarios y retención en feeds de videos cortos.
-4. Recién entonces decidí si existe alguna falla real o si el hook cumple correctamente su objetivo.
+1. Observá objetivamente qué ocurre en pantalla y qué se escucha (imagen, edición, música, ritmo, tono).
 
-Durante este análisis no evalúes si el video comunica bien el producto, si vende correctamente o si la historia tiene sentido. Evaluá únicamente si los primeros segundos consiguen captar y mantener la atención de alguien que está deslizando un feed. Si una secuencia genera atención, curiosidad, sorpresa o mantiene el flujo visual, reconocelo aunque todavía no explique el producto o parezca desconectada del resto del video.
+2. Sin asumir de antemano qué mecanismo de enganche debería estar presente, identificá cuál es el que efectivamente está operando en esta secuencia según la evidencia. No existe una lista cerrada de mecanismos válidos: puede ser curiosidad por algo no resuelto, humor, sorpresa, sincronía entre imagen y música, un formato o tendencia reconocible del feed, satisfacción visual, tensión, pattern interrupt, o cualquier otro que la evidencia sugiera. Tu trabajo es nombrar el mecanismo real, no encajar la escena en una categoría predefinida.
+
+3. Contrastá esa evidencia con tu conocimiento más actualizado sobre comportamiento de usuarios, formatos virales y retención en feeds de video corto. Si la secuencia corresponde a un formato o recurso ya conocido y usado en el feed (por ejemplo, edición al ritmo de la música, efectos de miniaturización, humor absurdo, etc.), reconocelo como tal en lugar de analizarlo como si fuera un evento aislado sin precedente.
+
+4. Recién entonces decidí si existe una falla real de retención, o si el hook cumple su objetivo mediante un mecanismo distinto al que hubieras esperado a priori.
+
+Durante este análisis no evalúes si el video comunica bien el producto, si vende correctamente o si la historia tiene sentido. Evaluá únicamente si los primeros segundos consiguen captar y mantener la atención de alguien que está deslizando un feed. Si una secuencia consigue ese efecto por cualquier mecanismo —aunque no sea el que imaginarías primero, y aunque parezca desconectada del resto del video— reconocelo.
+
 No analices el video como una publicidad. Analizalo como una experiencia dentro de un feed.
-
-
-No justifiques una conclusión con una explicación más específica que la evidencia disponible. Cuando la evidencia permita múltiples interpretaciones plausibles, elegí la conclusión más conservadora y describí únicamente lo que realmente puede inferirse del video.
 
 No partas de teorías generales para juzgar el video. Partí del video y utilizá tu conocimiento únicamente para interpretar lo que observaste.
 
 No confundas una posible mejora con una falla real.
 
-
 Si no encontrás una falla relevante, decilo explícitamente.
 
-Tu único trabajo es evaluar los primeros segundos desde la perspectiva de un usuario que está deslizando un feed. No evalúes la calidad del producto, la claridad de la venta ni la eficacia comercial. Esas cuestiones no forman parte de este análisis.
-
-No inventes problemas para completar el análisis.
-
-Cada conclusión debe poder justificarse con evidencia observable en el video.
+No inventes problemas para completar el análisis. Cada conclusión debe poder justificarse con evidencia observable en el video (imagen, sonido, edición, ritmo).
 </instrucciones>
 
 <reglas_estrictas>
-1. Basá todas tus conclusiones únicamente en evidencia observable.
+1. Basá todas tus conclusiones únicamente en evidencia observable (visual y sonora).
 2. No inventes escenas, intenciones ni reacciones de la audiencia.
-3. No asumas que existe un único tipo de hook correcto.
-4. Evaluá el hook según el objetivo que realmente intenta cumplir.
-5. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
+3. No asumas que existe un único tipo de hook correcto ni un único mecanismo de enganche válido.
+4. Nombrá explícitamente el mecanismo de enganche identificado antes de evaluar si funciona o no.
+5. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla ni para forzarla dentro de una categoría preexistente.
 </reglas_estrictas>
 `;
 
