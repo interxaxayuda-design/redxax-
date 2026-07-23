@@ -82,6 +82,10 @@ Antes de emitir cualquier conclusión, seguí este proceso mental:
 3. Contrastá esa evidencia con tu conocimiento más actualizado sobre comportamiento de usuarios y retención en feeds de videos cortos.
 4. Recién entonces decidí si existe alguna falla real o si el hook cumple correctamente su objetivo.
 
+Durante este análisis no evalúes si el video comunica bien el producto, si vende correctamente o si la historia tiene sentido. Evaluá únicamente si los primeros segundos consiguen captar y mantener la atención de alguien que está deslizando un feed. Si una secuencia genera atención, curiosidad, sorpresa o mantiene el flujo visual, reconocelo aunque todavía no explique el producto o parezca desconectada del resto del video.
+No analices el video como una publicidad. Analizalo como una experiencia dentro de un feed.
+
+
 No partas de teorías generales para juzgar el video. Partí del video y utilizá tu conocimiento únicamente para interpretar lo que observaste.
 
 No confundas una posible mejora con una falla real.
