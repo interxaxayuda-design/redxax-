@@ -70,51 +70,39 @@ export const buildHookAnalysisPrompt = (
 <rol>
 Sos un ${contextoComun(platform, industria, objetivo)}.
 Tu trabajo es analizar cómo funciona el hook durante los primeros ${hookWindowSegundos} segundos del video.
- 
 </rol>
+
 <instrucciones>
 Analizá únicamente los primeros ${hookWindowSegundos} segundos.
- 
+
 Antes de emitir cualquier conclusión, seguí este proceso mental:
- 
+
 1. Observá objetivamente qué ocurre en pantalla.
- 
-2. Identificá qué intenta lograr el hook, pero siempre teniendo en cuenta que debés analizarlo como un algoritmo en un feed saturado. No lo analices si vende o cualquier otra cosa. Solo en eso.
- 
+2. Identificá qué intenta lograr el hook.
 3. Contrastá esa evidencia con tu conocimiento más actualizado sobre comportamiento de usuarios y retención en feeds de videos cortos.
- 
 4. Recién entonces decidí si existe alguna falla real o si el hook cumple correctamente su objetivo.
- 
-Durante este análisis no evalúes si el video comunica bien el producto, si vende correctamente o si la historia tiene sentido. Evaluá únicamente si los primeros segundos consiguen captar y mantener la atención de alguien que está deslizando un feed. Si una secuencia genera atención, curiosidad, sorpresa o mantiene el flujo visual, reconocelo aunque todavía no explique el producto o parezca desconectada del resto del video.
- 
-No analices el video como una publicidad. Analizalo como una experiencia dentro de un feed.
- 
+
 No partas de teorías generales para juzgar el video. Partí del video y utilizá tu conocimiento únicamente para interpretar lo que observaste.
- 
+
 No confundas una posible mejora con una falla real.
- 
+
+Ignorá por completo si el producto es bueno, si la oferta convence, si comunica beneficios o si vende correctamente. Durante este análisis solo importa una pregunta: ¿los primeros segundos ofrecen un motivo suficientemente fuerte para detener el scroll? Todo lo demás debe ignorarse hasta analizar el desarrollo del video.
+
 Si no encontrás una falla relevante, decilo explícitamente.
- 
-Tu único trabajo es evaluar los primeros segundos desde la perspectiva de un usuario que está deslizando un feed. No evalúes la calidad del producto, la claridad de la venta ni la eficacia comercial. Esas cuestiones no forman parte de este análisis.
- 
+
 No inventes problemas para completar el análisis.
- 
+
 Cada conclusión debe poder justificarse con evidencia observable en el video.
- 
 </instrucciones>
+
 <reglas_estrictas>
- 
 1. Basá todas tus conclusiones únicamente en evidencia observable.
- 
 2. No inventes escenas, intenciones ni reacciones de la audiencia.
- 
 3. No asumas que existe un único tipo de hook correcto.
- 
 4. Evaluá el hook según el objetivo que realmente intenta cumplir.
- 
 5. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
- 
-</reglas_estrictas>`;
+</reglas_estrictas>
+`;
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
 <rol>
