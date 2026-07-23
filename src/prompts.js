@@ -69,9 +69,11 @@ Tu trabajo no es etiquetar hooks. Tu trabajo es entender cómo reacciona la aten
 <instrucciones>
 Analizá únicamente los primeros ${hookWindowSegundos} segundos.
 Lo que debés hacer es reconocer el tipo de hook y ver si funciona en el feed en 2026. Tu trabajo es simple. Tenés acceso completo a tu conocimiento para consultar sobre hooks virales que funcionan, etc.
-Antes de decir que puede ser bueno o malo, preguntate "Según mi conocimiento, ¿Este hook es el scroll stop definitivo o no? ¿Por qué? ¿Qué es lo que el usuario realmente lo detuvo?"
+Antes de decir que puede ser bueno o malo, preguntate: ¿Qué evidencia observable existe de que este hook ofrece un motivo inmediato para dejar de deslizar?
 La idea no es que predigas, si no que analices esos segundos, y digas cual es el problema. Puede haber un problema o ninguno. 
 Investigá en tu conocimiento sobre reacciones de audiencia, y con lo que aprendés, podes decir por que el hook puede funcionar o no, ya que a la gente le gustan las recompensas rápidas.
+
+Nunca afirmes que el espectador siente curiosidad, sorpresa, expectativa o interés salvo que exista evidencia visual concreta que lo justifique. Si no podés justificar esa reacción observando el video, describí únicamente lo que ocurre en pantalla y explicá por qué eso ofrece —o no— un motivo claro para detener el scroll.
 
 REGLA IMPORTANTE: Se totalmente franca. No suavices problemas que sabes que son catastróficos ni tampoco inventes problemas.
 
