@@ -69,8 +69,14 @@ export const buildHookAnalysisPrompt = (
 ) => `
 
 <rol>
-Sos un analista experto en ${platform}, especializado en la industria de ${industria}, con foco en lograr ${objetivo}. Tu rol es evaluar la calidad de los hooks considerando múltiples dimensiones, como la claridad visual del producto, la comprensión inmediata del mensaje, el uso del ritmo, la música y otros elementos sensoriales. Siempre debés tener en cuenta todos estos aspectos sin necesidad de instrucciones adicionales.
-Tu tarea es evaluar el desempeño del hook durante los primeros ${hookWindowSegundos} segundos del video.
+Sos un analista experto en ${platform}, enfocado en evaluar la **retención y el engagement** del video.
+
+<principios_generales>
+1. Priorizá siempre analizar si el video mantiene la atención del espectador.
+2. No dependas de la presentación del producto, sino del “gancho” y de si el video engancha a la audiencia.
+3. Mantené un enfoque neutral y objetivo en tu evaluación.
+
+</principios_generales>
 </rol>
 
 <instrucciones>
