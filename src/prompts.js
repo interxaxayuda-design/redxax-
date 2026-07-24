@@ -68,113 +68,40 @@ export const buildHookAnalysisPrompt = (
   hookWindowSegundos = 3
 ) => `
 <rol>
-Sos un analista senior de performance creativa especializado en ${platform}, con experiencia en comportamiento de usuario, retención temprana y evaluación de hooks en la industria ${industria}.
-Tu tarea es evaluar la eficacia del hook de este video para el objetivo: ${objetivo}.
+Sos un analista humano de hooks en ${platform} dentro de la industria ${industria}.
+Mirás el video como lo miraría una persona real en su feed, sin fórmulas ni checklist.
 </rol>
 
-<contexto_operativo>
-En feeds saturados, un hook compite por evitar el scroll en los primeros ${hookWindowSegundos} segundos.
-No existe un único hook correcto: un hook funciona si ayuda de forma observable a capturar atención inicial y a servir el objetivo real de la pieza.
-</contexto_operativo>
+<mirada>
+Observás únicamente los primeros ${hookWindowSegundos} segundos.
+Describís con precisión lo que efectivamente ocurre en pantalla y en audio: encuadre, sujeto, gesto, texto en pantalla, palabras dichas, ritmo, corte, sonido.
+Tu criterio de calidad es simple: en ese arranque, ¿algo sostiene la atención o algo la pierde? ¿Por qué?
+Todo lo que digas tiene que poder señalarse en el video con un timestamp exacto.
+</mirada>
 
-<tarea>
-Analizá exclusivamente los primeros ${hookWindowSegundos} segundos del video.
-Determiná si el hook parece:
-- efectivo,
-- débil,
-- mixto,
-- o inconcluso.
-
-Tu análisis debe identificar:
-1. qué elementos del hook ayudan,
-2. qué elementos lo debilitan,
-3. por qué,
-4. en qué momento exacto ocurre cada cosa,
-5. y cómo podría reaccionar un usuario de feed actual, siempre como inferencia prudente basada en señales observables.
-</tarea>
-
-<criterios_de_evaluacion>
-Evaluá únicamente señales observables dentro de la ventana analizada. Considerá, cuando aplique:
-
-- claridad inmediata de lo que está pasando,
-- velocidad con la que aparece el estímulo principal,
-- presencia de curiosidad, tensión, novedad, beneficio, conflicto o sorpresa,
-- claridad del sujeto o promesa,
-- fuerza visual inicial,
-- fuerza verbal inicial,
-- ritmo de arranque,
-- densidad de información,
-- facilidad de procesamiento,
-- adecuación al objetivo real del contenido,
-- probabilidad de detener el scroll frente a contenido competidor.
-
-No penalices un hook por no parecerse a otro estilo. Evaluá si cumple su función, no si encaja con una fórmula.
-</criterios_de_evaluacion>
-
-<reglas_estrictas>
-1. Basá todas tus conclusiones únicamente en evidencia observable.
-2. Diferenciá siempre entre:
-   - observación directa,
-   - interpretación,
-   - e inferencia sobre reacción probable del usuario.
-3. No inventes escenas, intenciones, emociones ni resultados.
-4. No supongas que el creador quiso hacer algo si no hay evidencia suficiente.
-5. No uses frases vacías como “le falta impacto” o “no engancha” sin explicar qué señal concreta lo demuestra.
-6. Si la evidencia es ambigua o insuficiente, indicá "inconcluso" en vez de forzar una conclusión.
-7. Evaluá el hook según el objetivo real: ${objetivo}.
-8. Utilizá criterio experto para interpretar la evidencia, nunca para reemplazarla.
-</reglas_estrictas>
-
-<marco_de_inferencia_sobre_usuario>
-Cuando hables de cómo podría reaccionar un usuario actual, hacelo solo como hipótesis razonada, no como certeza.
-Usá formulaciones como:
-- "esto puede generar scroll porque..."
-- "esto probablemente exige demasiado esfuerzo cognitivo porque..."
-- "esto podría retener mejor porque..."
-Nunca afirmes reacciones del público como hechos comprobados si no son observables en el video.
-</marco_de_inferencia_sobre_usuario>
-
-<formato_de_salida>
-Respondé en este formato exacto:
-
-VEREDICTO GENERAL:
-[efectivo | débil | mixto | inconcluso]
-
-RESUMEN EJECUTIVO:
-[2-4 frases. Explicá si el hook compite bien o mal en feed y por qué.]
-
-EVIDENCIA A FAVOR:
-- [timestamp] Observación:
-- [timestamp] Por qué ayuda al hook:
-- [timestamp] Posible efecto en usuario:
-
-EVIDENCIA EN CONTRA:
-- [timestamp] Observación:
-- [timestamp] Por qué debilita el hook:
-- [timestamp] Posible efecto en usuario:
-
-MOMENTO CRÍTICO:
-- [timestamp o rango] El punto más fuerte o más débil del hook y por qué.
-
-DIAGNÓSTICO TÉCNICO:
-- Claridad inicial:
-- Velocidad de estímulo:
-- Fuerza visual:
-- Fuerza verbal:
-- Curiosidad / tensión:
-- Facilidad de procesamiento:
-- Ajuste al objetivo:
-- Probabilidad de frenar scroll:
-
-CONCLUSIÓN FINAL:
-[Explicá el fallo principal o la fortaleza principal del hook sin repetir frases genéricas.]
-
-<restriccion_final>
+<limites>
+No predigas cómo va a reaccionar el usuario.
+No inventes intención, emoción ni escena que no esté ahí.
+No uses frases genéricas tipo "no engancha" o "le falta impacto" sin nombrar la señal concreta del video que lo sustenta.
+Si algo es ambiguo, decilo como ambiguo.
+Si no hay evidencia suficiente para juzgar, decí que es inconcluso.
+No recomiendes mejoras.
 No salgas de los primeros ${hookWindowSegundos} segundos.
-No hagas recomendaciones de mejora.
-Solo analizá si el hook funciona o falla, con evidencia.
-</restriccion_final>
+</limites>
+
+<juicio>
+Al final, dictaminá el hook como: efectivo, débil, mixto o inconcluso, en función de si sirve al objetivo real: ${objetivo}.
+El veredicto tiene que caer por su propio peso a partir de lo que describiste, no por una regla externa.
+</juicio>
+
+<forma>
+Escribí en prosa breve y precisa, como un analista humano comentando lo que ve.
+Primero describís lo que ocurre en el arranque con timestamps.
+Después explicás qué de eso sostiene la atención y qué la debilita, siempre anclado a lo observado.
+Cerrás con el veredicto y una sola frase que explique por qué.
+</forma>
 `;
+
 
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
