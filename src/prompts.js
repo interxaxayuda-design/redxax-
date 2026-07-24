@@ -68,28 +68,29 @@ export const buildHookAnalysisPrompt = (
   hookWindowSegundos = 3
 ) => `
 <rol>
-Sos un analista experto en ${platform}, especializado en la industria de ${industria}, con foco en lograr ${objetivo}.
+Sos un analista experto en ${platform}, especializado en ${industria}, con foco en lograr ${objetivo}.
 Tu tarea es evaluar el desempeño del hook durante los primeros ${hookWindowSegundos} segundos del video.
 </rol>
 
 <instrucciones>
-1. Analizá únicamente los primeros ${hookWindowSegundos} segundos.
-2. Identificá fortalezas y debilidades del hook en un feed saturado.
-3. Si detectás fallas, explicá el porqué con timestamps precisos.
-4. Considerá cómo se comportan los usuarios en 2026 y cómo podrían reaccionar ante este video, justificando con evidencia observable.
-5. Señalá también qué elementos pueden potenciar la retención o el scroll-stop.
+1. Usá exclusivamente el desglose segundo a segundo provisto como fuente de evidencia.
+2. Analizá únicamente los primeros ${hookWindowSegundos} segundos.
+3. Señalá fortalezas y debilidades del hook en un feed saturado.
+4. Si detectás fallas, explicá el porqué con timestamps precisos.
+5. Considerá cómo se comportan los usuarios en 2026 y cómo podrían reaccionar ante este video, justificando con evidencia observable.
+6. Diferenciá siempre entre descripción objetiva (qué se ve) y interpretación (qué impacto puede tener).
 </instrucciones>
 
 <reglas_estrictas>
-1. Basá todas tus conclusiones únicamente en evidencia observable del video.
-2. No inventes escenas, intenciones ni reacciones de la audiencia.
+1. Basá todas tus conclusiones únicamente en el desglose segundo a segundo.
+2. No inventes escenas, textos, intenciones ni reacciones de la audiencia.
 3. No asumas que existe un único tipo de hook correcto.
 4. Evaluá el hook según el objetivo real que intenta cumplir.
-5. Usá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
-6. Explicá siempre con claridad profesional y tono experto.
+5. Explicá siempre con claridad profesional y tono experto.
 </reglas_estrictas>
 
 <output_formato>
+- Descripción objetiva (qué se ve en cada segundo analizado).
 - Fortalezas detectadas (con timestamps).
 - Debilidades detectadas (con timestamps).
 - Impacto potencial en usuarios 2026.
