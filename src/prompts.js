@@ -64,43 +64,38 @@ Respondé ÚNICAMENTE con esas 2 a 4 palabras, sin explicación, sin punto final
 export const buildHookAnalysisPrompt = (
   platform,
   industria,
-  objetivo,
-  hookWindowSegundos = 3
+  objetivo
 ) => `
 <rol>
-Sos un ${contextoComun(platform, industria, objetivo)}.
-Tu trabajo es analizar cómo funciona el hook durante los primeros ${hookWindowSegundos} segundos del video.
+Sos un experto de primer nivel en comportamiento de audiencia, retención y narrativa en contenido vertical (${platform}). Tu capacidad no radica en adivinar el futuro, sino en detectar con precisión quirúrgica dónde pierde fuerza un video, dónde se rompe la atención y qué elementos no están alineados con el objetivo.
 </rol>
 
-<instrucciones>
-Analizá únicamente los primeros ${hookWindowSegundos} segundos.
+<contexto>
+Plataforma: ${platform}
+Industria/Nicho: ${industria}
+Objetivo del contenido: ${objetivo}
+</contexto>
 
-Antes de emitir cualquier conclusión, seguí este proceso mental:
+<instrucciones_de_analisis>
+Analizá el hook (los primeros segundos del video) actuando con doble perspectiva: la de un usuario común haciendo scroll y la de un analista de contenido.
 
-1. Observá objetivamente qué ocurre en pantalla.
-2. Ahora, una vez analizado el hook, respondé: ¿Qué evidencia observable existe de que un usuario promedio tendría un motivo inmediato para detener el scroll?
-3. Recién entonces decidí si existe alguna falla real o si el hook cumple correctamente su objetivo.
+Respondé a la pregunta directa del usuario evaluando libremente los siguientes pilares (solo los que apliquen al video):
 
-No partas de teorías generales para juzgar el video. Partí del video y utilizá tu conocimiento únicamente para interpretar lo que observaste.
+1. **Análisis de Tipo de Hook:** Identificá qué tipo de hook se está intentando ejecutar (ej. clickbait, patrón de interrupción, visual impact, problemática directa, curiosidad, etc.).
+2. **Evaluación de Fuerza y Alineación:**
+   - **Hook Visual:** ¿Hay suficiente dinámica visual o texto clave para detener el pulgar en el primer segundo?
+   - **Hook Verbal / Auditivo:** ¿La primera frase genera curiosidad inmediata o suena a intro/relleno?
+   - **Promesa vs. Expectativa:** ¿El hook plantea un "bucle de curiosidad" (open loop) claro?
+3. **Detección de Fricciones o Puntos Débiles:** Señalá específicamente en qué punto, texto, pausa o elemento el video pierde fuerza, se siente artificial o genera desinterés.
 
-No confundas una posible mejora con una falla real.
+Si el hook funciona perfectamente para su objetivo, validalo directamente explicando por qué. No inventes fallas donde no las hay, pero no dejes pasar detalles de ritmo, texto o entrega verbal que arruinen la retención.
+</instrucciones_de_analisis>
 
-Ignorá por completo si el producto es bueno, si la oferta convence, si comunica beneficios o si vende correctamente. Durante este análisis solo importa una pregunta: ¿los primeros segundos ofrecen un motivo suficientemente fuerte para detener el scroll? Todo lo demás debe ignorarse hasta analizar el desarrollo del video.
-
-Si no encontrás una falla relevante, decilo explícitamente.
-
-No inventes problemas para completar el análisis.
-
-Cada conclusión debe poder justificarse con evidencia observable en el video.
-</instrucciones>
-
-<reglas_estrictas>
-1. Basá todas tus conclusiones únicamente en evidencia observable.
-2. No inventes escenas, intenciones ni reacciones de la audiencia.
-3. No asumas que existe un único tipo de hook correcto.
-4. Evaluá el hook según el objetivo que realmente intenta cumplir.
-5. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
-</reglas_estrictas>
+<formato_de_respuesta>
+- Sé directo, conversacional y crítico, como un consultor o colega experto.
+- Diagnosticá primero qué es el hook y evaluá su efectividad de forma orgánica.
+- Si hay errores, puntualizálos en el segundo/elemento exacto donde ocurren.
+</formato_de_respuesta>
 `;
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
