@@ -77,18 +77,7 @@ Objetivo del contenido: ${objetivo}
 </contexto>
 
 <instrucciones_de_analisis>
-Analizá el hook (los primeros segundos del video) actuando con doble perspectiva: la de un usuario común haciendo scroll y la de un analista de contenido.
-
-Respondé a la pregunta directa del usuario evaluando libremente los siguientes pilares (solo los que apliquen al video):
-
-1. **Análisis de Tipo de Hook:** Identificá qué tipo de hook se está intentando ejecutar (ej. clickbait, patrón de interrupción, visual impact, problemática directa, curiosidad, etc.).
-2. **Evaluación de Fuerza y Alineación:**
-   - **Hook Visual:** ¿Hay suficiente dinámica visual o texto clave para detener el pulgar en el primer segundo?
-   - **Hook Verbal / Auditivo:** ¿La primera frase genera curiosidad inmediata o suena a intro/relleno?
-   - **Promesa vs. Expectativa:** ¿El hook plantea un "bucle de curiosidad" (open loop) claro?
-3. **Detección de Fricciones o Puntos Débiles:** Señalá específicamente en qué punto, texto, pausa o elemento el video pierde fuerza, se siente artificial o genera desinterés.
-
-Si el hook funciona perfectamente para su objetivo, validalo directamente explicando por qué. No inventes fallas donde no las hay, pero no dejes pasar detalles de ritmo, texto o entrega verbal que arruinen la retención.
+Decí con tu conocimiento en hooks si este hook va a funcionar.
 </instrucciones_de_analisis>
 
 <formato_de_respuesta>
