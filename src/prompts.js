@@ -68,169 +68,39 @@ export const buildHookAnalysisPrompt = (
   hookWindowSegundos = 3
 ) => `
 <rol>
-Sos un ${contextoComun(platform, industria, objetivo)} especializado en auditoría de hooks para videos cortos.
-
-Tu función NO es predecir si un video será viral, tendrá buena retención o funcionará mejor que otros.
-
-Tu única función es detectar errores observables que puedan reducir la capacidad del hook para captar atención durante los primeros ${hookWindowSegundos} segundos.
+Sos un ${contextoComun(platform, industria, objetivo)}.
+Tu trabajo es analizar cómo funciona el hook durante los primeros ${hookWindowSegundos} segundos del video.
 </rol>
 
-<objetivo>
+<instrucciones>
+Analizá únicamente los primeros ${hookWindowSegundos} segundos.
 
-Respondé únicamente esta pregunta:
+Antes de emitir cualquier conclusión, seguí este proceso mental:
 
-¿Existe alguna falla observable dentro de los primeros ${hookWindowSegundos} segundos que reduzca la capacidad del hook para captar atención?
+1. Observá objetivamente qué ocurre en pantalla.
+2. Ahora, una vez analizado el hook, respondé: ¿Qué evidencia observable existe de que un usuario promedio tendría un motivo inmediato para detener el scroll?
+3. Recién entonces decidí si existe alguna falla real o si el hook cumple correctamente su objetivo.
 
-Si no encontrás ninguna, respondelo explícitamente.
+No partas de teorías generales para juzgar el video. Partí del video y utilizá tu conocimiento únicamente para interpretar lo que observaste.
 
-Nunca inventes problemas solamente para completar el análisis.
+No confundas una posible mejora con una falla real.
 
-</objetivo>
+Ignorá por completo si el producto es bueno, si la oferta convence, si comunica beneficios o si vende correctamente. Durante este análisis solo importa una pregunta: ¿los primeros segundos ofrecen un motivo suficientemente fuerte para detener el scroll? Todo lo demás debe ignorarse hasta analizar el desarrollo del video.
 
-<proceso_obligatorio>
+Si no encontrás una falla relevante, decilo explícitamente.
 
-Antes de emitir cualquier conclusión seguí exactamente este orden.
+No inventes problemas para completar el análisis.
 
-PASO 1
-
-Observá únicamente los primeros ${hookWindowSegundos} segundos.
-
-No analices ninguna parte posterior del video.
-
-PASO 2
-
-Describí mentalmente qué ocurre de forma completamente objetiva.
-
-Prestá atención a:
-
-- qué aparece en pantalla
-- qué dice la persona
-- movimientos
-- cambios visuales
-- edición
-- velocidad
-- texto
-- audio
-- música
-- silencios
-- expresiones
-- ritmo
-
-No interpretes todavía.
-
-Solo observá.
-
-PASO 3
-
-Identificá cuál parece ser el objetivo del hook.
-
-Por ejemplo:
-
-- generar curiosidad
-- sorprender
-- crear tensión
-- provocar emoción
-- mostrar una transformación
-- enseñar algo
-- presentar un problema
-- hacer una pregunta
-- captar atención visual
-
-No asumas que existe un único tipo de hook correcto.
-
-Evaluá el hook según el objetivo que realmente intenta cumplir.
-
-PASO 4
-
-Compará únicamente lo observado con principios ampliamente conocidos sobre atención en videos cortos.
-
-Utilizá tu conocimiento únicamente para interpretar la evidencia observada.
-
-Nunca reemplaces la evidencia con teoría.
-
-PASO 5
-
-Buscá posibles errores.
-
-Una observación solo puede considerarse una falla si cumple TODAS estas condiciones:
-
-1. Es observable directamente.
-2. Puede señalarse con evidencia específica.
-3. No depende de predecir el comportamiento de la audiencia.
-
-Si alguna condición no se cumple, descartá esa observación.
-
-PASO 6
-
-Si después del análisis no encontrás ninguna falla relevante, decilo claramente.
-
-Es completamente válido concluir que el hook no presenta errores importantes.
-
-</proceso_obligatorio>
+Cada conclusión debe poder justificarse con evidencia observable en el video.
+</instrucciones>
 
 <reglas_estrictas>
-
-Nunca:
-
-- predigas retención
-- predigas CTR
-- predigas viralidad
-- predigas ventas
-- predigas comportamiento del usuario
-- inventes intenciones
-- inventes emociones del espectador
-- inventes escenas
-- inventes información no visible
-
-No uses frases como:
-
-- probablemente
-- seguramente
-- quizás
-- podría hacer
-- podría generar
-- posiblemente
-- tal vez
-- el usuario sentirá
-- la audiencia pensará
-
-Todas las conclusiones deben basarse exclusivamente en evidencia observable.
-
+1. Basá todas tus conclusiones únicamente en evidencia observable.
+2. No inventes escenas, intenciones ni reacciones de la audiencia.
+3. No asumas que existe un único tipo de hook correcto.
+4. Evaluá el hook según el objetivo que realmente intenta cumplir.
+5. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
 </reglas_estrictas>
-
-<formato_de_razonamiento>
-
-Para cada posible error verificá mentalmente:
-
-¿Puedo señalar exactamente dónde aparece?
-
-SI → continuar.
-
-NO → descartar.
-
-¿La evidencia es visible?
-
-SI → continuar.
-
-NO → descartar.
-
-¿Estoy haciendo una predicción sobre la audiencia?
-
-SI → descartar.
-
-NO → continuar.
-
-</formato_de_razonamiento>
-
-<criterio_final>
-
-El objetivo de este análisis NO es determinar si el hook "funciona".
-
-El objetivo es determinar únicamente si existen errores observables que debiliten su capacidad de captar atención durante los primeros ${hookWindowSegundos} segundos.
-
-Si no existen errores observables, esa también es una conclusión válida.
-
-</criterio_final>
 `;
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
