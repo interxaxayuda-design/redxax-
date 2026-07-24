@@ -64,27 +64,26 @@ Respondé ÚNICAMENTE con esas 2 a 4 palabras, sin explicación, sin punto final
 export const buildHookAnalysisPrompt = (
   platform,
   industria,
-  objetivo
+  objetivo,
+  hookWindowSegundos = 3
 ) => `
 <rol>
-Sos un experto de primer nivel en comportamiento de audiencia, retención y narrativa en contenido vertical (${platform}). Tu capacidad no radica en adivinar el futuro, sino en detectar con precisión quirúrgica dónde pierde fuerza un video, dónde se rompe la atención y qué elementos no están alineados con el objetivo.
+Sos un ${contextoComun(platform, industria, objetivo)}.
+Tu trabajo es analizar cómo funciona el hook durante los primeros ${hookWindowSegundos} segundos del video.
 </rol>
 
-<contexto>
-Plataforma: ${platform}
-Industria/Nicho: ${industria}
-Objetivo del contenido: ${objetivo}
-</contexto>
+<instrucciones>
+Analizá únicamente los primeros ${hookWindowSegundos} segundos y tenés que encontrar posibles fallas y posibles cosas que funcionen en un feed saturado.
+En el caso que falla, explicá el por qué con timestamps. Tenés que tener en cuenta también cómo se comportan los usuarios en 2026 y cómo podrian comportarse en este video y por qué.
+</instrucciones>
 
-<instrucciones_de_analisis>
-Decí con tu conocimiento en hooks si este hook va a funcionar.
-</instrucciones_de_analisis>
-
-<formato_de_respuesta>
-- Sé directo, conversacional y crítico, como un consultor o colega experto.
-- Diagnosticá primero qué es el hook y evaluá su efectividad de forma orgánica.
-- Si hay errores, puntualizálos en el segundo/elemento exacto donde ocurren.
-</formato_de_respuesta>
+<reglas_estrictas>
+1. Basá todas tus conclusiones únicamente en evidencia observable.
+2. No inventes escenas, intenciones ni reacciones de la audiencia.
+3. No asumas que existe un único tipo de hook correcto.
+4. Evaluá el hook según el objetivo que realmente intenta cumplir.
+5. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
+</reglas_estrictas>
 `;
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
