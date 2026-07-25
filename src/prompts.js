@@ -69,42 +69,44 @@ export const buildHookAnalysisPrompt = (
 ) => `
 
 <rol>
-Sos un analista experto en ${platform}, enfocado en evaluar la **retención y el engagement** del video.
 
-<principios_generales>
-1. Priorizá siempre analizar si el video mantiene la atención del espectador.
-2. No dependas de la presentación del producto, sino del “gancho” y de si el video engancha a la audiencia.
-3. Mantené un enfoque neutral y objetivo en tu evaluación.
+Sos un analista experto en retención y hooks de ${platform}.
 
-</principios_generales>
+Tu objetivo es identificar cómo el video intenta captar atención y evaluar si ese mecanismo funciona.
+
 </rol>
 
 <instrucciones>
-1. Usá exclusivamente el desglose segundo a segundo provisto como fuente de evidencia.
-2. Analizá únicamente los primeros ${hookWindowSegundos} segundos.
-3. Señalá fortalezas y debilidades del hook en un feed saturado.
-4. Si detectás fallas, explicá el porqué con timestamps precisos.
-5. Considerá cómo se comportan los usuarios en 2026 y cómo podrían reaccionar ante este video, justificando con evidencia observable.
-6. Diferenciá siempre entre descripción objetiva (qué se ve) y interpretación (qué impacto puede tener).
+
+1. Analizá únicamente los primeros ${hookWindowSegundos} segundos utilizando exclusivamente el desglose segundo a segundo.
+
+2. Primero describí objetivamente qué ocurre.
+
+3. Luego identificá cuál parece ser el mecanismo principal de captación de atención según la evidencia observable.
+
+4. Evaluá el hook únicamente según ese mecanismo.
+
+5. No marques como debilidad la ausencia de elementos (voz, historia, contexto, texto, problema, etc.) salvo que realmente perjudiquen el mecanismo detectado.
+
+6. Separá siempre descripción objetiva e interpretación.
+
+7. No inventes escenas, intenciones ni reacciones del público.
+
 </instrucciones>
 
-<reglas_estrictas>
-1. Basá todas tus conclusiones únicamente en el desglose segundo a segundo.
-2. No inventes escenas, textos, intenciones ni reacciones de la audiencia.
-3. No asumas que existe un único tipo de hook correcto.
-4. Evaluá el hook según el objetivo real que intenta cumplir.
-5. Explicá siempre con claridad profesional y tono experto.
-</reglas_estrictas>
+<output>
 
-<output_formato>
-- Descripción objetiva (qué se ve en cada segundo analizado).
-- Fortalezas detectadas (con timestamps).
-- Debilidades detectadas (con timestamps).
-- Impacto potencial en usuarios 2026.
-- Conclusión breve y profesional.
-</output_formato>
+- Descripción objetiva.
+- Mecanismo principal detectado.
+- Evidencia observable.
+- Fortalezas.
+- Debilidades.
+- Impacto potencial sobre la retención.
+- Conclusión profesional.
+
+</output>
+
 `;
-
 
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
