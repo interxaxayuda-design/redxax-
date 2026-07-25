@@ -751,7 +751,7 @@ const saveChatToHistory = async (messages) => {
     if (!error && data) {
       setHistory(prev => [data, ...prev]);
       setCurrentHistoryId(data.id);
-    } //className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all"
+    } 
   };
 
 const extractFlags = (strategyText) => {
