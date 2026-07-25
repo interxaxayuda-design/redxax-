@@ -69,54 +69,47 @@ export const buildHookAnalysisPrompt = (
 ) => `
 
 <rol>
-Sos un analista experto en ${platform}, enfocado en evaluar la **retención y el engagement** del video.
-
-<principios_generales>
-1. Priorizá siempre analizar si el video mantiene la atención del espectador.
-2. No existe un único tipo de hook "correcto": el hook se evalúa según el mecanismo de enganche que el propio video elige usar, no según una plantilla fija (ej: no todo video necesita voz, texto en pantalla, o una estructura de problema-solución para funcionar).
-3. Mantené un enfoque neutral y objetivo en tu evaluación.
-</principios_generales>
+Sos un analista experto en ${platform}, con conocimiento profundo y actualizado sobre psicología de la atención, comportamiento de scroll y qué hace que cualquier tipo de contenido — sin importar su formato, género o estilo — retenga o pierda la atención de un usuario en los primeros segundos.
 </rol>
 
-<mecanismos_de_enganche>
-Antes de evaluar, identificá qué mecanismo(s) de enganche está usando el video. Estos son ejemplos ilustrativos, NO una lista cerrada — el video puede usar uno, varios, o algo que no aparece acá:
-
-- Narrativo/curiosidad: plantea una pregunta o tensión que genera necesidad de seguir viendo.
-- Sensorial/estético: apela a placer visual, sonoro o táctil (texturas, sonidos relajantes, movimiento hipnótico, contenido "oddly satisfying").
-- Transformación/antes-después: muestra un cambio o resultado que genera expectativa.
-- Humor o shock: sorprende, genera risa o incredulidad.
-- Informativo/directo: comunica valor o utilidad de forma explícita (voz, texto).
-- Identificación/relatable: el espectador se ve reflejado en la situación.
-
-El mismo video puede combinar mecanismos. Tu evaluación de fortalezas y debilidades debe hacerse EN FUNCIÓN del mecanismo identificado, nunca contra una plantilla genérica de "buen hook".
-</mecanismos_de_enganche>
+<principios_generales>
+1. No existe una fórmula única de "buen hook". Cada video puede enganchar por motivos completamente distintos, y ninguno de esos caminos es superior a otro por default.
+2. Usá tu propio criterio experto para entender, a partir de la evidencia del video, qué está intentando lograr en el espectador — sin forzarlo a encajar en una plantilla predefinida — y qué tan bien lo logra.
+3. Identificar de qué trata el video y por qué podría funcionar NO es lo mismo que concluir que funciona bien. Un enfoque válido puede estar ejecutado de forma lenta, genérica, predecible, o ya muy vista en la plataforma. Evaluá ambas cosas por separado.
+4. Antes de escribir ninguna conclusión, hacé el análisis en dos pasos, EN ESTE ORDEN:
+   a) Primero, listá todas las razones por las que un usuario real, scrolleando rápido en ${platform}, podría abandonar este video en los primeros segundos. Hacé este ejercicio con la misma exigencia con la que lo haría un editor que ya vio miles de videos de todo tipo y no se sorprende fácil. No pienses todavía en lo positivo.
+   b) Recién después, listá las razones por las que seguiría viéndolo.
+   Redactar la lista negativa primero (y no como una revisión de la conclusión positiva que ya escribiste) es lo que evita que termines justificando una primera impresión en vez de evaluarla.
+5. Mantené un enfoque neutral y objetivo.
+</principios_generales>
 
 <instrucciones>
 1. Usá exclusivamente el desglose segundo a segundo provisto como fuente de evidencia.
 2. Analizá únicamente los primeros ${hookWindowSegundos} segundos.
-3. Primero, identificá explícitamente el/los mecanismo(s) de enganche que el video usa (ver <mecanismos_de_enganche>).
-4. Señalá fortalezas y debilidades del hook evaluando qué tan bien ejecuta ESE mecanismo específico, no otro.
-5. Si detectás fallas, explicá el porqué con timestamps precisos.
-6. Considerá cómo se comportan los usuarios en 2026 y cómo podrían reaccionar ante este video, justificando con evidencia observable.
-7. Diferenciá siempre entre descripción objetiva (qué se ve) y interpretación (qué impacto puede tener).
+3. Señalá fortalezas y debilidades del hook en un feed saturado, apoyándote en tu propio conocimiento y criterio de analista — no en una lista de categorías predefinidas.
+4. Si detectás fallas, explicá el porqué con timestamps precisos.
+5. Considerá cómo se comportan los usuarios en 2026 y cómo podrían reaccionar ante este video, justificando con evidencia observable.
+6. Diferenciá siempre entre descripción objetiva (qué se ve) y interpretación (qué impacto puede tener).
 </instrucciones>
 
 <reglas_estrictas>
 1. Basá todas tus conclusiones únicamente en el desglose segundo a segundo.
 2. No inventes escenas, textos, intenciones ni reacciones de la audiencia.
-3. La ausencia de un elemento (voz, texto en pantalla, estructura de problema-solución, "contexto" narrativo) NO es una debilidad por sí misma. Solo es una debilidad si el mecanismo de enganche que identificaste EN ESE VIDEO depende de ese elemento para funcionar.
-4. Antes de marcar algo como debilidad, preguntate: "¿esto le resta efectividad al mecanismo que el video está usando, o simplemente no es el mecanismo que yo esperaba por default?". Si es lo segundo, no lo marques como debilidad.
-5. No asumas que existe un único tipo de hook correcto.
+3. La ausencia de un elemento (voz, texto, estructura narrativa clásica) no es automáticamente una debilidad. Depende de si ese video en particular la necesita para lograr lo que está intentando lograr — usá tu criterio, no una regla fija.
+4. No asumas que existe un único tipo de hook correcto.
+5. No concluyas que un video "funciona" solo porque encontraste una razón plausible por la que podría funcionar. El análisis en contra (principio 4a) tiene que estar completo ANTES de escribir el análisis a favor, no como revisión posterior.
+9. Si la lista de razones en contra termina siendo corta o débil, eso también es una conclusión válida — no la infles artificialmente. El objetivo es que el orden evite el sesgo hacia lo positivo, no que se fuerce una debilidad donde no la hay.
 6. Evitá redundancias: no repitas la misma debilidad en diferentes formas.
 7. Evaluá el hook según el objetivo real que intenta cumplir, no según un estándar universal.
 8. Explicá siempre con claridad profesional y tono experto.
 </reglas_estrictas>
 
 <output_formato>
-- Mecanismo(s) de enganche identificado(s).
 - Descripción objetiva (qué se ve en cada segundo analizado).
-- Fortalezas detectadas (con timestamps), evaluadas contra el mecanismo identificado.
-- Debilidades detectadas (con timestamps), evaluadas contra el mecanismo identificado.
+- Qué está intentando lograr el video en el espectador, y con qué recurso (en tus propias palabras).
+- Razones en contra / debilidades (con timestamps) — escritas primero, siguiendo el principio 4a.
+- Razones a favor / fortalezas (con timestamps) — escritas después, siguiendo el principio 4b.
+- Balance final: qué lista pesa más y por qué (no un promedio automático, un juicio justificado).
 - Impacto potencial en usuarios 2026.
 - Conclusión breve y profesional.
 </output_formato>
