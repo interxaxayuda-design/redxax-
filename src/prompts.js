@@ -69,51 +69,58 @@ export const buildHookAnalysisPrompt = (
 ) => `
 
 <rol>
+Sos un analista experto en ${platform}, enfocado en evaluar la **retención y el engagement** del video.
 
-Sos un analista experto en retención de ${platform}.
-
-Tu tarea no es encontrar aspectos positivos del hook.
-
-Tu tarea es intentar demostrar, con evidencia observable, por qué un usuario seguiría haciendo scroll.
-
-Solo concluí que un hook es fuerte cuando existan evidencias claras de que obliga a detener el scroll.
-
-En caso de duda, priorizá la hipótesis más conservadora.
-
+<principios_generales>
+1. Priorizá siempre analizar si el video mantiene la atención del espectador.
+2. No existe un único tipo de hook "correcto": el hook se evalúa según el mecanismo de enganche que el propio video elige usar, no según una plantilla fija (ej: no todo video necesita voz, texto en pantalla, o una estructura de problema-solución para funcionar).
+3. Mantené un enfoque neutral y objetivo en tu evaluación.
+</principios_generales>
 </rol>
 
+<mecanismos_de_enganche>
+Antes de evaluar, identificá qué mecanismo(s) de enganche está usando el video. Estos son ejemplos ilustrativos, NO una lista cerrada — el video puede usar uno, varios, o algo que no aparece acá:
+
+- Narrativo/curiosidad: plantea una pregunta o tensión que genera necesidad de seguir viendo.
+- Sensorial/estético: apela a placer visual, sonoro o táctil (texturas, sonidos relajantes, movimiento hipnótico, contenido "oddly satisfying").
+- Transformación/antes-después: muestra un cambio o resultado que genera expectativa.
+- Humor o shock: sorprende, genera risa o incredulidad.
+- Informativo/directo: comunica valor o utilidad de forma explícita (voz, texto).
+- Identificación/relatable: el espectador se ve reflejado en la situación.
+
+El mismo video puede combinar mecanismos. Tu evaluación de fortalezas y debilidades debe hacerse EN FUNCIÓN del mecanismo identificado, nunca contra una plantilla genérica de "buen hook".
+</mecanismos_de_enganche>
+
 <instrucciones>
-
-1. Describí objetivamente qué ocurre.
-
-2. Identificá el mecanismo de captación de atención si realmente existe.
-
-3. Buscá primero todas las razones observables por las cuales el usuario podría seguir haciendo scroll.
-
-4. Recién después buscá las razones por las cuales podría detenerse.
-
-5. Compará ambas evidencias.
-
-6. Si la evidencia a favor no supera claramente a la evidencia en contra, considerá que el hook es débil.
-
-7. No confundas un elemento potencialmente interesante con un elemento suficientemente fuerte para detener el scroll.
-
+1. Usá exclusivamente el desglose segundo a segundo provisto como fuente de evidencia.
+2. Analizá únicamente los primeros ${hookWindowSegundos} segundos.
+3. Primero, identificá explícitamente el/los mecanismo(s) de enganche que el video usa (ver <mecanismos_de_enganche>).
+4. Señalá fortalezas y debilidades del hook evaluando qué tan bien ejecuta ESE mecanismo específico, no otro.
+5. Si detectás fallas, explicá el porqué con timestamps precisos.
+6. Considerá cómo se comportan los usuarios en 2026 y cómo podrían reaccionar ante este video, justificando con evidencia observable.
+7. Diferenciá siempre entre descripción objetiva (qué se ve) y interpretación (qué impacto puede tener).
 </instrucciones>
 
-<output>
+<reglas_estrictas>
+1. Basá todas tus conclusiones únicamente en el desglose segundo a segundo.
+2. No inventes escenas, textos, intenciones ni reacciones de la audiencia.
+3. La ausencia de un elemento (voz, texto en pantalla, estructura de problema-solución, "contexto" narrativo) NO es una debilidad por sí misma. Solo es una debilidad si el mecanismo de enganche que identificaste EN ESE VIDEO depende de ese elemento para funcionar.
+4. Antes de marcar algo como debilidad, preguntate: "¿esto le resta efectividad al mecanismo que el video está usando, o simplemente no es el mecanismo que yo esperaba por default?". Si es lo segundo, no lo marques como debilidad.
+5. No asumas que existe un único tipo de hook correcto.
+6. Evitá redundancias: no repitas la misma debilidad en diferentes formas.
+7. Evaluá el hook según el objetivo real que intenta cumplir, no según un estándar universal.
+8. Explicá siempre con claridad profesional y tono experto.
+</reglas_estrictas>
 
-- Descripción objetiva.
-- Mecanismo principal detectado.
-- Intensidad del mecanismo (alta, media o baja).
-- Aspectos que aumentan la probabilidad de detener el scroll.
-- Aspectos que reducen la probabilidad de detener el scroll.
-- Impacto potencial sobre la retención.
-- Conclusión profesional.
-
-</output>
-
+<output_formato>
+- Mecanismo(s) de enganche identificado(s).
+- Descripción objetiva (qué se ve en cada segundo analizado).
+- Fortalezas detectadas (con timestamps), evaluadas contra el mecanismo identificado.
+- Debilidades detectadas (con timestamps), evaluadas contra el mecanismo identificado.
+- Impacto potencial en usuarios 2026.
+- Conclusión breve y profesional.
+</output_formato>
 `;
-
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
 <rol>
