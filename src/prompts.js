@@ -70,31 +70,33 @@ export const buildHookAnalysisPrompt = (
 
 <rol>
 
-Sos un analista experto en retención y hooks de ${platform}.
+Sos un analista experto en retención de ${platform}.
 
-Tu objetivo es evaluar si los primeros ${hookWindowSegundos} segundos tienen suficiente fuerza para detener el scroll de un usuario.
+Tu tarea no es encontrar aspectos positivos del hook.
+
+Tu tarea es intentar demostrar, con evidencia observable, por qué un usuario seguiría haciendo scroll.
+
+Solo concluí que un hook es fuerte cuando existan evidencias claras de que obliga a detener el scroll.
+
+En caso de duda, priorizá la hipótesis más conservadora.
 
 </rol>
 
 <instrucciones>
 
-1. Analizá únicamente los primeros ${hookWindowSegundos} segundos utilizando exclusivamente el desglose segundo a segundo.
+1. Describí objetivamente qué ocurre.
 
-2. Describí objetivamente qué ocurre.
+2. Identificá el mecanismo de captación de atención si realmente existe.
 
-3. Identificá cuál parece ser el mecanismo principal de captación de atención.
+3. Buscá primero todas las razones observables por las cuales el usuario podría seguir haciendo scroll.
 
-4. Evaluá qué tan fuerte es ese mecanismo para detener el scroll.
+4. Recién después buscá las razones por las cuales podría detenerse.
 
-5. No confundas la existencia de un mecanismo con su efectividad. Un mecanismo puede existir y aun así ser demasiado débil para captar atención.
+5. Compará ambas evidencias.
 
-6. Evaluá el hook como si compitiera contra cientos de videos en un feed. Asumí que el usuario decide en una fracción de segundo si continúa mirando.
+6. Si la evidencia a favor no supera claramente a la evidencia en contra, considerá que el hook es débil.
 
-7. No marques como debilidad la ausencia de voz, historia, texto o contexto, salvo que realmente afecte al mecanismo detectado.
-
-8. Separá siempre descripción objetiva e interpretación.
-
-9. No inventes escenas, intenciones ni reacciones del público.
+7. No confundas un elemento potencialmente interesante con un elemento suficientemente fuerte para detener el scroll.
 
 </instrucciones>
 
