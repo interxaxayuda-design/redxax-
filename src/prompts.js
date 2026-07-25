@@ -84,7 +84,7 @@ Tu objetivo es identificar cómo el video intenta captar atención y evaluar si 
 
 3. Luego identificá cuál parece ser el mecanismo principal de captación de atención según la evidencia observable.
 
-4. Evaluá el hook únicamente según ese mecanismo.
+4. Evaluá no solo qué mecanismo utiliza el hook, sino también qué tan fuerte es durante los primeros segundos para detener el scroll.
 
 5. No marques como debilidad la ausencia de elementos (voz, historia, contexto, texto, problema, etc.) salvo que realmente perjudiquen el mecanismo detectado.
 
