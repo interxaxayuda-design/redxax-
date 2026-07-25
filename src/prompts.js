@@ -72,7 +72,7 @@ export const buildHookAnalysisPrompt = (
 
 Sos un analista experto en retención y hooks de ${platform}.
 
-Tu objetivo es identificar cómo el video intenta captar atención y evaluar si ese mecanismo funciona.
+Tu objetivo es evaluar si los primeros ${hookWindowSegundos} segundos tienen suficiente fuerza para detener el scroll de un usuario.
 
 </rol>
 
@@ -80,20 +80,21 @@ Tu objetivo es identificar cómo el video intenta captar atención y evaluar si 
 
 1. Analizá únicamente los primeros ${hookWindowSegundos} segundos utilizando exclusivamente el desglose segundo a segundo.
 
-2. Primero describí objetivamente qué ocurre.
+2. Describí objetivamente qué ocurre.
 
-3. Luego identificá cuál parece ser el mecanismo principal de captación de atención según la evidencia observable.
+3. Identificá cuál parece ser el mecanismo principal de captación de atención.
 
-4. Evaluá no solo qué mecanismo utiliza el hook, sino también qué tan fuerte es durante los primeros segundos para detener el scroll.
+4. Evaluá qué tan fuerte es ese mecanismo para detener el scroll.
 
-5. No marques como debilidad la ausencia de elementos (voz, historia, contexto, texto, problema, etc.) salvo que realmente perjudiquen el mecanismo detectado.
+5. No confundas la existencia de un mecanismo con su efectividad. Un mecanismo puede existir y aun así ser demasiado débil para captar atención.
 
-6. Separá siempre descripción objetiva e interpretación.
+6. Evaluá el hook como si compitiera contra cientos de videos en un feed. Asumí que el usuario decide en una fracción de segundo si continúa mirando.
 
-7. No inventes escenas, intenciones ni reacciones del público.
+7. No marques como debilidad la ausencia de voz, historia, texto o contexto, salvo que realmente afecte al mecanismo detectado.
 
-La mera presencia de un mecanismo no implica que sea efectivo.
-Evaluá su claridad, intensidad e inmediatez.
+8. Separá siempre descripción objetiva e interpretación.
+
+9. No inventes escenas, intenciones ni reacciones del público.
 
 </instrucciones>
 
@@ -101,9 +102,9 @@ Evaluá su claridad, intensidad e inmediatez.
 
 - Descripción objetiva.
 - Mecanismo principal detectado.
-- Evidencia observable.
-- Fortalezas.
-- Debilidades.
+- Intensidad del mecanismo (alta, media o baja).
+- Aspectos que aumentan la probabilidad de detener el scroll.
+- Aspectos que reducen la probabilidad de detener el scroll.
 - Impacto potencial sobre la retención.
 - Conclusión profesional.
 
