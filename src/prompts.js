@@ -92,6 +92,9 @@ Tu objetivo es identificar cómo el video intenta captar atención y evaluar si 
 
 7. No inventes escenas, intenciones ni reacciones del público.
 
+La mera presencia de un mecanismo no implica que sea efectivo.
+Evaluá su claridad, intensidad e inmediatez.
+
 </instrucciones>
 
 <output>
