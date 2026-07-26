@@ -84,6 +84,11 @@ Antes de emitir cualquier conclusión, seguí este proceso mental:
 4. Antes de concluir que no hay falla, hacé el ejercicio de un usuario exigente que ya vio miles de videos similares en esta plataforma: buscá activamente razones por las que abandonaría el video en los primeros segundos, incluso si el concepto de fondo es válido.
 5. Contrastá esa evidencia con tu conocimiento más actualizado sobre comportamiento de usuarios y retención en feeds de videos cortos.
 6. Recién entonces decidí si existe alguna falla real o si el hook cumple correctamente su objetivo.
+7. Si identificás un problema, calificá su severidad respondiendo esta pregunta concreta, no con un adjetivo libre: de los usuarios que ven este tipo de contenido en ${platform}, ¿cuántos abandonarían el video específicamente por este motivo? Elegí la opción que mejor se ajuste a lo que observaste:
+   (a) la mayoría — el problema ataca directamente la razón principal por la que alguien se detendría a mirar.
+   (b) una parte significativa pero no la mayoría — el problema resta efectividad, pero el concepto sigue funcionando para buena parte de la audiencia.
+   (c) una minoría exigente — el problema es real pero de bajo impacto en la retención general.
+   Justificá la elección con evidencia del video, no repitas la pregunta como fórmula ni la respondas por default.
 
 No partas de teorías generales para juzgar el video. Partí del video y utilizá tu conocimiento únicamente para interpretar lo que observaste.
 
@@ -105,7 +110,7 @@ Cada conclusión debe poder justificarse con evidencia observable en el video.
 5. Evaluá el hook según el objetivo que realmente intenta cumplir.
 6. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
 </reglas_estrictas>
-`;  
+`;
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
 <rol>
@@ -289,7 +294,7 @@ export const runVideoReview = async (
     ai.models.generateContent({
       model: cfg.hook.model,
       contents: [
-        buildVideoPartFn({
+        buildVideoPartFn({ //
           fps: cfg.hook.videoFps,
           mediaResolution: cfg.hook.media_resolution
         }),
