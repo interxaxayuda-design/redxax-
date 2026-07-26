@@ -5,12 +5,12 @@
 
 export const REVIEW_CONFIG = {
   hook: {
-    model: "gemini-2.5-flash",
-    temperature: 0.1,
-    media_resolution: "low",
-    thinkingConfig: { thinkingBudget: 3072 },
-    videoFps: 4
-  },
+  model: "gemini-2.5-pro",
+  temperature: 0.1,
+  media_resolution: "low",
+  thinkingConfig: { thinkingBudget: 3072 },
+  videoFps: 4
+},
   nicheSuggestion: {
     model: "gemini-2.5-flash",
     temperature: 0.0,
