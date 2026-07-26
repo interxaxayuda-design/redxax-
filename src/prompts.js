@@ -7,9 +7,9 @@ export const REVIEW_CONFIG = {
   hook: {
   model: "gemini-2.5-pro",
   temperature: 0.1,
-  media_resolution: "low",
+  media_resolution: "medium",
   thinkingConfig: { thinkingBudget: 3072 },
-  videoFps: 4
+  videoFps: 12
 },
   nicheSuggestion: {
     model: "gemini-2.5-flash",
