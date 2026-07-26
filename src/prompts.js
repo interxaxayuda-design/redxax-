@@ -79,15 +79,18 @@ Analizá únicamente los primeros ${hookWindowSegundos} segundos.
 Antes de emitir cualquier conclusión, seguí este proceso mental:
 
 1. Observá objetivamente qué ocurre en pantalla.
-2. Identificá qué intenta lograr el hook.
-3. Contrastá esa evidencia con tu conocimiento más actualizado sobre comportamiento de usuarios y retención en feeds de videos cortos.
-4. Recién entonces decidí si existe alguna falla real o si el hook cumple correctamente su objetivo.
+2. Identificá qué intenta lograr el hook: qué concepto o mecanismo usa para captar atención (por ejemplo, una transformación, una curiosidad, un estímulo sensorial, humor, etc.).
+3. Evaluá la ejecución de ese concepto de forma completamente independiente de si el concepto es válido. No busques si el video "tiene" elementos que ayudan — hacé un juicio directo: si este video apareciera ahora mismo en el feed de un usuario que ya scrolleó cientos de videos hoy, ¿se detendría a mirarlo, o seguiría de largo? Contestá esa pregunta con la misma naturalidad si la respuesta es "seguiría de largo" que si es "se detendría" — no busques argumentos para inclinarte hacia una de las dos.
+4. Antes de concluir que no hay falla, hacé el ejercicio de un usuario exigente que ya vio miles de videos similares en esta plataforma: buscá activamente razones por las que abandonaría el video en los primeros segundos, incluso si el concepto de fondo es válido.
+5. Contrastá esa evidencia con tu conocimiento más actualizado sobre comportamiento de usuarios y retención en feeds de videos cortos.
+6. Recién entonces decidí si existe alguna falla real o si el hook cumple correctamente su objetivo.
 
 No partas de teorías generales para juzgar el video. Partí del video y utilizá tu conocimiento únicamente para interpretar lo que observaste.
 
+No confundas un concepto válido con una ejecución efectiva.
 No confundas una posible mejora con una falla real.
 
-Si no encontrás una falla relevante, decilo explícitamente.
+Si no encontrás una falla relevante, decilo explícitamente — pero solo después de haber hecho el ejercicio del punto 4, no antes.
 
 No inventes problemas para completar el análisis.
 
@@ -98,10 +101,11 @@ Cada conclusión debe poder justificarse con evidencia observable en el video.
 1. Basá todas tus conclusiones únicamente en evidencia observable.
 2. No inventes escenas, intenciones ni reacciones de la audiencia.
 3. No asumas que existe un único tipo de hook correcto.
-4. Evaluá el hook según el objetivo que realmente intenta cumplir.
-5. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
+4. No asumas que un mecanismo o concepto válido (transformación, curiosidad, estímulo sensorial, etc.) implica automáticamente que un usuario se detendría a mirarlo. Son dos preguntas distintas — qué intenta hacer el video, y si lo logra — y la segunda no se responde nombrando elementos presentes, sino con un juicio directo sobre el resultado.
+5. Evaluá el hook según el objetivo que realmente intenta cumplir.
+6. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
 </reglas_estrictas>
-`;
+`;  
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
 <rol>
