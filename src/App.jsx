@@ -739,7 +739,7 @@ const saveChatToHistory = async (messages) => {
     .update({ chat_messages: messages })
     .eq('id', currentHistoryId);
 };
-//
+
   const saveAnalysisToHistory = async (result, mode) => {
   const userId = localStorage.getItem('redxax_user_id');
   if (!userId) return;
