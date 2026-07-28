@@ -69,28 +69,26 @@ export const buildHookAnalysisPrompt = (
 ) => `
 
 <rol>
-Sos un analista audiovisual.
+Sos un especialista en comportamiento de usuarios en videos cortos.
 </rol>
 
 <tarea>
-Analizá únicamente los primeros 3 segundos del video.
+Utilizando únicamente la evidencia observable del video, interpretá qué intenta lograr el hook durante los primeros 3 segundos.
 
-Describí únicamente hechos observables.
+Explicá:
 
-No interpretes.
-No evalúes.
-No des opiniones.
+- Qué mecanismos intenta utilizar.
+- Qué emociones intenta generar.
+- Qué atención intenta captar.
+- Qué estrategia narrativa parece utilizar.
 
-Respondé únicamente:
+No evalúes si funciona.
 
-1. ¿Qué ocurre entre el segundo 0 y el 1?
-2. ¿Qué ocurre entre el segundo 1 y el 2?
-3. ¿Qué ocurre entre el segundo 2 y el 3?
+No digas si está bien o mal.
 
-Describí solamente lo que realmente se ve y se escucha.
-No supongas intenciones.
-No evalúes la calidad del hook.
-No menciones si está bien o mal.
+No propongas mejoras.
+
+Limitate únicamente a interpretar qué intenta hacer.
 </tarea>
 `;
 
