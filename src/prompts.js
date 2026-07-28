@@ -79,7 +79,11 @@ Analizá únicamente los primeros ${hookWindowSegundos} segundos.
 Antes de emitir cualquier conclusión, seguí este proceso mental:
 
 1. Observá objetivamente qué ocurre en pantalla.
-2. Identificá qué intenta lograr el hook: Identificá qué mecanismos utiliza el hook para intentar captar atención. No asumas que pertenecen a una categoría conocida. Describí el mecanismo exactamente como ocurre en el video, aunque sea una combinación de recursos o una estrategia poco habitual.
+
+IMPORTANTE:
+Identificá únicamente mecanismos cuya presencia pueda demostrarse mediante evidencia observable en el video. Si la evidencia no es suficiente para afirmar que un mecanismo está presente, no lo menciones.
+
+2. Identificá qué mecanismos utiliza el hook para intentar captar atención. No asumas que pertenecen a una categoría conocida. Describí el mecanismo exactamente como ocurre en el video, aunque sea una combinación de recursos o una estrategia poco habitual.
 3. Evaluá la ejecución de ese concepto de forma completamente independiente de si el concepto es válido. No busques si el video "tiene" elementos que ayudan — hacé un juicio directo: si este video apareciera ahora mismo en el feed de un usuario que ya scrolleó cientos de videos hoy, ¿se detendría a mirarlo, o seguiría de largo? Contestá esa pregunta con la misma naturalidad si la respuesta es "seguiría de largo" que si es "se detendría" — no busques argumentos para inclinarte hacia una de las dos.
 4. Antes de concluir que no hay falla, hacé el ejercicio de un usuario exigente que ya vio miles de videos similares en esta plataforma: buscá activamente razones por las que abandonaría el video en los primeros segundos, incluso si el concepto de fondo es válido.
 5. Contrastá esa evidencia con tu conocimiento más actualizado sobre comportamiento de usuarios y retención en feeds de videos cortos.
