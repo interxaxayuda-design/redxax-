@@ -69,58 +69,29 @@ export const buildHookAnalysisPrompt = (
 ) => `
 
 <rol>
-Sos un ${contextoComun(platform, industria, objetivo)}.
-Tu trabajo es analizar cómo funciona el hook durante los primeros ${hookWindowSegundos} segundos del video.
+Sos un analista audiovisual.
 </rol>
 
-<instrucciones>
-Analizá únicamente los primeros ${hookWindowSegundos} segundos.
+<tarea>
+Analizá únicamente los primeros 3 segundos del video.
 
-Antes de emitir cualquier conclusión, seguí este proceso mental:
+Describí únicamente hechos observables.
 
-1. Observá objetivamente qué ocurre en pantalla.
-2. Identificá qué intenta lograr el hook: Identificá qué mecanismos utiliza el hook para intentar captar atención. No asumas que pertenecen a una categoría conocida. Describí el mecanismo exactamente como ocurre en el video, aunque sea una combinación de recursos o una estrategia poco habitual.
-3. Evaluá la ejecución de ese concepto de forma completamente independiente de si el concepto es válido. No busques si el video "tiene" elementos que ayudan — hacé un juicio directo: si este video apareciera ahora mismo en el feed de un usuario que ya scrolleó cientos de videos hoy, ¿se detendría a mirarlo, o seguiría de largo? Contestá esa pregunta con la misma naturalidad si la respuesta es "seguiría de largo" que si es "se detendría" — no busques argumentos para inclinarte hacia una de las dos.
-4. Antes de concluir que no hay falla, hacé el ejercicio de un usuario exigente que ya vio miles de videos similares en esta plataforma: buscá activamente razones por las que abandonaría el video en los primeros segundos, incluso si el concepto de fondo es válido.
-5. Contrastá esa evidencia con tu conocimiento más actualizado sobre comportamiento de usuarios y retención en feeds de videos cortos.
-No limites tu razonamiento a los mecanismos o ejemplos mencionados en estas instrucciones.
+No interpretes.
+No evalúes.
+No des opiniones.
 
-Si observás cualquier recurso visual, sonoro, narrativo, psicológico, emocional, cultural o de edición que afecte la capacidad del hook para captar o mantener la atención, analizalo aunque nunca haya sido nombrado aquí.
+Respondé únicamente:
 
-Considerá cualquier patrón aprendido durante tu entrenamiento sobre videos de alto rendimiento en plataformas sociales.
+1. ¿Qué ocurre entre el segundo 0 y el 1?
+2. ¿Qué ocurre entre el segundo 1 y el 2?
+3. ¿Qué ocurre entre el segundo 2 y el 3?
 
-No dependas de listas predefinidas.
-
-Razoná desde los principios generales del comportamiento humano y desde la evidencia observable en el video.
-6. Recién entonces decidí si existe alguna falla real o si el hook cumple correctamente su objetivo.
-7. Si identificás un problema, calificá su severidad respondiendo esta pregunta concreta, no con un adjetivo libre: de los usuarios que ven este tipo de contenido en ${platform}, ¿cuántos abandonarían el video específicamente por este motivo? Elegí la opción que mejor se ajuste a lo que observaste:
-   (a) la mayoría — el problema ataca directamente la razón principal por la que alguien se detendría a mirar.
-   (b) una parte significativa pero no la mayoría — el problema resta efectividad, pero el concepto sigue funcionando para buena parte de la audiencia.
-   (c) una minoría exigente — el problema es real pero de bajo impacto en la retención general.
-   Justificá la elección con evidencia del video, no repitas la pregunta como fórmula ni la respondas por default.
-
-No partas de teorías generales para juzgar el video. Partí del video y utilizá tu conocimiento únicamente para interpretar lo que observaste.
-
-No confundas un concepto válido con una ejecución efectiva.
-No confundas una posible mejora con una falla real.
-
-No asumas que el conocimiento necesario para analizar este video está contenido en este prompt. Utilizá todo el conocimiento general disponible en tu modelo cuando sea relevante para explicar lo observado.
-
-Si no encontrás una falla relevante, decilo explícitamente — pero solo después de haber hecho el ejercicio del punto 4, no antes.
-
-No inventes problemas para completar el análisis.
-
-Cada conclusión debe poder justificarse con evidencia observable en el video.
-</instrucciones>
-
-<reglas_estrictas>
-1. Basá todas tus conclusiones únicamente en evidencia observable.
-2. No inventes escenas, intenciones ni reacciones de la audiencia.
-3. No asumas que existe un único tipo de hook correcto.
-4. No asumas que un mecanismo o concepto válido (transformación, curiosidad, estímulo sensorial, etc.) implica automáticamente que un usuario se detendría a mirarlo. Son dos preguntas distintas — qué intenta hacer el video, y si lo logra — y la segunda no se responde nombrando elementos presentes, sino con un juicio directo sobre el resultado.
-5. Evaluá el hook según el objetivo que realmente intenta cumplir.
-6. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
-</reglas_estrictas>
+Describí solamente lo que realmente se ve y se escucha.
+No supongas intenciones.
+No evalúes la calidad del hook.
+No menciones si está bien o mal.
+</tarea>
 `;
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
