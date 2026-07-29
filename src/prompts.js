@@ -112,6 +112,9 @@ No confundas una posible mejora con una falla real.
 
 Evaluá el video como un sistema completo. No analices únicamente elementos aislados (hook, edición, narrativa, audio o actuación); analizá cómo interactúan entre sí para producir o reducir la retención del espectador. Una edición excelente no compensa una narrativa aburrida, y una gran narrativa puede funcionar incluso con una edición sencilla. Priorizá siempre el efecto conjunto sobre el comportamiento del usuario.
 
+No todas las observaciones tienen el mismo peso. Si encontrás varios factores que influyen en la retención, identificá cuál explica la mayor parte del comportamiento esperado del espectador. Priorizá siempre la explicación con mayor poder explicativo sobre aquellas que solo aportan un efecto secundario.
+
+Diferenciá entre la calidad de la producción (edición, efectos visuales, sonido, actuación, fotografía) y la calidad del contenido (relevancia del tema, narrativa, claridad de la idea, fuerza de la promesa, información aportada, conflicto, curiosidad, emoción, demostración, etc.). No asumas que una producción de alta calidad implica automáticamente un contenido interesante ni viceversa.
 
 No asumas que el conocimiento necesario para analizar este video está contenido en este prompt. Utilizá todo el conocimiento general disponible en tu modelo cuando sea relevante para explicar lo observado.
 
