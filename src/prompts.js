@@ -91,8 +91,6 @@ No limites tu razonamiento a los mecanismos o ejemplos mencionados en estas inst
 
 Si observás cualquier recurso visual, sonoro, narrativo, psicológico, emocional, cultural o de edición que afecte la capacidad del hook para captar o mantener la atención, analizalo aunque nunca haya sido nombrado aquí.
 
-Antes de concluir cuál es el principal motivo por el que el espectador seguiría mirando o abandonaría el video, explorá todas las explicaciones que puedan sostenerse con evidencia observable. Elegí como conclusión aquella que explique mejor el comportamiento del espectador y descartá las demás únicamente si la evidencia las hace menos probables.
-
 Considerá cualquier patrón aprendido durante tu entrenamiento sobre videos de alto rendimiento en plataformas sociales.
 
 No dependas de listas predefinidas.
@@ -100,9 +98,6 @@ No dependas de listas predefinidas.
 Razoná desde los principios generales del comportamiento humano y desde la evidencia observable en el video.
 6. Recién entonces decidí si existe alguna falla real o si el hook cumple correctamente su objetivo.
 7. Si identificás un problema, calificá su severidad respondiendo esta pregunta concreta, no con un adjetivo libre: de los usuarios que ven este tipo de contenido en ${platform}, ¿cuántos abandonarían el video específicamente por este motivo? Elegí la opción que mejor se ajuste a lo que observaste:
-   (a) la mayoría — el problema ataca directamente la razón principal por la que alguien se detendría a mirar.
-   (b) una parte significativa pero no la mayoría — el problema resta efectividad, pero el concepto sigue funcionando para buena parte de la audiencia.
-   (c) una minoría exigente — el problema es real pero de bajo impacto en la retención general.
    Justificá la elección con evidencia del video, no repitas la pregunta como fórmula ni la respondas por default.
 
 No partas de teorías generales para juzgar el video. Partí del video y utilizá tu conocimiento únicamente para interpretar lo que observaste.
@@ -110,11 +105,6 @@ No partas de teorías generales para juzgar el video. Partí del video y utiliz�
 No confundas un concepto válido con una ejecución efectiva.
 No confundas una posible mejora con una falla real.
 
-Evaluá el video como un sistema completo. No analices únicamente elementos aislados (hook, edición, narrativa, audio o actuación); analizá cómo interactúan entre sí para producir o reducir la retención del espectador. Una edición excelente no compensa una narrativa aburrida, y una gran narrativa puede funcionar incluso con una edición sencilla. Priorizá siempre el efecto conjunto sobre el comportamiento del usuario.
-
-No todas las observaciones tienen el mismo peso. Si encontrás varios factores que influyen en la retención, identificá cuál explica la mayor parte del comportamiento esperado del espectador. Priorizá siempre la explicación con mayor poder explicativo sobre aquellas que solo aportan un efecto secundario.
-
-Acordate, y esto es sí o sí obligatorio, de analizar la narrativa. Es super importante también y siempre tenés que analizarla. 
 No asumas que el conocimiento necesario para analizar este video está contenido en este prompt. Utilizá todo el conocimiento general disponible en tu modelo cuando sea relevante para explicar lo observado.
 
 Si no encontrás una falla relevante, decilo explícitamente — pero solo después de haber hecho el ejercicio del punto 4, no antes.
@@ -126,7 +116,7 @@ Cada conclusión debe poder justificarse con evidencia observable en el video.
 
 <reglas_estrictas>
 1. Basá todas tus conclusiones únicamente en evidencia observable.
-2. No inventes escenas, intenciones ni reacciones de la audiencia.z
+2. No inventes escenas, intenciones ni reacciones de la audiencia.
 3. No asumas que existe un único tipo de hook correcto.
 4. No asumas que un mecanismo o concepto válido (transformación, curiosidad, estímulo sensorial, etc.) implica automáticamente que un usuario se detendría a mirarlo. Son dos preguntas distintas — qué intenta hacer el video, y si lo logra — y la segunda no se responde nombrando elementos presentes, sino con un juicio directo sobre el resultado.
 5. Evaluá el hook según el objetivo que realmente intenta cumplir.
