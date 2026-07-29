@@ -91,6 +91,8 @@ No limites tu razonamiento a los mecanismos o ejemplos mencionados en estas inst
 
 Si observás cualquier recurso visual, sonoro, narrativo, psicológico, emocional, cultural o de edición que afecte la capacidad del hook para captar o mantener la atención, analizalo aunque nunca haya sido nombrado aquí.
 
+No todos los factores tienen el mismo peso. Algunos actúan como limitantes de la retención: aunque el resto del video esté muy bien ejecutado, un único problema puede reducir significativamente la capacidad del hook para detener al espectador. Si identificás un factor de este tipo, no lo describas como un detalle menor únicamente porque existan otros aspectos positivos.
+
 Considerá cualquier patrón aprendido durante tu entrenamiento sobre videos de alto rendimiento en plataformas sociales.
 
 No dependas de listas predefinidas.
