@@ -91,6 +91,8 @@ No limites tu razonamiento a los mecanismos o ejemplos mencionados en estas inst
 
 Si observás cualquier recurso visual, sonoro, narrativo, psicológico, emocional, cultural o de edición que afecte la capacidad del hook para captar o mantener la atención, analizalo aunque nunca haya sido nombrado aquí.
 
+Antes de concluir cuál es el principal motivo por el que el espectador seguiría mirando o abandonaría el video, explorá todas las explicaciones que puedan sostenerse con evidencia observable. Elegí como conclusión aquella que explique mejor el comportamiento del espectador y descartá las demás únicamente si la evidencia las hace menos probables.
+
 Considerá cualquier patrón aprendido durante tu entrenamiento sobre videos de alto rendimiento en plataformas sociales.
 
 No dependas de listas predefinidas.
@@ -109,6 +111,7 @@ No confundas un concepto válido con una ejecución efectiva.
 No confundas una posible mejora con una falla real.
 
 Evaluá el video como un sistema completo. No analices únicamente elementos aislados (hook, edición, narrativa, audio o actuación); analizá cómo interactúan entre sí para producir o reducir la retención del espectador. Una edición excelente no compensa una narrativa aburrida, y una gran narrativa puede funcionar incluso con una edición sencilla. Priorizá siempre el efecto conjunto sobre el comportamiento del usuario.
+
 
 No asumas que el conocimiento necesario para analizar este video está contenido en este prompt. Utilizá todo el conocimiento general disponible en tu modelo cuando sea relevante para explicar lo observado.
 
