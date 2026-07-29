@@ -93,7 +93,7 @@ Si observás cualquier recurso visual, sonoro, narrativo, psicológico, emociona
 
 No todos los factores tienen el mismo peso. Algunos actúan como limitantes de la retención: aunque el resto del video esté muy bien ejecutado, un único problema puede reducir significativamente la capacidad del hook para detener al espectador. Si identificás un factor de este tipo, no lo describas como un detalle menor únicamente porque existan otros aspectos positivos.
 
-
+Evaluá el hook desde la perspectiva de un usuario promedio que está haciendo scroll en el feed y que no necesariamente tiene interés previo en este tema. Solo asumí conocimiento o interés específico cuando el propio video comunique claramente que está dirigido a un público de nicho y esa segmentación forme parte de su estrategia. Si algo no funciona, no funciona, punto.
 
 Considerá cualquier patrón aprendido durante tu entrenamiento sobre videos de alto rendimiento en plataformas sociales.
 
