@@ -114,8 +114,7 @@ Evaluá el video como un sistema completo. No analices únicamente elementos ais
 
 No todas las observaciones tienen el mismo peso. Si encontrás varios factores que influyen en la retención, identificá cuál explica la mayor parte del comportamiento esperado del espectador. Priorizá siempre la explicación con mayor poder explicativo sobre aquellas que solo aportan un efecto secundario.
 
-Diferenciá entre la calidad de la producción (edición, efectos visuales, sonido, actuación, fotografía) y la calidad del contenido (relevancia del tema, narrativa, claridad de la idea, fuerza de la promesa, información aportada, conflicto, curiosidad, emoción, demostración, etc.). No asumas que una producción de alta calidad implica automáticamente un contenido interesante ni viceversa.
-
+Acordate, y esto es sí o sí obligatorio, de analizar la narrativa. Es super importante también y siempre tenés que analizarla. 
 No asumas que el conocimiento necesario para analizar este video está contenido en este prompt. Utilizá todo el conocimiento general disponible en tu modelo cuando sea relevante para explicar lo observado.
 
 Si no encontrás una falla relevante, decilo explícitamente — pero solo después de haber hecho el ejercicio del punto 4, no antes.
