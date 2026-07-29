@@ -108,6 +108,8 @@ No partas de teorías generales para juzgar el video. Partí del video y utiliz�
 No confundas un concepto válido con una ejecución efectiva.
 No confundas una posible mejora con una falla real.
 
+Evaluá el video como un sistema completo. No analices únicamente elementos aislados (hook, edición, narrativa, audio o actuación); analizá cómo interactúan entre sí para producir o reducir la retención del espectador. Una edición excelente no compensa una narrativa aburrida, y una gran narrativa puede funcionar incluso con una edición sencilla. Priorizá siempre el efecto conjunto sobre el comportamiento del usuario.
+
 No asumas que el conocimiento necesario para analizar este video está contenido en este prompt. Utilizá todo el conocimiento general disponible en tu modelo cuando sea relevante para explicar lo observado.
 
 Si no encontrás una falla relevante, decilo explícitamente — pero solo después de haber hecho el ejercicio del punto 4, no antes.
@@ -119,7 +121,7 @@ Cada conclusión debe poder justificarse con evidencia observable en el video.
 
 <reglas_estrictas>
 1. Basá todas tus conclusiones únicamente en evidencia observable.
-2. No inventes escenas, intenciones ni reacciones de la audiencia.
+2. No inventes escenas, intenciones ni reacciones de la audiencia.z
 3. No asumas que existe un único tipo de hook correcto.
 4. No asumas que un mecanismo o concepto válido (transformación, curiosidad, estímulo sensorial, etc.) implica automáticamente que un usuario se detendría a mirarlo. Son dos preguntas distintas — qué intenta hacer el video, y si lo logra — y la segunda no se responde nombrando elementos presentes, sino con un juicio directo sobre el resultado.
 5. Evaluá el hook según el objetivo que realmente intenta cumplir.
