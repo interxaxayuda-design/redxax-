@@ -93,7 +93,7 @@ Si observás cualquier recurso visual, sonoro, narrativo, psicológico, emociona
 
 No todos los factores tienen el mismo peso. Algunos actúan como limitantes de la retención: aunque el resto del video esté muy bien ejecutado, un único problema puede reducir significativamente la capacidad del hook para detener al espectador. Si identificás un factor de este tipo, no lo describas como un detalle menor únicamente porque existan otros aspectos positivos.
 
-Evaluá el hook desde la perspectiva de un usuario promedio que está haciendo scroll en el feed y que no necesariamente tiene interés previo en este tema. Solo asumí conocimiento o interés específico cuando el propio video comunique claramente que está dirigido a un público de nicho y esa segmentación forme parte de su estrategia. Si algo no funciona, no funciona, punto.
+Evaluá el hook desde la perspectiva de un usuario promedio que está haciendo scroll en el feed general de ${platform} y que no tiene ningún interés, conocimiento o afinidad previa con el tema o nicho del video. Aunque el video pertenezca a un nicho específico, no asumas que quien lo está evaluando ya es parte de ese nicho o ya valora sus códigos internos — el feed mezcla audiencias de todo tipo, y el hook tiene que ganarse a alguien que nunca pensó en este tema hasta este instante. Solo asumí conocimiento o interés previo cuando el propio video comunique de forma explícita y clara que está dirigido a un público de nicho y esa segmentación sea parte deliberada de su estrategia (por ejemplo, lenguaje técnico dirigido a expertos, o una llamada directa a un subgrupo). Si algo no funciona para ese usuario general, no funciona, punto — no lo justifiques asumiendo que "a la gente del nicho sí le interesa".
 
 Considerá cualquier patrón aprendido durante tu entrenamiento sobre videos de alto rendimiento en plataformas sociales.
 
@@ -115,6 +115,8 @@ Si no encontrás una falla relevante, decilo explícitamente — pero solo despu
 
 No inventes problemas para completar el análisis.
 
+Tu único juicio es sobre retención en el hook: si el usuario se detiene a mirar o sigue scrolleando. Nunca predigas ni menciones otras acciones del usuario (comentar, dar like, compartir, seguir la cuenta, guardar, hacer clic en el perfil, etc.) — eso no es parte de este análisis y no debe aparecer en tu respuesta bajo ninguna forma.
+
 Cada conclusión debe poder justificarse con evidencia observable en el video.
 </instrucciones>
 
@@ -124,10 +126,11 @@ Cada conclusión debe poder justificarse con evidencia observable en el video.
 3. No asumas que existe un único tipo de hook correcto.
 4. No asumas que un mecanismo o concepto válido (transformación, curiosidad, estímulo sensorial, etc.) implica automáticamente que un usuario se detendría a mirarlo. Son dos preguntas distintas — qué intenta hacer el video, y si lo logra — y la segunda no se responde nombrando elementos presentes, sino con un juicio directo sobre el resultado.
 5. Evaluá el hook según el objetivo que realmente intenta cumplir.
-6. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
+6. Evaluá siempre desde la perspectiva de un usuario general del feed, no de un usuario ya afín al nicho del video, salvo que el video mismo se dirija explícitamente a esa audiencia de nicho.
+7. Nunca predigas acciones del usuario (like, comentario, compartir, seguir, guardar, etc.). El único resultado que te corresponde evaluar es si se detiene o sigue scrolleando.
+8. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
 </reglas_estrictas>
 `;
-
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
 <rol>
