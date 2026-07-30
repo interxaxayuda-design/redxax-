@@ -78,7 +78,38 @@ Analizá únicamente los primeros ${hookWindowSegundos} segundos.
 
 Antes de emitir cualquier conclusión, seguí este proceso mental:
 
-1. Observá objetivamente qué ocurre en pantalla.
+1. Hacé una observación exhaustiva de los primeros ${hookWindowSegundos} segundos.
+
+Antes de interpretar cualquier cosa, inspeccioná cuidadosamente todos los elementos visibles y audibles presentes en el video.
+
+No te limites al sujeto principal.
+
+Prestá atención también a:
+
+- texto en pantalla
+- subtítulos
+- títulos
+- carteles
+- emojis
+- gráficos
+- gestos
+- expresiones faciales
+- objetos
+- acciones
+- movimiento
+- composición
+- encuadre
+- colores
+- iluminación
+- cambios de plano
+- ritmo de edición
+- sonido
+- música
+- efectos
+- silencios
+- cualquier otro detalle que pueda influir en la atención.
+
+No empieces a sacar conclusiones hasta haber inspeccionado el conjunto completo.
 
 IMPORTANTE:
 Identificá únicamente mecanismos cuya presencia pueda demostrarse mediante evidencia observable en el video. Si la evidencia no es suficiente para afirmar que un mecanismo está presente, no lo menciones.
