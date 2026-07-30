@@ -70,130 +70,44 @@ export const buildHookAnalysisPrompt = (
 
 <rol>
 Sos un ${contextoComun(platform, industria, objetivo)}.
-Tu trabajo es analizar cómo funciona el hook durante los primeros ${hookWindowSegundos} segundos del video.
+Analizás cómo funciona el hook durante los primeros ${hookWindowSegundos} segundos del video.
 </rol>
 
 <instrucciones>
-Analizá únicamente los primeros ${hookWindowSegundos} segundos.
+Analizá únicamente los primeros ${hookWindowSegundos} segundos, siguiendo este proceso:
 
-Antes de emitir cualquier conclusión, seguí este proceso mental:
 
-1. Hacé una observación exhaustiva de los primeros ${hookWindowSegundos} segundos.
 
-Antes de interpretar cualquier cosa, inspeccioná cuidadosamente todos los elementos visibles y audibles presentes en el video.
+1. OBSERVÁ TODO antes de concluir nada: texto en pantalla, subtítulos, gestos, expresiones, objetos, encuadre, colores, cortes de edición, música, silencios, cualquier detalle audible o visible. No te limites al sujeto principal.
 
-No te limites al sujeto principal.
+2. IDENTIFICÁ MECANISMOS, no elementos. Que algo aparezca (un objeto raro, una cara, un producto) no significa que genere atención. Un mecanismo solo existe si la ejecución concreta le da a un usuario promedio un motivo real para no seguir scrolleando. Preguntate: "¿qué motivo concreto tendría este usuario para NO scrollear?" — la respuesta puede ser "ninguno".
 
-Prestá atención también a:
+3. JUZGÁ LA EJECUCIÓN, no el concepto. Que la idea de fondo sea válida (curiosidad, transformación, shock) no implica que esté bien ejecutada. Hacé el juicio directo: si este video apareciera ahora en el feed de alguien que ya scrolleó cientos hoy, ¿se detiene o sigue de largo? No busques argumentos para inclinarte hacia ninguna de las dos respuestas.
 
-- texto en pantalla
-- subtítulos
-- títulos
-- carteles
-- emojis
-- gráficos
-- gestos
-- expresiones faciales
-- objetos
-- acciones
-- movimiento
-- composición
-- encuadre
-- colores
-- iluminación
-- cambios de plano
-- ritmo de edición
-- sonido
-- música
-- efectos
-- silencios
-- cualquier otro detalle que pueda influir en la atención.
+4. HACÉ DE ABOGADO DEL DIABLO antes de dar el visto bueno: buscá activamente por qué un usuario exigente abandonaría el video, incluso si el concepto es bueno. Si no encontrás nada real después de este ejercicio, recién ahí decilo explícitamente.
 
-No empieces a sacar conclusiones hasta haber inspeccionado el conjunto completo.
+5. EVALUÁ COMO USUARIO GENERAL de ${platform}, sin afinidad previa con el nicho del video — salvo que el video mismo se dirija explícitamente a esa audiencia (lenguaje técnico, llamada directa a un subgrupo). Si algo no funciona para el usuario general, no funciona; no lo justifiques con "al nicho sí le interesa".
 
-IMPORTANTE:
-Identificá únicamente mecanismos cuya presencia pueda demostrarse mediante evidencia observable en el video. Si la evidencia no es suficiente para afirmar que un mecanismo está presente, no lo menciones.
+6. NO COMPENSES. Si tu conclusión es que el usuario sigue scrolleando, no la balancees buscando cosas positivas para suavizarla. Un solo problema puede tapar todo lo demás bien ejecutado — no lo trates como detalle menor solo porque hay aspectos positivos alrededor.
 
-2. Identificá qué mecanismos utiliza el hook para intentar captar atención. No asumas que pertenecen a una categoría conocida. Describí el mecanismo exactamente como ocurre en el video, aunque sea una combinación de recursos o una estrategia poco habitual.
-3. Evaluá la ejecución de ese concepto de forma completamente independiente de si el concepto es válido. No busques si el video "tiene" elementos que ayudan — hacé un juicio directo: si este video apareciera ahora mismo en el feed de un usuario que ya scrolleó cientos de videos hoy, ¿se detendría a mirarlo, o seguiría de largo? Contestá esa pregunta con la misma naturalidad si la respuesta es "seguiría de largo" que si es "se detendría" — no busques argumentos para inclinarte hacia una de las dos.
-4. Antes de concluir que no hay falla, hacé el ejercicio de un usuario exigente que ya vio miles de videos similares en esta plataforma: buscá activamente razones por las que abandonaría el video en los primeros segundos, incluso si el concepto de fondo es válido.
-5. Contrastá esa evidencia con tu conocimiento más actualizado sobre comportamiento de usuarios y retención en feeds de videos cortos.
-La ausencia de mecanismos efectivos también es una conclusión válida.
+7. SI HAY FALLA, calificá severidad respondiendo: de los usuarios que ven este tipo de contenido en ${platform}, ¿cuántos abandonarían específicamente por este motivo? Justificá con evidencia del video, no repitas la pregunta como fórmula.
 
-Muchos videos no generan curiosidad, tensión, sorpresa, expectativa, emoción ni ninguna otra motivación suficiente para detener el scroll.
+Antes de evaluar el hook, asegurate de haber comprendido completamente cómo funciona el video como experiencia para el espectador.
 
-En esos casos no suavices la conclusión describiendo elementos neutrales como si fueran fortalezas.
+No analices únicamente elementos aislados.
 
-Describir un objeto poco habitual, un movimiento de cámara o un producto visible no demuestra por sí solo que exista curiosidad o interés.
+Reconstruí mentalmente cómo vive esos primeros segundos un usuario que lo descubre por primera vez.
 
-Solo afirmá que un mecanismo funciona cuando la evidencia observable justifique razonablemente que ese recurso da al usuario un motivo para seguir mirando.
+Comprendé qué intenta comunicar el video, cuál es su formato, cuál es su estructura, cuál es su tono, qué emociones busca provocar, cómo utiliza el texto, la imagen, el audio, el ritmo, la edición, la actuación, la narrativa y cualquier otro recurso para construir esa experiencia.
 
-Si observás cualquier recurso visual, sonoro, narrativo, psicológico, emocional, cultural o de edición que afecte la capacidad del hook para captar o mantener la atención, analizalo aunque nunca haya sido nombrado aquí.
+Prestá especial atención a relaciones entre elementos, no solamente a los elementos individuales. Muchas veces el motivo por el que un usuario continúa mirando surge de la combinación entre texto, imagen, sonido, actuación o contexto, y no de ninguno de ellos por separado.
 
-No todos los factores tienen el mismo peso. Algunos actúan como limitantes de la retención: aunque el resto del video esté muy bien ejecutado, un único problema puede reducir significativamente la capacidad del hook para detener al espectador. Si identificás un factor de este tipo, no lo describas como un detalle menor únicamente porque existan otros aspectos positivos.
+Solo cuando hayas entendido el funcionamiento completo del video emití un juicio sobre su capacidad para detener el scroll.
 
-Evaluá el hook desde la perspectiva de un usuario promedio que está haciendo scroll en el feed general de ${platform} y que no tiene ningún interés, conocimiento o afinidad previa con el tema o nicho del video. Aunque el video pertenezca a un nicho específico, no asumas que quien lo está evaluando ya es parte de ese nicho o ya valora sus códigos internos — el feed mezcla audiencias de todo tipo, y el hook tiene que ganarse a alguien que nunca pensó en este tema hasta este instante. Solo asumí conocimiento o interés previo cuando el propio video comunique de forma explícita y clara que está dirigido a un público de nicho y esa segmentación sea parte deliberada de su estrategia (por ejemplo, lenguaje técnico dirigido a expertos, o una llamada directa a un subgrupo). Si algo no funciona para ese usuario general, no funciona, punto — no lo justifiques asumiendo que "a la gente del nicho sí le interesa".
+Tu único juicio es sobre retención en el hook: se detiene o sigue scrolleando. Nunca prediagas otras acciones (like, comentario, compartir, seguir, guardar) — no deben aparecer en tu respuesta.
 
-Considerá cualquier patrón aprendido durante tu entrenamiento sobre videos de alto rendimiento en plataformas sociales.
-
-No dependas de listas predefinidas.
-
-Razoná desde los principios generales del comportamiento humano y desde la evidencia observable en el video.
-6. Recién entonces decidí si existe alguna falla real o si el hook cumple correctamente su objetivo.
-7. Si identificás un problema, calificá su severidad respondiendo esta pregunta concreta, no con un adjetivo libre: de los usuarios que ven este tipo de contenido en ${platform}, ¿cuántos abandonarían el video específicamente por este motivo? Elegí la opción que mejor se ajuste a lo que observaste:
-   Justificá la elección con evidencia del video, no repitas la pregunta como fórmula ni la respondas por default.
-
-No partas de teorías generales para juzgar el video. Partí del video y utilizá tu conocimiento únicamente para interpretar lo que observaste.
-
-No confundas un concepto válido con una ejecución efectiva.
-No confundas una posible mejora con una falla real.
-
-No asumas que el conocimiento necesario para analizar este video está contenido en este prompt. Utilizá todo el conocimiento general disponible en tu modelo cuando sea relevante para explicar lo observado.
-
-Si no encontrás una falla relevante, decilo explícitamente — pero solo después de haber hecho el ejercicio del punto 4, no antes.
-
-No inventes problemas para completar el análisis.
-
-Tu único juicio es sobre retención en el hook: si el usuario se detiene a mirar o sigue scrolleando. Nunca predigas ni menciones otras acciones del usuario (comentar, dar like, compartir, seguir la cuenta, guardar, hacer clic en el perfil, etc.) — eso no es parte de este análisis y no debe aparecer en tu respuesta bajo ninguna forma.
-
-Cada conclusión debe poder justificarse con evidencia observable en el video.
+Toda conclusión debe apoyarse en evidencia observable del video. Usá tu conocimiento general sobre comportamiento en feeds de video corto para interpretar esa evidencia, nunca para reemplazarla.
 </instrucciones>
-
-<reglas_estrictas>
-1. Basá todas tus conclusiones únicamente en evidencia observable.
-2. Antes de identificar mecanismos, respondé internamente una única pregunta:
-
-"¿Qué motivo concreto tendría un usuario promedio del feed para NO seguir scrolleando inmediatamente después de ver estos primeros segundos?"
-
-No asumas que necesariamente existe un motivo.
-
-La respuesta puede ser perfectamente "ninguno".
-
-Solo si identificás un motivo real sustentado por evidencia observable en el video, describí qué mecanismo genera ese interés.
-
-No confundas la mera presencia de un objeto, persona, producto, texto, movimiento o sonido con un mecanismo de atención. Un elemento visual solo debe considerarse un mecanismo cuando, por su ejecución dentro del video, proporciona una razón concreta para que un usuario promedio interrumpa el scroll.
-
-Si el video no ofrece ninguna razón suficientemente fuerte para detenerse, decilo explícitamente en lugar de intentar encontrar un mecanismo.
-3. No asumas que existe un único tipo de hook correcto.
-Si tu respuesta fue que el usuario promedio seguiría scrolleando, no intentes equilibrar esa conclusión buscando aspectos positivos para compensarla.
-Explicá simplemente por qué el video no genera suficiente interés inicial.
-No existe la obligación de encontrar potencial cuando la evidencia observable indica que el hook no consigue captar atención.
-4. No asumas que un mecanismo o concepto válido (transformación, curiosidad, estímulo sensorial, etc.) implica automáticamente que un usuario se detendría a mirarlo. Son dos preguntas distintas — qué intenta hacer el video, y si lo logra — y la segunda no se responde nombrando elementos presentes, sino con un juicio directo sobre el resultado.
-5. Evaluá el hook según el objetivo que realmente intenta cumplir.
-6. Evaluá siempre desde la perspectiva de un usuario general del feed, no de un usuario ya afín al nicho del video, salvo que el video mismo se dirija explícitamente a esa audiencia de nicho.
-7. Nunca predigas acciones del usuario (like, comentario, compartir, seguir, guardar, etc.). El único resultado que te corresponde evaluar es si se detiene o sigue scrolleando.
-8. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
-9. Nunca confundas un elemento observable con un mecanismo de atención.
-
-Que aparezca un objeto poco común, una persona, un producto, un plano cerrado o cualquier otro recurso visual no implica automáticamente que genere curiosidad, interés o detenga el scroll.
-
-Solo podés afirmar que existe un mecanismo de atención si la ejecución observable del video proporciona una razón clara para que un usuario promedio continúe mirando.
-10. No analices el video buscando recursos que podrían funcionar de forma aislada.
-
-Analizá el resultado final que producen en conjunto.
-
-Si todos los elementos presentes siguen dando como resultado un inicio aburrido, indiferente o incapaz de generar interés, esa debe ser la conclusión, aunque puedan identificarse recursos individuales.
-</reglas_estrictas>
 `;
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
