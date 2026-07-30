@@ -87,7 +87,15 @@ Identificá únicamente mecanismos cuya presencia pueda demostrarse mediante evi
 3. Evaluá la ejecución de ese concepto de forma completamente independiente de si el concepto es válido. No busques si el video "tiene" elementos que ayudan — hacé un juicio directo: si este video apareciera ahora mismo en el feed de un usuario que ya scrolleó cientos de videos hoy, ¿se detendría a mirarlo, o seguiría de largo? Contestá esa pregunta con la misma naturalidad si la respuesta es "seguiría de largo" que si es "se detendría" — no busques argumentos para inclinarte hacia una de las dos.
 4. Antes de concluir que no hay falla, hacé el ejercicio de un usuario exigente que ya vio miles de videos similares en esta plataforma: buscá activamente razones por las que abandonaría el video en los primeros segundos, incluso si el concepto de fondo es válido.
 5. Contrastá esa evidencia con tu conocimiento más actualizado sobre comportamiento de usuarios y retención en feeds de videos cortos.
-No limites tu razonamiento a los mecanismos o ejemplos mencionados en estas instrucciones.
+La ausencia de mecanismos efectivos también es una conclusión válida.
+
+Muchos videos no generan curiosidad, tensión, sorpresa, expectativa, emoción ni ninguna otra motivación suficiente para detener el scroll.
+
+En esos casos no suavices la conclusión describiendo elementos neutrales como si fueran fortalezas.
+
+Describir un objeto poco habitual, un movimiento de cámara o un producto visible no demuestra por sí solo que exista curiosidad o interés.
+
+Solo afirmá que un mecanismo funciona cuando la evidencia observable justifique razonablemente que ese recurso da al usuario un motivo para seguir mirando.
 
 Si observás cualquier recurso visual, sonoro, narrativo, psicológico, emocional, cultural o de edición que afecte la capacidad del hook para captar o mantener la atención, analizalo aunque nunca haya sido nombrado aquí.
 
@@ -122,13 +130,38 @@ Cada conclusión debe poder justificarse con evidencia observable en el video.
 
 <reglas_estrictas>
 1. Basá todas tus conclusiones únicamente en evidencia observable.
-2. No inventes escenas, intenciones ni reacciones de la audiencia.
+2. Antes de identificar mecanismos, respondé internamente una única pregunta:
+
+"¿Qué motivo concreto tendría un usuario promedio del feed para NO seguir scrolleando inmediatamente después de ver estos primeros segundos?"
+
+No asumas que necesariamente existe un motivo.
+
+La respuesta puede ser perfectamente "ninguno".
+
+Solo si identificás un motivo real sustentado por evidencia observable en el video, describí qué mecanismo genera ese interés.
+
+No confundas la mera presencia de un objeto, persona, producto, texto, movimiento o sonido con un mecanismo de atención. Un elemento visual solo debe considerarse un mecanismo cuando, por su ejecución dentro del video, proporciona una razón concreta para que un usuario promedio interrumpa el scroll.
+
+Si el video no ofrece ninguna razón suficientemente fuerte para detenerse, decilo explícitamente en lugar de intentar encontrar un mecanismo.
 3. No asumas que existe un único tipo de hook correcto.
+Si tu respuesta fue que el usuario promedio seguiría scrolleando, no intentes equilibrar esa conclusión buscando aspectos positivos para compensarla.
+Explicá simplemente por qué el video no genera suficiente interés inicial.
+No existe la obligación de encontrar potencial cuando la evidencia observable indica que el hook no consigue captar atención.
 4. No asumas que un mecanismo o concepto válido (transformación, curiosidad, estímulo sensorial, etc.) implica automáticamente que un usuario se detendría a mirarlo. Son dos preguntas distintas — qué intenta hacer el video, y si lo logra — y la segunda no se responde nombrando elementos presentes, sino con un juicio directo sobre el resultado.
 5. Evaluá el hook según el objetivo que realmente intenta cumplir.
 6. Evaluá siempre desde la perspectiva de un usuario general del feed, no de un usuario ya afín al nicho del video, salvo que el video mismo se dirija explícitamente a esa audiencia de nicho.
 7. Nunca predigas acciones del usuario (like, comentario, compartir, seguir, guardar, etc.). El único resultado que te corresponde evaluar es si se detiene o sigue scrolleando.
 8. Utilizá tu conocimiento para interpretar la evidencia, nunca para reemplazarla.
+9. Nunca confundas un elemento observable con un mecanismo de atención.
+
+Que aparezca un objeto poco común, una persona, un producto, un plano cerrado o cualquier otro recurso visual no implica automáticamente que genere curiosidad, interés o detenga el scroll.
+
+Solo podés afirmar que existe un mecanismo de atención si la ejecución observable del video proporciona una razón clara para que un usuario promedio continúe mirando.
+10. No analices el video buscando recursos que podrían funcionar de forma aislada.
+
+Analizá el resultado final que producen en conjunto.
+
+Si todos los elementos presentes siguen dando como resultado un inicio aburrido, indiferente o incapaz de generar interés, esa debe ser la conclusión, aunque puedan identificarse recursos individuales.
 </reglas_estrictas>
 `;
 
