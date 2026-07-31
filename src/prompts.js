@@ -89,7 +89,15 @@ Analizá únicamente los primeros ${hookWindowSegundos} segundos, siguiendo este
 
 4. HACÉ DE ABOGADO DEL DIABLO antes de dar el visto bueno: buscá activamente por qué un usuario exigente abandonaría el video, incluso si el concepto o la narrativa son buenos. Si no encontrás nada real después de este ejercicio, recién ahí decilo explícitamente.
 
-5. EVALUÁ COMO USUARIO GENERAL de ${platform}, sin afinidad previa con el nicho del video — salvo que el video mismo se dirija explícitamente a esa audiencia (lenguaje técnico, llamada directa a un subgrupo). Un tema puede ser de nicho sin declararlo explícitamente (ej: contenido sobre edición de video, marketing, un hobby específico). Eso no te habilita a asumir interés previo del usuario. Lo que sí tenés que evaluar es si el ángulo o la narrativa logra trascender ese nicho — planteando algo reconocible, sorprendente o universal aunque el tema de fondo sea específico — o si el video simplemente asume que el espectador ya está interesado en el tema sin darle un motivo adicional. Dos videos del mismo nicho pueden tener resultados opuestos: uno puede enganchar a cualquiera por cómo plantea la idea, y otro solo funcionaría para quien ya tenía el interés puesto de antemano. Si el video pertenece a la segunda categoría, decilo explícitamente como una falla, no como algo neutral.
+5. CHEQUEO OBLIGATORIO DE NICHO. Antes de concluir, contestá explícitamente esta pregunta binaria: "¿Este hook depende de que el espectador YA tenga interés en ${industria} (o en el tema puntual del video) para funcionar?" — SÍ o NO, con justificación.
+
+   Para contestarla, imaginá específicamente a alguien cuyo interés está en otro lado, sin ninguna relación con ${industria} (por ejemplo: alguien que solo mira contenido de fútbol, cocina, o lo que sea completamente ajeno al tema del video) y que se cruza con este video en su feed general de ${platform}. La pregunta no es si esa persona termina consumiendo el producto o servicio del nicho — es si estos primeros ${hookWindowSegundos} segundos le dan un motivo para seguir mirando aunque el tema en sí no le importe.
+
+   Si la respuesta es SÍ (depende del interés previo): identificá qué parte puntual del hook asume ese interés — puede ser terminología específica del nicho, un problema que solo alguien de ese nicho reconocería como problema, o directamente arrancar mostrando el producto/servicio sin ningún gancho previo. Esto es una falla real, no un detalle neutral, y tiene que aparecer así en tu conclusión.
+
+   Si la respuesta es NO: explicá concretamente qué en la narrativa, la pregunta planteada, o el conflicto mostrado logra ser reconocible o interesante incluso para alguien sin ese interés previo.
+
+   Dos videos del mismo nicho pueden dar respuestas opuestas a esta pregunta — la diferencia está en cómo está planteada la narrativa, no en el tema de fondo. Este chequeo es independiente de los mecanismos visuales/sonoros que ya identificaste: un video puede tener buena edición y aun así depender enteramente del interés previo del espectador.
 
 6. NO COMPENSES. Si tu conclusión es que el usuario sigue scrolleando, no la balancees buscando cosas positivas para suavizarla. Un solo problema puede tapar todo lo demás bien ejecutado — no lo trates como detalle menor solo porque hay aspectos positivos alrededor.
 
