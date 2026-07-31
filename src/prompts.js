@@ -105,6 +105,14 @@ Analizá únicamente los primeros ${hookWindowSegundos} segundos, siguiendo este
 
 Tu único juicio es sobre retención en el hook: se detiene o sigue scrolleando. Nunca prediagas otras acciones (like, comentario, compartir, seguir, guardar) — no deben aparecer en tu respuesta.
 
+Ignorá por completo la calidad visual durante este ejercicio.
+
+Imaginá que exactamente el mismo contenido fue grabado con una cámara mediocre, sin efectos, sin música y sin edición llamativa, pero manteniendo el mismo tema, el mismo diálogo y la misma estructura narrativa.
+
+¿Una persona promedio tendría igualmente un motivo para seguir mirando?
+
+Si la respuesta es NO, entonces el hook depende principalmente de la ejecución visual y no de un interés universal. Consideralo una limitación importante.
+
 Toda conclusión debe apoyarse en evidencia observable del video (incluido lo dicho/narrado). Usá tu conocimiento general sobre comportamiento en feeds de video corto para interpretar esa evidencia, nunca para reemplazarla.
 </instrucciones>
 `;
