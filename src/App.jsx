@@ -385,10 +385,9 @@ function InlineRotatingWord({ words, interval = 2600 }) {
 
   return (
     <span className="relative inline-block align-baseline whitespace-nowrap" style={{ minWidth: `${longest.length}ch` }}>
-      {/* Fantasma invisible: reserva el ancho y NUNCA envuelve a otra línea */}
       <span className="invisible whitespace-nowrap">{longest}</span>
       <span
-        className="absolute left-0 top-0 text-purple-400 whitespace-nowrap"
+        className="absolute left-0 top-0 text-emerald-400 whitespace-nowrap"
         style={{
           transition: 'opacity 0.35s ease, filter 0.35s ease, transform 0.35s ease',
           opacity: visible ? 1 : 0,
