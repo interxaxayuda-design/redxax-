@@ -1186,7 +1186,7 @@ ${currentMessage.text}
                 {GEM_PACKAGES.map((pkg) => {
                   const savings = pkg.id === 'pro' ? 'Ahorrás 50% vs Starter' : pkg.id === 'elite' ? 'Ahorrás 75% vs Starter' : null;
                   const cardInner = (
-                    <divs
+                    <div
                       className={`relative flex items-center justify-between p-5 cursor-pointer transition-all hover:scale-[1.02]
                         ${pkg.id === 'elite' ? 'rounded-[1.9rem] bg-[#0d0d0f] hover:bg-yellow-500/10'
                         : pkg.popular ? 'rounded-[2rem] border border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/15'
