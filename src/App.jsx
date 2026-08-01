@@ -350,7 +350,7 @@ function DottedBackground() {
 
           ctx.beginPath();
           ctx.arc(x, y, radius, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(168, 85, 247, ${alpha})`; // combina con tu paleta purple
+          ctx.fillStyle = `rgba(16, 185, 129, ${alpha})`; // combina con tu paleta emerald
           ctx.fill();
         }
       }
@@ -429,7 +429,7 @@ function GemToast({ notice, onClose }) {
   const styles = {
     error:   { border: 'border-red-500/30',    bg: 'bg-red-500/[0.07]',    icon: 'text-red-400',    glow: 'shadow-[0_0_30px_rgba(239,68,68,0.15)]' },
     warning: { border: 'border-yellow-500/30', bg: 'bg-yellow-500/[0.07]', icon: 'text-yellow-400', glow: 'shadow-[0_0_30px_rgba(234,179,8,0.15)]' },
-    info:    { border: 'border-purple-500/30', bg: 'bg-purple-500/[0.07]', icon: 'text-purple-400', glow: 'shadow-[0_0_30px_rgba(168,85,247,0.15)]' },
+    info:    { border: 'border-emerald-500/30', bg: 'bg-emerald-500/[0.07]', icon: 'text-emerald-400', glow: 'shadow-[0_0_30px_rgba(16,185,129,0.15)]' },
   };
   const s = styles[rendered.type] || styles.info;
 
@@ -1144,11 +1144,10 @@ ${currentMessage.text}
   const objetivo = aiResult?.objetivo || 'ventas';  // ← acá} //setAiResult(parsed);
 
   return (
-    <div className="min-h-screen bg-[#020203] text-white font-sans selection:bg-purple-500/50 overflow-x-hidden">
-      <DottedBackground />
+     <div className="min-h-screen bg-[#020203] text-white font-sans selection:bg-emerald-500/50 overflow-x-hidden">      <DottedBackground />
       <GemToast notice={gemNotice} onClose={() => setGemNotice(null)} />
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-5%] left-[-5%] w-[45%] h-[45%] bg-purple-600/[0.04] blur-[120px] rounded-full" />
+        <div className="absolute top-[-5%] left-[-5%] w-[45%] h-[45%] bg-emerald-600/[0.04] blur-[120px] rounded-full" />
         <div className="absolute bottom-[-5%] right-[-5%] w-[45%] h-[45%] bg-blue-600/[0.04] blur-[120px] rounded-full" />
       </div>
 
@@ -1187,10 +1186,10 @@ ${currentMessage.text}
                 {GEM_PACKAGES.map((pkg) => {
                   const savings = pkg.id === 'pro' ? 'Ahorrás 50% vs Starter' : pkg.id === 'elite' ? 'Ahorrás 75% vs Starter' : null;
                   const cardInner = (
-                    <div
+                    <divs
                       className={`relative flex items-center justify-between p-5 cursor-pointer transition-all hover:scale-[1.02]
                         ${pkg.id === 'elite' ? 'rounded-[1.9rem] bg-[#0d0d0f] hover:bg-yellow-500/10'
-                        : pkg.popular ? 'rounded-[2rem] border border-purple-500/50 bg-purple-500/10 hover:bg-purple-500/15'
+                        : pkg.popular ? 'rounded-[2rem] border border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/15'
                         : 'rounded-[2rem] border border-white/10 bg-white/[0.02] hover:border-white/20'}`}
                       onClick={() => handleBuyGems(pkg)}
                     >
@@ -1276,10 +1275,10 @@ ${currentMessage.text}
   </div>
 
   <div className="flex items-center gap-4">
-    <div onClick={() => setShowGemStore(true)}
-      className="flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(168,85,247,0.1)] transition-all hover:bg-purple-500/20 cursor-pointer">
-      <Gem className="w-4 h-4 text-purple-400" fill="currentColor" />
-      <span className="text-purple-300 font-black italic tracking-tighter tabular-nums text-lg leading-none">{gems}</span>
+   <div onClick={() => setShowGemStore(true)}
+  className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all hover:bg-emerald-500/20 cursor-pointer">
+  <Gem className="w-4 h-4 text-emerald-400" fill="currentColor" />
+  <span className="text-emerald-300 font-black italic tracking-tighter tabular-nums text-lg leading-none">{gems}</span>
     </div>
     {step === 'results' && (
       <button onClick={() => window.location.reload()} className="bg-white/5 border border-white/10 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 hover:bg-white/20 active:scale-95">
@@ -1377,9 +1376,9 @@ ${currentMessage.text}
           -webkit-text-fill-color: transparent;
         }
       `}</style>
-      <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-        <Microscope className="w-3 h-3" /> INTEGRADA CON IA 
-      </div>
+      <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
+    <Microscope className="w-3 h-3" /> INTEGRADA CON IA 
+     </div>
       <h1 className="text-2xl sm:text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4 leading-tight max-w-5xl mx-auto whitespace-nowrap">
   Sabé por qué tu video{' '}
   <InlineRotatingWord words={['va a explotar 🔥', 'se va a estancar ⚠️', 'necesita un cambio 💪']} />
@@ -1427,9 +1426,9 @@ ${currentMessage.text}
   <div className="max-w-2xl mx-auto animate-in slide-in-from-bottom-10 duration-500">
     <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-8 md:p-12 shadow-2xl overflow-y-auto max-h-[88vh]">
       <div className="mb-10 text-center">
-        <div className="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/20 px-4 py-1.5 rounded-full text-purple-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-          <TrendingUp className="w-3 h-3" /> Paso previo al análisis
-        </div>
+        <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
+       <TrendingUp className="w-3 h-3" /> Paso previo al análisis
+     </div>
         <h3 className="text-3xl font-black italic uppercase tracking-tighter">
           Configurá el análisis
         </h3>
@@ -1452,22 +1451,23 @@ ${currentMessage.text}
       <button
         key={p.id}
         onClick={() => setSelectedPlatform(p.id)}
-        className={`relative flex flex-col items-center gap-1.5 p-4 rounded-[1.25rem] border transition-all duration-200 overflow-hidden
-          ${selectedPlatform === p.id
-            ? 'border-purple-500/50 bg-purple-500/[0.08]'
-            : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:bg-white/[0.04] hover:-translate-y-px'}`}
-      >
-        <div className={`absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full border transition-all duration-200
-          ${selectedPlatform === p.id ? 'bg-purple-500 border-purple-500' : 'border-purple-500/40'}`} />
-        <span className="text-lg leading-none">{p.icon}</span>
-        <span className={`text-[11px] font-black uppercase tracking-wide transition-colors duration-200
-          ${selectedPlatform === p.id ? 'text-slate-200' : 'text-slate-500'}`}>
-          {p.name}
-        </span>
-        <span className={`text-[10px] italic font-bold transition-colors duration-200
-          ${selectedPlatform === p.id ? 'text-purple-400' : 'text-slate-700'}`}>
-          {p.sub}
-        </span>
+        // DESPUÉS
+className={`relative flex flex-col items-center gap-1.5 p-4 rounded-[1.25rem] border transition-all duration-200 overflow-hidden
+  ${selectedPlatform === p.id
+    ? 'border-emerald-500/50 bg-emerald-500/[0.08]'
+    : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:bg-white/[0.04] hover:-translate-y-px'}`}
+>
+  <div className={`absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full border transition-all duration-200
+    ${selectedPlatform === p.id ? 'bg-emerald-500 border-emerald-500' : 'border-emerald-500/40'}`} />
+  <span className="text-lg leading-none">{p.icon}</span>
+  <span className={`text-[11px] font-black uppercase tracking-wide transition-colors duration-200
+    ${selectedPlatform === p.id ? 'text-slate-200' : 'text-slate-500'}`}>
+    {p.name}
+  </span>
+  <span className={`text-[10px] italic font-bold transition-colors duration-200
+    ${selectedPlatform === p.id ? 'text-emerald-400' : 'text-slate-700'}`}>
+    {p.sub}
+  </span>
       </button>
     ))}
   </div>
@@ -1488,26 +1488,27 @@ ${currentMessage.text}
       <button
         key={r.id}
         onClick={() => setSelectedFollowerRange(r.id)}
-        className={`relative flex items-center justify-between px-5 py-4 rounded-[1.25rem] border transition-all duration-200 overflow-hidden text-left
-          ${selectedFollowerRange === r.id
-            ? 'border-purple-500/50 bg-purple-500/[0.08]'
-            : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:-translate-y-px'}`}
-      >
-        <div>
-          <p className={`text-[15px] font-black italic tracking-tight transition-colors duration-200
-            ${selectedFollowerRange === r.id ? 'text-white' : 'text-slate-500'}`}>
-            {r.range}
-          </p>
-          <p className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-200
-            ${selectedFollowerRange === r.id ? 'text-purple-700' : 'text-slate-800'}`}>
-            {r.label}
-          </p>
-        </div>
-        <div className={`w-1.5 h-1.5 rounded-full border transition-all duration-200 shrink-0
-          ${selectedFollowerRange === r.id ? 'bg-purple-500 border-purple-500' : 'border-purple-500/40'}`} />
-        {/* barra inferior animada */}
-        <div className={`absolute bottom-0 left-0 h-[2px] bg-purple-500 rounded-r-full transition-all duration-300
-          ${selectedFollowerRange === r.id ? 'w-full' : 'w-0'}`} />
+       // DESPUÉS
+className={`relative flex items-center justify-between px-5 py-4 rounded-[1.25rem] border transition-all duration-200 overflow-hidden text-left
+  ${selectedFollowerRange === r.id
+    ? 'border-emerald-500/50 bg-emerald-500/[0.08]'
+    : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:-translate-y-px'}`}
+>
+  <div>
+    <p className={`text-[15px] font-black italic tracking-tight transition-colors duration-200
+      ${selectedFollowerRange === r.id ? 'text-white' : 'text-slate-500'}`}>
+      {r.range}
+    </p>
+    <p className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors duration-200
+      ${selectedFollowerRange === r.id ? 'text-emerald-700' : 'text-slate-800'}`}>
+      {r.label}
+    </p>
+  </div>
+  <div className={`w-1.5 h-1.5 rounded-full border transition-all duration-200 shrink-0
+    ${selectedFollowerRange === r.id ? 'bg-emerald-500 border-emerald-500' : 'border-emerald-500/40'}`} />
+  {/* barra inferior animada */}
+  <div className={`absolute bottom-0 left-0 h-[2px] bg-emerald-500 rounded-r-full transition-all duration-300
+    ${selectedFollowerRange === r.id ? 'w-full' : 'w-0'}`} />
       </button>
     ))}
   </div>
@@ -1531,17 +1532,17 @@ ${currentMessage.text}
       <button
         key={n.id}
         onClick={() => setSelectedNicho(n.id)}
-        className={`relative flex items-center justify-between px-5 py-4 rounded-[1.25rem] border transition-all duration-200 text-left
-          ${selectedNicho === n.id
-            ? 'border-purple-500/50 bg-purple-500/[0.08]'
-            : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:-translate-y-px'}`}
-      >
-        <p className={`text-[13px] font-black italic tracking-tight transition-colors duration-200
-          ${selectedNicho === n.id ? 'text-white' : 'text-slate-500'}`}>
-          {n.label}
-        </p>
-        <div className={`w-1.5 h-1.5 rounded-full border transition-all duration-200 shrink-0
-          ${selectedNicho === n.id ? 'bg-purple-500 border-purple-500' : 'border-purple-500/40'}`} />
+className={`relative flex items-center justify-between px-5 py-4 rounded-[1.25rem] border transition-all duration-200 text-left
+  ${selectedNicho === n.id
+    ? 'border-emerald-500/50 bg-emerald-500/[0.08]'
+    : 'border-white/[0.07] bg-white/[0.02] hover:border-white/[0.14] hover:-translate-y-px'}`}
+>
+  <p className={`text-[13px] font-black italic tracking-tight transition-colors duration-200
+    ${selectedNicho === n.id ? 'text-white' : 'text-slate-500'}`}>
+    {n.label}
+  </p>
+  <div className={`w-1.5 h-1.5 rounded-full border transition-all duration-200 shrink-0
+    ${selectedNicho === n.id ? 'bg-emerald-500 border-emerald-500' : 'border-emerald-500/40'}`} />
       </button>
     ))}
   </div>
@@ -1561,7 +1562,7 @@ ${currentMessage.text}
       runScriptAnalysis(selectedPlatform, selectedFollowerRange);
     }
   }}
-  className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all"
+  className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all"
 >
   Iniciar Análisis →
 </button>
@@ -1585,7 +1586,7 @@ ${currentMessage.text}
         value={nichoSugerido}
         onChange={(e) => setNichoSugerido(e.target.value)}
         placeholder="Ej. Estética facial, comida rápida, fitness..."
-        className="bg-transparent text-lg text-white font-bold outline-none border-b border-white/10 focus:border-purple-500 pb-1 w-full resize-none mb-10"
+        className="bg-transparent text-lg text-white font-bold outline-none border-b border-white/10 focus:border-emerald-500 pb-1 w-full resize-none mb-10"
       />
 
       <div className="flex justify-between items-center">
@@ -1595,10 +1596,10 @@ ${currentMessage.text}
         <button
           disabled={!nichoSugerido.trim()}
           onClick={() => runDeepAnalysis(pendingVideoFile, selectedPlatform, nichoSugerido.trim())}
-          className="bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider"
-        >
-          Confirmar y Analizar →
-        </button>
+          className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider"
+>
+  Confirmar y Analizar →
+</button>
       </div>
     </div>
   </div>
@@ -1636,12 +1637,12 @@ ${currentMessage.text}
         {step === 'analyzing' && (
           <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-12">
             <div className="relative">
-              <div className={`w-56 h-56 rounded-full border-[8px] border-white/5 animate-spin ${analysisMode === 'video' ? 'border-t-purple-600' : 'border-t-indigo-600'}`} />
+              <div className={`w-56 h-56 rounded-full border-[8px] border-white/5 animate-spin ${analysisMode === 'video' ? 'border-t-emerald-600' : 'border-t-indigo-600'}`} />
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="text-4xl font-black italic">{analysisProgress}%</span>
               </div>
             </div>
-            <p className={`${analysisMode === 'video' ? 'text-purple-400' : 'text-indigo-400'} font-bold animate-pulse text-lg tracking-tight uppercase`}>{statusText}</p>
+            <p className={`${analysisMode === 'video' ? 'text-emerald-400' : 'text-indigo-400'} font-bold animate-pulse text-lg tracking-tight uppercase`}>{statusText}</p>
             <p className="text-slate-600 text-[11px] font-medium italic tracking-wide text-center max-w-xs"
             style={{
     background: 'linear-gradient(90deg, #475569 0%, #94a3b8 40%, #cbd5e1 50%, #94a3b8 60%, #475569 100%)',
@@ -1726,7 +1727,7 @@ ${currentMessage.text}
     <div className="lg:col-span-8 space-y-6">
   <ShinyCard tilt={tilt} className="bg-white/[0.02] border border-white/10 p-10 rounded-[4rem]">
     <div className="flex items-center gap-4 mb-6">
-      <Target className="text-purple-400 w-5 h-5" />
+      <Target className="text-emerald-400 w-5 h-5" />
       <h3 className="text-2xl font-black italic uppercase tracking-tighter">Devolución</h3>
     </div>
     <div className="text-sm leading-relaxed text-slate-300">
@@ -1772,18 +1773,18 @@ ${currentMessage.text}
         </div>
       )}
       {msg.role === 'user' && (
-        <div className="w-7 h-7 rounded-full bg-purple-500/20 border border-purple-500/25 flex items-center justify-center flex-shrink-0 mt-0.5">
-          <span className="text-[9px] font-black text-purple-300">TÚ</span>
-        </div>
-      )}
+  <div className="w-7 h-7 rounded-full bg-emerald-500/20 border border-emerald-500/25 flex items-center justify-center flex-shrink-0 mt-0.5">
+    <span className="text-[9px] font-black text-emerald-300">TÚ</span>
+  </div>
+)}
 
       {/* Bubble + botón copiar agrupados */}
       <div className="flex flex-col gap-1 max-w-[78%]">
         <div className={`px-4 py-3 text-sm leading-relaxed font-medium ${
-          msg.role === 'user'
-            ? 'bg-purple-600/15 border border-purple-500/20 rounded-sm rounded-tl-2xl rounded-bl-2xl rounded-br-2xl text-purple-100/90'
-            : 'bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-white/80'
-        }`}>
+  msg.role === 'user'
+    ? 'bg-emerald-600/15 border border-emerald-500/20 rounded-sm rounded-tl-2xl rounded-bl-2xl rounded-br-2xl text-emerald-100/90'
+    : 'bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-white/80'
+}`}>
           {msg.role === 'bot' ? renderBotText(msg.text) : msg.text}
         </div>
 
