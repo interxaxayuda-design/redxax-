@@ -13,7 +13,8 @@ import {
   buildChatContextBlock,
   buildChatSystemPrompt,
   buildFinalReviewPrompt,
-  buildNicheSuggestionPrompt
+  buildNicheSuggestionPrompt,
+  buildRetencionAnalysisPrompt,
 } from './prompts.js';
 
 import { createClient } from '@supabase/supabase-js';
