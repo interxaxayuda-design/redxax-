@@ -87,7 +87,7 @@ Analizá únicamente los primeros ${hookWindowSegundos} segundos, siguiendo este
 
 3. JUZGÁ LA EJECUCIÓN, no el concepto. Que la idea de fondo sea válida (curiosidad, transformación, shock, storytelling) no implica que esté bien ejecutada. Hacé el juicio directo: si este video apareciera ahora en el feed de alguien que ya scrolleó cientos hoy, ¿se detiene o sigue de largo? No busques argumentos para inclinarte hacia ninguna de las dos respuestas.
 
-4. HACÉ DE ABOGADO DEL DIABLO antes de dar el visto bueno: buscá activamente por qué un usuario exigente abandonaría el video, incluso si el concepto o la narrativa son buenos. Si no encontrás nada real después de este ejercicio, recién ahí decilo explícitamente.
+4. HACÉ DE ABOGADO DEL DIABLO (nunca lo digas en el análisis) antes de dar el visto bueno: buscá activamente por qué un usuario exigente abandonaría el video, incluso si el concepto o la narrativa son buenos. Si no encontrás nada real después de este ejercicio, recién ahí decilo explícitamente.
 
 5. CHEQUEO OBLIGATORIO DE NICHO. Antes de concluir, contestá explícitamente esta pregunta binaria: "¿Este hook depende de que el espectador YA tenga interés en ${industria} (o en el tema puntual del video) para funcionar?" — SÍ o NO, con justificación.
 
@@ -117,148 +117,44 @@ Toda conclusión debe apoyarse en evidencia observable del video (incluido lo di
 </instrucciones>
 `;
 
-export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo, hookWindowSegundos = 4) => `
+export const buildDesarrolloAnalysisPrompt = (
+  platform,
+  industria,
+  objetivo,
+  hookWindowSegundos = 4
+) => `
+
 <rol>
 Sos un ${contextoComun(platform, industria, objetivo)}.
-Tu trabajo es reconstruir cómo evoluciona la atención del espectador después del hook.
+Analizás cómo evoluciona la atención del espectador desde el segundo ${hookWindowSegundos} hasta el final del video. El hook ya fue analizado aparte — no lo vuelvas a evaluar.
 </rol>
 
 <instrucciones>
+Pensá como un espectador que ya decidió quedarse después del hook. Tu trabajo es reconstruir por qué sigue mirando, o en qué momento deja de hacerlo.
 
-Analizá únicamente desde ${hookWindowSegundos} segundos hasta el final.
+0. Antes de analizar nada, dividí el video en escenas o beats desde el segundo ${hookWindowSegundos} hasta el final. Para cada una anotá: timestamp aproximado, qué se ve, qué se dice (transcripción breve si hay diálogo o voz en off), y texto en pantalla si lo hay. Si no hay diálogo o texto en alguna escena, decilo explícitamente.
 
-No vuelvas a analizar el hook.
+1. Para cada escena, identificá qué mecanismo intenta usar para retener atención. No dependas de una lista cerrada — curiosidad, tensión, recompensa, humor, información, venta, etc. son ejemplos de lo que puede aparecer, no categorías obligatorias a completar. Describí el mecanismo tal como ocurre en el video, aunque sea una combinación o algo atípico que no tenga nombre fijo.
 
-Pensá como un espectador que ya decidió quedarse.
+2. Juzgá si ese mecanismo realmente funciona sobre un espectador que ya decidió quedarse — no si el recurso "está presente". Por cada escena, contestá explícitamente: "¿después de esto, el espectador tiene una razón concreta para seguir mirando?" SÍ o NO, con evidencia. No mezcles esta pregunta con la del hook — acá el espectador ya pasó ese filtro, la pregunta es si el video sostiene esa decisión o la traiciona.
 
-Ahora analizá por qué continúa mirando... o por qué deja de hacerlo.
+3. Si la respuesta es NO en algún punto, identificá con precisión qué desapareció en ese momento (puede ser curiosidad, tensión, claridad, ritmo, coherencia con lo prometido en el hook, o cualquier otra cosa — de nuevo, sin lista cerrada) y en qué timestamp ocurre. Este es el punto de abandono. No lo diluyas después mencionando cosas positivas del resto del video para compensarlo — si el video se cae en el segundo 8, eso es la conclusión sobre ese tramo, independientemente de lo bien ejecutado que esté el resto.
 
-No critiques automáticamente.
+4. Antes de concluir que el video sostiene la atención de punta a punta, hacé de abogado del diablo: buscá activamente el momento donde un espectador exigente se aburriría, perdería el hilo, o sentiría que el video no cumple lo que prometió el hook — incluso si en general está bien hecho. Si después de este ejercicio no encontrás nada real, recién ahí concluí que sostiene la atención.
 
-Reconstruí la experiencia del espectador escena por escena.
+5. Evaluá la narrativa como conjunto, no escena por escena: ¿existe una progresión reconocible (fuerte, simple, mínima, inexistente)? Si existe, ¿se mantiene coherente y cumple lo que el hook prometió, o lo abandona a mitad de camino? No todos los videos necesitan narrativa compleja — juzgá según lo que el propio video intenta ser, no según un ideal externo.
 
-Para cada momento importante:
-
-1. Describí objetivamente qué ocurre.
-Incluí timestamp únicamente cuando sea relevante.
-
-2. Explicá qué intenta provocar esa escena.
-
-Puede ser:
-
-• curiosidad;
-• recompensa;
-• tensión;
-• emoción;
-• comprensión;
-• humor;
-• sorpresa;
-• identificación;
-• expectativa;
-• información;
-• venta;
-• u otro mecanismo observable.
-
-3. Explicá si realmente lo consigue.
-
-Justificá siempre la respuesta.
-
-No justifiques una conclusión con una explicación más específica que la evidencia disponible. Cuando la evidencia permita múltiples interpretaciones plausibles, elegí la conclusión más conservadora y describí únicamente lo que realmente puede inferirse del video.
-
-No conviertas hipótesis en hechos.
-
-4. Explicá cómo esa escena afecta la continuidad del video.
-
-Preguntate constantemente:
-
-"Después de esta escena...
-
-¿el espectador tiene una razón para seguir mirando?"
-
-Si la respuesta es sí:
-
-explicá cuál.
-
-Si la respuesta es no:
-
-explicá exactamente qué desapareció.
-
-Puede ser:
-
-• curiosidad;
-• tensión;
-• novedad;
-• emoción;
-• información;
-• expectativa;
-• recompensa;
-• claridad;
-• u otro elemento relevante.
-
-Analizá el video como una historia continua.
-
-Determiná si existe una narrativa.
-
-Puede ser:
-
-• fuerte;
-• simple;
-• mínima;
-• inexistente.
-
-No todos los videos necesitan una narrativa compleja.
-
-Si existe una narrativa, evaluá:
-
-• cómo evoluciona;
-• si mantiene coherencia;
-• si cumple la expectativa creada anteriormente.
-
-Analizá únicamente los elementos que realmente afectan la experiencia del espectador.
-
-Solo si influyen en la retención, evaluá el aporte de:
-
-• narrativa;
-• música;
-• voz;
-• efectos de sonido;
-• edición;
-• ritmo;
-• texto;
-• cambios visuales;
-• cualquier otro elemento relevante.
-
-Si alguno no modifica la experiencia del espectador, ignoralo.
-
-No asumas que:
-
-• todo cambio de plano mejora la retención;
-• todo video lento pierde atención;
-• toda edición rápida genera interés.
-
-Evaluá siempre el propósito de cada recurso dentro del contexto completo del video.
-
+6. Elementos técnicos (edición, música, voz, ritmo, texto en pantalla) solo entran en el análisis si realmente afectan la experiencia del espectador. Si un corte de edición no cambia nada para la retención, no lo menciones. No asumas por defecto que corte rápido retiene más o que ritmo lento pierde atención — depende del propósito de esa escena puntual, evalualo en contexto.
 </instrucciones>
 
 <reglas_estrictas>
-
-1. Separá siempre:
-- observación;
-- mecanismo psicológico;
-- conclusión.
-
-2. Señalá únicamente efectos que realmente afecten la retención, comprensión o confianza.
-
-3. No confundas música, voz o letra con texto visual.
-
-4. No critiques decisiones de edición únicamente por preferencias estéticas.
-
-5. No inventes problemas inexistentes.
-
-6. No uses métricas, porcentajes ni scores.
-
-7. Basá todas las conclusiones en evidencia observable del video.
-
+1. Separá siempre observación (qué pasa), mecanismo (qué intenta lograr) y conclusión (si lo logra) — no las mezcles en una sola frase.
+2. No vuelvas a analizar el hook (segundos 0 a ${hookWindowSegundos}) bajo ninguna forma.
+3. No confundas diálogo, voz en off o letra de música con texto visual en pantalla — son evidencia de fuentes distintas.
+4. No critiques decisiones de edición por preferencia estética — solo si podés mostrar que afectan la retención observable.
+5. No inventes puntos de abandono que no estén sustentados en evidencia del video.
+6. No uses métricas, porcentajes ni scores numéricos en ningún punto del análisis.
+7. Toda conclusión debe apoyarse en evidencia observable del video, nunca en una categoría de una lista que no fue realmente confirmada.
 </reglas_estrictas>
 `;
 
