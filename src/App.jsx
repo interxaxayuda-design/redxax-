@@ -12,9 +12,10 @@ import {
   REVIEW_CONFIG,
   buildChatContextBlock,
   buildChatSystemPrompt,
+  buildDesarrolloAnalysisPrompt,
   buildFinalReviewPrompt,
+  buildHookAnalysisPrompt,
   buildNicheSuggestionPrompt,
-  buildRetencionAnalysisPrompt,
 } from './prompts.js';
 
 import { createClient } from '@supabase/supabase-js';
@@ -22,7 +23,7 @@ const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso';
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 //
-//
+
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
 
 const PLATFORMS = [
@@ -850,43 +851,61 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
 //
     const cfg = REVIEW_CONFIG;
 
-const retencionRes = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildRetencionAnalysisPrompt(platform, industria, selectedObjetivo),
-    storagePath,
-    videoMimeType: mimeType,
-    videoFps: cfg.retencion.videoFps,
-    temperature: cfg.retencion.temperature,
-    expectsJson: false,
-    maxOutputTokens: 4096,
-  },
-});
+    const [hookRes, desarrolloRes] = await Promise.all([
+      supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildHookAnalysisPrompt(platform, industria, selectedObjetivo),
+          storagePath,
+          videoMimeType: mimeType,
+          videoFps: cfg.hook.videoFps,
+          temperature: cfg.hook.temperature,
+          expectsJson: false,
+          maxOutputTokens: 2048,
+        },
+      }),
+      supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo),
+          storagePath,
+          videoMimeType: mimeType,
+          videoFps: cfg.desarrollo.videoFps,
+          temperature: cfg.desarrollo.temperature,
+          expectsJson: false,
+          maxOutputTokens: 2048,
+        },
+      }),
+    ]);
 
-if (retencionRes.error) throw new Error(retencionRes.error.message);
-const retencionAnalysis = extractGeminiText(retencionRes.data);
+    if (hookRes.error) throw new Error(hookRes.error.message);
+    if (desarrolloRes.error) throw new Error(desarrolloRes.error.message);
 
-setAnalysisProgress(70);
-setStatusText('Redactando la devolución final...');
+    const hookAnalysis = extractGeminiText(hookRes.data);
+    const desarrolloAnalysis = extractGeminiText(desarrolloRes.data);
 
-const { data: sintesisData, error: sintesisError } = await supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildFinalReviewPrompt(retencionAnalysis, platform, industria, selectedObjetivo),
-    temperature: cfg.sintesis.temperature,
-    expectsJson: false,
-    maxOutputTokens: 3072,
-  },
-});
-if (sintesisError) throw new Error(sintesisError.message);
+    setAnalysisProgress(70);
+    setStatusText('Redactando la devolución final...');
 
-const reviewText = extractGeminiText(sintesisData);
+    const { data: sintesisData, error: sintesisError } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, selectedObjetivo),
+        // sin storagePath: la síntesis no necesita ver el video de nuevo
+        temperature: cfg.sintesis.temperature,
+        expectsJson: false,
+        maxOutputTokens: 3072,
+      },
+    });
+    if (sintesisError) throw new Error(sintesisError.message);
 
-const finalResult = {
-  reviewText,
-  retencionAnalysis,
-  industria,
-  platform,
-  objetivo: selectedObjetivo,
-};
+    const reviewText = extractGeminiText(sintesisData);
+
+    const finalResult = {
+      reviewText,
+      hookAnalysis,
+      desarrolloAnalysis,
+      industria,
+      platform,
+      objetivo: selectedObjetivo,
+    };
 
     setAiResult(finalResult);
     setCompletedSteps([]);
