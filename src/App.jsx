@@ -1402,10 +1402,10 @@ ${currentMessage.text}
 
   <ComingSoonRibbon text="Próximamente" />
 </div>
-      <label className="group relative block border-2 border-dashed border-white/10 hover:border-purple-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
-        <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-purple-400 group-hover:scale-110 transition-all duration-500" />
-        <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
-        <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Corrigue tu video</p>
+<label className="group relative block border-2 border-dashed border-white/10 hover:border-emerald-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
+  <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-emerald-400 group-hover:scale-110 transition-all duration-500" />
+  <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
+  <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Corrigue tu video</p>
         <input type="file" className="hidden" accept="video/*" onChange={(e) => {
           const file = e.target.files[0];
           if (file) {
