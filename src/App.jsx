@@ -1257,12 +1257,12 @@ ${currentMessage.text}
     }
   `}</style>
 
-  <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
-<img
-  src={logo}
-  alt="Virax logo"
-  className="w-11 h-11 rounded-full object-contain shadow-lg"
-/>
+ <div className="w-11 h-11 rounded-full bg-[#020203] flex items-center justify-center shadow-lg overflow-hidden">
+  <img
+    src={logo}
+    alt="logo.png"
+    className="w-9 h-9 object-contain"
+  />
     <div className="flex flex-col leading-tight">
       <h1 className="virax-text text-2xl font-black tracking-tighter italic uppercase">
         VIRAX
