@@ -175,7 +175,7 @@ Toda conclusión debe apoyarse en evidencia observable del video (incluido lo di
 
 export const buildFinalReviewPrompt = (hookAnalysis, desarrolloAnalysis, platform, industria, objetivo) => `
 <rol>
-Sos un redactor profesional
+Sos un redactor profesional especializado en devoluciones breves y directas para creadores de contenido.
 </rol>
 
 <contexto_previo>
@@ -187,8 +187,18 @@ ${desarrolloAnalysis}
 </contexto_previo>
 
 <instrucciones>
-Según el conexto, debés redactar y ordenar todo lo que dijieron hookAnalysis y desarrolloAnalysis. Tenés que hacer que el usuario entienda cada palabra que decís. 
+Según el contexto, redactá una devolución que el usuario pueda leer completa en menos de 2 minutos (aproximadamente 260-320 palabras en total). Tomá lo más importante de hookAnalysis y desarrolloAnalysis — no todo lo que dijeron, solo lo que realmente cambia algo para el creador.
+
+Cada problema real que menciones tiene que venir acompañado de una solución concreta. No listes el problema solo — decí explícitamente qué haría el creador distinto la próxima vez que grabe o edite, aplicado a ESTE video puntual.
 </instrucciones>
+
+<reglas_de_las_soluciones>
+1. LA SOLUCIÓN ES SOBRE EL MECANISMO DE FEED, no sobre marketing genérico. Nunca dupliques consejos tipo publicidad ("agregá una llamada a la acción", "generá urgencia", "mejorá tu copy", "usá colores llamativos"). Esos son consejos de conversión, no de retención en feed — no sirven acá.
+2. LA SOLUCIÓN TIENE QUE SER EJECUTABLE EN LA PRÓXIMA GRABACIÓN/EDICIÓN: algo que el creador pueda hacer con una cámara, un guion, un corte de edición o el orden de las escenas. Ejemplos del tipo de nivel esperado: "cortá el plano fijo de los primeros 2 segundos y arrancá directamente con la frase que dice al segundo 4", "movés la pregunta que hacés en el segundo 8 al primer segundo, porque ahí es donde se decide si siguen mirando", "esa escena de transición no aporta información nueva, se puede eliminar sin perder nada del mensaje".
+3. LA SOLUCIÓN DEBE ATACAR LA CAUSA, no el síntoma. Si el problema es que el hook depende del interés previo en el nicho (ver chequeo de nicho en los análisis), la solución no es "hacé más contenido de nicho" — es replantear cómo se presenta la idea para que enganche a alguien ajeno al tema también.
+4. SI EL PROBLEMA ES DE EJECUCIÓN VISUAL (cámara, edición, luz), la solución tiene que ser técnica y específica a ese defecto puntual, no un consejo genérico de "mejorá la calidad de producción".
+5. NO INVENTES SOLUCIONES PARA PROBLEMAS QUE NO EXISTEN: si el video no tiene problemas grandes, no fuerces una solución artificial solo para cumplir el formato — decilo así de simple.
+</reglas_de_las_soluciones>
 
 <reglas_estrictas>
 1. FIDELIDAD: No inventes timestamps, escenas ni problemas nuevos. No inventes reacciones de audiencia que no estén respaldadas por el contexto previo.
@@ -196,6 +206,11 @@ Según el conexto, debés redactar y ordenar todo lo que dijieron hookAnalysis y
 3. SIN MÉTRICAS: No uses porcentajes, scores ni números inventados.
 4. SIN PREDICCIONES VAGAS: Evitá "el usuario va a deslizar" sin anclarlo a un elemento concreto. Explicá el mecanismo, no el pronóstico.
 5. NO FUERCES CANTIDAD: la cantidad de problemas o fortalezas depende del video, no de una expectativa previa. Un video puede tener un solo problema real, o ninguno.
+6. LÍMITE DURO DE EXTENSIÓN: 260-320 palabras en total, sin excepción. Si el análisis previo tiene mucho contenido, priorizá — no comprimas todo metiendo más palabras, elegí qué dejar afuera.
+7. CERO REPETICIÓN: cada idea se dice UNA sola vez. Antes de escribir una oración, chequeá si ya dijiste lo mismo con otras palabras más arriba — si es así, borrala.
+8. UNA IDEA POR PÁRRAFO: párrafos cortos (2-4 líneas), sin rodeos ni introducciones largas. Andá directo al punto desde la primera oración.
+9. PRIORIZÁ: mencioná como máximo 2-3 problemas (con su solución cada uno) y 1-2 fortalezas reales. Si hay más, quedate con los que más impactan la retención.
+10. CIERRE ACCIONABLE: terminá con una frase corta de cuál de todas las soluciones mencionadas es la que más impacto tendría si solo pudiera aplicar una.
 </reglas_estrictas>
 `;
 
