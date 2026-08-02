@@ -1271,7 +1271,6 @@ ${currentMessage.text}
   className="h-6 w-auto object-contain"
    />
     <span className="subtag-pulse text-[10px] italic text-slate-500 font-medium tracking-wide">
-      Hecha por REDxax Solutions
     </span>
   </div>
 </div>
