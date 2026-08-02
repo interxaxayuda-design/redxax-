@@ -187,17 +187,32 @@ ${desarrolloAnalysis}
 </contexto_previo>
 
 <instrucciones>
-Según el contexto, redactá una devolución que el usuario pueda leer completa en menos de 2 minutos (aproximadamente 260-320 palabras en total). Tomá lo más importante de hookAnalysis y desarrolloAnalysis — no todo lo que dijeron, solo lo que realmente cambia algo para el creador.
+Según el contexto, redactá una devolución que el usuario pueda leer en aproximadamente 2 minutos (guía orientativa: 260-320 palabras). Este número es una guía, NO un techo rígido: si hay información importante del análisis que se pierde por cumplir el límite, priorizá la información completa por sobre el límite exacto de palabras. Es preferible que el usuario lea 100 palabras de más a que se quede sin un dato que cambia cómo entiende su video.
 
-Cada problema real que menciones tiene que venir acompañado de una solución concreta. No listes el problema solo — decí explícitamente qué haría el creador distinto la próxima vez que grabe o edite, aplicado a ESTE video puntual.
+Tomá lo más importante de hookAnalysis y desarrolloAnalysis — no todo lo que dijeron palabra por palabra, pero sí todas las conclusiones que tengan peso real, no solo las más fáciles de resumir.
 </instrucciones>
+
+<contenido_obligatorio>
+El análisis del hook y el análisis del desarrollo incluyen cada uno un "chequeo de nicho" (si el hook/desarrollo depende de que el espectador ya tenga interés previo en el tema, o si funciona para cualquiera). ESTE CHEQUEO ES INFORMACIÓN OBLIGATORIA — nunca lo omitas ni lo resumas a una sola palabra suelta. Si el resultado fue "depende del interés previo", explicá concretamente qué parte del video asume ese interés y por qué eso limita el alcance. Si fue "no depende", mencionalo también brevemente, como un punto a favor real (no como relleno).
+
+Si en algún momento tenés que elegir entre recortar palabras y recortar el chequeo de nicho, recortá otra cosa. Este punto es tan importante como los problemas de retención en sí.
+</contenido_obligatorio>
+
+<contexto_de_feed_saturado>
+Cada solución que propongas tiene que estar pensada para un feed saturado: el espectador ya vio decenas o cientos de videos antes que el suyo hoy, tiene el pulgar prácticamente en automático, y no le debe nada a este video en particular — ni tiempo, ni paciencia, ni beneficio de la duda. No está esperando este contenido, no lo buscó, y lo va a abandonar ante la mínima señal de aburrimiento, familiaridad o esfuerzo cognitivo.
+
+Esto significa que:
+- Una solución que funcionaría en un contexto de "espectador atento" (una charla, un video buscado a propósito, un cliente ya interesado) puede no servir de nada en el feed. Descartá soluciones que asuman paciencia o interés previo del espectador.
+- Priorizá siempre soluciones que actúen en el primer segundo o los primeros segundos posibles — cuanto más tarde en el video se resuelve el problema, menos gente lo llega a ver resuelto.
+- Tené en cuenta que el usuario ya vio ese mismo tipo de plano, esa misma frase de apertura, o ese mismo recurso miles de veces en otros videos del mismo nicho — la solución tiene que diferenciar al video de ese ruido de fondo, no repetir la fórmula que ya está saturada en el feed.
+</contexto_de_feed_saturado>
 
 <reglas_de_las_soluciones>
 1. LA SOLUCIÓN ES SOBRE EL MECANISMO DE FEED, no sobre marketing genérico. Nunca dupliques consejos tipo publicidad ("agregá una llamada a la acción", "generá urgencia", "mejorá tu copy", "usá colores llamativos"). Esos son consejos de conversión, no de retención en feed — no sirven acá.
-2. LA SOLUCIÓN TIENE QUE SER EJECUTABLE EN LA PRÓXIMA GRABACIÓN/EDICIÓN: algo que el creador pueda hacer con una cámara, un guion, un corte de edición o el orden de las escenas. Ejemplos del tipo de nivel esperado: "cortá el plano fijo de los primeros 2 segundos y arrancá directamente con la frase que dice al segundo 4", "movés la pregunta que hacés en el segundo 8 al primer segundo, porque ahí es donde se decide si siguen mirando", "esa escena de transición no aporta información nueva, se puede eliminar sin perder nada del mensaje".
-3. LA SOLUCIÓN DEBE ATACAR LA CAUSA, no el síntoma. Si el problema es que el hook depende del interés previo en el nicho (ver chequeo de nicho en los análisis), la solución no es "hacé más contenido de nicho" — es replantear cómo se presenta la idea para que enganche a alguien ajeno al tema también.
-4. SI EL PROBLEMA ES DE EJECUCIÓN VISUAL (cámara, edición, luz), la solución tiene que ser técnica y específica a ese defecto puntual, no un consejo genérico de "mejorá la calidad de producción".
-5. NO INVENTES SOLUCIONES PARA PROBLEMAS QUE NO EXISTEN: si el video no tiene problemas grandes, no fuerces una solución artificial solo para cumplir el formato — decilo así de simple.
+2. LA SOLUCIÓN TIENE QUE SER EJECUTABLE EN LA PRÓXIMA GRABACIÓN/EDICIÓN: algo que el creador pueda hacer con una cámara, un guion, un corte de edición o el orden de las escenas. Ejemplos del nivel esperado: "cortá el plano fijo de los primeros 2 segundos y arrancá directamente con la frase que dice al segundo 4", "movés la pregunta que hacés en el segundo 8 al primer segundo", "esa escena de transición no aporta información nueva, se puede eliminar".
+3. LA SOLUCIÓN DEBE ATACAR LA CAUSA, no el síntoma. Si el problema es que el hook o el desarrollo dependen del interés previo en el nicho, la solución no es "hacé más contenido de nicho" — es replantear cómo se presenta la idea para que enganche a alguien ajeno al tema también. Sé específico sobre CÓMO reformular esa parte puntual del video.
+4. SI EL PROBLEMA ES DE EJECUCIÓN VISUAL (cámara, edición, luz), la solución tiene que ser técnica y específica a ese defecto puntual.
+5. NO INVENTES SOLUCIONES PARA PROBLEMAS QUE NO EXISTEN: si el video no tiene problemas grandes, no fuerces una solución artificial — decilo así de simple.
 </reglas_de_las_soluciones>
 
 <reglas_estrictas>
@@ -205,12 +220,11 @@ Cada problema real que menciones tiene que venir acompañado de una solución co
 2. TONO: Claro, honesto y directo. Proporcional a la gravedad real de lo que encontraste — ni inflado, ni suavizado.
 3. SIN MÉTRICAS: No uses porcentajes, scores ni números inventados.
 4. SIN PREDICCIONES VAGAS: Evitá "el usuario va a deslizar" sin anclarlo a un elemento concreto. Explicá el mecanismo, no el pronóstico.
-5. NO FUERCES CANTIDAD: la cantidad de problemas o fortalezas depende del video, no de una expectativa previa. Un video puede tener un solo problema real, o ninguno.
-6. LÍMITE DURO DE EXTENSIÓN: 260-320 palabras en total, sin excepción. Si el análisis previo tiene mucho contenido, priorizá — no comprimas todo metiendo más palabras, elegí qué dejar afuera.
-7. CERO REPETICIÓN: cada idea se dice UNA sola vez. Antes de escribir una oración, chequeá si ya dijiste lo mismo con otras palabras más arriba — si es así, borrala.
-8. UNA IDEA POR PÁRRAFO: párrafos cortos (2-4 líneas), sin rodeos ni introducciones largas. Andá directo al punto desde la primera oración.
-9. PRIORIZÁ: mencioná como máximo 2-3 problemas (con su solución cada uno) y 1-2 fortalezas reales. Si hay más, quedate con los que más impactan la retención.
-10. CIERRE ACCIONABLE: terminá con una frase corta de cuál de todas las soluciones mencionadas es la que más impacto tendría si solo pudiera aplicar una.
+5. NO FUERCES CANTIDAD: la cantidad de problemas o fortalezas depende del video, no de una expectativa previa.
+6. CERO REPETICIÓN: cada idea se dice UNA sola vez. No repitas la misma conclusión si aparece tanto en el hook como en el desarrollo — decila una vez, en el lugar que corresponda.
+7. UNA IDEA POR PÁRRAFO: párrafos cortos (2-4 líneas), sin rodeos ni introducciones largas. Andá directo al punto desde la primera oración.
+8. PRIORIZÁ PROBLEMAS: mencioná como máximo 2-3 problemas (con su solución cada uno) y 1-2 fortalezas reales, priorizando los que más impactan la retención — pero esto no incluye el chequeo de nicho, que va siempre además de estos.
+9. CIERRE ACCIONABLE: terminá con una frase corta de cuál de todas las soluciones mencionadas es la que más impacto tendría si solo pudiera aplicar una, considerando siempre la lógica de feed saturado.
 </reglas_estrictas>
 `;
 
