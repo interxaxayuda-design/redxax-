@@ -17,6 +17,7 @@ import {
   buildHookAnalysisPrompt,
   buildNicheSuggestionPrompt,
 } from './prompts.js';
+import wordmark from './virax_wordmark.png';
 
 import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co';
@@ -1264,11 +1265,13 @@ ${currentMessage.text}
     className="w-11 h-11 object-contain"
   />
   <div className="flex flex-col leading-tight">
-    <h1 className="virax-text text-2xl font-black tracking-tighter italic uppercase">
-      VIRAX
-    </h1>
+    <img
+  src={wordmark}
+  alt="VIRAX"
+  className="h-6 w-auto object-contain"
+   />
     <span className="subtag-pulse text-[10px] italic text-slate-500 font-medium tracking-wide">
-      Hecha por InterXAX
+      Hecha por REDxax Solutions
     </span>
   </div>
 </div>
