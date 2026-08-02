@@ -1257,22 +1257,21 @@ ${currentMessage.text}
     }
   `}</style>
 
- <div className="w-11 h-11 rounded-full bg-[#020203] flex items-center justify-center shadow-lg overflow-hidden">
-  
-<img
-  src={logo}
-  alt="logo.png"
-  className="w-11 h-11 object-contain"
-/>
-    <div className="flex flex-col leading-tight">
-      <h1 className="virax-text text-2xl font-black tracking-tighter italic uppercase">
-        VIRAX
-      </h1>
-      <span className="subtag-pulse text-[10px] italic text-slate-500 font-medium tracking-wide">
-        Hecha por InterXAX
-      </span>
-    </div>
+ <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.location.reload()}>
+  <img
+    src={logo}
+    alt="logo.png"
+    className="w-11 h-11 object-contain"
+  />
+  <div className="flex flex-col leading-tight">
+    <h1 className="virax-text text-2xl font-black tracking-tighter italic uppercase">
+      VIRAX
+    </h1>
+    <span className="subtag-pulse text-[10px] italic text-slate-500 font-medium tracking-wide">
+      Hecha por InterXAX
+    </span>
   </div>
+</div>
 
   <div className="flex items-center gap-4">
    <div onClick={() => setShowGemStore(true)}
