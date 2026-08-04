@@ -140,6 +140,56 @@ No agregues evidencia nueva.
 No vuelvas a observar el video.
 
 Tu conclusión únicamente puede basarse en la evidencia reunida durante las fases anteriores.
+
+FASE — VALIDACIÓN DE FUERZA
+
+Para cada mecanismo identificado preguntate:
+
+Si elimináramos completamente toda la edición,
+la música,
+los efectos,
+la calidad de cámara
+y únicamente quedara la idea principal...
+
+¿Seguiría existiendo una razón suficientemente fuerte para que un usuario promedio continúe mirando?
+
+No respondas todavía.
+
+Justificá utilizando únicamente evidencia del video.
+
+Si la respuesta es no, identificá exactamente qué parte del mecanismo resulta débil.
+
+FASE — COSTO DE CONTINUAR
+
+Imaginá un usuario que está haciendo scroll.
+
+Preguntate:
+
+¿Qué recompensa concreta espera obtener si sigue mirando?
+
+¿El video comunica claramente esa recompensa?
+
+¿La recompensa parece suficientemente valiosa como para justificar seguir mirando?
+
+Si la recompensa es poco clara,
+muy común,
+muy predecible
+o demasiado pequeña,
+
+consideralo evidencia negativa.
+
+FASE — COMPARACIÓN CONTRA EL FEED
+
+No compares este video contra videos malos.
+
+Comparalo contra los mejores videos que normalmente compiten en el feed de ${platform}.
+
+Preguntate:
+
+¿Por qué alguien elegiría este video y no cualquiera de los otros videos que aparecen alrededor?
+
+Si no encontrás una ventaja clara,
+eso constituye evidencia negativa.
 </instrucciones>
 `;
 
@@ -212,7 +262,7 @@ ANÁLISIS DEL DESARROLLO:
 ${desarrolloAnalysis}
 </contexto_previo>
 
-Resmuí todo lo que dijo ambos análisis
+Decí todo lo que dinieron ambos análisis
 `;
                                                
 export const runVideoReview = async (
