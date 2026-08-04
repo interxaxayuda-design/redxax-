@@ -27,7 +27,7 @@ export const REVIEW_CONFIG = {
   },
   sintesis: {
     model: "gemini-2.5-flash",
-    temperature: 0.0,
+    temperature: 0.35,
     thinkingConfig: { thinkingBudget: 1536 }
   }
 };
@@ -222,15 +222,20 @@ Esto evita que la misma devolución cambie de estructura entre corridas.
 
    d) Generá exactamente tres soluciones alternativas distintas para esa causa raíz.
 
-   e) Para cada una de las tres, contestá SÍ o NO a estas cuatro preguntas, con una justificación de una línea cada una:
+   e) Para cada una de las tres, contestá SÍ o NO a estas cinco preguntas, con una justificación de una línea cada una:
       - ¿Elimina la causa raíz (no el síntoma)?
       - ¿Sobrevive en un feed saturado de ${platform}?
       - ¿Depende únicamente de edición, música o efectos visuales?
       - ¿Es específica y ejecutable en la próxima grabación/edición (no genérica)?
+      - ¿Esta misma solución podría copiarse literalmente a otro video distinto del mismo nicho, sin cambiar una palabra? (Si SÍ, es genérica — descartala aunque cumpla las otras cuatro).
+
+   Descartá automáticamente cualquier alternativa que responda NO en las preguntas 1 y 2, SÍ en la 3, NO en la 4, o SÍ en la 5.
+
+   e.2) ANCLAJE OBLIGATORIO. Cada alternativa que sobrevivió tiene que citar al menos un elemento CONCRETO ya presente en la extracción del punto 0 de este video puntual: un color, un objeto, una palabra exacta dicha, un timestamp, un gesto, algo visualmente único de esta grabación. Si una alternativa no menciona nada específico de este video y podría describirse en términos 100% abstractos ("mostrá el beneficio antes", "generá intriga"), no pasa este filtro — no importa cuán válida suene en teoría.
+
+   f) De las alternativas que sobrevivieron ambos filtros, elegí una sola — la de mayor probabilidad de aumentar retención. Si ninguna sobrevivió, volvé al punto (d) y generá tres nuevas, esta vez forzando variación real entre ellas (no matices de la misma idea).
 
    Descartá automáticamente cualquier alternativa que responda NO en las primeras dos, SÍ en la tercera, o NO en la cuarta.
-
-   f) De las alternativas que sobrevivieron el filtro anterior, elegí una sola — la de mayor probabilidad de aumentar retención. Si ninguna sobrevivió, volvé al punto (d) y generá tres nuevas.
 
    g) CHEQUEO FINAL SIN EDICIÓN (obligatorio, igual lógica que en el análisis del hook y del desarrollo): imaginá el video con la solución elegida ya aplicada, pero grabado con cámara mediocre, sin música, sin efectos, sin edición llamativa — mismo guion, misma estructura. Contestá explícitamente SÍ o NO: "¿un usuario promedio tendría motivo para seguir mirando solo por este cambio, sin ayuda de ningún recurso de edición?"
       - Si NO: la solución es un parche estético, no de causa raíz. Volvé al punto (d).
@@ -267,6 +272,7 @@ LÍMITES DUROS DE EXTENSIÓN (no son sugerencias, son tope):
 Cada solución debe aumentar la capacidad del propio video para generar interés, incluso antes de que exista interés por el tema.
 5. NO INVENTES SOLUCIONES PARA PROBLEMAS QUE NO EXISTEN: si el video no tiene problemas grandes, no fuerces una solución artificial — decilo así de simple.
 6. NINGUNA SOLUCIÓN QUE DEPENDA EXCLUSIVAMENTE DE EDICIÓN, MÚSICA O EFECTOS ES VÁLIDA. Si el punto (g) determinó que una solución solo funciona gracias a recursos de edición, no la entregues.
+7. NADA DE RELLENO PUBLICITARIO EN GUIONES O FRASES SUGERIDAS: si la solución incluye una frase, guion o texto en pantalla sugerido, ese texto tiene que pasar el mismo test de la pregunta 5 del proceso — ¿serviría tal cual pegado en cualquier otro video del mismo nicho? Si la respuesta es sí, no está anclado a este video puntual y hay que reescribirlo citando algo concreto de la escena (el objeto, el color, la acción exacta que se ve). No hay una lista de frases prohibidas — el criterio es siempre ese test, aplicado también al momento de redactar, no solo al elegir la solución.
 </reglas_de_las_soluciones>
 
 <reglas_estrictas>
