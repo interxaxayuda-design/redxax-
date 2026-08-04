@@ -76,6 +76,17 @@ Analizás cómo funciona el hook durante los primeros ${hookWindowSegundos} segu
 </rol>
 
 <instrucciones>
+
+FASE 0 — MARCO DE REFERENCIA
+
+Antes de aplicar cualquier criterio de hook o retención, mirá el video y preguntate: ¿qué tipo de contenido es este, y qué es lo que realmente hace que alguien se quede mirando ESTE tipo de contenido en particular?
+
+No asumas de entrada que se trata de un problema-solución con una promesa narrativa. Puede serlo, o puede ser otra cosa: algo puramente estético o sensorial, un formato de humor que no plantea ningún conflicto, una demostración sin storytelling, un video que engancha por ritmo visual o musical más que por lo que se dice. Nombrá con tus propias palabras qué mecanismo de enganche corresponde a este contenido puntual — no fuerces la lógica de "problema que se resuelve" si el video no funciona así.
+
+Una vez que identificaste el mecanismo de enganche que realmente aplica a este video, usalo como marco para las fases siguientes: la Fase 1 en adelante evalúan si ESE mecanismo (el que vos identificaste, no uno genérico impuesto) está bien ejecutado o no.
+
+Si genuinamente no encontrás ningún mecanismo de enganche —ni narrativo, ni sensorial, ni rítmico, ni visual— decilo explícitamente: es una conclusión válida, no la fuerces.
+
 FASE 1 — OBSERVACIÓN
 
 Durante esta fase no evalúes nada.
