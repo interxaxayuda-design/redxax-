@@ -187,47 +187,92 @@ ${desarrolloAnalysis}
 </contexto_previo>
 
 <instrucciones>
-Según el contexto, redactá una devolución que el usuario pueda leer en aproximadamente 2 minutos (guía orientativa: 260-320 palabras). Este número es una guía, NO un techo rígido: si hay información importante del análisis que se pierde por cumplir el límite, priorizá la información completa por sobre el límite exacto de palabras. Es preferible que el usuario lea 100 palabras de más a que se quede sin un dato que cambia cómo entiende su video.
 
-Tomá lo más importante de hookAnalysis y desarrolloAnalysis — no todo lo que dijeron palabra por palabra, pero sí todas las conclusiones que tengan peso real, no solo las más fáciles de resumir.
+0. EXTRACCIÓN LITERAL (obligatoria, antes de razonar nada).
+
+Antes de generar cualquier solución, armá una lista interna con TODO lo que el ANÁLISIS DEL HOOK y el ANÁLISIS DEL DESARROLLO ya afirman explícitamente:
+
+- Problemas mencionados en el hook, en el orden en que aparecen.
+- Problemas mencionados en el desarrollo, en el orden en que aparecen.
+- La respuesta del chequeo de nicho del hook (SÍ/NO) y su justificación.
+- La respuesta del chequeo de nicho del desarrollo (SÍ/NO) y su justificación.
+- Fortalezas mencionadas explícitamente, si las hay.
+
+No agregues ningún problema, matiz o fortaleza que no esté escrito en el contexto previo. No reinterpretes ni "completes" lo que el análisis no dijo. Si un análisis no menciona problemas, la lista de problemas de esa sección queda vacía — no la rellenes.
+
+Esta lista es la única fuente de verdad para todo lo que sigue. Cualquier solución que propongas tiene que estar atada a un ítem concreto de esta lista.
+
+1. ORDEN DE PROCESAMIENTO FIJO.
+
+Procesá los ítems de la lista siempre en este orden, sin reordenar por gravedad ni por preferencia:
+
+1) Problemas del hook (en el orden en que aparecieron).
+2) Problemas del desarrollo (en el orden en que aparecieron).
+3) Chequeo de nicho (hook y desarrollo combinados, si ambos dieron SÍ o si alguno dio SÍ).
+
+Esto evita que la misma devolución cambie de estructura entre corridas.
+
+2. PARA CADA PROBLEMA DE LA LISTA, seguí este proceso — sin saltear pasos, sin combinarlos:
+
+   a) Confirmá el problema citando la evidencia puntual que ya está en el análisis previo (no inventes evidencia nueva). Si la evidencia no alcanza, descartá el problema y no le generes solución.
+
+   b) Causa raíz: contestá explícitamente "¿qué decisión concreta del creador produjo esto?" — una sola frase, sin rodeos.
+
+   c) Efecto buscado: contestá explícitamente "¿qué tendría que pasar en ese momento del video para darle al usuario una razón más fuerte para seguir mirando?"
+
+   d) Generá exactamente tres soluciones alternativas distintas para esa causa raíz.
+
+   e) Para cada una de las tres, contestá SÍ o NO a estas cuatro preguntas, con una justificación de una línea cada una:
+      - ¿Elimina la causa raíz (no el síntoma)?
+      - ¿Sobrevive en un feed saturado de ${platform}?
+      - ¿Depende únicamente de edición, música o efectos visuales?
+      - ¿Es específica y ejecutable en la próxima grabación/edición (no genérica)?
+
+   Descartá automáticamente cualquier alternativa que responda NO en las primeras dos, SÍ en la tercera, o NO en la cuarta.
+
+   f) De las alternativas que sobrevivieron el filtro anterior, elegí una sola — la de mayor probabilidad de aumentar retención. Si ninguna sobrevivió, volvé al punto (d) y generá tres nuevas.
+
+   g) CHEQUEO FINAL SIN EDICIÓN (obligatorio, igual lógica que en el análisis del hook y del desarrollo): imaginá el video con la solución elegida ya aplicada, pero grabado con cámara mediocre, sin música, sin efectos, sin edición llamativa — mismo guion, misma estructura. Contestá explícitamente SÍ o NO: "¿un usuario promedio tendría motivo para seguir mirando solo por este cambio, sin ayuda de ningún recurso de edición?"
+      - Si NO: la solución es un parche estético, no de causa raíz. Volvé al punto (d).
+      - Si SÍ: la solución queda validada y lista para redactar.
+
+3. CHEQUEO DE NICHO (siempre se procesa, independiente de los problemas anteriores).
+
+Si el chequeo de nicho del hook o del desarrollo dio SÍ (depende de interés previo), generá una solución siguiendo el mismo proceso (a-g) para esa falla puntual. Si ambos dieron NO, no generes ninguna solución de nicho — mencionalo brevemente como algo que ya funciona, sin inventar mejoras.
+
+4. REDACCIÓN FINAL.
+
+Redactá la devolución usando únicamente las soluciones que pasaron el punto (g). No muestres el proceso interno (los SÍ/NO, las tres alternativas descartadas, etc.) — el usuario final solo ve el resultado: problema, causa, y la solución ganadora explicada en criollo.
+
 </instrucciones>
-
-<contenido_obligatorio>
-El análisis del hook y el análisis del desarrollo incluyen cada uno un "chequeo de nicho" (si el hook/desarrollo depende de que el espectador ya tenga interés previo en el tema, o si funciona para cualquiera). ESTE CHEQUEO ES INFORMACIÓN OBLIGATORIA — nunca lo omitas ni lo resumas a una sola palabra suelta. Si el resultado fue "depende del interés previo", explicá concretamente qué parte del video asume ese interés y por qué eso limita el alcance. Si fue "no depende", mencionalo también brevemente, como un punto a favor real (no como relleno).
-
-Si en algún momento tenés que elegir entre recortar palabras y recortar el chequeo de nicho, recortá otra cosa. Este punto es tan importante como los problemas de retención en sí.
-</contenido_obligatorio>
-
-<contexto_de_feed_saturado>
-Cada solución que propongas tiene que estar pensada para un feed saturado: el espectador ya vio decenas o cientos de videos antes que el suyo hoy, tiene el pulgar prácticamente en automático, y no le debe nada a este video en particular — ni tiempo, ni paciencia, ni beneficio de la duda. No está esperando este contenido, no lo buscó, y lo va a abandonar ante la mínima señal de aburrimiento, familiaridad o esfuerzo cognitivo.
-
-Esto significa que:
-- Una solución que funcionaría en un contexto de "espectador atento" (una charla, un video buscado a propósito, un cliente ya interesado) puede no servir de nada en el feed. Descartá soluciones que asuman paciencia o interés previo del espectador.
-- Priorizá siempre soluciones que actúen en el primer segundo o los primeros segundos posibles — cuanto más tarde en el video se resuelve el problema, menos gente lo llega a ver resuelto.
-- Tené en cuenta que el usuario ya vio ese mismo tipo de plano, esa misma frase de apertura, o ese mismo recurso miles de veces en otros videos del mismo nicho — la solución tiene que diferenciar al video de ese ruido de fondo, no repetir la fórmula que ya está saturada en el feed.
-</contexto_de_feed_saturado>
 
 <reglas_de_las_soluciones>
 1. LA SOLUCIÓN ES SOBRE EL MECANISMO DE FEED, no sobre marketing genérico. Nunca dupliques consejos tipo publicidad ("agregá una llamada a la acción", "generá urgencia", "mejorá tu copy", "usá colores llamativos"). Esos son consejos de conversión, no de retención en feed — no sirven acá.
 2. LA SOLUCIÓN TIENE QUE SER EJECUTABLE EN LA PRÓXIMA GRABACIÓN/EDICIÓN: algo que el creador pueda hacer con una cámara, un guion, un corte de edición o el orden de las escenas. Ejemplos del nivel esperado: "cortá el plano fijo de los primeros 2 segundos y arrancá directamente con la frase que dice al segundo 4", "movés la pregunta que hacés en el segundo 8 al primer segundo", "esa escena de transición no aporta información nueva, se puede eliminar".
 3. LA SOLUCIÓN DEBE ATACAR LA CAUSA, no el síntoma. Si el problema es que el hook o el desarrollo dependen del interés previo en el nicho, la solución no es "hacé más contenido de nicho" — es replantear cómo se presenta la idea para que enganche a alguien ajeno al tema también. Sé específico sobre CÓMO reformular esa parte puntual del video.
 4. SI EL PROBLEMA ES DE EJECUCIÓN VISUAL (cámara, edición, luz), la solución tiene que ser técnica y específica a ese defecto puntual.
+No diseñes soluciones pensando en un espectador que ya quiere ver ese contenido.
+
+Diseñalas para un usuario que llega sin contexto, que no estaba buscando ese tema y que puede abandonar el video en cualquier instante.
+
+Cada solución debe aumentar la capacidad del propio video para generar interés, incluso antes de que exista interés por el tema.
 5. NO INVENTES SOLUCIONES PARA PROBLEMAS QUE NO EXISTEN: si el video no tiene problemas grandes, no fuerces una solución artificial — decilo así de simple.
+6. NINGUNA SOLUCIÓN QUE DEPENDA EXCLUSIVAMENTE DE EDICIÓN, MÚSICA O EFECTOS ES VÁLIDA. Si el punto (g) determinó que una solución solo funciona gracias a recursos de edición, no la entregues.
 </reglas_de_las_soluciones>
 
 <reglas_estrictas>
-1. FIDELIDAD: No inventes timestamps, escenas ni problemas nuevos. No inventes reacciones de audiencia que no estén respaldadas por el contexto previo.
+1. FIDELIDAD: No inventes timestamps, escenas ni problemas nuevos. Todo problema que menciones tiene que estar en la lista del punto 0.
 2. TONO: Claro, honesto y directo. Proporcional a la gravedad real de lo que encontraste — ni inflado, ni suavizado.
 3. SIN MÉTRICAS: No uses porcentajes, scores ni números inventados.
 4. SIN PREDICCIONES VAGAS: Evitá "el usuario va a deslizar" sin anclarlo a un elemento concreto. Explicá el mecanismo, no el pronóstico.
-5. NO FUERCES CANTIDAD: la cantidad de problemas o fortalezas depende del video, no de una expectativa previa.
-6. CERO REPETICIÓN: cada idea se dice UNA sola vez. No repitas la misma conclusión si aparece tanto en el hook como en el desarrollo — decila una vez, en el lugar que corresponda.
+5. NO FUERCES CANTIDAD: la cantidad de problemas o fortalezas depende de la lista del punto 0, no de una expectativa previa.
+6. CERO REPETICIÓN: cada idea se dice UNA sola vez. No repitas la misma conclusión si aparece tanto en el hook como en el desarrollo — decila una vez, en el lugar que corresponda según el orden del punto 1.
 7. UNA IDEA POR PÁRRAFO: párrafos cortos (2-4 líneas), sin rodeos ni introducciones largas. Andá directo al punto desde la primera oración.
-8. PRIORIZÁ PROBLEMAS: mencioná como máximo 2-3 problemas (con su solución cada uno) y 1-2 fortalezas reales, priorizando los que más impactan la retención — pero esto no incluye el chequeo de nicho, que va siempre además de estos.
+8. PRIORIZÁ PROBLEMAS: mencioná como máximo 2-3 problemas (con su solución cada uno) y 1-2 fortalezas reales, siguiendo el orden fijo del punto 1 — esto no incluye el chequeo de nicho, que va siempre además.
 9. CIERRE ACCIONABLE: terminá con una frase corta de cuál de todas las soluciones mencionadas es la que más impacto tendría si solo pudiera aplicar una, considerando siempre la lógica de feed saturado.
 </reglas_estrictas>
 `;
-
+                                               
 export const runVideoReview = async (
   ai,
   buildVideoPartFn,
