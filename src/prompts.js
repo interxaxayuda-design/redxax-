@@ -74,136 +74,15 @@ export const buildHookAnalysisPrompt = (
 
 <rol>
 Sos un ${contextoComun(platform, industria, objetivo)}.
-Analizás cómo funciona el hook durante los primeros ${hookWindowSegundos} segundos del video.
 </rol>
 
-<instrucciones>
+Mirá los primeros ${hookWindowSegundos} segundos de este video como lo miraría una persona real haciendo scroll en su feed de ${platform} — sin ponerte en modo analista todavía. Prestá atención a todo lo que una persona nota sin esfuerzo: lo que se dice, lo que se ve, el tono, el ritmo, si algo la atrapa, si algo la aburre, si algo la confunde, si hay algo que le genera ganas de seguir mirando o ganas de scrollear.
 
-FASE 0 — MARCO DE REFERENCIA
+Contame qué notaste, en tus propias palabras, siguiendo el orden natural en que ocurre en el video. No fuerces ninguna categoría ni uses una estructura fija — si en un tramo no pasa nada relevante, decilo así de simple ("acá no pasa nada que sume o reste"), no inventes algo para llenar el análisis.
 
-Antes de aplicar cualquier criterio de hook o retención, mirá el video y preguntate: ¿qué tipo de contenido es este, y qué es lo que realmente hace que alguien se quede mirando ESTE tipo de contenido en particular?
+Después de contarme lo que viste, decime con tus propias palabras si esto detiene el scroll de un usuario promedio o no, y por qué — pensando específicamente en alguien que no tenía ningún interés previo en ${industria} y se cruza con esto sin buscarlo.
 
-No asumas de entrada que se trata de un problema-solución con una promesa narrativa. Puede serlo, o puede ser otra cosa: algo puramente estético o sensorial, un formato de humor que no plantea ningún conflicto, una demostración sin storytelling, un video que engancha por ritmo visual o musical más que por lo que se dice. Nombrá con tus propias palabras qué mecanismo de enganche corresponde a este contenido puntual — no fuerces la lógica de "problema que se resuelve" si el video no funciona así.
-
-Una vez que identificaste el mecanismo de enganche que realmente aplica a este video, usalo como marco para las fases siguientes: la Fase 1 en adelante evalúan si ESE mecanismo (el que vos identificaste, no uno genérico impuesto) está bien ejecutado o no.
-
-Si genuinamente no encontrás ningún mecanismo de enganche —ni narrativo, ni sensorial, ni rítmico, ni visual— decilo explícitamente: es una conclusión válida, no la fuerces.
-
-FASE 1 — OBSERVACIÓN
-
-Durante esta fase no evalúes nada.
-
-Limitate únicamente a describir lo que puede observarse objetivamente.
-
-No utilices palabras como:
-
-- bueno
-- malo
-- fuerte
-- débil
-- efectivo
-- aburrido
-- interesante
-
-Todavía no estás autorizado a emitir ningún juicio.
-
-La salida de esta fase debe contener únicamente hechos observables.
-
-FASE 2 — ESTADO DEL ESPECTADOR
-
-Utilizando únicamente la evidencia observada:
-
-Respondé:
-
-- ¿Qué sabe el espectador al terminar estos segundos?
-- ¿Qué información recibió?
-- ¿Qué todavía desconoce?
-- ¿Qué expectativa quedó abierta?
-
-No agregues información que todavía no apareció.
-
-No completes la historia utilizando experiencia previa.
-
-No imagines el resto del video.
-
-FASE 3 — MECANISMOS
-
-Identificá únicamente mecanismos cuya existencia pueda demostrarse mediante evidencia observable.
-
-No nombres mecanismos únicamente porque suelen aparecer en videos similares.
-
-Cada mecanismo debe poder señalarse en una escena concreta.
-
-FASE 4 — CONTRASTE
-
-Antes de concluir que el hook funciona, buscá evidencia que indique que NO funciona.
-
-Antes de concluir que el hook no funciona, buscá evidencia que indique que SÍ funciona.
-
-No emitas una conclusión hasta haber buscado evidencia para ambas posibilidades.
-
-Si existe evidencia para ambas, explicá cuál tiene mayor peso y por qué.
-
-FASE 5 — EVALUACIÓN
-
-Ahora sí evaluá.
-
-No agregues evidencia nueva.
-
-No vuelvas a observar el video.
-
-Tu conclusión únicamente puede basarse en la evidencia reunida durante las fases anteriores.
-
-FASE — VALIDACIÓN DE FUERZA
-
-Para cada mecanismo identificado preguntate:
-
-Si elimináramos completamente toda la edición,
-la música,
-los efectos,
-la calidad de cámara
-y únicamente quedara la idea principal...
-
-¿Seguiría existiendo una razón suficientemente fuerte para que un usuario promedio continúe mirando?
-
-No respondas todavía.
-
-Justificá utilizando únicamente evidencia del video.
-
-Si la respuesta es no, identificá exactamente qué parte del mecanismo resulta débil.
-
-FASE — COSTO DE CONTINUAR
-
-Imaginá un usuario que está haciendo scroll.
-
-Preguntate:
-
-¿Qué recompensa concreta espera obtener si sigue mirando?
-
-¿El video comunica claramente esa recompensa?
-
-¿La recompensa parece suficientemente valiosa como para justificar seguir mirando?
-
-Si la recompensa es poco clara,
-muy común,
-muy predecible
-o demasiado pequeña,
-
-consideralo evidencia negativa.
-
-FASE — COMPARACIÓN CONTRA EL FEED
-
-No compares este video contra videos malos.
-
-Comparalo contra los mejores videos que normalmente compiten en el feed de ${platform}.
-
-Preguntate:
-
-¿Por qué alguien elegiría este video y no cualquiera de los otros videos que aparecen alrededor?
-
-Si no encontrás una ventaja clara,
-eso constituye evidencia negativa.
-</instrucciones>
+Cerrá respondiendo, explícitamente y sin rodeos, esta pregunta puntual porque la necesito de forma clara: ¿este hook depende de que el espectador YA tenga interés en ${industria} para funcionar? Respondé SÍ o NO y en una frase por qué.
 `;
 
 export const buildDesarrolloAnalysisPrompt = (
