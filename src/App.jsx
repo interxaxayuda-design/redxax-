@@ -1164,57 +1164,64 @@ ${currentMessage.text}
 
         {/* ← ACÁ VA EL MODAL NUEVO */}
       {showWelcome && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-[#0d0d0f] border border-white/10 rounded-[3rem] p-8 md:p-12 max-w-2xl w-full shadow-2xl animate-in zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto custom-scrollbar">
+  <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
+    <div className="relative bg-[#0d0d0f] border border-white/10 rounded-[3rem] p-8 md:p-12 max-w-2xl w-full shadow-2xl animate-in zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto custom-scrollbar">
 
-            <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-6">
-              <Microscope className="w-3 h-3" /> Bienvenido a VIRAX
-            </div>
+      {/* ← LOGO, esquina superior derecha */}
+      <img
+        src={logo}
+        alt="VIRAX"
+        className="absolute top-8 right-8 md:top-10 md:right-10 w-10 h-10 object-contain opacity-90"
+      />
 
-            <h2 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-white mb-6">
-              Análisis de video<br/>impulsado por <span className="text-emerald-400">IA</span>
-            </h2>
+      <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-6">
+        <Microscope className="w-3 h-3" /> Bienvenido a VIRAX
+      </div>
 
-            <div className="space-y-5 text-slate-300 text-sm leading-relaxed">
-              <p>
-                VIRAX ayuda a creadores, empresas y agencias a optimizar sus videos antes de publicarlos en TikTok, Instagram Reels y YouTube Shorts.
-              </p>
-              <p>
-                A diferencia de herramientas que solo generan una puntuación o una opinión general, VIRAX realiza un análisis profundo del comportamiento del contenido segundo a segundo, identificando fortalezas, debilidades y oportunidades de mejora mediante un proceso de razonamiento estructurado.
-              </p>
+      <h2 className="text-3xl md:text-4xl font-black italic uppercase tracking-tighter text-white mb-6 pr-14">
+        Análisis de video<br/>impulsado por <span className="text-emerald-400">IA</span>
+      </h2>
 
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400 mb-2">Cómo funciona</p>
-                <ul className="space-y-1.5 text-slate-400">
-                  <li>• Subís tu video y la IA lo analiza de forma multimodal.</li>
-                  <li>• El sistema examina por separado el hook y el desarrollo.</li>
-                  <li>• Identifica fortalezas y problemas usando solo evidencia observable.</li>
-                  <li>• Determina la causa raíz de cada problema detectado.</li>
-                  <li>• Genera recomendaciones específicas y justificadas para mejorar el contenido.</li>
-                </ul>
-              </div>
+      <div className="space-y-5 text-slate-300 text-sm leading-relaxed">
+        <p>
+          VIRAX ayuda a creadores, empresas y agencias a optimizar sus videos antes de publicarlos en TikTok, Instagram Reels y YouTube Shorts.
+        </p>
+        <p>
+          A diferencia de herramientas que solo generan una puntuación o una opinión general, VIRAX realiza un análisis profundo del comportamiento del contenido segundo a segundo, identificando fortalezas, debilidades y oportunidades de mejora mediante un proceso de razonamiento estructurado.
+        </p>
 
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400 mb-2">Qué vas a obtener</p>
-                <ul className="space-y-1.5 text-slate-400">
-                  <li>• Un diagnóstico técnico sobre la capacidad de tu video para captar y mantener atención.</li>
-                  <li>• Recomendaciones concretas y ejecutables para tu próxima grabación o edición.</li>
-                  <li>• Un análisis pensado para feeds saturados, no consejos genéricos de marketing.</li>
-                </ul>
-              </div>
-            </div>
-
-            <button
-              onClick={dismissWelcome}
-              className="w-full mt-8 bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all active:scale-95"
-            >
-              Entendido →
-            </button>
-
-          </div>
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400 mb-2">Cómo funciona</p>
+          <ul className="space-y-1.5 text-slate-400">
+            <li>• Subís tu video y la IA lo analiza de forma multimodal.</li>
+            <li>• El sistema examina por separado el hook y el desarrollo.</li>
+            <li>• Identifica fortalezas y problemas usando solo evidencia observable.</li>
+            <li>• Determina la causa raíz de cada problema detectado.</li>
+            <li>• Genera recomendaciones específicas y justificadas para mejorar el contenido.</li>
+          </ul>
         </div>
-      )}
-      
+
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400 mb-2">Qué vas a obtener</p>
+          <ul className="space-y-1.5 text-slate-400">
+            <li>• Un diagnóstico técnico sobre la capacidad de tu video para captar y mantener atención.</li>
+            <li>• Recomendaciones concretas y ejecutables para tu próxima grabación o edición.</li>
+            <li>• Un análisis pensado para feeds saturados, no consejos genéricos de marketing.</li>
+          </ul>
+        </div>
+      </div>
+
+      <button
+        onClick={dismissWelcome}
+        className="w-full mt-8 bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all active:scale-95"
+      >
+        Entendido →
+      </button>
+
+    </div>
+  </div>
+)}
+
       <GemToast notice={gemNotice} onClose={() => setGemNotice(null)} />
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-5%] left-[-5%] w-[45%] h-[45%] bg-emerald-600/[0.04] blur-[120px] rounded-full" />
