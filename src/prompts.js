@@ -19,12 +19,12 @@ export const REVIEW_CONFIG = {
     videoFps: 1
   },
   desarrollo: {
-    model: "gemini-2.5-flash",
-    temperature: 0.1,
-    media_resolution: "low",
-    thinkingConfig: { thinkingBudget: 4096 },
-    videoFps: 4
-  },
+  model: "gemini-2.5-flash",
+  temperature: 0,        // antes 0.1
+  media_resolution: "low",
+  thinkingConfig: { thinkingBudget: 4096 },
+  videoFps: 8
+},
   sintesis: {
     model: "gemini-2.5-flash",
     temperature: 0.35,
@@ -145,15 +145,7 @@ Analizá únicamente desde el segundo ${hookWindowSegundos} hasta el final, sigu
 
 4. HACÉ DE ABOGADO DEL DIABLO (nunca lo digas en el análisis esa palabra.): antes de dar el visto bueno, buscá activamente por qué un usuario exigente abandonaría, incluso si el concepto es bueno. Si hay más de un motivo posible, quedate con el más fuerte. Si no encontrás nada real, recién ahí decilo explícitamente.
 
-5. CHEQUEO OBLIGATORIO DE NICHO. Antes de concluir, contestá explícitamente esta pregunta binaria: "¿la continuidad de este video depende de que el espectador YA tenga interés en ${industria} (o en el tema puntual) para seguir mirando?" — SÍ o NO, con justificación.
-
-   Para contestarla, imaginá específicamente a alguien cuyo interés está en otro lado, sin ninguna relación con ${industria} (por ejemplo: alguien que solo mira contenido de fútbol, cocina, o lo que sea completamente ajeno al tema del video) que ya se quedó después del hook. La pregunta no es si esa persona termina consumiendo el producto o servicio del nicho — es si el desarrollo le sigue dando motivos para mirar aunque el tema en sí no le importe.
-
-   Si la respuesta es SÍ (depende del interés previo): identificá en qué escena puntual el desarrollo deja de sostenerse por sí mismo y empieza a depender de que el espectador ya esté interesado en el tema — puede ser terminología específica del nicho, una demostración que solo alguien de ese nicho valoraría, o el video convirtiéndose en un pitch de producto sin ningún gancho narrativo que lo sostenga. Esto es una falla real, no un detalle neutral.
-
-   Si la respuesta es NO: explicá concretamente qué en la narrativa, la resolución planteada, o el desarrollo logra ser reconocible o interesante incluso para alguien sin ese interés previo.
-
-   Este chequeo es independiente de los mecanismos visuales/sonoros que ya identificaste: un video puede tener buena edición y aun así depender enteramente del interés previo del espectador.
+5. CHEQUEO DE NICHO. Evaluá dos cosas por separado y decilas ambas, aunque tiren para lados distintos: (1) la premisa o promesa central, aislada de la producción — ¿presupone un rol, tarea o necesidad específica que la mayoría no tiene? (2) la ejecución (estética, ritmo, ganchos visuales) — ¿es atractiva para cualquiera más allá del tema? Una producción atractiva no compensa ni anula que la premisa sea de nicho — son dos cosas distintas y las dos importan. Si compiten, decilo explícitamente en vez de elegir una.
 
 6. NO COMPENSES. Si identificaste un punto de abandono, no lo diluyas mencionando después cosas positivas del resto del video para suavizarlo. Un solo tramo que pierde al espectador puede tapar todo lo demás bien ejecutado — no lo trates como detalle menor solo porque hay aspectos positivos alrededor.
 
@@ -195,8 +187,8 @@ Antes de generar cualquier solución, armá una lista interna con TODO lo que el
 - Problemas mencionados en el hook, en el orden en que aparecen.
 - Problemas mencionados en el desarrollo, en el orden en que aparecen.
 - La severidad indicada para cada problema, si el análisis original la especificó (cuántos espectadores abandonarían por ese motivo).
-- La respuesta del chequeo de nicho del hook (SÍ/NO) y su justificación.
-- La respuesta del chequeo de nicho del desarrollo (SÍ/NO) y su justificación.
+- El chequeo de nicho del hook, tal como está descripto (puede tener matices, no necesariamente un SÍ/NO limpio).
+- El chequeo de nicho del desarrollo, tal como está descripto (puede tener matices, no necesariamente un SÍ/NO limpio).
 - Fortalezas mencionadas explícitamente, si las hay.
 
 No agregues ningún problema, matiz o fortaleza que no esté escrito en el contexto previo. No reinterpretes ni "completes" lo que el análisis no dijo. Si un análisis no menciona problemas, la lista de problemas de esa sección queda vacía — no la rellenes.
@@ -243,7 +235,7 @@ Esto evita que la misma devolución cambie de estructura entre corridas.
 
 3. CHEQUEO DE NICHO (siempre se procesa, independiente de los problemas anteriores).
 
-Si el chequeo de nicho del hook o del desarrollo dio SÍ (depende de interés previo), generá una solución siguiendo el mismo proceso (a-g) para esa falla puntual. Si ambos dieron NO, no generes ninguna solución de nicho — mencionalo brevemente como algo que ya funciona, sin inventar mejoras.
+Si el chequeo de nicho señaló que la premisa depende del interés previo — aunque la ejecución sea atractiva — generá una solución siguiendo el mismo proceso (a-g) para esa falla puntual. Si el chequeo indica que ni la premisa ni la ejecución dependen del nicho, no generes ninguna solución de nicho — mencionalo brevemente como fortaleza.
 
 4. REDACCIÓN FINAL.
 
