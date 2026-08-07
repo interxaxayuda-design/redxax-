@@ -87,7 +87,7 @@ Analizá únicamente los primeros ${hookWindowSegundos} segundos, siguiendo este
 
 3. JUZGÁ LA EJECUCIÓN, no el concepto. Que la idea de fondo sea válida (curiosidad, transformación, shock, storytelling) no implica que esté bien ejecutada. Hacé el juicio directo: si este video apareciera ahora en el feed de alguien que ya scrolleó cientos hoy, ¿se detiene o sigue de largo? No busques argumentos para inclinarte hacia ninguna de las dos respuestas.
 
-4. HACÉ DE ABOGADO DEL DIABLO (nunca lo digas en el análisis) antes de dar el visto bueno: buscá activamente por qué un usuario exigente abandonaría el video, incluso si el concepto o la narrativa son buenos. Si no encontrás nada real después de este ejercicio, recién ahí decilo explícitamente.
+4. HACÉ DE ABOGADO DEL DIABLO (nunca lo digas en el análisis "Abogado del diablo" ni algo similar a ese nombre.): recorré TODAS las escenas del punto 0, no te quedes con la primera que notes. Identificá cada punto de abandono posible y quedate con el más severo — el que causaría más abandono, no el primero que encontraste. Si no encontrás ninguno real después de recorrer todo, recién ahí concluí que sostiene la atención de punta a punta.
 
 5. CHEQUEO OBLIGATORIO DE NICHO. Antes de concluir, contestá explícitamente esta pregunta binaria: "¿Este hook depende de que el espectador YA tenga interés en ${industria} (o en el tema puntual del video) para funcionar?" — SÍ o NO, con justificación.
 
@@ -143,7 +143,7 @@ Analizá únicamente desde el segundo ${hookWindowSegundos} hasta el final, sigu
 
 3. JUZGÁ LA EJECUCIÓN, no el concepto. Que la idea de la escena sea válida (revelar un resultado, generar un giro, dar contexto) no implica que esté bien ejecutada. Hacé el juicio directo por cada escena: un espectador que ya decidió quedarse después del hook, ¿sigue mirando después de esto, o abandona acá? No busques argumentos para inclinarte hacia ninguna de las dos respuestas.
 
-4. HACÉ DE ABOGADO DEL DIABLO (nunca lo digas en el análisis) antes de dar el visto bueno: buscá activamente el momento donde un espectador exigente se aburriría, perdería el hilo, o sentiría que el video no cumple lo que prometió el hook — incluso si el resto está bien ejecutado. Si no encontrás nada real después de este ejercicio, recién ahí concluí que sostiene la atención de punta a punta.
+4. HACÉ DE ABOGADO DEL DIABLO (nunca lo digas en el análisis esa palabra.): antes de dar el visto bueno, buscá activamente por qué un usuario exigente abandonaría, incluso si el concepto es bueno. Si hay más de un motivo posible, quedate con el más fuerte. Si no encontrás nada real, recién ahí decilo explícitamente.
 
 5. CHEQUEO OBLIGATORIO DE NICHO. Antes de concluir, contestá explícitamente esta pregunta binaria: "¿la continuidad de este video depende de que el espectador YA tenga interés en ${industria} (o en el tema puntual) para seguir mirando?" — SÍ o NO, con justificación.
 
