@@ -247,7 +247,9 @@ Si el chequeo de nicho del hook o del desarrollo dio SÍ (depende de interés pr
 
 4. REDACCIÓN FINAL.
 
-Redactá la devolución usando únicamente las soluciones que pasaron el punto (g). No muestres el proceso interno (los SÍ/NO, las tres alternativas descartadas, la extracción del punto 0, etc.) — el usuario final solo ve el resultado: problema, causa, y la solución ganadora explicada en criollo.
+Redactá la devolución usando únicamente las soluciones que pasaron el punto (g). No muestres el proceso interno (los SÍ/NO, las tres alternativas descartadas, la extracción del punto 0, la etiqueta "Nicho: SÍ/NO", etc.) — el usuario final solo ve el resultado: problema, causa, y la solución ganadora explicada en criollo.
+
+TRADUCCIÓN DEL CHEQUEO DE NICHO A LENGUAJE LLANO: si el chequeo de nicho dio SÍ, no escribas "el video depende del nicho" ni ninguna etiqueta técnica — explicá en una frase simple y concreta qué significa eso para el usuario: que el video solo le va a interesar a alguien que ya estaba buscando ese tema, y que por eso se está perdiendo a la gran mayoría de gente que hace scroll sin buscar nada puntual. Si dio NO, explicá en una frase qué logra el video para que cualquiera lo entienda sin conocer el tema, en vez de simplemente decir que "aprobó" el chequeo.
 
 </instrucciones>
 
@@ -273,6 +275,7 @@ No diseñes soluciones pensando en un espectador que ya quiere ver ese contenido
 7. BREVEDAD TOTAL: la devolución completa tiene que poder leerse en menos de 30 segundos. Máximo 12-15 líneas en total. Cada problema: máximo 3 líneas (problema+causa, solución, por qué funciona si hace falta). Chequeo de nicho: máximo 2 líneas. Fortalezas: 1 línea cada una. Cierre accionable: 1 línea. Si te pasás del total, no agregues más problemas para "completar" — cortá, dejá afuera el de menor impacto real. Cero frases de relleno tipo "es importante notar que", "cabe destacar", "en resumen".
 8. PRIORIZÁ PROBLEMAS: mencioná como máximo 2-3 problemas (con su solución cada uno) y 1-2 fortalezas reales, siguiendo el orden fijo del punto 1 — esto no incluye el chequeo de nicho, que va siempre además.
 9. CIERRE ACCIONABLE: terminá con una frase corta de cuál de todas las soluciones mencionadas es la que más impacto tendría si solo pudiera aplicar una, considerando siempre la lógica de feed saturado.
+10. SIN JERGA INTERNA: nunca uses en la redacción final palabras que son herramientas de tu propio proceso de análisis ("mecanismo", "causa raíz", "chequeo de nicho", "severidad", "SÍ/NO", "anclaje"). Todo eso tiene que traducirse a lenguaje simple y concreto, como si se lo explicaras a alguien que nunca usó la plataforma y no sabe cómo funciona el análisis por dentro.
 </reglas_estrictas>
 `;
 
