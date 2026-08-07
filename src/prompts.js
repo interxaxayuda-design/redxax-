@@ -74,46 +74,17 @@ Analizás cómo funciona el hook durante los primeros ${hookWindowSegundos} segu
 </rol>
 
 <instrucciones>
-Analizá únicamente los primeros ${hookWindowSegundos} segundos, siguiendo este proceso:
 
-0. Antes de analizar nada, transcribí de forma literal:
-   - Todo el audio: diálogo hablado palabra por palabra si hay speech, y una descripción de música/efectos/silencios con timestamps aproximados.
-   - Todo el texto en pantalla: carteles, subtítulos quemados, texto superpuesto, tal como aparece, con el segundo en que aparece.
-   Si no hay diálogo o no hay texto en pantalla, decilo explícitamente ("no hay diálogo", "no hay texto en pantalla") en vez de omitirlo.
+FASE 1 — OBSERVACIÓN LITERAL. Transcribí el audio palabra por palabra (diálogo, música, silencios, con timestamps) y todo texto en pantalla tal como aparece, con su segundo. Si no hay diálogo o texto, decilo explícito. Sumá tono, gestos, energía, edición, encuadre. No evalúes todavía.
 
-1. OBSERVÁ TODO antes de concluir nada: texto en pantalla, subtítulos, gestos, expresiones, objetos, encuadre, colores, cortes de edición, música, silencios, y también QUÉ SE ESTÁ CONTANDO — qué idea, pregunta, promesa, conflicto o afirmación se plantea en estos segundos, aunque sea solo a través de lo que se dice (un video puede no tener nada visualmente llamativo y aun así enganchar por lo que está narrando, como un podcast o un talking-head).
+FASE 2 — INVENTARIO DE MECANISMOS. Por cada elemento observado (texto, audio, visual, narrativo, sensorial — sin jerarquía entre canales), preguntate: "si esto no estuviera, ¿el espectador tendría menos motivo para quedarse?" Listá todos los que pasen ese test, sin importar el canal. Un texto en pantalla puede sostener el hook tan bien o mejor que cualquier recurso visual — no lo subestimes por default solo porque el resto de la escena sea estática o poco dinámica.
 
-2. IDENTIFICÁ MECANISMOS, no elementos. Un elemento es cualquier cosa que aparece en el video (un objeto, una frase, un sonido, un corte, una imagen). Que un elemento aparezca no significa que sea un mecanismo. Es mecanismo únicamente si le da al espectador una razón concreta para seguir mirando en ese instante — no importa de qué naturaleza sea esa razón; puede ser cualquier cosa que efectivamente retenga la atención. Para cada elemento relevante que identifiques, preguntate: "si esto no estuviera, ¿el espectador tendría menos motivo para quedarse?" Si la respuesta es sí, es mecanismo. Si la respuesta es no, es solo un elemento presente, y no vale la pena tratarlo como algo que sostiene el video. Preguntate en general: "¿qué motivo concreto tendría este usuario para NO scrollear?" — la respuesta puede ser "ninguno".
+FASE 3 — JUICIO INTEGRADO. Juzgá el hook combinando TODOS los mecanismos de la Fase 2 en conjunto, nunca canal por canal aislado. Un canal débil (ej: plano estático) no vuelve débil al hook si otro canal (ej: el texto) sostiene por sí solo un mecanismo fuerte — evaluá el efecto combinado real, no vetees por un solo canal flojo ignorando los demás. No juzgues por lo que anticipás que viene después, solo por lo que ya está en estos ${hookWindowSegundos} segundos. Un formato conocido no es débil por ser conocido — juzgá la especificidad de la ejecución puntual, no el formato en sí.
 
-3. JUZGÁ LA EJECUCIÓN, no el concepto. Que la idea de fondo sea válida (curiosidad, transformación, shock, storytelling) no implica que esté bien ejecutada. Hacé el juicio directo: si este video apareciera ahora en el feed de alguien que ya scrolleó cientos hoy, ¿se detiene o sigue de largo? No busques argumentos para inclinarte hacia ninguna de las dos respuestas.
+FASE 4 — PRUEBA DE FUEGO. Buscá activamente TODAS las razones reales de abandono y TODAS las de permanencia — si hay más de una real, mencionalas todas, no elijas una sola. Contrastá contra los mejores videos que compiten en el feed de ${platform}, no contra videos flojos. Evaluá además: (a) sin producción — cámara mediocre, sin música ni efectos — ¿el mecanismo integrado de la Fase 3 sobrevive?; (b) nicho — la premisa aislada de la producción, ¿presupone un rol o necesidad que la mayoría no tiene?, y la ejecución, ¿es atractiva para cualquiera? Si compiten entre sí, decilo explícitamente en vez de forzar un solo veredicto.
 
-4. HACÉ DE ABOGADO DEL DIABLO (nunca lo digas en el análisis "Abogado del diablo" ni algo similar a ese nombre.): recorré TODAS las escenas del punto 0, no te quedes con la primera que notes. Identificá cada punto de abandono posible y quedate con el más severo — el que causaría más abandono, no el primero que encontraste. Si no encontrás ninguno real después de recorrer todo, recién ahí concluí que sostiene la atención de punta a punta.
+FASE 5 — VEREDICTO. Con lo reunido, sin agregar evidencia nueva, concluí si el hook detiene el scroll o no. Mencioná TODAS las fallas reales encontradas, cada una con severidad: de los usuarios que ven este contenido en ${platform}, ¿cuántos abandonarían por ese motivo puntual? Tu juicio es solo sobre retención — nunca prediagas otras acciones (like, comentario, compartir, seguir, guardar). Toda conclusión se apoya en evidencia ya reunida, nunca en algo nuevo.
 
-5. CHEQUEO OBLIGATORIO DE NICHO. Antes de concluir, contestá explícitamente esta pregunta binaria: "¿Este hook depende de que el espectador YA tenga interés en ${industria} (o en el tema puntual del video) para funcionar?" — SÍ o NO, con justificación.
-
-   Para contestarla, imaginá específicamente a alguien cuyo interés está en otro lado, sin ninguna relación con ${industria} (por ejemplo: alguien que solo mira contenido de fútbol, cocina, o lo que sea completamente ajeno al tema del video) y que se cruza con este video en su feed general de ${platform}. La pregunta no es si esa persona termina consumiendo el producto o servicio del nicho — es si estos primeros ${hookWindowSegundos} segundos le dan un motivo para seguir mirando aunque el tema en sí no le importe.
-
-   Si la respuesta es SÍ (depende del interés previo): identificá qué parte puntual del hook asume ese interés — puede ser terminología específica del nicho, un problema que solo alguien de ese nicho reconocería como problema, o directamente arrancar mostrando el producto/servicio sin ningún gancho previo. Esto es una falla real, no un detalle neutral, y tiene que aparecer así en tu conclusión.
-
-   Si la respuesta es NO: explicá concretamente qué en la narrativa, la pregunta planteada, o el conflicto mostrado logra ser reconocible o interesante incluso para alguien sin ese interés previo.
-
-   Dos videos del mismo nicho pueden dar respuestas opuestas a esta pregunta — la diferencia está en cómo está planteada la narrativa, no en el tema de fondo. Este chequeo es independiente de los mecanismos visuales/sonoros que ya identificaste: un video puede tener buena edición y aun así depender enteramente del interés previo del espectador.
-
-6. NO COMPENSES. Si tu conclusión es que el usuario sigue scrolleando, no la balancees buscando cosas positivas para suavizarla. Un solo problema puede tapar todo lo demás bien ejecutado — no lo trates como detalle menor solo porque hay aspectos positivos alrededor.
-
-7. SI HAY FALLA, calificá severidad respondiendo: de los usuarios que ven este tipo de contenido en ${platform}, ¿cuántos abandonarían específicamente por este motivo? Justificá con evidencia del video, no repitas la pregunta como fórmula.
-
-Tu único juicio es sobre retención en el hook: se detiene o sigue scrolleando. Nunca prediagas otras acciones (like, comentario, compartir, seguir, guardar) — no deben aparecer en tu respuesta.
-
-Ignorá por completo la calidad visual durante este ejercicio.
-
-Imaginá que exactamente el mismo contenido fue grabado con una cámara mediocre, sin efectos, sin música y sin edición llamativa, pero manteniendo el mismo tema, el mismo diálogo y la misma estructura narrativa.
-
-¿Una persona promedio tendría igualmente un motivo para seguir mirando?
-
-Si la respuesta es NO, entonces el hook depende principalmente de la ejecución visual y no de un interés universal. Consideralo una limitación importante.
-
-Toda conclusión debe apoyarse en evidencia observable del video (incluido lo dicho/narrado). Usá tu conocimiento general sobre comportamiento en feeds de video corto para interpretar esa evidencia, nunca para reemplazarla.
 </instrucciones>
 `;
 
@@ -130,38 +101,17 @@ Analizás cómo evoluciona la atención del espectador desde el segundo ${hookWi
 </rol>
 
 <instrucciones>
-Analizá únicamente desde el segundo ${hookWindowSegundos} hasta el final, siguiendo este proceso. Pensá como un espectador que ya decidió quedarse después del hook.
 
-0. Antes de analizar nada, dividí el video en escenas o beats desde el segundo ${hookWindowSegundos} hasta el final y transcribí de forma literal en cada una:
-   - Todo el audio: diálogo hablado palabra por palabra si hay speech, y una descripción de música/efectos/silencios con timestamps aproximados.
-   - Todo el texto en pantalla: carteles, subtítulos quemados, texto superpuesto, tal como aparece, con el segundo en que aparece.
-   Si no hay diálogo o no hay texto en pantalla en alguna escena, decilo explícitamente ("no hay diálogo", "no hay texto en pantalla") en vez de omitirlo.
+FASE 1 — OBSERVACIÓN LITERAL. Dividí el video en escenas o beats desde el segundo ${hookWindowSegundos}. Transcribí el audio palabra por palabra y todo texto en pantalla en cada escena, con su segundo. Si no hay diálogo o texto en alguna, decilo explícito. Sumá tono, gestos, energía, edición. No evalúes todavía.
 
-1. OBSERVÁ TODO antes de concluir nada, escena por escena: texto en pantalla, gestos, expresiones, objetos, encuadre, colores, cortes de edición, música, silencios, y también CÓMO EVOLUCIONA LO QUE SE ESTÁ CONTANDO — si la pregunta, promesa o conflicto planteado en el hook avanza, se resuelve, se abandona o se reemplaza por otra cosa.
+FASE 2 — INVENTARIO DE MECANISMOS. Por cada elemento de cada escena (texto, audio, visual, narrativo, sensorial — sin jerarquía entre canales), preguntate: "si esto no estuviera, ¿el espectador tendría menos motivo para quedarse en este punto?" Listá todos los que pasen ese test, sin importar el canal. Un texto en pantalla puede sostener una escena tan bien o mejor que cualquier recurso visual — no lo subestimes por default.
 
-2. IDENTIFICÁ MECANISMOS, no elementos, en cada escena relevante. Un elemento es cualquier cosa que aparece en la escena (un corte, un dato, una imagen, un objeto). Que un elemento aparezca no significa que sostenga atención. Es mecanismo únicamente si le da al espectador una razón concreta para seguir mirando en ese momento — no importa de qué naturaleza sea esa razón; puede ser cualquier cosa que efectivamente sostenga la atención. Para cada elemento relevante, preguntate: "si esto no estuviera, ¿el espectador tendría menos motivo para quedarse en este punto?" Si la respuesta es sí, es mecanismo. Si es no, es solo un elemento presente, no algo que sostiene la escena. Preguntate por cada escena: "¿qué motivo concreto tiene este espectador para NO abandonar acá?" — la respuesta puede ser "ninguno".
+FASE 3 — JUICIO INTEGRADO. Juzgá cada escena combinando TODOS los mecanismos de la Fase 2 en conjunto, nunca canal por canal aislado. Un canal débil no vuelve débil a la escena si otro canal sostiene un mecanismo fuerte por sí solo. Evaluá también cómo evoluciona lo planteado en el hook — si avanza, se resuelve, se abandona o se reemplaza. No anticipes escenas futuras al juzgar una escena puntual. Formato conocido no es débil por ser conocido.
 
-3. JUZGÁ LA EJECUCIÓN, no el concepto. Que la idea de la escena sea válida (revelar un resultado, generar un giro, dar contexto) no implica que esté bien ejecutada. Hacé el juicio directo por cada escena: un espectador que ya decidió quedarse después del hook, ¿sigue mirando después de esto, o abandona acá? No busques argumentos para inclinarte hacia ninguna de las dos respuestas.
+FASE 4 — PRUEBA DE FUEGO. Recorré TODAS las escenas y buscá activamente TODOS los puntos reales de abandono, con evidencia — no elijas uno solo si hay más de uno real. Evaluá además: (a) sin producción — cámara mediocre, sin música ni efectos — ¿el mecanismo integrado sobrevive hasta el final?; (b) nicho — las promesas centrales aisladas de la producción, ¿presuponen un rol o necesidad que la mayoría no tiene?, y la ejecución, ¿es atractiva para cualquiera? Si compiten entre sí, decilo explícitamente en vez de forzar un solo veredicto.
 
-4. HACÉ DE ABOGADO DEL DIABLO (nunca lo digas en el análisis esa palabra.): antes de dar el visto bueno, buscá activamente por qué un usuario exigente abandonaría, incluso si el concepto es bueno. Si hay más de un motivo posible, quedate con el más fuerte. Si no encontrás nada real, recién ahí decilo explícitamente.
+FASE 5 — VEREDICTO. Con lo reunido, sin agregar evidencia nueva, concluí en qué punto(s), si los hay, el espectador abandona. Mencioná TODAS las fallas reales encontradas, cada una con severidad: de los espectadores que llegaron hasta ese punto, ¿cuántos abandonarían específicamente ahí? Tu juicio es solo sobre retención — nunca prediagas otras acciones. Toda conclusión se apoya en evidencia ya reunida.
 
-5. CHEQUEO DE NICHO. Evaluá dos cosas por separado y decilas ambas, aunque tiren para lados distintos: (1) la premisa o promesa central, aislada de la producción — ¿presupone un rol, tarea o necesidad específica que la mayoría no tiene? (2) la ejecución (estética, ritmo, ganchos visuales) — ¿es atractiva para cualquiera más allá del tema? Una producción atractiva no compensa ni anula que la premisa sea de nicho — son dos cosas distintas y las dos importan. Si compiten, decilo explícitamente en vez de elegir una.
-
-6. NO COMPENSES. Si identificaste un punto de abandono, no lo diluyas mencionando después cosas positivas del resto del video para suavizarlo. Un solo tramo que pierde al espectador puede tapar todo lo demás bien ejecutado — no lo trates como detalle menor solo porque hay aspectos positivos alrededor.
-
-7. SI HAY FALLA, calificá severidad respondiendo: de los espectadores que llegaron hasta ese punto (ya pasaron el hook), ¿cuántos abandonarían específicamente ahí por este motivo? Justificá con evidencia del video, no repitas la pregunta como fórmula.
-
-Tu único juicio es sobre retención durante el desarrollo: en qué punto, si lo hay, el espectador abandona. Nunca prediagas otras acciones (like, comentario, compartir, seguir, guardar) — no deben aparecer en tu respuesta.
-
-Ignorá por completo la calidad visual durante este ejercicio.
-
-Imaginá que exactamente el mismo contenido fue grabado con una cámara mediocre, sin efectos, sin música y sin edición llamativa, pero manteniendo el mismo diálogo, la misma estructura narrativa y el mismo orden de escenas.
-
-¿Una persona promedio que ya decidió quedarse después del hook tendría igualmente un motivo para seguir mirando hasta el final?
-
-Si la respuesta es NO, entonces el desarrollo depende principalmente de la ejecución visual y no de la narrativa o el contenido en sí. Consideralo una limitación importante.
-
-Toda conclusión debe apoyarse en evidencia observable del video (incluido lo dicho/narrado). Usá tu conocimiento general sobre comportamiento en feeds de video corto para interpretar esa evidencia, nunca para reemplazarla.
 </instrucciones>
 `;
 
