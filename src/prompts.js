@@ -78,31 +78,15 @@ Analizás cómo funciona el hook durante los primeros ${hookWindowSegundos} segu
 
 <instrucciones>
 
-PRE-FASE — MARCO CONCEPTUAL Y REGLA DEL JUEGO.
-Antes de describir o juzgar, respondé en 1-2 oraciones abstractas (sin mencionar marcas, productos ni la industria de fondo):
-1. ¿Cuál es la "Regla del Juego" o propuesta estética/narrativa de este hook? (Ejemplos: "Transformación progresiva de baja a alta fidelidad", "Tensión por expectativa de caída", "Desafío con recompensa", "Contraste visual disruptivo"). Asumí intención narrativa en cualquier anomalía o setup visual antes de calificarlo como error técnico.
-2. Brecha de información: ¿Qué pregunta implícita se hace el espectador en el segundo 1 que lo obliga a quedarse a ver la resolución?
+FASE 1 — OBSERVACIÓN LITERAL. Transcribí el audio palabra por palabra (diálogo, música, silencios, con timestamps aproximados) y todo texto en pantalla tal como aparece, con su segundo. Si no hay diálogo o texto, decilo explícito. Sumá tono, gestos, energía, edición, encuadre. No evalúes todavía. Si un timestamp no se puede determinar con exactitud, usá un rango (ej: "≈2 s" o "entre el segundo 1 y 2") en vez de una precisión falsa.
 
-FASE 1 — OBSERVACIÓN LITERAL. Registrá TODO lo que existe en estos ${hookWindowSegundos} segundos, sin excepción y sin evaluar nada todavía: audio palabra por palabra (diálogo, música, silencios, con timestamps aproximados — usá rangos como "≈2 s" si no hay precisión exacta), todo texto en pantalla tal como aparece con su segundo.
-REGLA DE OCR: Diferenciá explícitamente el texto editado sobrepuesto (subtítulos, gráficos de edición) del texto físico del entorno (carteles de edificios, marcas en la escenografía, patentes, ropa). El texto físico es parte del entorno real del video y jamás debe evaluarse como un texto flotante fuera de contexto.
-Registrá también tono, gestos, energía, expresiones, edición, encuadre, colores, ritmo de cortes, y qué tipo de estructura o formato plantea. Esta fase es pura descripción objetiva.
+FASE 2 — INVENTARIO DE MECANISMOS. Por cada elemento observado (texto, audio, visual, narrativo, sensorial — sin jerarquía entre canales), preguntate: "si esto no estuviera, ¿el espectador tendría menos motivo para quedarse?" Listá todos los que pasen ese test, sin importar el canal ni cuán simple o técnico parezca. Un texto en pantalla puede sostener el hook tan bien como cualquier recurso visual; una progresión, contraste o revelación que recién arranca acá también cuenta, aunque su pago llegue después. Además, recorré el tramo momento a momento: en cada instante, ¿hay algo nuevo que procesar (información, giro, imagen, sonido, progreso), o el video simplemente sigue existiendo sin agregar nada? Un tramo donde nada cambia es evidencia de aburrimiento por sí mismo, aunque tampoco pase nada "malo" — no necesitás encontrar un error puntual para señalarlo.
 
-FASE 2 — INVENTARIO Y ETIQUETADO DE MECANISMOS.
-Asigná un ID a cada mecanismo detectable: [MEC-1], [MEC-2], etc. (incluyendo texto, audio, progresión, o recursos de setup como pausas o baja calidad inicial). Preguntate por cada uno: "Si esto no estuviera, ¿se destruiría la 'Regla del Juego' planteada en la Pre-Fase?" Listá todos los que sostengan la atención.
+FASE 3 — JUICIO INTEGRADO. Juzgá el hook combinando TODOS los mecanismos de la Fase 2 en conjunto, nunca canal por canal aislado — un canal débil no vuelve débil al hook si otro sostiene un mecanismo fuerte por sí solo. Antes de señalar cualquier momento como problema, contrastalo contra los mecanismos que ya identificaste: si ese momento es parte de cómo funciona algo que ya reconociste como sostén (el arranque de una progresión, un contraste que se resuelve después), no lo reportes como falla aislada sin dejar esa conexión explícita. Juzgá el mecanismo por su efecto real, nunca por la categoría o industria a la que pertenece el video — un patrón reconocible o un concepto técnico puede generar curiosidad genuina si la ejecución logra que el espectador necesite ver qué sigue; eso se evalúa en el mecanismo mismo, no en la etiqueta del contenido. Formato conocido no es débil por ser conocido. No juzgues por lo que anticipás que viene después, solo por lo que ya está en estos ${hookWindowSegundos} segundos.
 
-FASE 3 — MATRIZ DE COBERTURA Y JUICIO INTEGRADO.
-Antes de emitir cualquier juicio, listá TODOS los IDs de la Fase 2 y asignales un rol:
-- [MEC-X]: ¿Aporta intriga, tensión, novedad o sostiene la Regla del Juego? (SÍ/NO)
+FASE 4 — FALSACIÓN. Tomá el juicio de la Fase 3 e intentá refutarlo activamente: "si mi conclusión es que esto sostiene la atención, ¿qué evidencia observable demostraría lo contrario? ¿Esa evidencia está presente?" Y a la inversa si tu conclusión fue negativa. Una observación se convierte en problema real únicamente cuando hay una cadena causal directa entre la evidencia observable y una pérdida plausible de permanencia — una imperfección (plano estático, corte simple) no es automáticamente un problema si otro mecanismo ya identificado sostiene la atención de forma independiente. Contrastá también contra los mejores videos que compiten en el feed de ${platform}, no contra videos flojos. Evaluá además: (a) sin producción — ¿el mecanismo integrado de la Fase 3 sobrevive sin edición, música ni efectos, con cámara mediocre?; (b) nicho — si eliminás todo conocimiento previo del tema, ¿la premisa sigue teniendo una razón intrínseca para interesar? ¿Qué elemento observable da esa razón? ¿Qué parte del interés desaparecería sin ese conocimiento previo? No asumas por default que un tema específico o un concepto técnico reduce el interés general. Si la dependencia es parcial o hay señales que compiten entre sí, decilo así — no fuerces un SÍ/NO limpio si la evidencia da para matices.
 
-Cualquier momento que consideres "débil" o "problema" DEBE ser contrastado contra la Matriz y la Pre-Fase:
-Si el momento T es el setup necesario para la Regla del Juego o forma parte de un [MEC-X] activo, QUEDA PROHIBIDO clasificarlo como un problema aislado o defecto de producción.
-
-FASE 4 — FALSACIÓN Y ABSTRACCIÓN DE CATEGORÍA.
-1. Test Contrafáctico: Si elimino este elemento/setup y muestro el contenido directo en su formato comercial estándar desde el segundo 0, ¿el video se vuelve más único o más genérico? Si la respuesta es "más genérico", ese elemento es el sostén del hook y NO es un problema.
-2. Evaluá la efectividad de la brecha de información identificada en la Pre-Fase, NO la etiqueta del producto o industria.
-3. Si vas a reportar un PROBLEMA real, debe cumplir la Regla de Causalidad Estricta: citá el [MEC-X] afectado y explicá por qué el espectador deslizaría inmediatamente a pesar de los otros [MEC-Y] que sostienen la propuesta.
-
-FASE 5 — VEREDICTO. Con lo que sobrevivió a la Fase 4, sin agregar evidencia nueva, concluí si el hook detiene el scroll o no. Para cada problema real (el que sobrevivió la falsación), describí la conexión causal entre la evidencia y la pérdida de permanencia, en vez de estimar cuántos espectadores abandonarían — esa cifra no tiene datos reales detrás. Mencioná TODOS los problemas reales que hayan sobrevividos, no solo uno. Si dos lecturas son igual de plausibles y ninguna evidencia alcanza para inclinar la balanza, decilo así en vez de forzar una conclusión categórica. Tu juicio es solo sobre retención — nunca predigas otras acciones (like, comentario, compartir, seguir, guardar). Toda conclusión se apoya en evidencia ya reunida, nunca en algo nuevo. Antes de nombrar algo como problema, confirmá que efectivamente redujo permanencia en la Fase 4 — si el análisis concluyó que algo capta o sostiene la atención, eso va como fortaleza, nunca bajo un título de problema. Tampoco inventes problemas porque no existen. Aprendé a identificar fortalezas en cosas que funcionan.
+FASE 5 — VEREDICTO. Con lo que sobrevivió a la Fase 4, sin agregar evidencia nueva, concluí si el hook detiene el scroll o no. Para cada problema real (el que sobrevivió la falsación), describí la conexión causal entre la evidencia y la pérdida de permanencia, en vez de estimar cuántos espectadores abandonarían — esa cifra no tiene datos reales detrás. Mencioná TODOS los problemas reales que hayan sobrevivido, no solo uno. Si dos lecturas son igual de plausibles y ninguna evidencia alcanza para inclinar la balanza, decilo así en vez de forzar una conclusión categórica. Tu juicio es solo sobre retención — nunca prediagas otras acciones (like, comentario, compartir, seguir, guardar). Toda conclusión se apoya en evidencia ya reunida, nunca en algo nuevo.
 
 </instrucciones>
 `;
@@ -121,7 +105,7 @@ Analizás cómo evoluciona la atención del espectador desde el segundo ${hookWi
 
 <instrucciones>
 
-FASE 1 — OBSERVACIÓN LITERAL. Dividí el video en escenas o beats desde el segundo ${hookWindowSegundos}. Registrá TODO lo que existe en cada una, sin excepción y sin evaluar nada todavía: audio palabra por palabra, todo texto en pantalla con su segundo (usá rangos si no hay precisión exacta), tono, gestos, energía, edición, y la estructura/formato completo del video junto con cómo se desarrolla el arco planteado en el hook a lo largo de las escenas. Si algo no está presente en alguna escena, decilo explícito. Esta fase es pura descripción — cualquier cosa que seas capaz de percibir pertenece acá, con tus propias palabras si no tenés una categoría precisa para nombrarla.
+FASE 1 — OBSERVACIÓN LITERAL. Dividí el video en escenas o beats desde el segundo ${hookWindowSegundos}. Transcribí el audio palabra por palabra y todo texto en pantalla en cada escena, con su segundo. Si no hay diálogo o texto en alguna, decilo explícito. Sumá tono, gestos, energía, edición. No evalúes todavía. Si un timestamp no se puede determinar con exactitud, usá un rango en vez de una precisión falsa.
 
 FASE 2 — INVENTARIO DE MECANISMOS. Por cada elemento de cada escena (texto, audio, visual, narrativo, sensorial — sin jerarquía entre canales), preguntate: "si esto no estuviera, ¿el espectador tendría menos motivo para quedarse en este punto?" Listá todos los que pasen ese test, sin importar el canal ni cuán simple o técnico parezca. Un texto en pantalla puede sostener una escena tan bien como cualquier recurso visual; una progresión, contraste o revelación que se va construyendo también cuenta, aunque su pago llegue en una escena posterior. Además, recorré el video momento a momento, no solo escena por escena: en cada instante, ¿hay algo nuevo que procesar, o simplemente sigue pasando el tiempo sin agregar nada? Un tramo donde nada cambia es evidencia de aburrimiento por sí mismo, aunque tampoco haya un error puntual — no necesitás encontrar una falla para señalar un tramo muerto, la ausencia de novedad ya es la falla. Buscá activamente estos tramos, no solo los momentos donde algo visiblemente falla.
 
@@ -151,9 +135,7 @@ ${desarrolloAnalysis}
 
 0. EXTRACCIÓN LITERAL (obligatoria, antes de razonar nada).
 
-Armá una lista interna con TODO lo que el ANÁLISIS DEL HOOK y el ANÁLISIS DEL DESARROLLO ya afirman explícitamente: problemas del hook (en orden), problemas del desarrollo (en orden), el chequeo de nicho de cada uno (puede tener matices, no necesariamente un SÍ/NO limpio), y fortalezas mencionadas. Si algo está descripto como algo que capta, retiene o sostiene la atención — aunque el análisis original lo haya puesto bajo un título de "problema" — clasificalo como fortaleza, no como problema, para el resto del proceso. No agregues ningún problema, matiz o fortaleza que no esté escrito en el contexto previo. Si un análisis no menciona problemas reales, esa lista queda vacía — no la rellenes.
-
-Esta lista es la única fuente de verdad para todo lo que sigue.
+Armá una lista interna con TODO lo que el ANÁLISIS DEL HOOK y el ANÁLISIS DEL DESARROLLO ya afirman explícitamente: problemas del hook (en orden), problemas del desarrollo (en orden), el chequeo de nicho de cada uno (puede tener matices, no necesariamente un SÍ/NO limpio), y fortalezas mencionadas. No agregues ningún problema, matiz o fortaleza que no esté escrito en el contexto previo. Si un análisis no menciona problemas, esa lista queda vacía — no la rellenes. Esta lista es la única fuente de verdad para todo lo que sigue.
 
 1. ORDEN DE PROCESAMIENTO FIJO.
 
@@ -194,21 +176,7 @@ Si el chequeo de nicho señaló dependencia (total o parcial), generá una soluc
 
 4. REDACCIÓN FINAL.
 
-Redactá usando únicamente las soluciones que pasaron (g). No muestres el proceso interno (SÍ/NO, alternativas descartadas, extracción, etiquetas de nicho) — el usuario ve solo: problema, causa, solución explicada en criollo. Nunca uses en la redacción palabras del propio proceso ("mecanismo", "causa raíz", "chequeo de nicho", "SÍ/NO", "anclaje"). Si el chequeo de nicho tiene matices, conservá esa doble lectura en una frase simple, sin etiquetas técnicas. Si ningún problema sobrevivió el proceso, no fuerces uno — decilo así de simple y listá las fortalezas reales encontradas.
-
-FORMATO VISUAL OBLIGATORIO (para que se lea rápido, en Markdown):
-Cada problema va en este formato exacto, sin desviarte:
-
-**Problema:** [una línea con el problema, ya en criollo]
-**Solución:** [una línea con la acción concreta]
-
-Fortalezas en una sola línea cada una, con **Fortaleza:** al inicio.
-
-El chequeo de nicho, si corresponde, con **A tener en cuenta:** al inicio.
-
-El cierre, con **Lo más importante:** al inicio.
-
-Una línea en blanco entre cada bloque, nunca párrafos corridos de varias ideas juntas. Nada de numeración (1, 2, 3) ni viñetas — las etiquetas en negrita ya ordenan visualmente.
+Redactá usando únicamente las soluciones que pasaron (g). No muestres el proceso interno (SÍ/NO, alternativas descartadas, extracción, etiquetas de nicho) — el usuario ve solo: problema, causa, solución explicada en criollo. Nunca uses en la redacción palabras del propio proceso ("mecanismo", "causa raíz", "chequeo de nicho", "SÍ/NO", "anclaje"). Si el chequeo de nicho tiene matices, conservá esa doble lectura en una frase simple, sin etiquetas técnicas.
 
 </instrucciones>
 
@@ -228,10 +196,10 @@ Una línea en blanco entre cada bloque, nunca párrafos corridos de varias ideas
 2. TONO: claro, honesto, proporcional — ni inflado ni suavizado.
 3. SIN MÉTRICAS: no uses porcentajes, scores ni números inventados.
 4. SIN PREDICCIONES VAGAS: explicá el mecanismo, no el pronóstico.
-5. NO FUERCES CANTIDAD: la cantidad de problemas o fortalezas depende de la lista del punto 0, no de una expectativa previa. Si el video no tiene problemas reales que sobrevivieron a la falsación, la sección de problemas queda vacía — no está permitido etiquetar algo positivo como "Problema" para tener contenido que mostrar. Si tiene cinco problemas reales, mencioná los cinco — no descartes ninguno real solo por acortar.
+5. NO FUERCES CANTIDAD: depende de la lista del punto 0.
 6. CERO REPETICIÓN: cada idea se dice una sola vez.
-7. FORMATO ESCANEABLE, NO BREVEDAD FORZADA: no hay límite de líneas — decí todos los problemas, causas, soluciones y fortalezas reales que encontraste, completos. La velocidad de lectura viene del FORMATO VISUAL (etiquetas en negrita, bloques cortos, líneas en blanco entre ideas), no de recortar contenido. Cada **Problema:**/**Solución:** sigue siendo una o dos líneas cada uno — no te extiendas dentro de cada bloque — pero podés tener tantos bloques como problemas reales haya. Sin frases de relleno tipo "es importante notar que", "cabe destacar".
-8. INCLUÍ TODO LO REAL: mencioná todos los problemas que sobrevivieron el proceso y todas las fortalezas reales encontradas, en el orden fijo del punto 1. No hay techo de cantidad — el único filtro es que cada ítem sea real (haya sobrevivido la falsación en el análisis de origen), no que sea "de los primeros 2-3".
+7. BREVEDAD TOTAL: legible en menos de 30 segundos, máximo 12-15 líneas. Cada problema: máximo 3 líneas. Nicho: máximo 2. Fortalezas: 1 línea cada una. Cierre: 1 línea. Sin frases de relleno.
+8. PRIORIZÁ: máximo 2-3 problemas y 1-2 fortalezas, en el orden del punto 1.
 9. CIERRE ACCIONABLE: una frase con la solución de mayor impacto si solo pudiera aplicar una.
 10. SIN JERGA INTERNA en la redacción final.
 </reglas_estrictas>
