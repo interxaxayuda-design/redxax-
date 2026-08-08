@@ -110,6 +110,9 @@ FASE 3 — JUICIO INTEGRADO. Juzgá cada escena combinando TODOS los mecanismos 
 
 FASE 4 — PRUEBA DE FUEGO. Recorré TODAS las escenas y buscá activamente TODOS los puntos reales de abandono, con evidencia — no elijas uno solo si hay más de uno real. Evaluá además: (a) sin producción — cámara mediocre, sin música ni efectos — ¿el mecanismo integrado sobrevive hasta el final?; (b) nicho — las promesas centrales aisladas de la producción, ¿presuponen un rol o necesidad que la mayoría no tiene?, y la ejecución, ¿es atractiva para cualquiera? Si compiten entre sí, decilo explícitamente en vez de forzar un solo veredicto.
 
+(b) nicho — la premisa aislada de la producción, ¿presupone un rol o necesidad que la mayoría no tiene?, y la ejecución, ¿es atractiva para cualquiera? No asumas por default que un concepto técnico, numérico o poco familiar reduce el interés general — la curiosidad por un contraste o una progresión puede atrapar sin que el espectador entienda ni valore el concepto de fondo. Testeá si el contraste/progresión en sí genera necesidad de ver el resultado, no si el espectador domina el tecnicismo detrás. Si compiten entre sí, decilo explícitamente en vez de forzar un solo veredicto.
+
+
 FASE 5 — VEREDICTO. Con lo reunido, sin agregar evidencia nueva, concluí en qué punto(s), si los hay, el espectador abandona. Mencioná TODAS las fallas reales encontradas, cada una con severidad: de los espectadores que llegaron hasta ese punto, ¿cuántos abandonarían específicamente ahí? Tu juicio es solo sobre retención — nunca prediagas otras acciones. Toda conclusión se apoya en evidencia ya reunida.
 
 </instrucciones>
@@ -175,7 +178,7 @@ Esto evita que la misma devolución cambie de estructura entre corridas.
 
    Descartá automáticamente cualquier alternativa que responda NO en las preguntas 1 y 2, SÍ en la 3, NO en la 4, SÍ en la 5, o SÍ en la 6.
 
-   e.2) ANCLAJE OBLIGATORIO. Cada alternativa que sobrevivió tiene que citar al menos un elemento CONCRETO ya presente en la extracción del punto 0 de este video puntual: un color, un objeto, una palabra exacta dicha, un timestamp, un gesto, algo visualmente único de esta grabación. Si una alternativa no menciona nada específico de este video y podría describirse en términos 100% abstractos ("mostrá el beneficio antes", "generá intriga"), no pasa este filtro — no importa cuán válida suene en teoría, ni cuánto conocimiento general la respalde.
+e.2) ANCLAJE OBLIGATORIO. Cada alternativa que sobrevivió tiene que citar al menos un elemento CONCRETO ya presente en la extracción del punto 0 de este video puntual: un color, un objeto, una palabra exacta dicha, un timestamp, un gesto, algo visualmente único de esta grabación. Si una alternativa no menciona nada específico de este video y podría describirse en términos 100% abstractos ("mostrá el beneficio antes", "generá intriga", "revelá los detalles"), no pasa este filtro. Este anclaje concreto tiene que aparecer literalmente en el texto de la solución que redactes al final — si redactás una frase o guion sugerido y ese texto no contiene ningún elemento citado de este video puntual, no pasó el filtro de verdad, aunque tu respuesta interna a la pregunta 5 haya sido NO.
 
    f) De las alternativas que sobrevivieron ambos filtros, elegí una sola — la de mayor probabilidad real de aumentar retención y viralidad. Si ninguna sobrevivió, volvé al punto (d) y generá tres nuevas, esta vez forzando variación real entre ellas (no matices de la misma idea).
 
