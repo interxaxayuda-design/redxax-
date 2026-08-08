@@ -147,6 +147,16 @@ entre evidencia y pérdida de permanencia — no estimes cuántos espectadores
 abandonarían. Tu juicio es solo sobre retención, nunca sobre otras acciones
 (like, comentario, compartir, seguir, guardar).
 
+CHEQUEO DE NICHO (obligatorio, no te lo saltees): ¿el interés que genera
+este hook depende de que el espectador ya conozca o le importe el tema de
+antemano, o nace de cómo está presentada la información, sin importar el
+tema? Contestá explícitamente SÍ / NO / PARCIAL citando evidencia —
+incluso si la respuesta es NO. Un hook puede parecer excelente y sin
+embargo depender por completo de que el espectador ya esté interesado en
+el nicho; si eso pasa, tiene que quedar registrado acá, porque si no el
+creador puede pensar que el hook atrae a cualquier persona cuando en
+realidad no es así.
+
 Cerrá describiendo cómo sería la interacción del usuario segundo a segundo,
 citando evidencia, y cómo eso se refleja en el veredicto.
 
@@ -193,13 +203,14 @@ No anticipes escenas futuras al juzgar una escena puntual.
 FASE 4 — FALSACIÓN.
 Tomá el juicio de la Fase 3 e intentá refutarlo: "si mi conclusión es que esta escena sostiene la atención, ¿qué evidencia (Ex) demostraría lo contrario?" Una observación se convierte en problema real únicamente cuando hay una cadena causal directa entre la evidencia y una pérdida plausible de permanencia.
 Recorré TODAS las escenas antes de concluir.
-Evaluá además: (a) sin producción — ¿el mecanismo integrado sobrevive hasta el final sin edición, música ni efectos? (citá qué evidencia depende de la producción); (b) nicho — si eliminás todo conocimiento previo del tema, ¿las promesas centrales siguen teniendo una razón intrínseca para interesar, según la evidencia? Si hay señales que compiten entre sí, decilo así.
+Evaluá además: (a) sin producción — ¿el mecanismo integrado sobrevive hasta el final sin edición, música ni efectos? (citá qué evidencia depende de la producción); (b) NICHO (obligatorio, no te lo saltees) — si eliminás todo conocimiento previo del tema, ¿las promesas centrales siguen teniendo una razón intrínseca para interesar, según la evidencia? Contestá explícitamente SÍ / NO / PARCIAL, incluso si la respuesta es que no hay dependencia — esta evaluación tiene que quedar registrada siempre. Si hay señales que compiten entre sí, decilo así.
 
 FASE 5 — VEREDICTO Y AUDITORÍA.
 Con lo que sobrevivió a la Fase 4, sin agregar evidencia nueva, concluí en qué punto(s), si los hay, el espectador abandona.
 Antes de escribir el veredicto, auditá que cada afirmación tenga un ID de evidencia citado en alguna fase anterior — lo que no lo tenga, se elimina.
 Para cada problema real, describí la conexión causal entre la evidencia y la pérdida de permanencia, en vez de estimar cuántos espectadores abandonarían.
 Mencioná TODOS los problemas reales que hayan sobrevivido. Si dos lecturas son igual de plausibles, decilo así en vez de forzar una conclusión categórica.
+Incluí siempre el resultado del chequeo de nicho de la Fase 4 en el veredicto final, aunque la respuesta sea que no hay dependencia — no lo omitas ni lo des por sobreentendido.
 Tu juicio es solo sobre retención — nunca prediagas otras acciones. Toda conclusión se apoya en evidencia ya reunida.
 
 
@@ -239,7 +250,10 @@ del video.
 
 El análisis del hook funciona como CONTEXTO, no como evidencia nueva.
 
-Nunca copies automáticamente una conclusión del hook.
+Nunca copies automáticamente una conclusión del hook. Esto también aplica
+al chequeo de nicho: si el hook marcó SÍ/NO/PARCIAL, revisalo con la
+evidencia del desarrollo — la dependencia de nicho puede aparecer, cambiar
+o desaparecer a medida que avanza el video.
 
 </CONTINUIDAD_HOOK>
 
@@ -283,6 +297,18 @@ REGLAS BASE:
   cae en el video sin contexto tiene que sentir una necesidad real de
   saber qué sigue. No expliques por qué generaría curiosidad — la
   solución en sí tiene que dejarlo claro.
+- Las soluciones tienen que ser MUY efectivas, no ajustes cosméticos.
+  Elegí siempre la alternativa con mayor probabilidad real de cambiar el
+  comportamiento del espectador en este video puntual. Si de las 3
+  alternativas que pensaste ninguna te resulta genuinamente potente, seguí
+  pensando hasta encontrar una que sí lo sea — no te conformes con la
+  primera idea aceptable.
+- Que un elemento no esté funcionando bien no significa que haya que
+  sacarlo. Antes de proponer eliminarlo, evaluá si se puede transformar,
+  resignificar, mover de lugar o usar con otro propósito para que sí
+  cumpla su función. Proponé eliminarlo solo si ninguna transformación lo
+  resuelve y el video queda mejor sin él — y en ese caso la solución
+  tiene que decir con qué se reemplaza, no dejar un vacío.
 
 <contexto_previo>
 ANÁLISIS DEL HOOK:
@@ -299,11 +325,21 @@ PROCESO (hacelo en tu cabeza, no lo muestres en la respuesta):
    hay problemas reales, decilo explícitamente y mostrá solo fortalezas.
 3. Para cada problema, pensá 3 soluciones genuinamente distintas entre sí
    (que ataquen la causa desde estrategias diferentes, no variaciones de
-   la misma idea). Antes de elegir, descartá cualquiera que sea previsible
-   o que podrías haber sugerido sin ver este video. Elegí la que mejor
-   cumpla los criterios de arriba.
-4. Mencioná el nicho solo si el análisis detectó una dependencia real (o
-   parcial) del conocimiento previo del espectador.
+   la misma idea). Antes de elegir, descartá cualquiera que sea
+   previsible, que podrías haber sugerido sin ver este video, o que
+   resuelva el problema simplemente sacando el elemento sin haber
+   evaluado antes si se podía transformar. Elegí la que combine mayor
+   originalidad Y mayor efectividad real — no la primera que cumpla el
+   mínimo.
+4. Revisá explícitamente el chequeo de nicho de AMBOS análisis (hook y
+   desarrollo). Si cualquiera de los dos detectó una dependencia real o
+   parcial del conocimiento previo del espectador, tenés que comunicarlo
+   siempre en "A tener en cuenta" — nunca lo omitas, aunque el resto del
+   video esté muy bien resuelto. Omitirlo puede hacer que el creador crea
+   que el video atrae a cualquier persona cuando en realidad solo
+   funciona para quien ya conoce o le importa el tema, y eso genera una
+   expectativa falsa. Si ninguno de los dos detectó dependencia real, no
+   menciones el nicho.
 5. Elegí como máximo 2 fortalezas: las más relevantes para la retención,
    sin repetir algo ya implícito en una solución.
 
@@ -332,7 +368,8 @@ FORMATO OBLIGATORIO:
 
 **Fortaleza:** [qué funciona y por qué]
 
-**A tener en cuenta:** [solo si hay dependencia real del nicho]
+**A tener en cuenta:** [dependencia de nicho, solo si el hook o el
+desarrollo la detectaron real o parcial — nunca la omitas si existe]
 
 **Lo más importante:** [la única modificación que priorizarías si solo
 pudieras hacer una]
