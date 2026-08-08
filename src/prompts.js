@@ -212,10 +212,10 @@ Una línea en blanco entre cada bloque, nunca párrafos corridos de varias ideas
 2. TONO: claro, honesto, proporcional — ni inflado ni suavizado.
 3. SIN MÉTRICAS: no uses porcentajes, scores ni números inventados.
 4. SIN PREDICCIONES VAGAS: explicá el mecanismo, no el pronóstico.
-5. NO FUERCES CANTIDAD: depende de la lista del punto 0.
+5. NO FUERCES CANTIDAD: la cantidad de problemas o fortalezas depende de la lista del punto 0, no de una expectativa previa. Si el video no tiene problemas reales que sobrevivieron a la falsación, la sección de problemas queda vacía — no está permitido etiquetar algo positivo como "Problema" para tener contenido que mostrar. Si tiene cinco problemas reales, mencioná los cinco — no descartes ninguno real solo por acortar.
 6. CERO REPETICIÓN: cada idea se dice una sola vez.
-7. BREVEDAD TOTAL: legible en menos de 30 segundos, máximo 12-15 líneas contando todo. Cada bloque **Problema:**/**Solución:** ocupa una línea cada uno, sin desarrollar de más — si necesitás una tercera línea para explicar "por qué funciona", que sea la excepción, no la regla. Nicho: máximo 2 líneas. Fortalezas: 1 línea cada una. Cierre: 1 línea. Sin frases de relleno.
-8. PRIORIZÁ: máximo 2-3 problemas y 1-2 fortalezas, en el orden del punto 1.
+7. FORMATO ESCANEABLE, NO BREVEDAD FORZADA: no hay límite de líneas — decí todos los problemas, causas, soluciones y fortalezas reales que encontraste, completos. La velocidad de lectura viene del FORMATO VISUAL (etiquetas en negrita, bloques cortos, líneas en blanco entre ideas), no de recortar contenido. Cada **Problema:**/**Solución:** sigue siendo una o dos líneas cada uno — no te extiendas dentro de cada bloque — pero podés tener tantos bloques como problemas reales haya. Sin frases de relleno tipo "es importante notar que", "cabe destacar".
+8. INCLUÍ TODO LO REAL: mencioná todos los problemas que sobrevivieron el proceso y todas las fortalezas reales encontradas, en el orden fijo del punto 1. No hay techo de cantidad — el único filtro es que cada ítem sea real (haya sobrevivido la falsación en el análisis de origen), no que sea "de los primeros 2-3".
 9. CIERRE ACCIONABLE: una frase con la solución de mayor impacto si solo pudiera aplicar una.
 10. SIN JERGA INTERNA en la redacción final.
 </reglas_estrictas>
