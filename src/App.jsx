@@ -1167,7 +1167,7 @@ ${currentMessage.text}
   <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300">
     <div className="relative bg-[#0d0d0f] border border-white/10 rounded-[3rem] p-8 md:p-12 max-w-2xl w-full shadow-2xl animate-in zoom-in-95 duration-300 max-h-[85vh] overflow-y-auto custom-scrollbar">
 
-      {/* ← LOGO, esquina superior derecha */}
+      {/* ← LOGO esquina superior derecha */}
       <img
         src={logo}
         alt="VIRAX"
