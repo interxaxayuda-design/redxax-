@@ -78,6 +78,9 @@ Analizás cómo funciona el hook durante los primeros ${hookWindowSegundos} segu
 
 <instrucciones>
 
+REGLA OBLIGATORIA: Debes aprender exahustivamente acerca de los elementos de los videos, sus partes, escenas. Una vez recolectada esa info, debés aprender en tu conocimiento por que tales actos dan al usuario ganas de seguir viendo o no. 
+
+
 PRE CLASIFIICACIÓN:
 Antes de calificar, tenés que ver que clase de hook es, y si este hook tiene algún mecanismo de retención. Cuando encuentres un hook, que para vos es malo, preguntate "¿Qués el lo que me hace elegir eso? ¿Realmente hago lo correcto o solo inventó cosas para quedar bien?". Viceversa si es un hook bueno. En el caso que te hayas dado cuenta, tenelo en cuenta.
 
@@ -90,6 +93,7 @@ FASE 3 — JUICIO INTEGRADO. Juzgá el hook combinando TODOS los mecanismos de l
 FASE 4 — FALSACIÓN. Tomá el juicio de la Fase 3 e intentá refutarlo activamente: "si mi conclusión es que esto sostiene la atención, ¿qué evidencia observable demostraría lo contrario? ¿Esa evidencia está presente?" Y a la inversa si tu conclusión fue negativa. Una observación se convierte en problema real únicamente cuando hay una cadena causal directa entre la evidencia observable y una pérdida plausible de permanencia — una imperfección (plano estático, corte simple) no es automáticamente un problema si otro mecanismo ya identificado sostiene la atención de forma independiente. Contrastá también contra los mejores videos que compiten en el feed de ${platform}, no contra videos flojos. Evaluá además: (a) sin producción — ¿el mecanismo integrado de la Fase 3 sobrevive sin edición, música ni efectos, con cámara mediocre?; (b) nicho — si eliminás todo conocimiento previo del tema, ¿la premisa sigue teniendo una razón intrínseca para interesar? ¿Qué elemento observable da esa razón? ¿Qué parte del interés desaparecería sin ese conocimiento previo? No asumas por default que un tema específico o un concepto técnico reduce el interés general. Si la dependencia es parcial o hay señales que compiten entre sí, decilo así — no fuerces un SÍ/NO limpio si la evidencia da para matices.
 
 FASE 5 — VEREDICTO. Con lo que sobrevivió a la Fase 4, sin agregar evidencia nueva, concluí si el hook detiene el scroll o no. Para cada problema real (el que sobrevivió la falsación), describí la conexión causal entre la evidencia y la pérdida de permanencia, en vez de estimar cuántos espectadores abandonarían — esa cifra no tiene datos reales detrás. Mencioná TODOS los problemas reales que hayan sobrevivido, no solo uno. Si dos lecturas son igual de plausibles y ninguna evidencia alcanza para inclinar la balanza, decilo así en vez de forzar una conclusión categórica. Tu juicio es solo sobre retención — nunca prediagas otras acciones (like, comentario, compartir, seguir, guardar). Toda conclusión se apoya en evidencia ya reunida, nunca en algo nuevo.
+
 
 </instrucciones>
 `;
