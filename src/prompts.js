@@ -28,7 +28,7 @@ export const REVIEW_CONFIG = {
   },
   sintesis: {
     model: "gemini-2.5-flash",
-    temperature: 0.35,
+    temperature: 0,
     thinkingConfig: { thinkingBudget: 1536 }
   }
 };
@@ -83,49 +83,72 @@ Analizás cómo funciona el hook durante los primeros ${hookWindowSegundos} segu
 
 <instrucciones>
 
-FASE 1 — OBSERVACIÓN LITERAL Y REGISTRO DE EVIDENCIA.
-Transcribí el audio palabra por palabra (diálogo, música, silencios, con timestamps aproximados) y todo texto en pantalla tal como aparece, con su segundo. Sumá tono, gestos, energía, edición, encuadre. No evalúes todavía.
-Numerá cada observación individual como evidencia: E1, E2, E3... Un plano, un corte, una línea de texto, un gesto, un cambio de tono: cada uno es una evidencia numerada.
-Si un timestamp no se puede determinar con exactitud, usá un rango (ej: "≈2 s") en vez de una precisión falsa.
-Si algo no es claramente perceptible, decilo explícito como evidencia también ("E7: audio inentendible entre seg 1-2").
-Si no hay diálogo o texto, decilo explícito.
+FASE 1 — EVIDENCIA.
+Transcribí el audio palabra por palabra (diálogo, música, silencios, con
+timestamps aproximados) y todo texto en pantalla tal como aparece, con su
+segundo. Sumá tono, gestos, energía, edición, encuadre. No evalúes todavía.
+Numerá cada observación individual (un plano, un corte, una línea de texto,
+un gesto, un cambio de tono) como evidencia: E1, E2, E3...
+Si un timestamp no se puede precisar, usá un rango ("≈2 s"). Si algo no es
+claramente perceptible o no hay diálogo/texto, decilo explícito como
+evidencia también.
 
-A partir de acá, TODA afirmación en las fases siguientes debe citar al menos un ID de evidencia (Ex) entre paréntesis. Una afirmación sin ID citado es evidencia de invención y no puede usarse en el veredicto final.
+Regla desde acá en adelante: toda afirmación en las fases siguientes debe
+citar al menos un ID de evidencia (Ex) entre paréntesis. Una afirmación sin
+ID citado es invención y no puede usarse en el veredicto final.
 
-FASE 2 — INVENTARIO DE MECANISMOS.
-Por cada evidencia o combinación de evidencias, preguntate: "si esto no estuviera, ¿el espectador tendría menos motivo para quedarse?" Listá todos los que pasen ese test, citando sus IDs, sin importar el canal (texto, audio, visual, narrativo, sensorial) ni cuán simple o técnico parezca.
-Recorré el tramo momento a momento citando evidencia: en cada instante, ¿hay algo nuevo que procesar, o el video simplemente sigue existiendo sin agregar nada (Ex)? Un tramo donde nada cambia es evidencia de aburrimiento por sí mismo.
-Listá también los mecanismos que consideraste y descartaste, con la evidencia que te hizo descartarlos.
+FASE 2 — MECANISMOS Y CONTRASTE.
+Por cada evidencia, preguntate: "si esto no estuviera, ¿el espectador
+tendría menos motivo para quedarse?" Listá todos los mecanismos que pasen
+ese test, citando sus Ex, sin importar el canal (texto, audio, visual,
+narrativo, sensorial). Recorré el tramo momento a momento: en cada instante,
+¿hay algo nuevo que procesar, o el video solo sigue existiendo (Ex)?
+Anotá también los mecanismos que descartaste y por qué.
 
-FASE 2.5 — CASO A FAVOR Y CASO EN CONTRA.
-Antes de juzgar, armá los dos argumentos más fuertes posibles, cada uno apoyado solo en evidencia citada de Fase 1-2:
-(a) El caso más fuerte de que este hook retiene la atención — listá cada Ex que lo sostiene.
-(b) El caso más fuerte de que este hook NO retiene la atención — listá cada Ex que lo sostiene.
-Contá cuántas evidencias de cada caso NO son compartidas con el otro caso (evidencia exclusiva de un solo lado). Un caso con más evidencia exclusiva real pesa más que uno que solo repite las mismas Ex reinterpretadas. Si un caso no tiene ninguna evidencia exclusiva, es más débil que el otro casi por definición — decilo explícito.
-No elijas todavía cuál pesa más.
+Después armá los dos argumentos más fuertes posibles, apoyados solo en
+evidencia citada:
+(a) el caso más fuerte de que el hook SÍ retiene, con sus Ex;
+(b) el caso más fuerte de que el hook NO retiene, con sus Ex.
+Marcá qué evidencia de cada caso es exclusiva (no compartida con el otro).
+Más evidencia exclusiva real = caso más fuerte. Si un caso no tiene
+evidencia exclusiva, decilo explícito. No elijas todavía cuál pesa más.
 
-FASE 3 — JUICIO INTEGRADO.
-Con los dos casos de Fase 2.5 sobre la mesa, decidí cuál pesa más y por qué, combinando TODOS los mecanismos de la Fase 2 en conjunto, nunca canal por canal aislado (citá evidencia).
-Chequeo de robustez por canal: si tuvieras que sostener este juicio citando evidencia SOLO del canal audio+texto, sin ningún Ex visual, ¿seguiría siendo válido? ¿Y sosteniéndolo solo con Ex visual, sin audio ni texto? Si el juicio colapsa al sacar un canal, decilo explícito — es una señal de que el hook depende de un solo canal dominante, no de un mecanismo integrado real.
-Antes de señalar cualquier momento como problema, contrastalo contra los mecanismos que ya identificaste como sostén; si el momento es parte de cómo funciona algo que ya reconociste, no lo reportes como falla aislada sin dejar esa conexión explícita.
-Juzgá el mecanismo por su efecto real, nunca por la categoría o industria del video.
-Doble simetría sobre formato conocido: un formato conocido NO es débil solo por ser conocido, pero tampoco es fuerte solo por ser conocido — en ambos casos tiene que sostener el mecanismo por sí mismo, con evidencia propia.
-No juzgues por lo que anticipás que viene después, solo por lo que ya está en estos ${hookWindowSegundos} segundos.
+FASE 3 — PROBLEMAS REALES.
+Para cada problema candidato:
 
-FASE 4 — FALSACIÓN.
-Tomá el juicio de la Fase 3 e intentá refutarlo activamente: "si mi conclusión es que esto sostiene la atención, ¿qué evidencia observable (Ex) demostraría lo contrario? ¿Esa evidencia está presente?" Y a la inversa si tu conclusión fue negativa.
-Una observación se convierte en problema real únicamente cuando hay una cadena causal directa entre la evidencia observable y una pérdida plausible de permanencia.
-Antes de comparar contra la competencia, nombrá 2-3 patrones concretos de hooks de alto rendimiento que conozcas para ${industria} en ${platform} (patrones generales de tu conocimiento, sin inventar videos específicos). Usalos como vara de comparación real.
-Evaluá además: (a) sin producción — ¿el mecanismo integrado sobrevive sin edición, música ni efectos, con cámara mediocre? (citá qué evidencia depende de la producción y cuál no); (b) nicho — si eliminás todo conocimiento previo del tema, ¿la premisa sigue teniendo una razón intrínseca para interesar? ¿Qué evidencia da esa razón? Si la dependencia es parcial, decilo así — no fuerces un SÍ/NO limpio si la evidencia da para matices.
+PROBLEMA: [descripción concreta]
+EVIDENCIA: [Ex]
+FUNCIÓN: [qué aporta ese mecanismo a la permanencia]
+EJECUCIÓN: [la forma concreta en que aparece favorece o perjudica esa función]
+QUÉ FALLA: concepto / ejecución / timing / claridad / ritmo / información /
+  actuación / encuadre / progresión narrativa / otro
+CADENA CAUSAL: [evidencia] → [característica de la ejecución] →
+  [efecto en el espectador] → [pérdida plausible de permanencia]
 
-FASE 5 — VEREDICTO Y AUDITORÍA.
-Con lo que sobrevivió a la Fase 4, sin agregar evidencia nueva, concluí si el hook detiene el scroll o no.
-Antes de escribir el veredicto final, auditá tu propio razonamiento: revisá que cada afirmación tenga un ID de evidencia citado en algún punto de las fases anteriores. Cualquier afirmación sin evidencia citada se elimina del veredicto.
-Para cada problema real, describí la conexión causal entre la evidencia y la pérdida de permanencia, en vez de estimar cuántos espectadores abandonarían.
-Mencioná TODOS los problemas reales que hayan sobrevivido, no solo uno. Si dos lecturas son igual de plausibles y ninguna evidencia alcanza para inclinar la balanza, decilo así en vez de forzar una conclusión categórica.
-Tu juicio es solo sobre retención — nunca prediagas otras acciones (like, comentario, compartir, seguir, guardar). Toda conclusión se apoya en evidencia ya reunida, nunca en algo nuevo.
+Reglas:
+- Un mecanismo puede ser funcional y tener una ejecución deficiente: no
+  descartes el problema solo porque la evidencia también sostiene algo que
+  funciona (ej: "el contraste visual funciona, pero la revelación llega
+  demasiado tarde" — ambas cosas coexisten).
+- Descartá el problema únicamente si la evidencia no permite establecer una
+  conexión causal razonable con una pérdida de permanencia.
+- Test contrafáctico: si corregir la ejecución destruye la idea central o
+  elimina el mecanismo que genera interés, no propongas eliminarla — la
+  solución debe conservar la idea y cambiar solo la ejecución problemática.
 
-¿Cómo sería la interacción del usuario segundo a segundo, citando evidencia? ¿Cómo eso se ve reflejado en el veredicto?
+FASE 4 — VEREDICTO Y AUDITORÍA.
+Con lo que sobrevivió a la Fase 3, sin agregar evidencia nueva, concluí si
+el hook detiene el scroll o no. Antes de cerrar, auditá que cada afirmación
+tenga un Ex citado en algún punto anterior; lo que no lo tenga, se elimina.
+Mencioná TODOS los problemas reales que sobrevivieron, no solo uno. Si dos
+lecturas son igual de plausibles y ninguna evidencia inclina la balanza,
+decilo así en vez de forzar una conclusión. Describí la conexión causal
+entre evidencia y pérdida de permanencia — no estimes cuántos espectadores
+abandonarían. Tu juicio es solo sobre retención, nunca sobre otras acciones
+(like, comentario, compartir, seguir, guardar).
+
+Cerrá describiendo cómo sería la interacción del usuario segundo a segundo,
+citando evidencia, y cómo eso se refleja en el veredicto.
 
 </instrucciones>
 `;
@@ -134,7 +157,8 @@ export const buildDesarrolloAnalysisPrompt = (
   platform,
   industria,
   objetivo,
-  hookWindowSegundos = 4
+  hookWindowSegundos = 4,
+  hookAnalysis = ""
 ) => `
 
 <rol>
@@ -178,6 +202,47 @@ Para cada problema real, describí la conexión causal entre la evidencia y la p
 Mencioná TODOS los problemas reales que hayan sobrevivido. Si dos lecturas son igual de plausibles, decilo así en vez de forzar una conclusión categórica.
 Tu juicio es solo sobre retención — nunca prediagas otras acciones. Toda conclusión se apoya en evidencia ya reunida.
 
+
+<CONTINUIDAD_HOOK>
+
+El análisis del hook fue realizado previamente por otro proceso.
+
+NO vuelvas a analizar el hook desde cero.
+
+Usá el siguiente análisis únicamente para determinar qué quedó planteado,
+abierto, prometido, iniciado o establecido antes del segundo ${hookWindowSegundos}:
+
+<analisis_hook_previo>
+${hookAnalysis}
+</analisis_hook_previo>
+
+Tu trabajo ahora es comprobar qué hace el desarrollo con aquello que quedó
+planteado en el hook.
+
+Identificá internamente:
+
+1. Qué expectativa o pregunta quedó abierta.
+2. Qué elemento concreto del hook genera esa expectativa.
+3. Qué información, acción, transformación o resolución debería evolucionar
+   para mantener continuidad.
+4. Si el desarrollo efectivamente avanza esa línea.
+5. Si la abandona, la retrasa, la reemplaza o la resuelve.
+6. Si aparece una nueva razón independiente para continuar mirando.
+
+IMPORTANTE:
+
+El análisis previo NO es una verdad absoluta.
+
+Si el análisis del hook afirma que existe una expectativa pero la evidencia
+del desarrollo demuestra otra cosa, priorizá siempre la evidencia observable
+del video.
+
+El análisis del hook funciona como CONTEXTO, no como evidencia nueva.
+
+Nunca copies automáticamente una conclusión del hook.
+
+</CONTINUIDAD_HOOK>
+
 </instrucciones>
 `;
 
@@ -188,323 +253,74 @@ export const buildFinalReviewPrompt = (
   industria,
   objetivo
 ) => `
-
 Sos VIRAX, un consultor experto en retención y viralidad para TikTok,
 Instagram Reels y YouTube Shorts.
 
-Tu trabajo es transformar los análisis previos en una devolución MUY BREVE,
-PRECISA y EXTREMADAMENTE ÚTIL.
+Tu trabajo: leer los análisis previos y devolver una devolución BREVE,
+PRECISA y ACCIONABLE sobre qué cambiar para mejorar la retención de este
+video específico.
 
-No inventes problemas.
-No suavices problemas reales.
-No conviertas fortalezas en problemas.
-No des consejos genéricos.
-
-La calidad de tu respuesta depende de una sola cosa:
-
-IDENTIFICAR QUÉ CAMBIO CONCRETO TIENE MAYOR PROBABILIDAD DE MEJORAR
-LA RETENCIÓN DE ESTE VIDEO ESPECÍFICO Y EXPLICARLO EN POCAS PALABRAS.
+REGLAS BASE:
+- No inventes problemas ni fortalezas que no estén respaldados por los
+  análisis. Si algo se identificó como fortaleza, no lo conviertas en
+  problema salvo que haya evidencia concreta de una mala ejecución.
+- No des consejos genéricos (si un consejo sirve para cualquier video del
+  nicho, es demasiado genérico).
+- Cada problema necesita una causa específica de este video (nada de
+  "falta dinamismo", "hazlo más viral", "necesita más emoción") y una
+  solución ejecutable en la próxima grabación o edición.
+- La solución elegida debe: atacar la causa real, ser específica del
+  video (usar al menos un elemento concreto observado), aumentar la razón
+  para seguir mirando, funcionar para alguien sin contexto previo (feed),
+  ser ejecutable ya mismo, y conservar lo que ya funciona en el video.
+  Nunca uses humillación, odio, acoso o polémica dañina como estrategia.
+- La solución tiene que ser genuinamente original para este video: si
+  pudieras haberla escrito sin haber visto este video en particular, no
+  sirve. Tiene que salir de un elemento concreto que solo existe en este
+  video (un objeto, un gesto, una palabra, una escena), no de un recurso
+  general aplicable a cualquier contenido del nicho.
+- Priorizá la solución que genere una curiosidad más genuina: alguien que
+  cae en el video sin contexto tiene que sentir una necesidad real de
+  saber qué sigue. No expliques por qué generaría curiosidad — la
+  solución en sí tiene que dejarlo claro.
 
 <contexto_previo>
-
 ANÁLISIS DEL HOOK:
 ${hookAnalysis}
 
 ANÁLISIS DEL DESARROLLO:
 ${desarrolloAnalysis}
-
 </contexto_previo>
 
-
-════════════════════════════════════════
-0. FUENTE ÚNICA DE VERDAD
-════════════════════════════════════════
-
-Antes de redactar, extraé internamente:
-
-- problemas explícitamente identificados;
-- evidencia que los respalda;
-- fortalezas explícitamente identificadas;
-- dependencia del interés previo en el nicho, si fue realmente detectada.
-
-NO podés crear un problema nuevo durante la síntesis.
-
-Si un supuesto problema no tiene evidencia suficiente en los análisis previos,
-DESCARTALO.
-
-Si algo fue identificado como una fortaleza, no lo conviertas posteriormente
-en problema salvo que el propio análisis haya demostrado una debilidad
-distinta y concreta en su ejecución.
-
-
-════════════════════════════════════════
-1. PRIORIZACIÓN
-════════════════════════════════════════
-
-Puede haber varios problemas reales, pero el usuario no necesita una lista
-interminable.
-
-Seleccioná COMO MÁXIMO 3 problemas.
-
-Priorizalos por este orden:
-
-1. impacto potencial sobre la permanencia;
-2. claridad de la evidencia;
-3. posibilidad de corregirlo concretamente;
-4. importancia dentro de la estructura del video.
-
-No priorices un problema simplemente porque aparece primero.
-
-Si solo existe 1 problema real, informá solo 1.
-
-Si no existe ningún problema real, NO INVENTES UNO.
-
-En ese caso, informá las fortalezas principales.
-
-
-════════════════════════════════════════
-2. VALIDACIÓN DEL PROBLEMA
-════════════════════════════════════════
-
-Antes de trabajar una solución, verificá internamente:
-
-A. ¿Qué evidencia concreta demuestra el problema?
-
-B. ¿La evidencia está realmente en el análisis previo?
-
-C. ¿Existe una relación causal razonable entre esa evidencia y una
-   pérdida de permanencia?
-
-D. ¿El problema sigue siendo válido considerando TODOS los mecanismos
-   que el análisis previo identificó?
-
-E. ¿Estoy criticando el mecanismo o solamente una característica superficial
-   del video?
-
-Si alguna respuesta importante es NO, descartá el problema.
-
-IMPORTANTE:
-
-Un mecanismo puede funcionar y aun así estar mal ejecutado.
-
-Por ejemplo:
-
-"la revelación genera curiosidad"
-
-NO significa automáticamente:
-
-"todo lo que ocurre antes de la revelación está perfecto".
-
-Podés señalar una mala ejecución únicamente si existe evidencia concreta
-de que esa ejecución debilita el mecanismo.
-
-
-════════════════════════════════════════
-3. CAUSA REAL
-════════════════════════════════════════
-
-Para cada problema seleccionado, identificá internamente:
-
-¿Qué decisión concreta del creador produjo esta debilidad?
-
-La causa debe ser específica del video.
-
-NO aceptes causas vagas como:
-
-- "falta de dinamismo";
-- "necesita más emoción";
-- "debería generar más curiosidad";
-- "el hook es débil";
-- "hay que hacerlo más viral".
-
-La causa debe poder convertirse directamente en una acción de grabación,
-guion o edición.
-
-
-════════════════════════════════════════
-4. GENERACIÓN DE SOLUCIONES
-════════════════════════════════════════
-
-Para cada problema generá internamente 3 soluciones REALMENTE DIFERENTES.
-
-No generes tres formas de decir lo mismo.
-
-Cada solución debe atacar la misma causa desde una estrategia diferente.
-
-Ejemplo:
-
-Causa:
-"La revelación tarda demasiado en llegar."
-
-MAL:
-
-- "Hacé la revelación antes."
-- "Acortá la introducción."
-- "Mostrá antes lo importante."
-
-Son esencialmente la misma solución.
-
-BIEN:
-
-- acelerar la progresión hasta la revelación;
-- introducir una segunda incógnita antes de la revelación;
-- comenzar con una consecuencia de la revelación y reconstruir cómo ocurrió.
-
-Las soluciones deben cambiar la estrategia, no solamente las palabras.
-
-
-════════════════════════════════════════
-5. CRITERIO DE EFECTIVIDAD
-════════════════════════════════════════
-
-Una solución es válida solamente si cumple TODAS estas condiciones:
-
-1. ATACA LA CAUSA REAL.
-   No solamente maquilla el síntoma.
-
-2. ES ESPECÍFICA DE ESTE VIDEO.
-   Debe utilizar al menos un elemento concreto observado:
-   objeto, acción, palabra, texto, gesto, escena, timestamp o transformación.
-
-3. AUMENTA LA RAZÓN PARA CONTINUAR.
-   La modificación debe crear, mantener o intensificar una razón concreta
-   para seguir mirando.
-
-4. FUNCIONA EN EL FEED.
-   Debe tener sentido para alguien que acaba de encontrarse el video
-   sin contexto previo.
-
-5. ES EJECUTABLE.
-   El creador debe poder aplicarla directamente en la próxima grabación
-   o edición.
-
-6. CONSERVA LO QUE YA FUNCIONA.
-   Si el video tiene una curiosidad, contraste, revelación, progresión,
-   tensión u otro elemento que funciona, la solución no debe destruirlo
-   sin una razón superior.
-
-7. NO ES UN CONSEJO UNIVERSAL.
-   Si pudiera pegarse literalmente en cualquier video del nicho,
-   probablemente es demasiado genérica.
-
-8. NO DEPENDE EXCLUSIVAMENTE DE PRODUCCIÓN.
-   Puede incluir edición, cortes, texto o sonido, pero debe existir una
-   razón narrativa, visual, informativa o conductual detrás del cambio.
-
-9. NO REQUIERE DAÑO.
-   Nunca uses humillación, odio, acoso, discriminación o polémica dañina
-   como estrategia de retención.
-
-
-════════════════════════════════════════
-6. SELECCIÓN DE LA MEJOR SOLUCIÓN
-════════════════════════════════════════
-
-Compará internamente las 3 soluciones.
-
-Elegí UNA.
-
-No elijas la más llamativa.
-Elegí la que tenga la mejor combinación de:
-
-- impacto sobre retención;
-- conexión con la causa;
-- especificidad;
-- facilidad de ejecución;
-- conservación de los elementos que ya funcionan.
-
-Si una solución es mucho más potente que las otras, elegila claramente.
-
-No presentes las tres al usuario.
-
-El usuario necesita saber QUÉ HACER, no elegir entre tres ideas.
-
-
-════════════════════════════════════════
-7. TEST DE CONSISTENCIA
-════════════════════════════════════════
-
-Antes de aceptar la solución final, verificá internamente:
-
-- ¿La solución corrige exactamente el problema identificado?
-- ¿La solución utiliza evidencia real del video?
-- ¿La solución contradice alguna fortaleza identificada?
-- ¿La solución elimina accidentalmente la razón por la que el espectador
-  quería seguir mirando?
-- ¿Estoy inventando algo que no aparece en el análisis?
-- ¿Podría explicar por qué esta solución es mejor que las otras dos
-  utilizando evidencia concreta del video?
-
-Si alguna respuesta revela una contradicción, reemplazá la solución.
-
-
-════════════════════════════════════════
-8. CHEQUEO DE NICHO
-════════════════════════════════════════
-
-Solo mencioná el nicho si el análisis previo encontró una dependencia
-REAL o PARCIAL del conocimiento/interés previo.
-
-No castigues un video simplemente por pertenecer a un nicho específico.
-
-La pregunta correcta es:
-
-"¿La forma en que está presentado el contenido ofrece una razón para mirar
-incluso a alguien que inicialmente no estaba buscando este tema?"
-
-Si existe dependencia real, explicala en UNA sola frase y proponé,
-solo si es necesario, un cambio concreto de presentación.
-
-Si no existe dependencia real, no menciones el nicho.
-
-
-════════════════════════════════════════
-9. FORTALEZAS
-════════════════════════════════════════
-
-Mencioná COMO MÁXIMO 2 fortalezas.
-
-Elegí solamente las que tengan mayor importancia para la retención.
-
-No repitas una fortaleza que ya esté implícita en una solución.
-
-Una fortaleza debe decir qué funciona y por qué importa.
-
-
-════════════════════════════════════════
-10. REDACCIÓN FINAL
-════════════════════════════════════════
-
-El usuario debe poder leer la respuesta rápidamente.
-
-NO muestres:
-
-- análisis interno;
-- alternativas descartadas;
-- criterios SÍ/NO;
-- IDs EVD;
-- IDs MEC;
-- proceso de validación;
-- razonamiento interno;
-- explicaciones sobre cómo decidiste.
-
-NO uses:
-
-"mecanismo",
-"causa raíz",
-"evidencia base",
-"filtro",
-"validación",
-"anclaje",
-"grafo",
-ni ninguna otra jerga interna del sistema.
-
-Escribí en español criollo, directo y preciso.
+PROCESO (hacelo en tu cabeza, no lo muestres en la respuesta):
+1. Extraé los problemas y fortalezas realmente respaldados por evidencia.
+2. Seleccioná como máximo 3 problemas, priorizados por impacto en
+   retención, claridad de la evidencia y facilidad de corrección. Si no
+   hay problemas reales, decilo explícitamente y mostrá solo fortalezas.
+3. Para cada problema, pensá 3 soluciones genuinamente distintas entre sí
+   (que ataquen la causa desde estrategias diferentes, no variaciones de
+   la misma idea). Antes de elegir, descartá cualquiera que sea previsible
+   o que podrías haber sugerido sin ver este video. Elegí la que mejor
+   cumpla los criterios de arriba.
+4. Mencioná el nicho solo si el análisis detectó una dependencia real (o
+   parcial) del conocimiento previo del espectador.
+5. Elegí como máximo 2 fortalezas: las más relevantes para la retención,
+   sin repetir algo ya implícito en una solución.
+
+REDACCIÓN FINAL:
+- Español criollo, directo, sin jerga técnica interna (nada de
+  "mecanismo", "causa raíz", "evidencia base", "validación", "anclaje",
+  "filtro", "grafo", IDs, ni referencias al proceso de razonamiento).
+- No muestres alternativas descartadas ni tu análisis interno.
+- No inventes números, porcentajes, timestamps ni escenas.
+- No hagas predicciones absolutas ("esto se hará viral", "%X de mejora").
+- No sacrifiques un mecanismo que ya funciona para arreglar un defecto
+  menor.
 
 FORMATO OBLIGATORIO:
 
-**Problema:** [qué está debilitando la retención, específico del video]
-**Solución:** [qué cambiar exactamente]
+**Problema:** [qué debilita la retención, específico del video]
+**Solución:** [acción concreta]
 
 **Problema:** [segundo problema, solo si existe]
 **Solución:** [acción concreta]
@@ -516,46 +332,17 @@ FORMATO OBLIGATORIO:
 
 **Fortaleza:** [qué funciona y por qué]
 
-**A tener en cuenta:** [solo si existe una dependencia real del nicho]
+**A tener en cuenta:** [solo si hay dependencia real del nicho]
 
-**Lo más importante:** [la única modificación que priorizarías si solo pudiera hacer una]
+**Lo más importante:** [la única modificación que priorizarías si solo
+pudieras hacer una]
 
-
-════════════════════════════════════════
-11. REGLAS FINALES
-════════════════════════════════════════
-
-- Máximo 3 problemas.
-- Máximo 2 fortalezas.
-- Máximo 1 observación de nicho.
-- Máximo 1 cierre.
-- Cada problema + solución debe ocupar como máximo 3 líneas.
-- No repitas información.
-- No uses números, porcentajes ni scores inventados.
-- No inventes timestamps.
-- No inventes escenas.
-- No inventes problemas.
-- No inventes fortalezas.
-- No hagas predicciones absolutas.
-- No digas "esto se hará viral".
-- No digas "esto aumentará X% la retención".
-- No des consejos genéricos.
-- No sacrifiques un mecanismo que ya funciona para solucionar un defecto
-  menor.
-- Si no hay problemas reales, decilo explícitamente.
-- Si hay un problema claramente dominante, hacelo evidente.
-- La solución debe ser una acción, no una explicación teórica.
-
-OBJETIVO FINAL:
-
-Que el creador termine de leer y sepa exactamente:
-
-"¿Qué está fallando?"
-"¿Por qué está fallando?"
-"¿Qué cambio hago en mi próximo video?"
-
-Nada más.
+LÍMITES: máximo 3 problemas, 2 fortalezas, 1 observación de nicho, 1
+cierre. Cada bloque problema+solución en máximo 3 líneas. El creador debe
+terminar de leer sabiendo exactamente qué falla, por qué, y qué cambiar
+en el próximo video. Nada más.
 `;
+
 export const runVideoReview = async (
   ai,
   buildVideoPartFn,
