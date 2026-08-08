@@ -64,6 +64,11 @@ Mirá este video y decime, en 2 a 4 palabras como mucho, a qué nicho o industri
 Respondé ÚNICAMENTE con esas 2 a 4 palabras, sin explicación, sin punto final, sin comillas.
 `;
 
+// ═════════════════════════════════════════════════════════════
+// VIRAX — Prompts de análisis (hook + desarrollo)
+// Versión con sistema de evidencia citada + robustez por canal
+// ═════════════════════════════════════════════════════════════
+
 export const buildHookAnalysisPrompt = (
   platform,
   industria,
@@ -81,44 +86,47 @@ Analizás cómo funciona el hook durante los primeros ${hookWindowSegundos} segu
 FASE 1 — OBSERVACIÓN LITERAL Y REGISTRO DE EVIDENCIA.
 Transcribí el audio palabra por palabra (diálogo, música, silencios, con timestamps aproximados) y todo texto en pantalla tal como aparece, con su segundo. Sumá tono, gestos, energía, edición, encuadre. No evalúes todavía.
 Numerá cada observación individual como evidencia: E1, E2, E3... Un plano, un corte, una línea de texto, un gesto, un cambio de tono: cada uno es una evidencia numerada.
-Si un timestamp no se puede determinar con exactitud, usá un rango (ej: "≈2 s" o "entre el segundo 1 y 2") en vez de una precisión falsa.
-Si algo no es claramente perceptible (audio poco claro, texto borroso, encuadre ambiguo), decilo explícito como evidencia también ("E7: audio inentendible entre seg 1-2") en vez de asumir su contenido.
+Si un timestamp no se puede determinar con exactitud, usá un rango (ej: "≈2 s") en vez de una precisión falsa.
+Si algo no es claramente perceptible, decilo explícito como evidencia también ("E7: audio inentendible entre seg 1-2").
 Si no hay diálogo o texto, decilo explícito.
 
 A partir de acá, TODA afirmación en las fases siguientes debe citar al menos un ID de evidencia (Ex) entre paréntesis. Una afirmación sin ID citado es evidencia de invención y no puede usarse en el veredicto final.
 
 FASE 2 — INVENTARIO DE MECANISMOS.
-Por cada evidencia o combinación de evidencias, preguntate: "si esto no estuviera, ¿el espectador tendría menos motivo para quedarse?" Listá todos los que pasen ese test, citando sus IDs, sin importar el canal (texto, audio, visual, narrativo, sensorial) ni cuán simple o técnico parezca. Un texto en pantalla puede sostener el hook tan bien como cualquier recurso visual; una progresión, contraste o revelación que recién arranca acá también cuenta, aunque su pago llegue después.
-Además, recorré el tramo momento a momento citando evidencia: en cada instante, ¿hay algo nuevo que procesar (información, giro, imagen, sonido, progreso), o el video simplemente sigue existiendo sin agregar nada (Ex)? Un tramo donde nada cambia es evidencia de aburrimiento por sí mismo, aunque tampoco pase nada "malo" — no necesitás encontrar un error puntual para señalarlo.
-Listá también los mecanismos que consideraste y descartaste, con la evidencia que te hizo descartarlos. Esto obliga a explorar hipótesis alternativas, no solo confirmar la primera lectura.
+Por cada evidencia o combinación de evidencias, preguntate: "si esto no estuviera, ¿el espectador tendría menos motivo para quedarse?" Listá todos los que pasen ese test, citando sus IDs, sin importar el canal (texto, audio, visual, narrativo, sensorial) ni cuán simple o técnico parezca.
+Recorré el tramo momento a momento citando evidencia: en cada instante, ¿hay algo nuevo que procesar, o el video simplemente sigue existiendo sin agregar nada (Ex)? Un tramo donde nada cambia es evidencia de aburrimiento por sí mismo.
+Listá también los mecanismos que consideraste y descartaste, con la evidencia que te hizo descartarlos.
 
 FASE 2.5 — CASO A FAVOR Y CASO EN CONTRA.
 Antes de juzgar, armá los dos argumentos más fuertes posibles, cada uno apoyado solo en evidencia citada de Fase 1-2:
-(a) El caso más fuerte de que este hook retiene la atención.
-(b) El caso más fuerte de que este hook NO retiene la atención.
-No elijas todavía cuál pesa más. El objetivo es que ambos lados reciban el mismo esfuerzo antes de decidir, para no anclarte en la primera impresión.
+(a) El caso más fuerte de que este hook retiene la atención — listá cada Ex que lo sostiene.
+(b) El caso más fuerte de que este hook NO retiene la atención — listá cada Ex que lo sostiene.
+Contá cuántas evidencias de cada caso NO son compartidas con el otro caso (evidencia exclusiva de un solo lado). Un caso con más evidencia exclusiva real pesa más que uno que solo repite las mismas Ex reinterpretadas. Si un caso no tiene ninguna evidencia exclusiva, es más débil que el otro casi por definición — decilo explícito.
+No elijas todavía cuál pesa más.
 
 FASE 3 — JUICIO INTEGRADO.
-Con los dos casos de Fase 2.5 sobre la mesa, decidí cuál pesa más y por qué, combinando TODOS los mecanismos de la Fase 2 en conjunto, nunca canal por canal aislado — un canal débil no vuelve débil al hook si otro sostiene un mecanismo fuerte por sí solo (citá evidencia).
-Antes de señalar cualquier momento como problema, contrastalo contra los mecanismos que ya identificaste: si ese momento es parte de cómo funciona algo que ya reconociste como sostén (el arranque de una progresión, un contraste que se resuelve después), no lo reportes como falla aislada sin dejar esa conexión explícita.
-Juzgá el mecanismo por su efecto real, nunca por la categoría o industria a la que pertenece el video — un patrón reconocible o un concepto técnico puede generar curiosidad genuina si la ejecución logra que el espectador necesite ver qué sigue; eso se evalúa en el mecanismo mismo, no en la etiqueta del contenido.
+Con los dos casos de Fase 2.5 sobre la mesa, decidí cuál pesa más y por qué, combinando TODOS los mecanismos de la Fase 2 en conjunto, nunca canal por canal aislado (citá evidencia).
+Chequeo de robustez por canal: si tuvieras que sostener este juicio citando evidencia SOLO del canal audio+texto, sin ningún Ex visual, ¿seguiría siendo válido? ¿Y sosteniéndolo solo con Ex visual, sin audio ni texto? Si el juicio colapsa al sacar un canal, decilo explícito — es una señal de que el hook depende de un solo canal dominante, no de un mecanismo integrado real.
+Antes de señalar cualquier momento como problema, contrastalo contra los mecanismos que ya identificaste como sostén; si el momento es parte de cómo funciona algo que ya reconociste, no lo reportes como falla aislada sin dejar esa conexión explícita.
+Juzgá el mecanismo por su efecto real, nunca por la categoría o industria del video.
 Doble simetría sobre formato conocido: un formato conocido NO es débil solo por ser conocido, pero tampoco es fuerte solo por ser conocido — en ambos casos tiene que sostener el mecanismo por sí mismo, con evidencia propia.
 No juzgues por lo que anticipás que viene después, solo por lo que ya está en estos ${hookWindowSegundos} segundos.
 
 FASE 4 — FALSACIÓN.
 Tomá el juicio de la Fase 3 e intentá refutarlo activamente: "si mi conclusión es que esto sostiene la atención, ¿qué evidencia observable (Ex) demostraría lo contrario? ¿Esa evidencia está presente?" Y a la inversa si tu conclusión fue negativa.
-Una observación se convierte en problema real únicamente cuando hay una cadena causal directa entre la evidencia observable y una pérdida plausible de permanencia — una imperfección (plano estático, corte simple) no es automáticamente un problema si otro mecanismo ya identificado sostiene la atención de forma independiente.
-Antes de comparar contra la competencia, nombrá 2-3 patrones concretos de hooks de alto rendimiento que conozcas para ${industria} en ${platform} (sin inventar videos específicos, patrones generales de tu conocimiento). Usá esos patrones como vara de comparación real, no una frase genérica de "los mejores videos".
-Evaluá además: (a) sin producción — ¿el mecanismo integrado de la Fase 3 sobrevive sin edición, música ni efectos, con cámara mediocre? (citá qué evidencia depende de la producción y cuál no); (b) nicho — si eliminás todo conocimiento previo del tema, ¿la premisa sigue teniendo una razón intrínseca para interesar? ¿Qué evidencia da esa razón? ¿Qué parte del interés desaparecería sin ese conocimiento previo? No asumas por default que un tema específico o un concepto técnico reduce el interés general. Si la dependencia es parcial o hay señales que compiten entre sí, decilo así — no fuerces un SÍ/NO limpio si la evidencia da para matices.
+Una observación se convierte en problema real únicamente cuando hay una cadena causal directa entre la evidencia observable y una pérdida plausible de permanencia.
+Antes de comparar contra la competencia, nombrá 2-3 patrones concretos de hooks de alto rendimiento que conozcas para ${industria} en ${platform} (patrones generales de tu conocimiento, sin inventar videos específicos). Usalos como vara de comparación real.
+Evaluá además: (a) sin producción — ¿el mecanismo integrado sobrevive sin edición, música ni efectos, con cámara mediocre? (citá qué evidencia depende de la producción y cuál no); (b) nicho — si eliminás todo conocimiento previo del tema, ¿la premisa sigue teniendo una razón intrínseca para interesar? ¿Qué evidencia da esa razón? Si la dependencia es parcial, decilo así — no fuerces un SÍ/NO limpio si la evidencia da para matices.
 
 FASE 5 — VEREDICTO Y AUDITORÍA.
 Con lo que sobrevivió a la Fase 4, sin agregar evidencia nueva, concluí si el hook detiene el scroll o no.
-Antes de escribir el veredicto final, auditá tu propio razonamiento: revisá que cada afirmación tenga un ID de evidencia citado en algún punto de las fases anteriores. Cualquier afirmación sin evidencia citada se elimina del veredicto, no se incluye "por las dudas".
-Para cada problema real (el que sobrevivió la falsación), describí la conexión causal entre la evidencia y la pérdida de permanencia, en vez de estimar cuántos espectadores abandonarían — esa cifra no tiene datos reales detrás.
+Antes de escribir el veredicto final, auditá tu propio razonamiento: revisá que cada afirmación tenga un ID de evidencia citado en algún punto de las fases anteriores. Cualquier afirmación sin evidencia citada se elimina del veredicto.
+Para cada problema real, describí la conexión causal entre la evidencia y la pérdida de permanencia, en vez de estimar cuántos espectadores abandonarían.
 Mencioná TODOS los problemas reales que hayan sobrevivido, no solo uno. Si dos lecturas son igual de plausibles y ninguna evidencia alcanza para inclinar la balanza, decilo así en vez de forzar una conclusión categórica.
 Tu juicio es solo sobre retención — nunca prediagas otras acciones (like, comentario, compartir, seguir, guardar). Toda conclusión se apoya en evidencia ya reunida, nunca en algo nuevo.
 
 ¿Cómo sería la interacción del usuario segundo a segundo, citando evidencia? ¿Cómo eso se ve reflejado en el veredicto?
+
 </instrucciones>
 `;
 
@@ -136,15 +144,39 @@ Analizás cómo evoluciona la atención del espectador desde el segundo ${hookWi
 
 <instrucciones>
 
-FASE 1 — OBSERVACIÓN LITERAL. Dividí el video en escenas o beats desde el segundo ${hookWindowSegundos}. Transcribí el audio palabra por palabra y todo texto en pantalla en cada escena, con su segundo. Si no hay diálogo o texto en alguna, decilo explícito. Sumá tono, gestos, energía, edición. No evalúes todavía. Si un timestamp no se puede determinar con exactitud, usá un rango en vez de una precisión falsa.
+FASE 1 — OBSERVACIÓN LITERAL Y REGISTRO DE EVIDENCIA.
+Dividí el video en escenas o beats desde el segundo ${hookWindowSegundos}. Transcribí el audio palabra por palabra y todo texto en pantalla en cada escena, con su segundo. Sumá tono, gestos, energía, edición. No evalúes todavía.
+Numerá cada observación individual como evidencia: E1, E2, E3... por escena. Si un timestamp no se puede determinar con exactitud, usá un rango. Si algo no está presente en alguna escena, decilo explícito.
 
-FASE 2 — INVENTARIO DE MECANISMOS. Por cada elemento de cada escena (texto, audio, visual, narrativo, sensorial — sin jerarquía entre canales), preguntate: "si esto no estuviera, ¿el espectador tendría menos motivo para quedarse en este punto?" Listá todos los que pasen ese test, sin importar el canal ni cuán simple o técnico parezca. Un texto en pantalla puede sostener una escena tan bien como cualquier recurso visual; una progresión, contraste o revelación que se va construyendo también cuenta, aunque su pago llegue en una escena posterior. Además, recorré el video momento a momento, no solo escena por escena: en cada instante, ¿hay algo nuevo que procesar, o simplemente sigue pasando el tiempo sin agregar nada? Un tramo donde nada cambia es evidencia de aburrimiento por sí mismo, aunque tampoco haya un error puntual — no necesitás encontrar una falla para señalar un tramo muerto, la ausencia de novedad ya es la falla. Buscá activamente estos tramos, no solo los momentos donde algo visiblemente falla.
+A partir de acá, TODA afirmación en las fases siguientes debe citar al menos un ID de evidencia (Ex). Una afirmación sin ID citado es evidencia de invención y no puede usarse en el veredicto final.
 
-FASE 3 — JUICIO INTEGRADO. Juzgá cada escena combinando TODOS los mecanismos de la Fase 2 en conjunto, nunca canal por canal aislado. Antes de señalar cualquier escena como problema, contrastala contra los mecanismos que ya identificaste: si esa escena es parte de cómo funciona algo que ya reconociste como sostén (el arranque de una progresión que se resuelve después), no la reportes como falla aislada sin dejar esa conexión explícita. Juzgá el mecanismo por su efecto real, nunca por la categoría o industria del video. Evaluá cómo evoluciona lo planteado en el hook — si avanza, se resuelve, se abandona o se reemplaza. Formato conocido no es débil por ser conocido. No anticipes escenas futuras al juzgar una escena puntual.
+FASE 2 — INVENTARIO DE MECANISMOS.
+Por cada evidencia de cada escena, preguntate: "si esto no estuviera, ¿el espectador tendría menos motivo para quedarse en este punto?" Listá todos los que pasen ese test, citando IDs, sin importar el canal ni cuán simple o técnico parezca.
+Recorré el video momento a momento, no solo escena por escena, citando evidencia: en cada instante, ¿hay algo nuevo que procesar, o simplemente sigue pasando el tiempo sin agregar nada (Ex)? Un tramo donde nada cambia es evidencia de aburrimiento por sí mismo — buscá activamente estos tramos, no solo los momentos donde algo visiblemente falla.
+Listá también los mecanismos que consideraste y descartaste, con la evidencia que te hizo descartarlos.
 
-FASE 4 — FALSACIÓN. Tomá el juicio de la Fase 3 e intentá refutarlo: "si mi conclusión es que esta escena sostiene la atención, ¿qué evidencia demostraría lo contrario?" Una observación se convierte en problema real únicamente cuando hay una cadena causal directa entre la evidencia y una pérdida plausible de permanencia — una imperfección no es automáticamente un problema si otro mecanismo ya identificado sostiene la atención por su cuenta. Recorré TODAS las escenas antes de concluir. Evaluá además: (a) sin producción — ¿el mecanismo integrado sobrevive hasta el final sin edición, música ni efectos?; (b) nicho — si eliminás todo conocimiento previo del tema, ¿las promesas centrales siguen teniendo una razón intrínseca para interesar? ¿Qué parte del interés desaparecería sin ese conocimiento previo? No asumas por default que un tema específico reduce el interés general. Si hay señales que compiten entre sí, decilo así.
+FASE 2.5 — CASO A FAVOR Y CASO EN CONTRA (por tramo problemático).
+Para cada escena o tramo donde dudes entre "sostiene" y "pierde atención", armá los dos argumentos más fuertes posibles citando evidencia, y contá cuánta evidencia de cada lado NO es compartida con el otro. El lado con más evidencia exclusiva pesa más — no decidas todavía cuál gana.
 
-FASE 5 — VEREDICTO. Con lo que sobrevivió a la Fase 4, sin agregar evidencia nueva, concluí en qué punto(s), si los hay, el espectador abandona. Para cada problema real, describí la conexión causal entre la evidencia y la pérdida de permanencia, en vez de estimar cuántos espectadores abandonarían. Mencioná TODOS los problemas reales que hayan sobrevivido. Si dos lecturas son igual de plausibles, decilo así en vez de forzar una conclusión categórica. Tu juicio es solo sobre retención — nunca prediagas otras acciones. Toda conclusión se apoya en evidencia ya reunida.
+FASE 3 — JUICIO INTEGRADO.
+Juzgá cada escena combinando TODOS los mecanismos de la Fase 2 en conjunto, nunca canal por canal aislado (citá evidencia).
+Chequeo de robustez por canal: para las escenas donde el juicio es ajustado, ¿el juicio sobrevive citando evidencia solo de audio+texto, sin visual? ¿Y solo con visual? Si colapsa al sacar un canal, decilo explícito.
+Antes de señalar cualquier escena como problema, contrastala contra los mecanismos que ya identificaste como sostén; si es parte de algo que ya reconociste como funcional, no la reportes como falla aislada sin dejar esa conexión explícita.
+Juzgá el mecanismo por su efecto real, nunca por la categoría o industria del video. Evaluá cómo evoluciona lo planteado en el hook — si avanza, se resuelve, se abandona o se reemplaza.
+Doble simetría sobre formato conocido: ni débil ni fuerte solo por ser conocido — necesita evidencia propia en ambos casos.
+No anticipes escenas futuras al juzgar una escena puntual.
+
+FASE 4 — FALSACIÓN.
+Tomá el juicio de la Fase 3 e intentá refutarlo: "si mi conclusión es que esta escena sostiene la atención, ¿qué evidencia (Ex) demostraría lo contrario?" Una observación se convierte en problema real únicamente cuando hay una cadena causal directa entre la evidencia y una pérdida plausible de permanencia.
+Recorré TODAS las escenas antes de concluir.
+Evaluá además: (a) sin producción — ¿el mecanismo integrado sobrevive hasta el final sin edición, música ni efectos? (citá qué evidencia depende de la producción); (b) nicho — si eliminás todo conocimiento previo del tema, ¿las promesas centrales siguen teniendo una razón intrínseca para interesar, según la evidencia? Si hay señales que compiten entre sí, decilo así.
+
+FASE 5 — VEREDICTO Y AUDITORÍA.
+Con lo que sobrevivió a la Fase 4, sin agregar evidencia nueva, concluí en qué punto(s), si los hay, el espectador abandona.
+Antes de escribir el veredicto, auditá que cada afirmación tenga un ID de evidencia citado en alguna fase anterior — lo que no lo tenga, se elimina.
+Para cada problema real, describí la conexión causal entre la evidencia y la pérdida de permanencia, en vez de estimar cuántos espectadores abandonarían.
+Mencioná TODOS los problemas reales que hayan sobrevivido. Si dos lecturas son igual de plausibles, decilo así en vez de forzar una conclusión categórica.
+Tu juicio es solo sobre retención — nunca prediagas otras acciones. Toda conclusión se apoya en evidencia ya reunida.
 
 </instrucciones>
 `;
