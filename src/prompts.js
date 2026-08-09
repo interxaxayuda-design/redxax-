@@ -66,24 +66,21 @@ Respondé ÚNICAMENTE con esas 2 a 4 palabras, sin explicación, sin punto final
 
 // ═════════════════════════════════════════════════════════════
 // VIRAX — Prompts de análisis (hook + desarrollo)
-// Versión con sistema de evidencia citada + robustez por canal
+// Versión con sistema de evidencia citada + robustez por canal +
+// duración explícita + ranking de problemas por peso
 // ═════════════════════════════════════════════════════════════
 
 export const buildHookAnalysisPrompt = (
   platform,
   industria,
   objetivo,
-  hookWindowSegundos = 3
+  hookWindowSegundos = 3,
+  videoDurationSegundos
 ) => `
 
-<rol>
-Sos un ${contextoComun(platform, industria, objetivo)}.
-Analizás cómo funciona el hook durante los primeros ${hookWindowSegundos} segundos del video.
-</rol>
-
-<instrucciones>
-
 FASE 1 — EVIDENCIA.
+${videoDurationSegundos ? `Este video dura EXACTAMENTE ${videoDurationSegundos} segundos, ni uno más. Cualquier timestamp que anotes tiene que estar entre 0 y ${videoDurationSegundos}s. Si te parece haber visto algo después de ${videoDurationSegundos}s, es un error de lectura tuyo, no evidencia real — no lo escribas.
+Recorré el video segundo por segundo, del 0 al ${videoDurationSegundos}, sin saltear ninguno. Para cada segundo, registrá qué pasa (plano, corte, texto, gesto, cambio de tono) aunque no pase nada relevante — en ese caso registralo igual como "sin cambios relevantes". Esto es obligatorio incluso si el segundo te parece poco interesante: la evidencia completa es la que después te va a permitir pesar los problemas correctamente, no solo detectar el primero que salta a la vista.` : ''}
 Transcribí el audio palabra por palabra (diálogo, música, silencios, con
 timestamps aproximados) y todo texto en pantalla tal como aparece, con su
 segundo. Sumá tono, gestos, energía, edición, encuadre. No evalúes todavía.
@@ -121,9 +118,9 @@ EVIDENCIA: [Ex]
 FUNCIÓN: [qué aporta ese mecanismo a la permanencia]
 EJECUCIÓN: [la forma concreta en que aparece favorece o perjudica esa función]
 QUÉ FALLA: concepto / ejecución / timing / claridad / ritmo / información /
-  actuación / encuadre / progresión narrativa / otro
+actuación / encuadre / progresión narrativa / otro
 CADENA CAUSAL: [evidencia] → [característica de la ejecución] →
-  [efecto en el espectador] → [pérdida plausible de permanencia]
+[efecto en el espectador] → [pérdida plausible de permanencia]
 
 Reglas:
 - Un mecanismo puede ser funcional y tener una ejecución deficiente: no
@@ -136,16 +133,28 @@ Reglas:
   elimina el mecanismo que genera interés, no propongas eliminarla — la
   solución debe conservar la idea y cambiar solo la ejecución problemática.
 
+RANKING OBLIGATORIO (antes de pasar a la Fase 4):
+Listá TODOS los problemas que sobrevivieron a las reglas de arriba, sin
+límite de cantidad. A cada uno asignale un peso según dos factores: cuánta
+evidencia exclusiva lo respalda, y qué tan directa es su cadena causal hacia
+una pérdida de permanencia (una cadena de un solo paso pesa más que una que
+necesita varios supuestos intermedios). Ordená la lista completa de mayor a
+menor peso. Esta lista ordenada — no el orden en que se te ocurrieron los
+problemas — es la que vas a usar en la Fase 4. El objetivo es que el
+problema que reportes como principal sea siempre el de mayor peso real, sin
+importar cuál notaste primero al mirar el video.
+
 FASE 4 — VEREDICTO Y AUDITORÍA.
 Con lo que sobrevivió a la Fase 3, sin agregar evidencia nueva, concluí si
 el hook detiene el scroll o no. Antes de cerrar, auditá que cada afirmación
 tenga un Ex citado en algún punto anterior; lo que no lo tenga, se elimina.
-Mencioná TODOS los problemas reales que sobrevivieron, no solo uno. Si dos
-lecturas son igual de plausibles y ninguna evidencia inclina la balanza,
-decilo así en vez de forzar una conclusión. Describí la conexión causal
-entre evidencia y pérdida de permanencia — no estimes cuántos espectadores
-abandonarían. Tu juicio es solo sobre retención, nunca sobre otras acciones
-(like, comentario, compartir, seguir, guardar).
+Mencioná TODOS los problemas reales que sobrevivieron, en el orden de peso
+que estableciste en el Ranking — no solo el primero que se te ocurrió. Si
+dos lecturas son igual de plausibles y ninguna evidencia inclina la
+balanza, decilo así en vez de forzar una conclusión. Describí la conexión
+causal entre evidencia y pérdida de permanencia — no estimes cuántos
+espectadores abandonarían. Tu juicio es solo sobre retención, nunca sobre
+otras acciones (like, comentario, compartir, seguir, guardar).
 
 CHEQUEO DE NICHO (obligatorio, no te lo saltees): ¿el interés que genera
 este hook depende de que el espectador ya conozca o le importe el tema de
@@ -159,8 +168,6 @@ realidad no es así.
 
 Cerrá describiendo cómo sería la interacción del usuario segundo a segundo,
 citando evidencia, y cómo eso se refleja en el veredicto.
-
-</instrucciones>
 `;
 
 export const buildDesarrolloAnalysisPrompt = (
@@ -168,17 +175,13 @@ export const buildDesarrolloAnalysisPrompt = (
   industria,
   objetivo,
   hookWindowSegundos = 4,
-  hookAnalysis = ""
+  hookAnalysis = "",
+  videoDurationSegundos
 ) => `
 
-<rol>
-Sos un ${contextoComun(platform, industria, objetivo)}.
-Analizás cómo evoluciona la atención del espectador desde el segundo ${hookWindowSegundos} hasta el final del video. El hook ya fue analizado aparte — no lo vuelvas a evaluar.
-</rol>
-
-<instrucciones>
-
 FASE 1 — OBSERVACIÓN LITERAL Y REGISTRO DE EVIDENCIA.
+${videoDurationSegundos ? `Este video dura EXACTAMENTE ${videoDurationSegundos} segundos, ni uno más. Cualquier timestamp que anotes tiene que estar entre ${hookWindowSegundos} y ${videoDurationSegundos}s. Si te parece haber visto algo después de ${videoDurationSegundos}s, es un error de lectura tuyo, no evidencia real — no lo escribas.
+Recorré el video segundo por segundo desde ${hookWindowSegundos} hasta ${videoDurationSegundos}, sin saltear ninguno. Para cada segundo, registrá qué pasa aunque no pase nada relevante ("sin cambios relevantes" cuenta como evidencia). Esto es obligatorio: es lo que te va a permitir después pesar los problemas por su impacto real, en vez de reportar solo el que saltó a la vista primero.` : ''}
 Dividí el video en escenas o beats desde el segundo ${hookWindowSegundos}. Transcribí el audio palabra por palabra y todo texto en pantalla en cada escena, con su segundo. Sumá tono, gestos, energía, edición. No evalúes todavía.
 Numerá cada observación individual como evidencia: E1, E2, E3... por escena. Si un timestamp no se puede determinar con exactitud, usá un rango. Si algo no está presente en alguna escena, decilo explícito.
 
@@ -200,19 +203,26 @@ Juzgá el mecanismo por su efecto real, nunca por la categoría o industria del 
 Doble simetría sobre formato conocido: ni débil ni fuerte solo por ser conocido — necesita evidencia propia en ambos casos.
 No anticipes escenas futuras al juzgar una escena puntual.
 
-FASE 4 — FALSACIÓN.
+FASE 4 — FALSACIÓN Y RANKING.
 Tomá el juicio de la Fase 3 e intentá refutarlo: "si mi conclusión es que esta escena sostiene la atención, ¿qué evidencia (Ex) demostraría lo contrario?" Una observación se convierte en problema real únicamente cuando hay una cadena causal directa entre la evidencia y una pérdida plausible de permanencia.
 Recorré TODAS las escenas antes de concluir.
 Evaluá además: (a) sin producción — ¿el mecanismo integrado sobrevive hasta el final sin edición, música ni efectos? (citá qué evidencia depende de la producción); (b) NICHO (obligatorio, no te lo saltees) — si eliminás todo conocimiento previo del tema, ¿las promesas centrales siguen teniendo una razón intrínseca para interesar, según la evidencia? Contestá explícitamente SÍ / NO / PARCIAL, incluso si la respuesta es que no hay dependencia — esta evaluación tiene que quedar registrada siempre. Si hay señales que compiten entre sí, decilo así.
+
+RANKING OBLIGATORIO: listá TODOS los problemas reales que sobrevivieron a
+la falsación, sin límite de cantidad. Asignale a cada uno un peso según
+cuánta evidencia exclusiva lo respalda y qué tan directa es su cadena
+causal hacia la pérdida de permanencia (una cadena de un solo paso pesa más
+que una con varios supuestos intermedios). Ordená la lista completa de
+mayor a menor peso — este orden, no el orden en que aparecieron las escenas
+ni el orden en que se te ocurrieron, es el que vas a usar en la Fase 5.
 
 FASE 5 — VEREDICTO Y AUDITORÍA.
 Con lo que sobrevivió a la Fase 4, sin agregar evidencia nueva, concluí en qué punto(s), si los hay, el espectador abandona.
 Antes de escribir el veredicto, auditá que cada afirmación tenga un ID de evidencia citado en alguna fase anterior — lo que no lo tenga, se elimina.
 Para cada problema real, describí la conexión causal entre la evidencia y la pérdida de permanencia, en vez de estimar cuántos espectadores abandonarían.
-Mencioná TODOS los problemas reales que hayan sobrevivido. Si dos lecturas son igual de plausibles, decilo así en vez de forzar una conclusión categórica.
+Mencioná TODOS los problemas reales que hayan sobrevivido, en el orden de peso establecido en el Ranking de la Fase 4. Si dos lecturas son igual de plausibles, decilo así en vez de forzar una conclusión categórica.
 Incluí siempre el resultado del chequeo de nicho de la Fase 4 en el veredicto final, aunque la respuesta sea que no hay dependencia — no lo omitas ni lo des por sobreentendido.
 Tu juicio es solo sobre retención — nunca prediagas otras acciones. Toda conclusión se apoya en evidencia ya reunida.
-
 
 <CONTINUIDAD_HOOK>
 
@@ -256,8 +266,6 @@ evidencia del desarrollo — la dependencia de nicho puede aparecer, cambiar
 o desaparecer a medida que avanza el video.
 
 </CONTINUIDAD_HOOK>
-
-</instrucciones>
 `;
 
 export const buildFinalReviewPrompt = (
@@ -333,6 +341,8 @@ ${desarrolloAnalysis}
 
 PROCESO (hacelo en tu cabeza, no lo muestres en la respuesta):
 1. Extraé los problemas y fortalezas realmente respaldados por evidencia.
+   Los análisis previos ya vienen ordenados por peso — respetá ese orden,
+   no reordenes según tu propia impresión al leerlos.
 2. Seleccioná como máximo 3 problemas, priorizados por impacto en
    retención, claridad de la evidencia y facilidad de corrección. Si no
    hay problemas reales, decilo explícitamente y mostrá solo fortalezas.
@@ -382,10 +392,9 @@ FORMATO OBLIGATORIO:
 **Problema:** [qué debilita la retención, específico del video]
 **Solución:** [acción concreta]
 
-
 **Fortaleza:** [qué funciona y por qué]
 
-La cantidad de problemas y fortalezas varía según el video. 
+La cantidad de problemas y fortalezas varía según el video.
 
 **A tener en cuenta:** [dependencia de nicho, solo si el hook o el
 desarrollo la detectaron real o parcial — nunca la omitas si existe]
@@ -398,10 +407,11 @@ cierre. Cada bloque problema+solución en máximo 3 líneas. El creador debe
 terminar de leer sabiendo exactamente qué falla, por qué, y qué cambiar
 en el próximo video. Nada más.
 `;
+
 export const runVideoReview = async (
   ai,
   buildVideoPartFn,
-  { platform, industria, objetivo, hookWindowSegundos = 4 }
+  { platform, industria, objetivo, hookWindowSegundos = 4, videoDurationSegundos }
 ) => {
   const cfg = REVIEW_CONFIG;
 
@@ -410,7 +420,7 @@ export const runVideoReview = async (
       model: cfg.hook.model,
       contents: [
         buildVideoPartFn({ fps: cfg.hook.videoFps, mediaResolution: cfg.hook.media_resolution }),
-        { text: buildHookAnalysisPrompt(platform, industria, objetivo, hookWindowSegundos) }
+        { text: buildHookAnalysisPrompt(platform, industria, objetivo, hookWindowSegundos, videoDurationSegundos) }
       ],
       config: {
         temperature: cfg.hook.temperature,
@@ -423,7 +433,7 @@ export const runVideoReview = async (
       model: cfg.desarrollo.model,
       contents: [
         buildVideoPartFn({ fps: cfg.desarrollo.videoFps, mediaResolution: cfg.desarrollo.media_resolution }),
-        { text: buildDesarrolloAnalysisPrompt(platform, industria, objetivo, hookWindowSegundos) }
+        { text: buildDesarrolloAnalysisPrompt(platform, industria, objetivo, hookWindowSegundos, "", videoDurationSegundos) }
       ],
       config: {
         temperature: cfg.desarrollo.temperature,
@@ -455,6 +465,7 @@ Sos VIRAX Coach — un consultor de contenido que ayuda a creadores a mejorar
 videos concretos, con acceso completo a todos los brains del sistema VIRAX.
 
 TU PRIORIDAD, EN ESTE ORDEN:
+
 1. Que el usuario entienda QUÉ está fallando en SU video puntual, en criollo,
    sin jerga de brains ni nombres de campos internos.
 2. Que se vaya con una acción concreta y ejecutable, no un diagnóstico abstracto.
