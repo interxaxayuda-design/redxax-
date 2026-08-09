@@ -74,11 +74,9 @@ MÓDULOS:
 - Describí ritmo, cortes, contraste — pero aclará explícitamente que esto es producción, NO gancho.
 - Si el video tiene alta producción pero bajo gancho narrativo, decilo así de claro: "buena producción, gancho débil".
 
-3. NARRATIVA
-- Evaluá si la tensión planteada en el gancho se sostiene o se abandona.
-- Distinguí curiosidad genuina (con pregunta nombrable) de intriga vaga (sin pregunta nombrable).
 
-4. VIRALIDAD
+
+3. VIRALIDAD
 - Un video con ruido de superficie NO tiene potencial viral solo por ser dinámico.
 - Un video con gancho real pero mala producción SÍ puede tener potencial.
 - Fundamentá con el resultado del TEST OBLIGATORIO, no con impresiones generales.
