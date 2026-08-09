@@ -309,6 +309,19 @@ REGLAS BASE:
   cumpla su función. Proponé eliminarlo solo si ninguna transformación lo
   resuelve y el video queda mejor sin él — y en ese caso la solución
   tiene que decir con qué se reemplaza, no dejar un vacío.
+- La solución tiene que poder resolverse con lo que ya existe en el video
+  (recortar, reordenar, agregar un texto, cambiar un corte, regrabar una
+  toma puntual) o con un recurso mínimo (una frase dicha a cámara, un
+  objeto que ya aparece). Si requiere guion nuevo, actores, locación
+  distinta o producción adicional, no es una solución válida — es una
+  idea para otro video, descartala.
+- Cualquier recurso de retención que uses (intriga, tensión, promesa,
+  contraste, lo que sea) tiene que salir del mismo mundo del video: sus
+  personas, objetos, escenario, tema o tono. Nunca importes un recurso
+  característico de otro tipo de contenido (mecánicas de gaming en un
+  video de una persona hablando, estructura de receta en un video de
+  opinión, etc.) aunque funcione bien en general — si no nace de lo que
+  ya está pasando en este video puntual, no sirve.
 
 <contexto_previo>
 ANÁLISIS DEL HOOK:
@@ -326,12 +339,23 @@ PROCESO (hacelo en tu cabeza, no lo muestres en la respuesta):
 3. Para cada problema, pensá 3 soluciones genuinamente distintas entre sí
    (que ataquen la causa desde estrategias diferentes, no variaciones de
    la misma idea). Antes de elegir, descartá cualquiera que sea
-   previsible, que podrías haber sugerido sin ver este video, o que
+   previsible, que podrías haber sugerido sin ver este video, que
    resuelva el problema simplemente sacando el elemento sin haber
-   evaluado antes si se podía transformar. Elegí la que combine mayor
-   originalidad Y mayor efectividad real — no la primera que cumpla el
-   mínimo.
-4. Revisá explícitamente el chequeo de nicho de AMBOS análisis (hook y
+   evaluado antes si se podía transformar, o que use un recurso propio
+   de otro tipo de contenido distinto al de este video. Elegí la que
+   combine mayor originalidad, mayor efectividad real Y coherencia total
+   con el mundo del video — no la primera que cumpla el mínimo.
+4. Aplicá el test del scroll a la solución que estés por elegir: imaginate
+   a alguien pasando el dedo por el feed a las 11pm, sin ganas de nada.
+   ¿La solución genera una pregunta que esa persona necesita cerrar en
+   los próximos 2 segundos, o es "interesante" pero posponible? Si es
+   posponible, descartala y volvé a pensar otra alternativa.
+5. Antes de dar la solución por definitiva, escribila mentalmente y
+   preguntate: "¿esta frase menciona algo que solo existe en este video
+   puntual?". Si al sacarle cualquier referencia al video la solución
+   sigue sonando igual de bien y aplicable a otro contenido del nicho,
+   descartala y volvé al paso 3.
+6. Revisá explícitamente el chequeo de nicho de AMBOS análisis (hook y
    desarrollo). Si cualquiera de los dos detectó una dependencia real o
    parcial del conocimiento previo del espectador, tenés que comunicarlo
    siempre en "A tener en cuenta" — nunca lo omitas, aunque el resto del
@@ -340,7 +364,7 @@ PROCESO (hacelo en tu cabeza, no lo muestres en la respuesta):
    funciona para quien ya conoce o le importa el tema, y eso genera una
    expectativa falsa. Si ninguno de los dos detectó dependencia real, no
    menciones el nicho.
-5. Elegí como máximo 2 fortalezas: las más relevantes para la retención,
+7. Elegí como máximo 2 fortalezas: las más relevantes para la retención,
    sin repetir algo ya implícito en una solución.
 
 REDACCIÓN FINAL:
@@ -358,15 +382,10 @@ FORMATO OBLIGATORIO:
 **Problema:** [qué debilita la retención, específico del video]
 **Solución:** [acción concreta]
 
-**Problema:** [segundo problema, solo si existe]
-**Solución:** [acción concreta]
-
-**Problema:** [tercer problema, solo si existe]
-**Solución:** [acción concreta]
 
 **Fortaleza:** [qué funciona y por qué]
 
-**Fortaleza:** [qué funciona y por qué]
+La cantidad de problemas y fortalezas varía según el video. 
 
 **A tener en cuenta:** [dependencia de nicho, solo si el hook o el
 desarrollo la detectaron real o parcial — nunca la omitas si existe]
@@ -379,7 +398,6 @@ cierre. Cada bloque problema+solución en máximo 3 líneas. El creador debe
 terminar de leer sabiendo exactamente qué falla, por qué, y qué cambiar
 en el próximo video. Nada más.
 `;
-
 export const runVideoReview = async (
   ai,
   buildVideoPartFn,
