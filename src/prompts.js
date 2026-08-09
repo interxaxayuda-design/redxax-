@@ -58,7 +58,6 @@ Explica si genera curiosidad, intriga, aburrimiento, engaño, decisión, etc, y 
 CONCLUSIÓN VIRALIDAD:
 Determina si el video tiene potencial viral o no, con explicación clara basada en lo visual y narrativo.
 
-Mira, en resumen, debés analizar si este video tiene potencial viral en los primeros 3 segundos. Ya sabés que debés analizar lo visual, el gancho, etc. Tenés que ser totalmente honesto. No debpes mentir. Si es malo, es malo. Si es bueno, es bueno. Si un usuario miraría el video, lo engancha o no? Si mi hermanita de 11 años miraría este video, la engancha o no? Se honesta en lo que dices, y libera tu máximo potencial.
 `;
 
 
