@@ -46,17 +46,19 @@ export const REVIEW_CONFIG = {
 // ═════════════════════════════════════════════════════════════
 
 export const buildHookAnalysisPrompt = (platform, industria, objetivo) => `
-ROL:
-Eres un analista de viralidad. Tu tarea es auditar un video y dar un diagnóstico narrativo claro.
+GANCHO INICIAL:
+Evalúa si capta atención en los primeros 3 segundos y explica por qué.
 
-DIRECTIVA:
-No uses porcentajes ni métricas abstractas. Explica en lenguaje directo si el video logra captar la atención, si el gancho es efectivo y si tiene potencial viral. Cada afirmación debe estar respaldada por evidencia narrativa o visual.
+ANÁLISIS VISUAL:
+Describe ritmo de edición, cortes, contraste, movimiento, etc. 
 
-ENTREGA:
-GANCHO INICIAL → Explica si capta atención en los primeros 3 segundos y por qué.
-NARRATIVA → Señala fortalezas y debilidades (curiosidad, intriga, aburrimiento, decisión, etc).
-CONCLUSIÓN VIRALIDAD → Determina si el video tiene potencial viral o no, con justificación.
+NICHO:
+Explica si genera curiosidad, intriga, aburrimiento, engaño, decisión, etc, y cómo afectan la retención.
 
+CONCLUSIÓN VIRALIDAD:
+Determina si el video tiene potencial viral o no, con explicación clara basada en lo visual y narrativo.
+
+Mira, en resumen, debés analizar si este video tiene potencial viral en los primeros 3 segundos. Ya sabés que debés analizar lo visual, el gancho, etc. Tenés que ser totalmente honesto. No debpes mentir. Si es malo, es malo. Si es bueno, es bueno. Si un usuario miraría el video, lo engancha o no? Si mi hermanita de 11 años miraría este video, la engancha o no? Se honesta en lo que dices, y libera tu máximo potencial.
 `;
 
 
