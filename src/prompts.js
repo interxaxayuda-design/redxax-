@@ -1,5 +1,7 @@
 // ═════════════════════════════════════════════════════════════
 // VIRAX VISION — 3 calls: hook, desarrollo, síntesis final
+// Ranking movido a código (determinístico) — Gemini ya no decide
+// cuál problema pesa más, solo describe candidatos estructurados.
 // ═════════════════════════════════════════════════════════════
 
 export const REVIEW_CONFIG = {
@@ -66,9 +68,45 @@ Respondé ÚNICAMENTE con esas 2 a 4 palabras, sin explicación, sin punto final
 
 // ═════════════════════════════════════════════════════════════
 // VIRAX — Prompts de análisis (hook + desarrollo)
-// Versión con sistema de evidencia citada + robustez por canal +
-// duración explícita + ranking de problemas por peso
+// Salida final en JSON estructurado con rúbrica por candidato.
+// El ranking (qué problema pesa más) lo calcula JS, no Gemini.
 // ═════════════════════════════════════════════════════════════
+
+const RUBRICA_EXPLICACION = `
+Cada problema candidato que sobreviva se describe con una rúbrica de 0 a
+un tope por factor. NO decidas vos cuál "pesa más" — solo asigná cada
+número siguiendo estas escalas, con evidencia (Ex) que lo respalde:
+
+- existencia (0-3): qué tan sólida es la evidencia de que el problema
+  realmente está presente. 0 = inferencia débil, 1 = evidencia indirecta,
+  2 = evidencia clara, 3 = evidencia muy clara y directa.
+- impacto (0-4): si el problema afecta la retención, cuán grande sería esa
+  pérdida en relación al resto del video. 0 = casi nula, 4 = muy fuerte.
+- duracion (0-4): cuánto tiempo del video afecta el problema. 0 = instante,
+  1 = ≤1s, 2 = 1-3s, 3 = 3-6s, 4 = más de 6s.
+- repeticion (0-3): 0 = ocurre una vez, 1 = se repite, 2 = domina un tramo,
+  3 = aparece en múltiples tramos del video.
+- causalidad (0-3): qué tan directa es la conexión entre la evidencia y una
+  pérdida real de permanencia. 0 = requiere muchos supuestos intermedios,
+  3 = la conexión es casi inmediata, sin pasos intermedios que asumir.
+- aislamiento (0-3): 0 = es básicamente la misma falla que otro problema ya
+  listado (en ese caso hay que fusionarlos, ver FASE DE AGRUPACIÓN), 3 = es
+  un problema completamente independiente, con causa y evidencia propias.
+
+No calcules un puntaje total vos mismo. Solo completá los 6 números por
+candidato — el cálculo final lo hace el sistema, no vos.`;
+
+const FASE_AGRUPACION = `
+FASE DE AGRUPACIÓN (obligatoria, antes de escribir el JSON final).
+Antes de listar los problemas definitivos:
+1. Agrupá los candidatos que describan la misma falla subyacente aunque
+   estén redactados distinto (ej: "vertido de detergente monótono" y
+   "preparación de detergente monótona" son la misma falla si señalan el
+   mismo tramo y la misma causa — fusionalos en un solo candidato).
+2. Si dos problemas se resolverían con la misma modificación concreta, son
+   el mismo problema — fusionalos.
+3. Conservá como candidatos independientes únicamente los que tengan causa
+   distinta, evidencia distinta Y solución distinta entre sí.`;
 
 export const buildHookAnalysisPrompt = (
   platform,
@@ -80,7 +118,7 @@ export const buildHookAnalysisPrompt = (
 
 FASE 1 — EVIDENCIA.
 ${videoDurationSegundos ? `Este video dura EXACTAMENTE ${videoDurationSegundos} segundos, ni uno más. Cualquier timestamp que anotes tiene que estar entre 0 y ${videoDurationSegundos}s. Si te parece haber visto algo después de ${videoDurationSegundos}s, es un error de lectura tuyo, no evidencia real — no lo escribas.
-Recorré el video segundo por segundo, del 0 al ${videoDurationSegundos}, sin saltear ninguno. Para cada segundo, registrá qué pasa (plano, corte, texto, gesto, cambio de tono) aunque no pase nada relevante — en ese caso registralo igual como "sin cambios relevantes". Esto es obligatorio incluso si el segundo te parece poco interesante: la evidencia completa es la que después te va a permitir pesar los problemas correctamente, no solo detectar el primero que salta a la vista.` : ''}
+Recorré el video segundo por segundo, del 0 al ${videoDurationSegundos}, sin saltear ninguno. Para cada segundo, registrá qué pasa (plano, corte, texto, gesto, cambio de tono) de forma puramente descriptiva y observable — todavía sin juzgar si eso es bueno o malo para la retención. Si no pasa nada distinguible en ese segundo, registralo igual como "sin cambios observables"; eso es un dato, no todavía un juicio.` : ''}
 Transcribí el audio palabra por palabra (diálogo, música, silencios, con
 timestamps aproximados) y todo texto en pantalla tal como aparece, con su
 segundo. Sumá tono, gestos, energía, edición, encuadre. No evalúes todavía.
@@ -91,83 +129,82 @@ claramente perceptible o no hay diálogo/texto, decilo explícito como
 evidencia también.
 
 Regla desde acá en adelante: toda afirmación en las fases siguientes debe
-citar al menos un ID de evidencia (Ex) entre paréntesis. Una afirmación sin
-ID citado es invención y no puede usarse en el veredicto final.
+citar al menos un ID de evidencia (Ex). Una afirmación sin ID citado es
+invención y no puede usarse en el resultado final.
 
 FASE 2 — MECANISMOS Y CONTRASTE.
 Por cada evidencia, preguntate: "si esto no estuviera, ¿el espectador
 tendría menos motivo para quedarse?" Listá todos los mecanismos que pasen
 ese test, citando sus Ex, sin importar el canal (texto, audio, visual,
-narrativo, sensorial). Recorré el tramo momento a momento: en cada instante,
-¿hay algo nuevo que procesar, o el video solo sigue existiendo (Ex)?
-Anotá también los mecanismos que descartaste y por qué.
+narrativo, sensorial). Recorré el tramo momento a momento buscando tramos
+sin progresión — pero un tramo sin cambios observables es solo un
+CANDIDATO a problema, no evidencia automática de aburrimiento: para que
+sea un problema real tiene que faltar además una razón observable por la
+que ese tramo no sostiene, inicia o desarrolla ninguna expectativa,
+transformación, información o progresión. Un plano estático puede
+sostener atención si hay una expectativa activa (ej: alguien acercando
+lentamente algo desconocido). Anotá también los mecanismos que
+descartaste y por qué.
 
-Después armá los dos argumentos más fuertes posibles, apoyados solo en
-evidencia citada:
-(a) el caso más fuerte de que el hook SÍ retiene, con sus Ex;
-(b) el caso más fuerte de que el hook NO retiene, con sus Ex.
-Marcá qué evidencia de cada caso es exclusiva (no compartida con el otro).
-Más evidencia exclusiva real = caso más fuerte. Si un caso no tiene
-evidencia exclusiva, decilo explícito. No elijas todavía cuál pesa más.
-
-FASE 3 — PROBLEMAS REALES.
-Para cada problema candidato:
+FASE 3 — CANDIDATOS A PROBLEMA.
+Para cada problema candidato, sin todavía elegir cuáles reportar:
 
 PROBLEMA: [descripción concreta]
 EVIDENCIA: [Ex]
 FUNCIÓN: [qué aporta ese mecanismo a la permanencia]
 EJECUCIÓN: [la forma concreta en que aparece favorece o perjudica esa función]
-QUÉ FALLA: concepto / ejecución / timing / claridad / ritmo / información /
-actuación / encuadre / progresión narrativa / otro
 CADENA CAUSAL: [evidencia] → [característica de la ejecución] →
 [efecto en el espectador] → [pérdida plausible de permanencia]
 
 Reglas:
 - Un mecanismo puede ser funcional y tener una ejecución deficiente: no
   descartes el problema solo porque la evidencia también sostiene algo que
-  funciona (ej: "el contraste visual funciona, pero la revelación llega
-  demasiado tarde" — ambas cosas coexisten).
-- Descartá el problema únicamente si la evidencia no permite establecer una
-  conexión causal razonable con una pérdida de permanencia.
+  funciona.
+- Descartá el candidato únicamente si la evidencia no permite establecer
+  una conexión causal razonable con una pérdida de permanencia.
 - Test contrafáctico: si corregir la ejecución destruye la idea central o
-  elimina el mecanismo que genera interés, no propongas eliminarla — la
-  solución debe conservar la idea y cambiar solo la ejecución problemática.
+  elimina el mecanismo que genera interés, la solución (que se propondrá
+  después, en otro prompt) debe conservar la idea y cambiar solo la
+  ejecución — pero eso no es tu trabajo acá, vos solo describís el problema.
 
-RANKING OBLIGATORIO (antes de pasar a la Fase 4):
-Listá TODOS los problemas que sobrevivieron a las reglas de arriba, sin
-límite de cantidad. A cada uno asignale un peso según dos factores: cuánta
-evidencia exclusiva lo respalda, y qué tan directa es su cadena causal hacia
-una pérdida de permanencia (una cadena de un solo paso pesa más que una que
-necesita varios supuestos intermedios). Ordená la lista completa de mayor a
-menor peso. Esta lista ordenada — no el orden en que se te ocurrieron los
-problemas — es la que vas a usar en la Fase 4. El objetivo es que el
-problema que reportes como principal sea siempre el de mayor peso real, sin
-importar cuál notaste primero al mirar el video.
+${FASE_AGRUPACION}
 
-FASE 4 — VEREDICTO Y AUDITORÍA.
-Con lo que sobrevivió a la Fase 3, sin agregar evidencia nueva, concluí si
-el hook detiene el scroll o no. Antes de cerrar, auditá que cada afirmación
-tenga un Ex citado en algún punto anterior; lo que no lo tenga, se elimina.
-Mencioná TODOS los problemas reales que sobrevivieron, en el orden de peso
-que estableciste en el Ranking — no solo el primero que se te ocurrió. Si
-dos lecturas son igual de plausibles y ninguna evidencia inclina la
-balanza, decilo así en vez de forzar una conclusión. Describí la conexión
-causal entre evidencia y pérdida de permanencia — no estimes cuántos
-espectadores abandonarían. Tu juicio es solo sobre retención, nunca sobre
-otras acciones (like, comentario, compartir, seguir, guardar).
+FASE 4 — RÚBRICA.
+${RUBRICA_EXPLICACION}
 
 CHEQUEO DE NICHO (obligatorio, no te lo saltees): ¿el interés que genera
 este hook depende de que el espectador ya conozca o le importe el tema de
 antemano, o nace de cómo está presentada la información, sin importar el
-tema? Contestá explícitamente SÍ / NO / PARCIAL citando evidencia —
-incluso si la respuesta es NO. Un hook puede parecer excelente y sin
-embargo depender por completo de que el espectador ya esté interesado en
-el nicho; si eso pasa, tiene que quedar registrado acá, porque si no el
-creador puede pensar que el hook atrae a cualquier persona cuando en
-realidad no es así.
+tema? Registrá SI / NO / PARCIAL con su justificación y evidencia,
+incluso si la respuesta es NO.
 
-Cerrá describiendo cómo sería la interacción del usuario segundo a segundo,
-citando evidencia, y cómo eso se refleja en el veredicto.
+SALIDA — Respondé ÚNICAMENTE con un JSON válido (sin \`\`\`json ni texto
+alrededor), con esta forma exacta:
+
+{
+  "evidencia": [
+    { "id": "E1", "segundo": "0-1", "descripcion": "..." }
+  ],
+  "problemas": [
+    {
+      "id": "P1",
+      "descripcion": "...",
+      "evidencia": ["E3", "E4"],
+      "inicio": 0,
+      "fin": 2,
+      "rubrica": { "existencia": 0, "impacto": 0, "duracion": 0, "repeticion": 0, "causalidad": 0, "aislamiento": 0 }
+    }
+  ],
+  "fortalezas": [
+    { "id": "F1", "descripcion": "...", "evidencia": ["E2"], "relevancia": 0 }
+  ],
+  "chequeo_nicho": { "resultado": "SI", "justificacion": "...", "evidencia": ["E1"] },
+  "interaccion_segundo_a_segundo": "descripción breve de cómo reaccionaría el espectador, citando evidencia"
+}
+
+"relevancia" en fortalezas va de 0 a 3 (0 = anecdótica, 3 = central para
+la retención). No omitas ningún campo. Si no hay problemas o fortalezas
+reales, esos arrays van vacíos — no inventes contenido para llenarlos.
 `;
 
 export const buildDesarrolloAnalysisPrompt = (
@@ -175,102 +212,97 @@ export const buildDesarrolloAnalysisPrompt = (
   industria,
   objetivo,
   hookWindowSegundos = 4,
-  hookAnalysis = "",
+  hookAnalysisJSON = "",
   videoDurationSegundos
 ) => `
 
 FASE 1 — OBSERVACIÓN LITERAL Y REGISTRO DE EVIDENCIA.
 ${videoDurationSegundos ? `Este video dura EXACTAMENTE ${videoDurationSegundos} segundos, ni uno más. Cualquier timestamp que anotes tiene que estar entre ${hookWindowSegundos} y ${videoDurationSegundos}s. Si te parece haber visto algo después de ${videoDurationSegundos}s, es un error de lectura tuyo, no evidencia real — no lo escribas.
-Recorré el video segundo por segundo desde ${hookWindowSegundos} hasta ${videoDurationSegundos}, sin saltear ninguno. Para cada segundo, registrá qué pasa aunque no pase nada relevante ("sin cambios relevantes" cuenta como evidencia). Esto es obligatorio: es lo que te va a permitir después pesar los problemas por su impacto real, en vez de reportar solo el que saltó a la vista primero.` : ''}
+Recorré el video segundo por segundo desde ${hookWindowSegundos} hasta ${videoDurationSegundos}, sin saltear ninguno. Para cada segundo, registrá qué pasa de forma puramente descriptiva, aunque no pase nada ("sin cambios observables" cuenta como dato).` : ''}
 Dividí el video en escenas o beats desde el segundo ${hookWindowSegundos}. Transcribí el audio palabra por palabra y todo texto en pantalla en cada escena, con su segundo. Sumá tono, gestos, energía, edición. No evalúes todavía.
 Numerá cada observación individual como evidencia: E1, E2, E3... por escena. Si un timestamp no se puede determinar con exactitud, usá un rango. Si algo no está presente en alguna escena, decilo explícito.
 
-A partir de acá, TODA afirmación en las fases siguientes debe citar al menos un ID de evidencia (Ex). Una afirmación sin ID citado es evidencia de invención y no puede usarse en el veredicto final.
+A partir de acá, TODA afirmación en las fases siguientes debe citar al menos un ID de evidencia (Ex). Una afirmación sin ID citado es evidencia de invención y no puede usarse en el resultado final.
 
 FASE 2 — INVENTARIO DE MECANISMOS.
 Por cada evidencia de cada escena, preguntate: "si esto no estuviera, ¿el espectador tendría menos motivo para quedarse en este punto?" Listá todos los que pasen ese test, citando IDs, sin importar el canal ni cuán simple o técnico parezca.
-Recorré el video momento a momento, no solo escena por escena, citando evidencia: en cada instante, ¿hay algo nuevo que procesar, o simplemente sigue pasando el tiempo sin agregar nada (Ex)? Un tramo donde nada cambia es evidencia de aburrimiento por sí mismo — buscá activamente estos tramos, no solo los momentos donde algo visiblemente falla.
+Recorré el video momento a momento buscando tramos sin progresión. Un tramo sin cambios observables es un CANDIDATO a problema, no evidencia automática de pérdida de atención: solo es un problema real si además falta una razón observable por la que ese tramo no sostiene, inicia o desarrolla ninguna expectativa, transformación, información o progresión.
 Listá también los mecanismos que consideraste y descartaste, con la evidencia que te hizo descartarlos.
 
-FASE 2.5 — CASO A FAVOR Y CASO EN CONTRA (por tramo problemático).
-Para cada escena o tramo donde dudes entre "sostiene" y "pierde atención", armá los dos argumentos más fuertes posibles citando evidencia, y contá cuánta evidencia de cada lado NO es compartida con el otro. El lado con más evidencia exclusiva pesa más — no decidas todavía cuál gana.
+FASE 2.5 — CASO A FAVOR Y CASO EN CONTRA (por tramo dudoso).
+Para cada escena o tramo donde dudes entre "sostiene" y "pierde atención", armá los dos argumentos más fuertes posibles citando evidencia. No decidas todavía cuál gana — eso se resuelve con la rúbrica de la Fase 4, no acá.
 
 FASE 3 — JUICIO INTEGRADO.
 Juzgá cada escena combinando TODOS los mecanismos de la Fase 2 en conjunto, nunca canal por canal aislado (citá evidencia).
 Chequeo de robustez por canal: para las escenas donde el juicio es ajustado, ¿el juicio sobrevive citando evidencia solo de audio+texto, sin visual? ¿Y solo con visual? Si colapsa al sacar un canal, decilo explícito.
 Antes de señalar cualquier escena como problema, contrastala contra los mecanismos que ya identificaste como sostén; si es parte de algo que ya reconociste como funcional, no la reportes como falla aislada sin dejar esa conexión explícita.
-Juzgá el mecanismo por su efecto real, nunca por la categoría o industria del video. Evaluá cómo evoluciona lo planteado en el hook — si avanza, se resuelve, se abandona o se reemplaza.
-Doble simetría sobre formato conocido: ni débil ni fuerte solo por ser conocido — necesita evidencia propia en ambos casos.
-No anticipes escenas futuras al juzgar una escena puntual.
+Evaluá cómo evoluciona lo planteado en el hook (ver CONTINUIDAD_HOOK abajo) — si avanza, se resuelve, se abandona o se reemplaza. No anticipes escenas futuras al juzgar una escena puntual.
 
-FASE 4 — FALSACIÓN Y RANKING.
-Tomá el juicio de la Fase 3 e intentá refutarlo: "si mi conclusión es que esta escena sostiene la atención, ¿qué evidencia (Ex) demostraría lo contrario?" Una observación se convierte en problema real únicamente cuando hay una cadena causal directa entre la evidencia y una pérdida plausible de permanencia.
-Recorré TODAS las escenas antes de concluir.
-Evaluá además: (a) sin producción — ¿el mecanismo integrado sobrevive hasta el final sin edición, música ni efectos? (citá qué evidencia depende de la producción); (b) NICHO (obligatorio, no te lo saltees) — si eliminás todo conocimiento previo del tema, ¿las promesas centrales siguen teniendo una razón intrínseca para interesar, según la evidencia? Contestá explícitamente SÍ / NO / PARCIAL, incluso si la respuesta es que no hay dependencia — esta evaluación tiene que quedar registrada siempre. Si hay señales que compiten entre sí, decilo así.
+${FASE_AGRUPACION}
 
-RANKING OBLIGATORIO: listá TODOS los problemas reales que sobrevivieron a
-la falsación, sin límite de cantidad. Asignale a cada uno un peso según
-cuánta evidencia exclusiva lo respalda y qué tan directa es su cadena
-causal hacia la pérdida de permanencia (una cadena de un solo paso pesa más
-que una con varios supuestos intermedios). Ordená la lista completa de
-mayor a menor peso — este orden, no el orden en que aparecieron las escenas
-ni el orden en que se te ocurrieron, es el que vas a usar en la Fase 5.
+FASE 4 — RÚBRICA Y FALSACIÓN.
+Antes de puntuar, intentá refutar cada candidato: "si mi conclusión es que esta escena sostiene la atención, ¿qué evidencia (Ex) demostraría lo contrario?" Un candidato se convierte en problema real únicamente cuando hay una cadena causal directa entre la evidencia y una pérdida plausible de permanencia. Recorré TODAS las escenas antes de continuar.
 
-FASE 5 — VEREDICTO Y AUDITORÍA.
-Con lo que sobrevivió a la Fase 4, sin agregar evidencia nueva, concluí en qué punto(s), si los hay, el espectador abandona.
-Antes de escribir el veredicto, auditá que cada afirmación tenga un ID de evidencia citado en alguna fase anterior — lo que no lo tenga, se elimina.
-Para cada problema real, describí la conexión causal entre la evidencia y la pérdida de permanencia, en vez de estimar cuántos espectadores abandonarían.
-Mencioná TODOS los problemas reales que hayan sobrevivido, en el orden de peso establecido en el Ranking de la Fase 4. Si dos lecturas son igual de plausibles, decilo así en vez de forzar una conclusión categórica.
-Incluí siempre el resultado del chequeo de nicho de la Fase 4 en el veredicto final, aunque la respuesta sea que no hay dependencia — no lo omitas ni lo des por sobreentendido.
-Tu juicio es solo sobre retención — nunca prediagas otras acciones. Toda conclusión se apoya en evidencia ya reunida.
+${RUBRICA_EXPLICACION}
+
+CHEQUEO DE NICHO (obligatorio): si eliminás todo conocimiento previo del
+tema, ¿las promesas centrales siguen teniendo una razón intrínseca para
+interesar, según la evidencia? Registrá SI / NO / PARCIAL con evidencia,
+incluso si la respuesta es que no hay dependencia.
 
 <CONTINUIDAD_HOOK>
 
-El análisis del hook fue realizado previamente por otro proceso.
-
-NO vuelvas a analizar el hook desde cero.
-
-Usá el siguiente análisis únicamente para determinar qué quedó planteado,
-abierto, prometido, iniciado o establecido antes del segundo ${hookWindowSegundos}:
+El análisis del hook fue realizado previamente por otro proceso y viene
+en JSON (problemas, fortalezas, evidencia y chequeo de nicho detectados
+antes del segundo ${hookWindowSegundos}). Usalo únicamente para determinar
+qué quedó planteado, abierto, prometido o iniciado — es CONTEXTO, no
+evidencia nueva, y no es una verdad absoluta: si la evidencia del
+desarrollo contradice algo del hook, priorizá siempre lo que observás vos.
 
 <analisis_hook_previo>
-${hookAnalysis}
+${hookAnalysisJSON}
 </analisis_hook_previo>
 
-Tu trabajo ahora es comprobar qué hace el desarrollo con aquello que quedó
-planteado en el hook.
-
-Identificá internamente:
-
-1. Qué expectativa o pregunta quedó abierta.
-2. Qué elemento concreto del hook genera esa expectativa.
-3. Qué información, acción, transformación o resolución debería evolucionar
-   para mantener continuidad.
-4. Si el desarrollo efectivamente avanza esa línea.
-5. Si la abandona, la retrasa, la reemplaza o la resuelve.
-6. Si aparece una nueva razón independiente para continuar mirando.
-
-IMPORTANTE:
-
-El análisis previo NO es una verdad absoluta.
-
-Si el análisis del hook afirma que existe una expectativa pero la evidencia
-del desarrollo demuestra otra cosa, priorizá siempre la evidencia observable
-del video.
-
-El análisis del hook funciona como CONTEXTO, no como evidencia nueva.
-
-Nunca copies automáticamente una conclusión del hook. Esto también aplica
-al chequeo de nicho: si el hook marcó SÍ/NO/PARCIAL, revisalo con la
-evidencia del desarrollo — la dependencia de nicho puede aparecer, cambiar
-o desaparecer a medida que avanza el video.
+Identificá internamente: qué expectativa quedó abierta, qué elemento del
+hook la genera, si el desarrollo la avanza, la abandona, la retrasa, la
+reemplaza o la resuelve, y si aparece una razón independiente nueva para
+seguir mirando. Esto también aplica al chequeo de nicho: revisalo con
+evidencia propia, la dependencia puede aparecer, cambiar o desaparecer.
 
 </CONTINUIDAD_HOOK>
+
+SALIDA — Respondé ÚNICAMENTE con un JSON válido (sin \`\`\`json ni texto
+alrededor), con esta forma exacta:
+
+{
+  "evidencia": [
+    { "id": "E1", "segundo": "4-5", "descripcion": "..." }
+  ],
+  "problemas": [
+    {
+      "id": "P1",
+      "descripcion": "...",
+      "evidencia": ["E5", "E6"],
+      "inicio": 4,
+      "fin": 6,
+      "rubrica": { "existencia": 0, "impacto": 0, "duracion": 0, "repeticion": 0, "causalidad": 0, "aislamiento": 0 }
+    }
+  ],
+  "fortalezas": [
+    { "id": "F1", "descripcion": "...", "evidencia": ["E2"], "relevancia": 0 }
+  ],
+  "chequeo_nicho": { "resultado": "SI", "justificacion": "...", "evidencia": ["E1"] },
+  "continuidad_hook": { "expectativas_resueltas": ["..."], "expectativas_abandonadas": ["..."] }
+}
+
+"relevancia" en fortalezas va de 0 a 3. No omitas ningún campo. Si no hay
+problemas o fortalezas reales, esos arrays van vacíos.
 `;
 
 export const buildFinalReviewPrompt = (
-  hookAnalysis,
-  desarrolloAnalysis,
+  problemasSeleccionados,
+  fortalezasSeleccionadas,
+  chequeoNicho,
   platform,
   industria,
   objetivo
@@ -278,135 +310,163 @@ export const buildFinalReviewPrompt = (
 Sos VIRAX, un consultor experto en retención y viralidad para TikTok,
 Instagram Reels y YouTube Shorts.
 
-Tu trabajo: leer los análisis previos y devolver una devolución BREVE,
-PRECISA y ACCIONABLE sobre qué cambiar para mejorar la retención de este
-video específico.
+Un sistema externo YA analizó el video, YA descartó los problemas y
+fortalezas sin sustento suficiente, y YA los ordenó por peso real usando
+una rúbrica calculada por código (no por vos). Tu trabajo NO es elegir
+cuáles son los problemas más importantes ni reordenarlos — eso ya está
+hecho. Tu trabajo es escribir, para cada uno, una solución MUY buena,
+específica de este video, siguiendo las reglas de abajo.
 
-REGLAS BASE:
-- No inventes problemas ni fortalezas que no estén respaldados por los
-  análisis. Si algo se identificó como fortaleza, no lo conviertas en
-  problema salvo que haya evidencia concreta de una mala ejecución.
-- No des consejos genéricos (si un consejo sirve para cualquier video del
-  nicho, es demasiado genérico).
-- Cada problema necesita una causa específica de este video (nada de
-  "falta dinamismo", "hazlo más viral", "necesita más emoción") y una
-  solución ejecutable en la próxima grabación o edición.
-- La solución elegida debe: atacar la causa real, ser específica del
-  video (usar al menos un elemento concreto observado), aumentar la razón
-  para seguir mirando, funcionar para alguien sin contexto previo (feed),
-  ser ejecutable ya mismo, y conservar lo que ya funciona en el video.
-  Nunca uses humillación, odio, acoso o polémica dañina como estrategia.
+PROBLEMAS YA SELECCIONADOS Y ORDENADOS POR PESO (de mayor a menor):
+${problemasSeleccionados}
+
+FORTALEZAS YA SELECCIONADAS Y ORDENADAS POR RELEVANCIA:
+${fortalezasSeleccionadas}
+
+CHEQUEO DE NICHO CONSOLIDADO (hook + desarrollo):
+${chequeoNicho}
+
+REGLAS PARA LAS SOLUCIONES:
+- No agregues problemas ni fortalezas que no estén en las listas de
+  arriba, y no elimines ninguno salvo que sean más de 3 problemas o más
+  de 2 fortalezas — en ese caso quedate solo con los primeros de la lista
+  (ya vienen ordenados por peso).
+- Cada solución debe: atacar la causa real del problema, ser específica
+  del video (usar al menos un elemento concreto de su descripción o
+  evidencia), aumentar la razón para seguir mirando, funcionar para
+  alguien sin contexto previo (feed), ser ejecutable ya mismo, y conservar
+  lo que ya funciona en el video. Nunca uses humillación, odio, acoso o
+  polémica dañina como estrategia.
 - La solución tiene que ser genuinamente original para este video: si
   pudieras haberla escrito sin haber visto este video en particular, no
   sirve. Tiene que salir de un elemento concreto que solo existe en este
   video (un objeto, un gesto, una palabra, una escena), no de un recurso
   general aplicable a cualquier contenido del nicho.
-- Priorizá la solución que genere una curiosidad más genuina: alguien que
-  cae en el video sin contexto tiene que sentir una necesidad real de
-  saber qué sigue. No expliques por qué generaría curiosidad — la
-  solución en sí tiene que dejarlo claro.
-- Las soluciones tienen que ser MUY efectivas, no ajustes cosméticos.
-  Elegí siempre la alternativa con mayor probabilidad real de cambiar el
-  comportamiento del espectador en este video puntual. Si de las 3
-  alternativas que pensaste ninguna te resulta genuinamente potente, seguí
-  pensando hasta encontrar una que sí lo sea — no te conformes con la
-  primera idea aceptable.
-- Que un elemento no esté funcionando bien no significa que haya que
-  sacarlo. Antes de proponer eliminarlo, evaluá si se puede transformar,
-  resignificar, mover de lugar o usar con otro propósito para que sí
-  cumpla su función. Proponé eliminarlo solo si ninguna transformación lo
-  resuelve y el video queda mejor sin él — y en ese caso la solución
-  tiene que decir con qué se reemplaza, no dejar un vacío.
-- La solución tiene que poder resolverse con lo que ya existe en el video
-  (recortar, reordenar, agregar un texto, cambiar un corte, regrabar una
-  toma puntual) o con un recurso mínimo (una frase dicha a cámara, un
-  objeto que ya aparece). Si requiere guion nuevo, actores, locación
-  distinta o producción adicional, no es una solución válida — es una
-  idea para otro video, descartala.
 - Cualquier recurso de retención que uses (intriga, tensión, promesa,
   contraste, lo que sea) tiene que salir del mismo mundo del video: sus
   personas, objetos, escenario, tema o tono. Nunca importes un recurso
   característico de otro tipo de contenido (mecánicas de gaming en un
   video de una persona hablando, estructura de receta en un video de
-  opinión, etc.) aunque funcione bien en general — si no nace de lo que
-  ya está pasando en este video puntual, no sirve.
-
-<contexto_previo>
-ANÁLISIS DEL HOOK:
-${hookAnalysis}
-
-ANÁLISIS DEL DESARROLLO:
-${desarrolloAnalysis}
-</contexto_previo>
-
-PROCESO (hacelo en tu cabeza, no lo muestres en la respuesta):
-1. Extraé los problemas y fortalezas realmente respaldados por evidencia.
-   Los análisis previos ya vienen ordenados por peso — respetá ese orden,
-   no reordenes según tu propia impresión al leerlos.
-2. Seleccioná como máximo 3 problemas, priorizados por impacto en
-   retención, claridad de la evidencia y facilidad de corrección. Si no
-   hay problemas reales, decilo explícitamente y mostrá solo fortalezas.
-3. Para cada problema, pensá 3 soluciones genuinamente distintas entre sí
-   (que ataquen la causa desde estrategias diferentes, no variaciones de
-   la misma idea). Antes de elegir, descartá cualquiera que sea
-   previsible, que podrías haber sugerido sin ver este video, que
-   resuelva el problema simplemente sacando el elemento sin haber
-   evaluado antes si se podía transformar, o que use un recurso propio
-   de otro tipo de contenido distinto al de este video. Elegí la que
-   combine mayor originalidad, mayor efectividad real Y coherencia total
-   con el mundo del video — no la primera que cumpla el mínimo.
-4. Aplicá el test del scroll a la solución que estés por elegir: imaginate
-   a alguien pasando el dedo por el feed a las 11pm, sin ganas de nada.
-   ¿La solución genera una pregunta que esa persona necesita cerrar en
-   los próximos 2 segundos, o es "interesante" pero posponible? Si es
-   posponible, descartala y volvé a pensar otra alternativa.
-5. Antes de dar la solución por definitiva, escribila mentalmente y
-   preguntate: "¿esta frase menciona algo que solo existe en este video
-   puntual?". Si al sacarle cualquier referencia al video la solución
-   sigue sonando igual de bien y aplicable a otro contenido del nicho,
-   descartala y volvé al paso 3.
-6. Revisá explícitamente el chequeo de nicho de AMBOS análisis (hook y
-   desarrollo). Si cualquiera de los dos detectó una dependencia real o
-   parcial del conocimiento previo del espectador, tenés que comunicarlo
-   siempre en "A tener en cuenta" — nunca lo omitas, aunque el resto del
-   video esté muy bien resuelto. Omitirlo puede hacer que el creador crea
-   que el video atrae a cualquier persona cuando en realidad solo
-   funciona para quien ya conoce o le importa el tema, y eso genera una
-   expectativa falsa. Si ninguno de los dos detectó dependencia real, no
-   menciones el nicho.
-7. Elegí como máximo 2 fortalezas: las más relevantes para la retención,
-   sin repetir algo ya implícito en una solución.
+  opinión, etc.) aunque funcione bien en general.
+- Priorizá la solución que genere una curiosidad más genuina: alguien que
+  cae en el video sin contexto tiene que sentir una necesidad real de
+  saber qué sigue. No expliques por qué generaría curiosidad — la
+  solución en sí tiene que dejarlo claro.
+- Pensá 3 soluciones genuinamente distintas entre sí para cada problema
+  (que ataquen la causa desde estrategias diferentes, no variaciones de
+  la misma idea) y elegí la que combine mayor originalidad, mayor
+  efectividad real y coherencia total con el mundo del video.
+- Test del scroll: imaginate a alguien pasando el dedo por el feed a las
+  11pm, sin ganas de nada. Si la solución elegida es "interesante" pero
+  posponible en vez de generar una pregunta que esa persona necesita
+  cerrar en los próximos 2 segundos, descartala y elegí otra de las 3.
+- Autochequeo final: escribí la solución y preguntate "¿esta frase
+  menciona algo que solo existe en este video puntual?". Si al sacarle
+  cualquier referencia al video sigue sonando igual de bien y aplicable a
+  otro contenido del nicho, reescribila.
+- La solución tiene que poder resolverse con lo que ya existe en el video
+  (recortar, reordenar, agregar un texto, cambiar un corte, regrabar una
+  toma puntual) o con un recurso mínimo (una frase dicha a cámara, un
+  objeto que ya aparece). Si requiere guion nuevo, actores, locación
+  distinta o producción adicional, no es una solución válida.
+- Que un elemento no esté funcionando bien no significa que haya que
+  sacarlo. Evaluá primero si se puede transformar, resignificar, mover de
+  lugar o usar con otro propósito. Proponé eliminarlo solo si ninguna
+  transformación lo resuelve, y en ese caso decí con qué se reemplaza.
+- No sacrifiques una fortaleza ya identificada para arreglar un problema
+  menor.
 
 REDACCIÓN FINAL:
 - Español criollo, directo, sin jerga técnica interna (nada de
-  "mecanismo", "causa raíz", "evidencia base", "validación", "anclaje",
-  "filtro", "grafo", IDs, ni referencias al proceso de razonamiento).
-- No muestres alternativas descartadas ni tu análisis interno.
-- No inventes números, porcentajes, timestamps ni escenas.
+  "mecanismo", "rúbrica", "score", "evidencia", "IDs", "candidato", ni
+  referencias al proceso de razonamiento o al sistema de ranking).
+- No inventes números, porcentajes, timestamps ni escenas que no estén en
+  las listas de arriba.
 - No hagas predicciones absolutas ("esto se hará viral", "%X de mejora").
-- No sacrifiques un mecanismo que ya funciona para arreglar un defecto
-  menor.
 
 FORMATO OBLIGATORIO:
+
+Repetí el bloque Problema+Solución una vez por cada problema en la lista
+de arriba (no más, no menos). Repetí el bloque Fortaleza una vez por cada
+fortaleza en la lista de arriba (no más, no menos).
 
 **Problema:** [qué debilita la retención, específico del video]
 **Solución:** [acción concreta]
 
 **Fortaleza:** [qué funciona y por qué]
 
-La cantidad de problemas y fortalezas varía según el video.
-
-**A tener en cuenta:** [dependencia de nicho, solo si el hook o el
-desarrollo la detectaron real o parcial — nunca la omitas si existe]
+**A tener en cuenta:** [dependencia de nicho, solo si el chequeo
+consolidado de arriba dice SI o PARCIAL — si dice NO, omití este bloque
+por completo]
 
 **Lo más importante:** [la única modificación que priorizarías si solo
-pudieras hacer una]
+pudieras hacer una, entre las de la lista de arriba]
 
-LÍMITES: máximo 3 problemas, 2 fortalezas, 1 observación de nicho, 1
-cierre. Cada bloque problema+solución en máximo 3 líneas. El creador debe
+LÍMITES: cada bloque problema+solución en máximo 3 líneas. El creador debe
 terminar de leer sabiendo exactamente qué falla, por qué, y qué cambiar
 en el próximo video. Nada más.
 `;
+
+// ═════════════════════════════════════════════════════════════
+// Ranking determinístico — esto es lo que reemplaza el "ordená
+// por peso" en lenguaje natural. Gemini describe candidatos con
+// una rúbrica; este código calcula el score y ordena.
+// ═════════════════════════════════════════════════════════════
+
+const EXISTENCIA_MINIMA = 2; // debajo de esto, se descarta el candidato
+
+export const scoreProblema = (p) => {
+  const r = p.rubrica || {};
+  return (
+    (r.existencia || 0) * 2 +
+    (r.impacto || 0) * 4 +
+    (r.duracion || 0) * 2 +
+    (r.repeticion || 0) * 2 +
+    (r.causalidad || 0) * 4 +
+    (r.aislamiento || 0) * 2
+  );
+};
+
+export const rankearProblemas = (candidatos = []) =>
+  candidatos
+    .filter((p) => (p.rubrica?.existencia || 0) >= EXISTENCIA_MINIMA)
+    .map((p) => ({ ...p, score: scoreProblema(p) }))
+    .sort((a, b) => b.score - a.score);
+
+export const rankearFortalezas = (candidatas = []) =>
+  candidatas.slice().sort((a, b) => (b.relevancia || 0) - (a.relevancia || 0));
+
+const parseJsonSafe = (text) => {
+  if (!text) return null;
+  try {
+    const clean = text.replace(/```json|```/g, "").trim();
+    return JSON.parse(clean);
+  } catch (e) {
+    console.error("VIRAX: no se pudo parsear JSON del modelo:", e, text);
+    return null;
+  }
+};
+
+const consolidarChequeoNicho = (hookNicho, desarrolloNicho) => {
+  const partes = [];
+  if (hookNicho) partes.push(`Hook: ${hookNicho.resultado} — ${hookNicho.justificacion || ""}`);
+  if (desarrolloNicho) partes.push(`Desarrollo: ${desarrolloNicho.resultado} — ${desarrolloNicho.justificacion || ""}`);
+  const dependeAlgo = [hookNicho, desarrolloNicho].some((n) => n && (n.resultado === "SI" || n.resultado === "PARCIAL"));
+  return { texto: partes.join(" | ") || "Sin datos", dependeAlgo };
+};
+
+const formatProblemasParaWriter = (top) =>
+  top
+    .map(
+      (p, i) =>
+        `PROBLEMA_${i + 1} (peso ${p.score}): ${p.descripcion} — tramo ${p.inicio}-${p.fin}s — evidencia: ${(p.evidencia || []).join(", ")}`
+    )
+    .join("\n") || "(ninguno)";
+
+const formatFortalezasParaWriter = (top) =>
+  top
+    .map((f, i) => `FORTALEZA_${i + 1}: ${f.descripcion} — evidencia: ${(f.evidencia || []).join(", ")}`)
+    .join("\n") || "(ninguna)";
 
 export const runVideoReview = async (
   ai,
@@ -415,48 +475,84 @@ export const runVideoReview = async (
 ) => {
   const cfg = REVIEW_CONFIG;
 
-  const [hookRes, desarrolloRes] = await Promise.all([
-    ai.models.generateContent({
-      model: cfg.hook.model,
-      contents: [
-        buildVideoPartFn({ fps: cfg.hook.videoFps, mediaResolution: cfg.hook.media_resolution }),
-        { text: buildHookAnalysisPrompt(platform, industria, objetivo, hookWindowSegundos, videoDurationSegundos) }
-      ],
-      config: {
-        temperature: cfg.hook.temperature,
-        thinkingConfig: cfg.hook.thinkingConfig,
-        mediaResolution: cfg.hook.media_resolution,
-        seed: cfg.hook.seed
-      }
-    }),
-    ai.models.generateContent({
-      model: cfg.desarrollo.model,
-      contents: [
-        buildVideoPartFn({ fps: cfg.desarrollo.videoFps, mediaResolution: cfg.desarrollo.media_resolution }),
-        { text: buildDesarrolloAnalysisPrompt(platform, industria, objetivo, hookWindowSegundos, "", videoDurationSegundos) }
-      ],
-      config: {
-        temperature: cfg.desarrollo.temperature,
-        thinkingConfig: cfg.desarrollo.thinkingConfig,
-        mediaResolution: cfg.desarrollo.media_resolution,
-        seed: cfg.desarrollo.seed
-      }
-    })
-  ]);
+  // Secuencial: el hook se analiza primero para que el desarrollo
+  // reciba el análisis real (antes se pasaba "" por correr en paralelo).
+  const hookRes = await ai.models.generateContent({
+    model: cfg.hook.model,
+    contents: [
+      buildVideoPartFn({ fps: cfg.hook.videoFps, mediaResolution: cfg.hook.media_resolution }),
+      { text: buildHookAnalysisPrompt(platform, industria, objetivo, hookWindowSegundos, videoDurationSegundos) }
+    ],
+    config: {
+      temperature: cfg.hook.temperature,
+      thinkingConfig: cfg.hook.thinkingConfig,
+      mediaResolution: cfg.hook.media_resolution,
+      seed: cfg.hook.seed,
+      responseMimeType: "application/json"
+    }
+  });
 
-  const hookAnalysis = hookRes.text || "";
-  const desarrolloAnalysis = desarrolloRes.text || "";
+  const hookAnalysisText = hookRes.text || "";
+  const hookData = parseJsonSafe(hookAnalysisText) || { problemas: [], fortalezas: [], chequeo_nicho: null };
+
+  const desarrolloRes = await ai.models.generateContent({
+    model: cfg.desarrollo.model,
+    contents: [
+      buildVideoPartFn({ fps: cfg.desarrollo.videoFps, mediaResolution: cfg.desarrollo.media_resolution }),
+      {
+        text: buildDesarrolloAnalysisPrompt(
+          platform,
+          industria,
+          objetivo,
+          hookWindowSegundos,
+          hookAnalysisText,
+          videoDurationSegundos
+        )
+      }
+    ],
+    config: {
+      temperature: cfg.desarrollo.temperature,
+      thinkingConfig: cfg.desarrollo.thinkingConfig,
+      mediaResolution: cfg.desarrollo.media_resolution,
+      seed: cfg.desarrollo.seed,
+      responseMimeType: "application/json"
+    }
+  });
+
+  const desarrolloAnalysisText = desarrolloRes.text || "";
+  const desarrolloData = parseJsonSafe(desarrolloAnalysisText) || { problemas: [], fortalezas: [], chequeo_nicho: null };
+
+  // Ranking determinístico: JS decide el orden, no Gemini.
+  const todosLosProblemas = [...(hookData.problemas || []), ...(desarrolloData.problemas || [])];
+  const todasLasFortalezas = [...(hookData.fortalezas || []), ...(desarrolloData.fortalezas || [])];
+
+  const problemasOrdenados = rankearProblemas(todosLosProblemas).slice(0, 3);
+  const fortalezasOrdenadas = rankearFortalezas(todasLasFortalezas).slice(0, 2);
+  const nicho = consolidarChequeoNicho(hookData.chequeo_nicho, desarrolloData.chequeo_nicho);
 
   const finalRes = await ai.models.generateContent({
     model: cfg.sintesis.model,
-    contents: [{ text: buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, objetivo) }],
+    contents: [
+      {
+        text: buildFinalReviewPrompt(
+          formatProblemasParaWriter(problemasOrdenados),
+          formatFortalezasParaWriter(fortalezasOrdenadas),
+          nicho.dependeAlgo ? nicho.texto : "NO",
+          platform,
+          industria,
+          objetivo
+        )
+      }
+    ],
     config: { temperature: cfg.sintesis.temperature, thinkingConfig: cfg.sintesis.thinkingConfig }
   });
 
   return {
     reviewText: finalRes.text,
-    _hookAnalysis: hookAnalysis,
-    _desarrolloAnalysis: desarrolloAnalysis
+    _hookAnalysis: hookAnalysisText,
+    _desarrolloAnalysis: desarrolloAnalysisText,
+    _problemasRankeados: problemasOrdenados,
+    _fortalezasRankeadas: fortalezasOrdenadas
   };
 };
 
