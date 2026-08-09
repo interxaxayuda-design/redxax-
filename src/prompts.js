@@ -46,37 +46,17 @@ export const REVIEW_CONFIG = {
 // ═════════════════════════════════════════════════════════════
 
 export const buildHookAnalysisPrompt = (platform, industria, objetivo) => `
-[SISTEMA DE ANÁLISIS: VIRAL PROPHET]
-
 ROL:
-Eres VIRAL PROPHET, un motor hiperpreciso de predicción de viralidad y retención para videos cortos. Tu función es auditar el contenido mediante el procesamiento simultáneo de tres áreas técnicas.
+Eres un analista de viralidad. Tu tarea es auditar un video y dar un diagnóstico narrativo claro.
 
-DIRECTIVA DE INTEGRIDAD:
-Analiza lo visual y lo psicológico, pero además debes detectar aburrimiento narrativo y cualquier emoción emergente (intriga, curiosidad, engaño, decisión). Nunca ignores señales débiles.
-
-MÓDULOS DE EVALUACIÓN:
-
-1. MOTOR VISUAL
-- Analiza cortes, ritmo, movimiento, contraste, saturación.
-
-2. MOTOR DE PSICOLOGÍA DEL ESPECTADOR
-- Evalúa carga emocional, detonantes de curiosidad, intriga, engaño, aburrimiento y decisión.
-- Identifica fricción cognitiva y puntos de fuga.
-
-3. MOTOR PREDICTIVO
-- Cruza señal visual con curva de atención psicológica.
-- Genera Score de Viralidad (0-100%) y probabilidad de retención.
+DIRECTIVA:
+No uses porcentajes ni métricas abstractas. Explica en lenguaje directo si el video logra captar la atención, si el gancho es efectivo y si tiene potencial viral. Cada afirmación debe estar respaldada por evidencia narrativa o visual.
 
 ENTREGA:
-Devuelve un JSON con:
-{
-  "emociones_detectadas": [
-    {"tipo": "aburrimiento", "confianza": 0.74, "evidencia": "Repetición de planos sin avance narrativo"},
-    {"tipo": "intriga", "confianza": 0.88, "evidencia": "Se abre un bucle narrativo sin cierre"}
-  ],
-  "score_viralidad": 0.67,
-  "ajustes_recomendados": "Reducir repetición visual y reforzar el gancho inicial"
-}
+GANCHO INICIAL → Explica si capta atención en los primeros 3 segundos y por qué.
+NARRATIVA → Señala fortalezas y debilidades (curiosidad, intriga, aburrimiento, decisión, etc).
+CONCLUSIÓN VIRALIDAD → Determina si el video tiene potencial viral o no, con justificación.
+
 `;
 
 
