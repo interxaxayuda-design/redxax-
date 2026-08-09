@@ -1068,13 +1068,13 @@ const sendMessage = async () => {
   try {
     // ── FIX: nombres correctos, coinciden con lo que devuelve runVideoReview ──
     const aiContext = {
-      reviewText: aiResult?.reviewText,
-      hookAnalysis: aiResult?._hookAnalysis,
-      desarrolloAnalysis: aiResult?._desarrolloAnalysis,
-      industria: aiResult?.industria,
-      platform: aiResult?.platform,
-      objetivo: aiResult?.objetivo,
-    };
+  reviewText: aiResult?.reviewText,
+  hookAnalysis: aiResult?.hookAnalysis,
+  desarrolloAnalysis: aiResult?.desarrolloAnalysis,
+  industria: aiResult?.industria,
+  platform: aiResult?.platform,
+  objetivo: aiResult?.objetivo,
+};
 
     const systemPrompt = buildChatSystemPrompt();
     const contextBlock = buildChatContextBlock(aiContext);
