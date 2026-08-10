@@ -76,7 +76,7 @@ ENTREGA
 INVENTARIO → lista cronológica de elementos con su función (Fase 1, sin juicio).
 GANCHO INICIAL → ¿la función de los elementos iniciales generó promesa/tensión nombrable? Citá el elemento.
 SATISFACCIÓN / RECOMPENSA → ¿se cumplió la promesa? ¿Dónde, o por qué no?
-ELEMENTOS SIN FUNCIÓN CLARA → relleno identificado, si lo hay.
+ELEMENTOS SIN FUNCIÓN CLARA → esta parte puede ser o no. Puede ser un video perfecto sin pronlemas o no. 
 CONCLUSIÓN VIRALIDAD → juicio final (sí/no/condicional), fundamentado únicamente en lo citado arriba — no en impresión general del video.
 
 Contexto: plataforma ${platform}, industria ${industria}, objetivo ${objetivo}.
