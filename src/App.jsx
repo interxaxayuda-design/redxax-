@@ -1088,7 +1088,7 @@ const sendMessage = async () => {
       .map(m => `${m.role === 'user' ? '👤 USUARIO' : '🤖 VIRAX'}: ${m.text}`)
       .join('\n\n');
 
-    // ── FIX: el contexto ahora SÍ está en elprompt final ──
+    // ── FIX: el contxto ahora SÍ está en elprompt final ──
     const fullPrompt = `
 ${systemPrompt}
 
