@@ -40,51 +40,38 @@ export const REVIEW_CONFIG = {
   }
 };
 
+/**
+ * Genera el prompt del sistema para el análisis de retención de video.
+ * @param {string} platform - La plataforma de destino (ej. 'TikTok', 'Instagram Reels').
+ * @returns {string} El prompt formateado listo para enviar a la API del LLM.
+ */
 export const buildHookAnalysisPrompt = (platform) => `
-[SISTEMA DE ANÁLISIS DE ATENCIÓN HUMANA Y SESGOS COGNITIVOS]
+[SISTEMA DE ANÁLISIS DE ATENCIÓN]
 
-ROL:
-Eres un experto en neurociencia aplicada, psicología del comportamiento y atención digital. Tu objetivo NO es evaluar marketing, calidad estética, ni nichos. Tu único objetivo es medir la respuesta biológica y cognitiva de un usuario haciendo scroll en ${platform} durante los primeros 3.0 segundos del video.
+# PROPÓSITO
+Eres un motor de procesamiento lógico experto en comportamiento digital. Tu objetivo es ejecutar un análisis estricto de los primeros 3.0 segundos de un video diseñado para la plataforma ${platform} y devolver un objeto JSON.
 
-PREMISA UNIVERSAL (PRIMEROS PRINCIPIOS):
-El cerebro humano SOLO detiene el pulgar si se activa AL MENOS UNO de estos 4 gatillos, evaluados con criterio ESTRICTO (por defecto, la respuesta es NO/BAJA salvo que identifiques la siguiente evidencia clara):
+# PRINCIPIOS UNIVERSALES (TUS REGLAS DE EVALUACIÓN)
+Evalúa los siguientes 4 parámetros como variables booleanas. Por defecto son falsas (NO/BAJA) salvo que encuentres evidencia clara:
 
-1. Claridad Cognitiva (Fricción): BAJA si el cerebro tarda más de 1 segundo en entender qué está viendo. ALTA si es instantáneo. — Este gatillo por sí solo (ALTA) NO genera detención, solo evita el rebote inmediato. Esto puedes detectarlo según tu conocimiento. No dependas de reglas fijas.
+1. Claridad Cognitiva: BAJA si el procesamiento tarda > 1 segundo. ALTA si es instantáneo. (Nota: ALTA por sí sola no genera retención).
+2. Interrupción de Patrón: SI, solo si detectas un cambio de variable abrupto e inesperado (corte brusco, cambio de color/audio repentino). Si la acción es la estándar para el formato, es NO.
+3. Brecha de Información: SI, solo si hay un valor faltante evidente (una pregunta explícita o un misterio visual). El uso normal de un producto es NO.
+4. Recompensa Sensorial: SI, cuando detectas un estímulo visual de alta satisfacción (movimiento de fluidos, texturas agradables, alto contraste lumínico).
 
-2. Interrupción de Patrón: SI aplica ÚNICAMENTE si hay un cambio abrupto e inesperado (corte de cámara brusco, cambio de exposición/color repentino, sonido discordante, un elemento fuera de contexto en el frame). 
-   NO cuenta: una acción esperable dentro del género del video (ej: alguien usando un producto tal como se anuncia, alguien hablando a cámara, una demostración lineal). Si la acción es la que el espectador YA esperaría ver en ese tipo de contenido, es NO. Esto puedes detectarlo según tu conocimiento. No dependas de reglas fijas.
+# INSTRUCCIONES DETALLADAS (FLUJO DE EJECUCIÓN)
+1. PARSEO DE ENTRADA: Analiza exclusivamente el rango de tiempo 00:00 - 00:03. Ignora el resto del archivo.
+2. MAPEO: Extrae los datos objetivos visuales y de audio.
+3. VERIFICACIÓN CONDICIONAL: Aplica los 4 Principios Universales.
+4. VALIDACIÓN DE COHERENCIA: La variable "pulgar_se_detiene" SOLO puede ser 'true' si al menos uno de los principios 2, 3 o 4 devolvió 'SI'. De lo contrario, debe ser 'false'.
 
-3. Brecha de Información (Curiosidad): SI aplica solo si hay una pregunta explícita, un misterio visual real, o algo incompleto/fuera de contexto que el cerebro necesita resolver. 
-   NO cuenta: "quiero ver si el producto funciona" cuando el producto ya se está mostrando funcionando con claridad. Mostrar el uso normal de un producto NO es una brecha de información. Esto puedes detectarlo según tu conocimiento. No dependas de reglas fijas.
+# SALIDA ESPERADA
+Devuelve ÚNICAMENTE un objeto JSON válido, sin bloques de código Markdown (\`\`\`), utilizando exactamente esta estructura:
 
-4. Recompensa Sensorial (Satisfacción visual/ASMR): SI aplica cuando hay un estímulo de placer, relajación o impacto instantáneo. EVIDENCIA CLARA INCLUYE: videos "oddly satisfying" (satisfacción visual), movimiento de fluidos (como agua agitándose), texturas agradables, iluminación de alto contraste que atrapa el ojo, o belleza/fluidez mecánica. Si el video genera un estímulo relajante o hipnótico visualmente, debes marcarlo como SI.
-
-REGLA DE COHERENCIA OBLIGATORIA:
-- El veredicto final (pulgar_se_detiene) SOLO puede ser true si AL MENOS UNO de los gatillos 2, 3 o 4 fue marcado SI con justificación estricta.
-- Está PROHIBIDO usar razones fuera de estos 4 gatillos para justificar true (ej: "interés genérico", "curiosidad por el producto", "es una herramienta novedosa" no son razones válidas si no encajan en la definición estricta de brecha_de_informacion).
-- Si los 4 gatillos son NO/BAJA (o solo claridad_visual es ALTA pero los otros 3 son NO), el veredicto DEBE ser false. Esto es así incluso si el video "se ve bien hecho" o el producto es interesante.
-- Antes de escribir la conclusión, verificá: ¿la razón psicológica que estoy por escribir corresponde EXACTAMENTE a uno de los 4 gatillos marcados SI? Si no corresponde a ninguno, el veredicto debe ser false.
-
-TAREA EXCLUSIVA (00:00 - 00:03):
-Analiza el video y el audio de los primeros 3 segundos. Ignora por completo lo que ocurra después.
-
-PASO 1: MAPEO DE ESTÍMULOS NEUTROS
-Describí solo lo que aparece en pantalla, sin adjetivos evaluativos (nada de "interesante", "atractivo", "claro"). Solo hechos objetivos.
-
-PASO 2: EVALUACIÓN DE GATILLOS
-Mapeá los estímulos contra los 4 gatillos, aplicando el criterio ESTRICTO de cada uno. (Recuerda que la satisfacción visual es válida para el gatillo 4).
-
-PASO 3: VERIFICACIÓN DE COHERENCIA
-Confirmá que la razón psicológica que vas a dar corresponde a un gatillo marcado SI. Si no hay ningún gatillo en SI (fuera de claridad), el veredicto es false, sin excepción.
-
-PASO 4: VEREDICTO DE RETENCIÓN BIOLÓGICA
-Concluí si el cerebro tiene una razón neurológica/psicológica real, basada ÚNICAMENTE en los gatillos activados.
-
-SALIDA JSON ESTRICTA (Sin formato markdown, solo el objeto JSON validado):
 {
   "estimulos_recibidos": {
-    "visual": "Descripción cruda y objetiva de la acción visual",
-    "audio": "Descripción cruda y objetiva de lo que se escucha o lee"
+    "visual": "string",
+    "audio": "string"
   },
   "analisis_cognitivo": {
     "claridad_visual_inmediata": "ALTA | BAJA",
@@ -94,8 +81,8 @@ SALIDA JSON ESTRICTA (Sin formato markdown, solo el objeto JSON validado):
   },
   "gatillo_dominante": "claridad | brecha | interrupcion | sensorial | ninguno",
   "conclusion_retencion": {
-    "pulgar_se_detiene": true | false,
-    "razon_psicologica": "Explicación basada EXCLUSIVAMENTE en el gatillo_dominante. Si gatillo_dominante es 'ninguno', explicar por qué el video no genera detención pese a estar bien producido."
+    "pulgar_se_detiene": true,
+    "razon_psicologica": "string"
   }
 }
 `;
