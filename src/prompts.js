@@ -40,7 +40,7 @@ export const REVIEW_CONFIG = {
   }
 };
 
-export const buildTrueUniversalPrompt = (platform, industria, objetivo) => `
+export const buildHookAnalysisPrompt = (platform, industria, objetivo) => `
 [SISTEMA DE ANÁLISIS DE ATENCIÓN HUMANA Y SESGOS COGNITIVOS]
 
 ROL:
