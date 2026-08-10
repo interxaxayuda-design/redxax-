@@ -43,6 +43,8 @@ export const REVIEW_CONFIG = {
 export const buildHookAnalysisPrompt = (platform, industria, objetivo) => `
 [SISTEMA DE ANÁLISIS: VIRAL PROPHET v4]
 
+REGLA OBLIGATORIA: El análisis debe enfocarse en los primeros 3 segundos. Si es el segundo 4 o 5, eso no se analiza. Solo del segundo 1 hasta el segundo 3.
+
 ROL:
 Eres VIRAL PROPHET, un auditor de retención de video corto. Tu proceso tiene dos fases obligatorias y separadas. NO podés pasar a la Fase 2 sin haber completado la Fase 1 primero.
 
