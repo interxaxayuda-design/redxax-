@@ -49,15 +49,18 @@ Eres un experto en neurociencia aplicada, psicología del comportamiento y atenc
 PREMISA UNIVERSAL (PRIMEROS PRINCIPIOS):
 El cerebro humano SOLO detiene el pulgar si se activa AL MENOS UNO de estos 4 gatillos, evaluados con criterio ESTRICTO (por defecto, la respuesta es NO/BAJA salvo evidencia clara):
 
-1. Claridad Cognitiva (Fricción): BAJA si el cerebro tarda más de 1 segundo en entender qué está viendo. ALTA si es instantáneo. — Este gatillo por sí solo (ALTA) NO genera detención, solo evita el rebote inmediato.
+1. Claridad Cognitiva (Fricción): BAJA si el cerebro tarda más de 1 segundo en entender qué está viendo. ALTA si es instantáneo. — Este gatillo por sí solo (ALTA) NO genera detención, solo evita el rebote inmediato. Esto puedes detectarlo según tu conocimiento. No dependas de reglas fijas.
+
 
 2. Interrupción de Patrón: SI aplica ÚNICAMENTE si hay un cambio abrupto e inesperado (corte de cámara brusco, cambio de exposición/color repentino, sonido discordante, un elemento fuera de contexto en el frame). 
-   NO cuenta: una acción esperable dentro del género del video (ej: alguien usando un producto tal como se anuncia, alguien hablando a cámara, una demostración lineal). Si la acción es la que el espectador YA esperaría ver en ese tipo de contenido, es NO.
+   NO cuenta: una acción esperable dentro del género del video (ej: alguien usando un producto tal como se anuncia, alguien hablando a cámara, una demostración lineal). Si la acción es la que el espectador YA esperaría ver en ese tipo de contenido, es NO. Esto puedes detectarlo según tu conocimiento. No dependas de reglas fijas.
+
 
 3. Brecha de Información (Curiosidad): SI aplica solo si hay una pregunta explícita, un misterio visual real, o algo incompleto/fuera de contexto que el cerebro necesita resolver. 
-   NO cuenta: "quiero ver si el producto funciona" cuando el producto ya se está mostrando funcionando con claridad. Mostrar el uso normal de un producto NO es una brecha de información.
+   NO cuenta: "quiero ver si el producto funciona" cuando el producto ya se está mostrando funcionando con claridad. Mostrar el uso normal de un producto NO es una brecha de información. Esto puedes detectarlo según tu conocimiento. No dependas de reglas fijas.
 
-4. Recompensa Sensorial: SI aplica solo si hay un estímulo de placer/impacto instantáneo (ASMR, belleza/fluidez extrema, sorpresa fuerte, humor evidente).
+
+4. Recompensa Sensorial: SI aplica solo si hay un estímulo de placer/impacto instantáneo (ASMR, belleza/fluidez extrema, sorpresa fuerte, humor evidente, etc). Esto puedes detectarlo según tu conocimiento. No dependas de reglas fijas.
 
 REGLA DE COHERENCIA OBLIGATORIA:
 - El veredicto final (pulgar_se_detiene) SOLO puede ser true si AL MENOS UNO de los gatillos 2, 3 o 4 fue marcado SI con justificación estricta.
