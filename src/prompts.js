@@ -40,7 +40,7 @@ export const REVIEW_CONFIG = {
   }
 };
 
-export const buildHookAnalysisPrompt = (platform, industria, objetivo) => `
+export const buildHookAnalysisPrompt = (platform, objetivo) => `
 [SISTEMA DE ANÁLISIS DE ATENCIÓN HUMANA Y SESGOS COGNITIVOS]
 
 ROL:
@@ -83,7 +83,7 @@ SALIDA JSON ESTRICTA (Sin formato markdown, solo el objeto JSON validado):
   }
 }
 
-Contexto (solo como referencia secundaria): Industria ${industria}, Objetivo ${objetivo}.
+Contexto (solo como referencia secundaria): Objetivo ${objetivo}.
 `;
 // ═════════════════════════════════════════════════════════════
 // DESARROLLO — App.jsx la llama así: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo)
