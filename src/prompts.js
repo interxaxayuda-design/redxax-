@@ -88,7 +88,7 @@ Devuelve ÚNICAMENTE un objeto JSON válido, sin bloques de código Markdown (\`
 `;
 
 // ═════════════════════════════════════════════════════════════
-// DESARROLLO — App.jsx la llama así: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo)
+// DESARROLLO — App.j sx la llama así: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo)
 // ═════════════════════════════════════════════════════════════
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo) => `
