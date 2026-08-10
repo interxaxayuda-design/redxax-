@@ -40,30 +40,45 @@ export const REVIEW_CONFIG = {
   }
 };
 
-export const buildHookAnalysisPrompt = (platform, objetivo) => `
+export const buildHookAnalysisPrompt = (platform) => `
 [SISTEMA DE ANÁLISIS DE ATENCIÓN HUMANA Y SESGOS COGNITIVOS]
 
 ROL:
 Eres un experto en neurociencia aplicada, psicología del comportamiento y atención digital. Tu objetivo NO es evaluar marketing, calidad estética, ni nichos. Tu único objetivo es medir la respuesta biológica y cognitiva de un usuario haciendo scroll en ${platform} durante los primeros 3.0 segundos del video.
 
 PREMISA UNIVERSAL (PRIMEROS PRINCIPIOS):
-Sin importar de qué trate el video (videojuegos, negocios, productos, comedia, historias), el cerebro humano solo detiene el pulgar si se activa al menos uno de estos gatillos cognitivos ANTES del segundo 3.0, y SOLO SI la imagen es procesable:
-1. Claridad Cognitiva: Si el cerebro no entiende qué está mirando en 1 segundo, hace scroll. (Fricción).
-2. Interrupción de Patrón: Un estímulo visual o auditivo que rompe la monotonía del feed (movimientos bruscos, sonidos inusuales, contrastes fuertes).
-3. Brecha de Información (Curiosidad): Una pregunta explícita o implícita, un misterio visual, o algo fuera de contexto que obliga al cerebro a querer saber "qué pasa después".
-4. Recompensa Sensorial: ASMR, fluidez extrema, impacto visual o belleza que genera dopamina instantánea.
+El cerebro humano SOLO detiene el pulgar si se activa AL MENOS UNO de estos 4 gatillos, evaluados con criterio ESTRICTO (por defecto, la respuesta es NO/BAJA salvo evidencia clara):
+
+1. Claridad Cognitiva (Fricción): BAJA si el cerebro tarda más de 1 segundo en entender qué está viendo. ALTA si es instantáneo. — Este gatillo por sí solo (ALTA) NO genera detención, solo evita el rebote inmediato.
+
+2. Interrupción de Patrón: SI aplica ÚNICAMENTE si hay un cambio abrupto e inesperado (corte de cámara brusco, cambio de exposición/color repentino, sonido discordante, un elemento fuera de contexto en el frame). 
+   NO cuenta: una acción esperable dentro del género del video (ej: alguien usando un producto tal como se anuncia, alguien hablando a cámara, una demostración lineal). Si la acción es la que el espectador YA esperaría ver en ese tipo de contenido, es NO.
+
+3. Brecha de Información (Curiosidad): SI aplica solo si hay una pregunta explícita, un misterio visual real, o algo incompleto/fuera de contexto que el cerebro necesita resolver. 
+   NO cuenta: "quiero ver si el producto funciona" cuando el producto ya se está mostrando funcionando con claridad. Mostrar el uso normal de un producto NO es una brecha de información.
+
+4. Recompensa Sensorial: SI aplica solo si hay un estímulo de placer/impacto instantáneo (ASMR, belleza/fluidez extrema, sorpresa fuerte, humor evidente).
+
+REGLA DE COHERENCIA OBLIGATORIA:
+- El veredicto final (pulgar_se_detiene) SOLO puede ser true si AL MENOS UNO de los gatillos 2, 3 o 4 fue marcado SI con justificación estricta.
+- Está PROHIBIDO usar razones fuera de estos 4 gatillos para justificar true (ej: "interés genérico", "curiosidad por el producto", "es una herramienta novedosa" no son razones válidas si no encajan en la definición estricta de brecha_de_informacion).
+- Si los 4 gatillos son NO/BAJA (o solo claridad_visual es ALTA pero los otros 3 son NO), el veredicto DEBE ser false. Esto es así incluso si el video "se ve bien hecho" o el producto es interesante.
+- Antes de escribir la conclusión, verificá: ¿la razón psicológica que estoy por escribir corresponde EXACTAMENTE a uno de los 4 gatillos marcados SI? Si no corresponde a ninguno, el veredicto debe ser false.
 
 TAREA EXCLUSIVA (00:00 - 00:03):
 Analiza el video y el audio de los primeros 3 segundos. Ignora por completo lo que ocurra después.
 
 PASO 1: MAPEO DE ESTÍMULOS NEUTROS
-Identifica crúdamente qué estímulos procesan los ojos y los oídos del usuario en esos 3 segundos.
+Describí solo lo que aparece en pantalla, sin adjetivos evaluativos (nada de "interesante", "atractivo", "claro"). Solo hechos objetivos.
 
 PASO 2: EVALUACIÓN DE GATILLOS
-Mapea los estímulos contra los 4 gatillos de la premisa universal.
+Mapeá los estímulos contra los 4 gatillos, aplicando el criterio ESTRICTO de cada uno.
 
-PASO 3: VEREDICTO DE RETENCIÓN BIOLÓGICA
-Concluye si el cerebro tiene una razón neurológica/psicológica real para detener el gesto de scroll.
+PASO 3: VERIFICACIÓN DE COHERENCIA
+Confirmá que la razón psicológica que vas a dar corresponde a un gatillo marcado SI. Si no hay ningún gatillo en SI (fuera de claridad), el veredicto es false, sin excepción.
+
+PASO 4: VEREDICTO DE RETENCIÓN BIOLÓGICA
+Concluí si el cerebro tiene una razón neurológica/psicológica real, basada ÚNICAMENTE en los gatillos activados.
 
 SALIDA JSON ESTRICTA (Sin formato markdown, solo el objeto JSON validado):
 {
@@ -72,19 +87,19 @@ SALIDA JSON ESTRICTA (Sin formato markdown, solo el objeto JSON validado):
     "audio": "Descripción cruda y objetiva de lo que se escucha o lee"
   },
   "analisis_cognitivo": {
-    "claridad_visual_inmediata": "ALTA | BAJA (Explicación: ¿El cerebro entiende al instante qué está viendo?)",
-    "brecha_de_informacion": "SI | NO (Explicación: ¿Qué misterio o pregunta se abrió?)",
-    "interrupcion_de_patron": "SI | NO (Explicación: ¿Qué rompió la monotonía?)",
-    "recompensa_sensorial": "SI | NO (Explicación: ¿Qué estímulo placentero, chocante o humorístico hay?)"
+    "claridad_visual_inmediata": "ALTA | BAJA",
+    "brecha_de_informacion": "SI | NO",
+    "interrupcion_de_patron": "SI | NO",
+    "recompensa_sensorial": "SI | NO"
   },
+  "gatillo_dominante": "claridad | brecha | interrupcion | sensorial | ninguno",
   "conclusion_retencion": {
     "pulgar_se_detiene": true | false,
-    "razon_psicologica": "Explicación final basada puramente en cómo el cerebro reacciona a los gatillos detectados, sin usar jerga de marketing."
+    "razon_psicologica": "Explicación basada EXCLUSIVAMENTE en el gatillo_dominante. Si gatillo_dominante es 'ninguno', explicar por qué el video no genera detención pese a estar bien producido."
   }
 }
-
-Contexto (solo como referencia secundaria): Objetivo ${objetivo}.
 `;
+
 // ═════════════════════════════════════════════════════════════
 // DESARROLLO — App.jsx la llama así: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo)
 // ═════════════════════════════════════════════════════════════
