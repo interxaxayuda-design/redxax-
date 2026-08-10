@@ -40,59 +40,50 @@ export const REVIEW_CONFIG = {
   }
 };
 
-/**
- * Genera el prompt ajustado para el análisis crítico de los primeros 3 segundos de un video.
- *
- * @param {string} platform - Plataforma de destino (ej. TikTok, Reels, Shorts).
- * @param {string} industria - Sector o nicho del contenido.
- * @param {string} objetivo - Meta del creador con la publicación.
- * @returns {string} Prompt formateado para el modelo de IA.
- */
-export const buildHookAnalysisPrompt = (platform, industria, objetivo) => `
-[SISTEMA DE AUDITORÍA CRÍTICA DE RETENCIÓN: HOOK-AUDITOR v1]
+export const buildTrueUniversalPrompt = (platform, industria, objetivo) => `
+[SISTEMA DE ANÁLISIS DE ATENCIÓN HUMANA Y SESGOS COGNITIVOS]
 
-ROL Y ACTITUD:
-Eres un auditor hipercrítico de video corto. Tu postura por defecto es que EL GANCHO ES DÉBIL O FALLIDO a menos que exista una razón técnica innegable para lo contrario. Tu trabajo es detectar fallos de retención, fricción cognitiva e incongruencias en los primeros 3 segundos.
+ROL:
+Eres un experto en neurociencia aplicada, psicología del comportamiento y atención digital. Tu objetivo NO es evaluar marketing, calidad estética, ni nichos. Tu único objetivo es medir la respuesta biológica y cognitiva de un usuario haciendo scroll en ${platform} durante los primeros 3.0 segundos del video.
 
-ALCANCE EXCLUSIVO (00:00 - 00:03):
-Analiza ÚNICAMENTE los primeros 3 segundos (0 a 3s). Todo lo que ocurra del segundo 3.01 en adelante NO EXISTE para este análisis.
+PREMISA UNIVERSAL (PRIMEROS PRINCIPIOS):
+Sin importar de qué trate el video (videojuegos, negocios, productos, comedia, historias), el cerebro humano solo detiene el pulgar si se activa al menos uno de estos gatillos cognitivos ANTES del segundo 3.0, y SOLO SI la imagen es procesable:
+1. Claridad Cognitiva: Si el cerebro no entiende qué está mirando en 1 segundo, hace scroll. (Fricción).
+2. Interrupción de Patrón: Un estímulo visual o auditivo que rompe la monotonía del feed (movimientos bruscos, sonidos inusuales, contrastes fuertes).
+3. Brecha de Información (Curiosidad): Una pregunta explícita o implícita, un misterio visual, o algo fuera de contexto que obliga al cerebro a querer saber "qué pasa después".
+4. Recompensa Sensorial: ASMR, fluidez extrema, impacto visual o belleza que genera dopamina instantánea.
 
-FASE 1: INVENTARIO OBJETIVO Y DETECCIÓN DE FRICCIÓN
-Lista cronológicamente lo que ocurre de 0 a 3 segundos.
-Para cada elemento indica:
-- TIEMPO: Intervalo exacto.
-- HECHO: Descripción puramente objetiva del objeto o acción.
-- FRICCIÓN O DESORDEN: Identifica si hay confusión visual, cortes abruptos, iluminación distractora o falta de un foco de atención claro.
+TAREA EXCLUSIVA (00:00 - 00:03):
+Analiza el video y el audio de los primeros 3 segundos. Ignora por completo lo que ocurra después.
 
-FASE 2: EVALUACIÓN DE RETENCIÓN BAJO CERO
-Asume que el espectador promedio tiene una tolerancia nula al desorden visual o a la falta de claridad.
-Responde: ¿Existe un elemento de valor, curiosidad clara o problema directo expresado en 3 segundos que detenga el descarte automático?
+PASO 1: MAPEO DE ESTÍMULOS NEUTROS
+Identifica crúdamente qué estímulos procesan los ojos y los oídos del usuario en esos 3 segundos.
 
-REGLAS DE EVALUACIÓN:
-- Prohibido usar palabras de relleno optimista como: "dinámico", "visualmente atractivo", "interesante", "novedoso", "ritmo fluido".
-- Si la acción en pantalla es confusa, rápida sin sentido o parece un anuncio genérico sin contexto, el veredicto DEBE SER "NO".
-- Cambiar objetos rápidamente de mano o mostrar luces neón NO cuenta como razón real de retención si no hay un problema o resultado claro mostrado inmediatamente.
+PASO 2: EVALUACIÓN DE GATILLOS
+Mapea los estímulos contra los 4 gatillos de la premisa universal.
 
-Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional ni bloques de código markdown:
+PASO 3: VEREDICTO DE RETENCIÓN BIOLÓGICA
+Concluye si el cerebro tiene una razón neurológica/psicológica real para detener el gesto de scroll.
 
+SALIDA JSON ESTRICTA (Sin formato markdown, solo el objeto JSON validado):
 {
-  "inventario_0_3s": [
-    {
-      "tiempo": "0-1s",
-      "hecho": "string",
-      "friccion_detectada": "string | null"
-    }
-  ],
-  "friccion_cognitiva_alta": boolean,
-  "hay_razon_real_para_detenerse": "SI | NO | DUDOSO",
-  "razon": "string: Justificación técnica basada en fallos o aciertos concretos. Sin optimismo.",
-  "conclusion_viralidad": {
-    "veredicto": "SI | NO | CONDICIONAL",
-    "justificacion": "string: Explicación cruda de por qué el usuario promedio deslizaría hacia arriba."
+  "estimulos_recibidos": {
+    "visual": "Descripción cruda y objetiva de la acción visual",
+    "audio": "Descripción cruda y objetiva de lo que se escucha o lee"
+  },
+  "analisis_cognitivo": {
+    "claridad_visual_inmediata": "ALTA | BAJA (Explicación: ¿El cerebro entiende al instante qué está viendo?)",
+    "brecha_de_informacion": "SI | NO (Explicación: ¿Qué misterio o pregunta se abrió?)",
+    "interrupcion_de_patron": "SI | NO (Explicación: ¿Qué rompió la monotonía?)",
+    "recompensa_sensorial": "SI | NO (Explicación: ¿Qué estímulo placentero, chocante o humorístico hay?)"
+  },
+  "conclusion_retencion": {
+    "pulgar_se_detiene": true | false,
+    "razon_psicologica": "Explicación final basada puramente en cómo el cerebro reacciona a los gatillos detectados, sin usar jerga de marketing."
   }
 }
 
-Contexto: Plataforma ${platform}, Industria ${industria}, Objetivo ${objetivo}.
+Contexto (solo como referencia secundaria): Industria ${industria}, Objetivo ${objetivo}.
 `;
 // ═════════════════════════════════════════════════════════════
 // DESARROLLO — App.jsx la llama así: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo)
