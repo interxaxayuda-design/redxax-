@@ -75,6 +75,7 @@ Ahora, y solo ahora, tomá el inventario de la Fase 1 y evaluá si cada función
 
 Cada juicio en esta fase tiene que citar un elemento específico del inventario de la Fase 1. No se permite un juicio que no señale a qué elemento del inventario corresponde.
 
+OBLIGATORIO: para cada problema/algo que funciona, debe tener una evidencia reespaldada por el video. Qué evidencia existe en este video que el usuario se quedará/se irá del video en los primeros 3 segundos? Por qué/por qué no?
 =================================================
 FORMATO DE SALIDA — JSON ESTRICTO
 =================================================
