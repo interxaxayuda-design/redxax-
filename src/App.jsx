@@ -19,39 +19,10 @@ import {
 } from './prompts.js';
 import wordmark from './virax_wordmark.png';
 
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import { createClient } from '@supabase/supabase-js';
-
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso';
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-let ffmpegInstance = null;
-
-const loadFFmpeg = async () => {
-  if (ffmpegInstance) return ffmpegInstance;
-  const ffmpeg = new FFmpeg();
-  const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-  await ffmpeg.load({
-    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-  });
-  ffmpegInstance = ffmpeg;
-  return ffmpeg;
-};
-
-const trimVideoTo3s = async (file) => {
-  const ffmpeg = await loadFFmpeg();
-  const inputName = 'input' + (file.name.match(/\.\w+$/)?.[0] || '.mp4');
-  const outputName = 'output.mp4';
-
-  await ffmpeg.writeFile(inputName, await fetchFile(file));
-  await ffmpeg.exec(['-i', inputName, '-t', '3', '-c:v', 'libx264', '-c:a', 'aac', outputName]);
-  const data = await ffmpeg.readFile(outputName);
-
-  return new File([data.buffer], 'trimmed_3s.mp4', { type: 'video/mp4' });
-};
 //
 
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
@@ -83,10 +54,6 @@ export function extractGeminiText(data) {
   if (!raw) throw new Error('La respuesta de Gemini no contiene texto en parts[0]');
   return raw.replace(/```json|```/g, '').trim();
 }
-
-const safeVideoName = (name) =>
-  name?.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '') || 'video.mp4';
 
 const GEM_PACKAGES = [
   { id: 'starter', gems: 500,  price: 3,  label: 'Starter', analyses: '5 análisis',  popular: false },
@@ -899,21 +866,12 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
 //
     const cfg = REVIEW_CONFIG;
 
-    // Recorte exclusivo para el análisis del hook — no toca `storagePath` (video completo)
-    setStatusText('Preparando el clip del hook...');
-    const hookFile = await trimVideoTo3s(videoFile);
-    const hookStoragePath = `temp-analysis/hook-${Date.now()}-${safeVideoName(videoFile.name)}`;
-    const { error: hookUploadError } = await supabase.storage
-      .from('videos')
-      .upload(hookStoragePath, hookFile, { contentType: 'video/mp4', upsert: true });
-    if (hookUploadError) throw new Error('Error subiendo clip del hook: ' + hookUploadError.message);
-
     const [hookRes, desarrolloRes] = await Promise.all([
       supabase.functions.invoke('gemini-proxy', {
         body: {
           text: buildHookAnalysisPrompt(platform, industria, selectedObjetivo),
-          storagePath: hookStoragePath,     // ← solo hook usa el clip de 3s
-          videoMimeType: 'video/mp4',
+          storagePath,
+          videoMimeType: mimeType,
           videoFps: cfg.hook.videoFps,
           temperature: cfg.hook.temperature,
           expectsJson: false,
@@ -923,7 +881,7 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
       supabase.functions.invoke('gemini-proxy', {
         body: {
           text: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo),
-          storagePath,                       // ← desarrollo sigue usando el video completo
+          storagePath,
           videoMimeType: mimeType,
           videoFps: cfg.desarrollo.videoFps,
           temperature: cfg.desarrollo.temperature,
@@ -932,7 +890,6 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
         },
       }),
     ]);
-
 
     if (hookRes.error) throw new Error(hookRes.error.message);
     if (desarrolloRes.error) throw new Error(desarrolloRes.error.message);
@@ -1529,16 +1486,16 @@ ${currentMessage.text}
   <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
   <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Corrigue tu video</p>
         <input type="file" className="hidden" accept="video/*" onChange={(e) => {
-  const file = e.target.files[0];
-  if (file) {
-    const url = URL.createObjectURL(file);
-    setVideoPreviewUrl(url);
-    setPendingVideoFile(file);
-    setPendingVideoUrl(url);
-    setAnalysisMode('video');
-    setStep('platform_select');
-  }
-}} />
+          const file = e.target.files[0];
+          if (file) {
+            const url = URL.createObjectURL(file);
+            setVideoPreviewUrl(url);
+            setPendingVideoFile(file);
+            setPendingVideoUrl(url);
+            setAnalysisMode('video');
+            setStep('platform_select');
+          }
+        }} />
       </label>
     </div>
   </div>
