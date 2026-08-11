@@ -19,10 +19,39 @@ import {
 } from './prompts.js';
 import wordmark from './virax_wordmark.png';
 
+import { FFmpeg } from '@ffmpeg/ffmpeg';
+import { fetchFile, toBlobURL } from '@ffmpeg/util';
 import { createClient } from '@supabase/supabase-js';
+
 const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso';
+const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...';
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+let ffmpegInstance = null;
+
+const loadFFmpeg = async () => {
+  if (ffmpegInstance) return ffmpegInstance;
+  const ffmpeg = new FFmpeg();
+  const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+  await ffmpeg.load({
+    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+  });
+  ffmpegInstance = ffmpeg;
+  return ffmpeg;
+};
+
+const trimVideoTo3s = async (file) => {
+  const ffmpeg = await loadFFmpeg();
+  const inputName = 'input' + (file.name.match(/\.\w+$/)?.[0] || '.mp4');
+  const outputName = 'output.mp4';
+
+  await ffmpeg.writeFile(inputName, await fetchFile(file));
+  await ffmpeg.exec(['-i', inputName, '-t', '3', '-c:v', 'libx264', '-c:a', 'aac', outputName]);
+  const data = await ffmpeg.readFile(outputName);
+
+  return new File([data.buffer], 'trimmed_3s.mp4', { type: 'video/mp4' });
+};
 //
 
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
@@ -1485,17 +1514,26 @@ ${currentMessage.text}
   <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-emerald-400 group-hover:scale-110 transition-all duration-500" />
   <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
   <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Corrigue tu video</p>
-        <input type="file" className="hidden" accept="video/*" onChange={(e) => {
-          const file = e.target.files[0];
-          if (file) {
-            const url = URL.createObjectURL(file);
-            setVideoPreviewUrl(url);
-            setPendingVideoFile(file);
-            setPendingVideoUrl(url);
-            setAnalysisMode('video');
-            setStep('platform_select');
-          }
-        }} />
+        <input type="file" className="hidden" accept="video/*" onChange={async (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    setStatusText('Preparando el video...');
+    setStep('analyzing');
+    try {
+      const trimmedFile = await trimVideoTo3s(file);
+      const url = URL.createObjectURL(trimmedFile);
+      setVideoPreviewUrl(url);
+      setPendingVideoFile(trimmedFile);
+      setPendingVideoUrl(url);
+      setAnalysisMode('video');
+      setStep('platform_select');
+    } catch (err) {
+      console.error('Error recortando video:', err);
+      alert('No se pudo procesar el video.');
+      setStep('upload');
+    }
+  }
+}} />
       </label>
     </div>
   </div>
