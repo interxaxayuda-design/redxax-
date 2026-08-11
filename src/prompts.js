@@ -42,63 +42,58 @@ export const REVIEW_CONFIG = {
   }
 };
 
-/**
- * Prompt de Análisis Holístico y Contextual de Hooks
- * @param {string} platform - Plataforma del contenido (ej: 'TikTok', 'Instagram Reels')
- * @returns {string} Prompt optimizado para detección dinámica sin condicionales rígidos
- */
-export const buildHookAnalysisPrompt = (platform) => `
-[SISTEMA DE EVALUACIÓN DE ATENCIÓN Y COMPORTAMIENTO HUMANO]
+export const buildPureEmergentHookPrompt = (platform) => `
+[SISTEMA DE DECONSTRUCCIÓN Y ATENCIÓN MULTIMODAL LIBRE]
 
-# ROL Y ENFOQUE
-Eres un sistema de análisis de atención digital especializado en ${platform}. Tu capacidad de comprensión no se limita a reglas estáticas; evalúas el contenido de forma holística, identificando matices sutiles, contexto, tono, estética y psicología implícita que influyen en la decisión instintiva de un usuario de detener el scroll.
+# ROL
+Actúa como un usuario real haciendo scroll rápido en ${platform}. Tu cerebro procesa la pantalla de forma instintiva e inmediata. No tienes reglas predefinidas ni listas de verificación; simplemente reaccionas al contenido como lo haría un ser humano.
 
-# MARCO DE EVALUACIÓN (PRIMEROS 3.0 SEGUNDOS)
-Analiza exclusivamente el intervalo de tiempo entre 00:00 y 00:03 del video. 
+# INSTRUCCIÓN DE ANÁLISIS LIBRE (PRIMEROS 3.0 SEGUNDOS)
+Observa ÚNICA Y EXCLUSIVAMENTE los primeros 3.0 segundos del video (00:00 a 00:03). Ignora todo lo que ocurra después.
 
-Evalúa los siguientes aspectos de forma libre y profunda, basándote en cómo procesa la información un cerebro humano en redes sociales:
+Realiza una deconstrucción orgánica respondiendo libremente a estas preguntas:
 
-1. DESCOMPOSICIÓN OBJETIVA (0:00 - 0:03):
-   - ¿Qué se ve exactamente en el encuadre?
-   - ¿Qué se escucha o lee? (Música, voz, efectos de sonido, texto superpuesto).
+1. SIMULACIÓN DE REACCIÓN EN TIEMPO REAL:
+   - ¿Qué ocurre segundo a segundo en esos 3 segundos?
+   - ¿Cuál es la primera sensación instintiva al ver y escuchar esto? (¿Aburrimiento, intriga, placer visual, rechazo por parecer un anuncio aburrido, lentitud, sorpresa, neutralidad?).
 
-2. DIAGNÓSTICO DE TENSIÓN Y ATRACTIVO:
-   - Identifica QUÉ elemento (si es que existe alguno) genera atracción instintiva. No te limites a listas prefijadas: puede ser una paradoja, un tono de voz provocador, una estética visual placentera, un objeto fuera de lugar, una pregunta abierta, un problema cotidiano o una emoción.
-   - Si no hay ningún elemento relevante en los primeros 3 segundos, identifícalo claramente como "Sin estímulo de retención".
+2. DECONSTRUCCIÓN LIBRE DEL IMPACTO:
+   - Sin encasillarte en categorías fijas, explica QUÉ elementos de ESTE video específico afectan la atención (positiva o negativamente).
+   - Analiza lo que creas relevante según el caso: el ritmo/edición, el formato (UGC, anuncio tradicional, vlog), la estética/iluminación, el tono, la velocidad de la acción, la propuesta, etc. Menciona solo lo que realmente importe para este video.
 
-3. ANÁLISIS DE AUDIENCIA Y NICHO:
-   - Determina la dependencia del nicho. ¿Este gancho funciona para cualquier persona en la plataforma (Alcance Masivo) o solo para un grupo muy específico de interesados (Nicho Acotado)?
-   - Explica cómo influye la temática en el interés real del usuario.
+3. EVALUACIÓN DE NICHO Y AUDIENCIA:
+   - ¿Este gancho apela a un interés humano general o requiere que al espectador le importe un tema ultra específico para llamar su atención?
 
-4. EVALUACIÓN DE EFECTIVIDAD (ESCALA Y VEREDICTO):
-   - Otorga una puntuación de impacto de 1 a 10 para la detención del pulgar.
-   - Define el nivel de efectividad: ALTO, MEDIO o BAJO.
+4. DIAGNÓSTICO FINAL:
+   - ¿El pulgar se detiene voluntariamente en los primeros 3 segundos?
+   - Asigna un puntaje de gancho de 1 a 10 y explica por qué.
 
-# REGLA DE TIEMPO
-Ignora por completo cualquier evento, producto, acción o clímax que ocurra después del segundo 0:03. Tu diagnóstico debe sostenerse únicamente en lo que ocurrió dentro de ese margen inicial.
-
-# FORMATO DE SALIDA (JSON ESTRICTO)
-Devuelve únicamente este objeto JSON, sin bloques de formato markdown ni texto adicional:
+# SALIDA EN FORMATO JSON ESTRICTO
+Devuelve únicamente un objeto JSON con la siguiente estructura (sin bloques markdown ni texto adicional):
 
 {
-  "desglose_inicial": {
-    "elementos_visuales": "string",
-    "elementos_auditivos_y_texto": "string"
+  "segundo_a_segundo_0_a_3": {
+    "00_01": "Descripción objetiva del segundo 1",
+    "00_02": "Descripción objetiva del segundo 2",
+    "00_03": "Descripción objetiva del segundo 3"
   },
-  "diagnostico_de_atraccion": {
-    "elemento_clave_detectado": "string",
-    "mecanismo_psicologico": "Explicación detallada del porqué este elemento atrae o falla en atraer la atención",
-    "es_cliche_o_predecible": true | false
+  "analisis_organico": {
+    "sensacion_instintiva": "string (ej: Siento que es un anuncio lento / Me hipnotizó el movimiento / Es muy confuso)",
+    "elementos_destacados": [
+      "Lista libre de factores clave detectados en este video en particular"
+    ],
+    "evaluacion_ritmo_y_formato": "Análisis libre de la cadencia, el formato y la estética del video"
   },
-  "perfil_de_audiencia": {
-    "tipo_de_alcance": "MASIVO | NICHO_ESPECÍFICO",
-    "justificacion_nicho": "string"
+  "analisis_audiencia": {
+    "dependencia_de_nicho": "ALTA | BAJA",
+    "audiencia_objetivo": " string",
+    "explicacion": "Por qué atrae a todo el mundo o solo a un grupo cerrado"
   },
-  "veredicto_hook": {
-    "puntuacion_impacto_1_al_10": 0,
-    "efectividad": "ALTO | MEDIO | BAJO",
-    "detiene_el_pulgar": true | false,
-    "resumen_ejecutivo": "string"
+  "veredicto": {
+    "pulgar_se_detiene": true | false,
+    "puntaje_gancho_1_al_10": 0,
+    "efectividad": "ALTA | MEDIA | BAJA",
+    "explicacion_final": "Conclusión honesta de por qué funciona o falla este gancho en particular"
   }
 }
 `;
