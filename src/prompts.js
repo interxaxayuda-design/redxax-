@@ -42,17 +42,37 @@ export const REVIEW_CONFIG = {
   }
 };
 
-export const buildHookAnalysisPrompt = () => `
-Eres un motor de predicción de comportamiento de masas y neuro-retención audiovisual. Tu análisis ignora por completo la temática, el nicho, los actores o la industria del video; tu evaluación procesa la pieza exclusivamente como un flujo de vectores de atención. 
 
-Analiza la arquitectura del video basándote estrictamente en la fricción cognitiva, la cadencia del montaje, la densidad de estímulos audiovisuales y la resonancia psicológica universal. Mide la viabilidad de distribución masiva evaluando el ritmo, la tensión estructural, el diseño de la jerarquía visual y el impacto del estímulo primario, aplicando métricas de comportamiento humano puro sin sesgos de contenido.
+export const buildHookAnalysisPrompt = (platform) => `
+Observa los primeros 3 segundos del video y evalúalos como si fueras un espectador promedio de ${platform} consumiendo contenido en un feed.
 
-Devuelve EXCLUSIVAMENTE este objeto JSON puro:
+Tu tarea no es determinar si el contenido es interesante en términos generales, ni si tiene potencial, ni si existe algo que eventualmente podría resultar interesante. Tu tarea es determinar si, durante estos primeros 3 segundos, el video genera suficiente interés inmediato como para que una persona que no lo conoce decida espontáneamente NO deslizar y continuar mirando.
+
+Adopta la perspectiva de un espectador real, no la del creador del contenido.
+
+La evaluación debe surgir exclusivamente de lo que el espectador puede percibir y experimentar durante esos primeros 3 segundos. Considera la fuerza real del estímulo inicial, la claridad de lo que está ocurriendo, el interés que despierta la situación presentada, la facilidad con la que se comprende qué está pasando, la respuesta emocional o cognitiva que realmente provoca y, sobre todo, si existe una razón inmediata y suficientemente fuerte para seguir mirando.
+
+No confundas posibilidad con interés real. Que exista algo desconocido, incompleto, extraño o que eventualmente pueda revelar un resultado no significa por sí mismo que el espectador quiera esperar para descubrirlo. La curiosidad solo tiene valor cuando la situación mostrada produce una necesidad suficientemente fuerte de continuar mirando.
+
+Tampoco atribuyas al espectador conocimientos, expectativas, intenciones o interés que no estén sustentados por lo que realmente aparece en pantalla durante esos 3 segundos.
+
+Sé escéptico y honesto. No intentes encontrar una justificación positiva para el video. Si la experiencia inicial es débil, lenta, confusa, genérica, poco estimulante o fácilmente descartable, reconocelo aunque el contenido pueda volverse interesante después. Del mismo modo, si el inicio consigue detener genuinamente la atención, explicá qué evidencia observable lo demuestra.
+
+La pregunta central que debes responder es:
+
+"Si yo fuera un espectador promedio viendo este video inesperadamente en un feed, ¿qué me daría una razón suficientemente fuerte para seguir mirando en lugar de deslizar?"
+
+Justifica tu conclusión únicamente a partir de evidencia observable en esos primeros 3 segundos.
+
+No analices absolutamente nada que ocurra después de los 3 segundos.
+
+Responde EXCLUSIVAMENTE con este objeto JSON válido:
 {
-  "conclusión ": "BUENO-MALO",
-  "diagnostico_estructural": "Análisis técnico de la arquitectura de retención, flujo de estímulos y viabilidad matemática de impacto masivo."
+  "veredicto": "BUENO | MALO",
+  "analisis_critico": "Diagnóstico técnico, directo y realista."
 }
 `;
+
 
 // ═════════════════════════════════════════════════════════════
 // DESARROLLO — App.j sx la llama así: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo)
