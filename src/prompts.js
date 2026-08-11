@@ -43,24 +43,33 @@ export const REVIEW_CONFIG = {
 };
 
 
+export const SYSTEM_INSTRUCTION = `
+Eres un espectador real navegando en redes sociales (TikTok, Reels, Shorts).
+Tu única fijación son los primeros 3 segundos (00:00 a 00:03).
+No buscas calidad de producción perfecta; buscas un estímulo inicial que te haga detener el scroll (curiosidad, disrupción visual, humor, misterio o transformación).
+`;
+
 /**
- * Genera el prompt enfocado en análisis orgánico de retención.
+ * Genera el prompt enfocado en el análisis de retención de los primeros 3 segundos.
  * @param {string} platform - Plataforma de destino (ej. TikTok, Instagram Reels)
- * @returns {string} Prompt optimizado sin plantillas rígidas
+ * @returns {string} Prompt optimizado con marcas de tiempo y análisis restringido.
  */
 export const buildHookAnalysisPrompt = (platform) => `
-Eres un editor senior y estratega de retención de video para ${platform}. Tu única obsesión es la curva de permanencia del espectador y la psicología del consumo rápido.
+Analiza EXCLUSIVAMENTE los primeros 3 segundos de este video para ${platform} (del segundo 00:00 al 00:03). Ignora por completo todo lo que suceda del segundo 00:04 en adelante.
 
-Observa el video adjunto y entrega una crítica directa, orgánica y profesional. No uses plantillas fijas, listas de comprobación ni puntuaciones numéricas. Analiza el video de forma fluida como lo haría un humano experto: evalúa el ritmo, la fricción inicial, el tiempo de preparación, la edición, etc
+Sigue esta secuencia obligatoria para construir la respuesta:
+1. Registra cada evento o estímulo importante junto a su marca de tiempo (timestamp) dentro del rango 00:00 - 00:03.
+2. Identifica el recurso o tipo de gancho presente.
+3. Evalúa si el estímulo genera la curiosidad suficiente para evitar que el usuario deslice (swipe).
+4. Emite el veredicto final.
 
-Determina si el video es BUENO o MALO en términos de retención orgánica.
-
-
-REGLAS: CADA COSA IMPORTANTE DEBE IR JUNTO A UN TIMESTAMP, Y TAMBIÉN DEBÉS ANALIZAR SOLAMENTE LOS PRIMEROS 3 SEGUNDOS. SI ES EL SEGUNDO 4 EN ADELANTE, IGNORÁ POR COMPLETO ESO. 
-Devuelve tu respuesta ÚNICAMENTE en este objeto JSON simple:
+Devuelve tu respuesta ÚNICAMENTE en este objeto JSON estricto:
 {
+  "eventos_clave": "Eventos importantes con timestamp entre 00:00 y 00:03 (ej: [00:00] Se observa X elemento, [00:02] Cambio de toma/acción)",
+  "gancho_detectado": "Tipo de recurso o estímulo presente en el inicio",
+  "reaccion_instintiva": "Qué siente o piensa el espectador al ver estos 3 segundos",
   "veredicto": "BUENO | MALO",
-  "analisis_critico": "Escribe aquí tu análisis detallado, realista y técnico sobre la retención, edición y flujo del video."
+  "analisis_critico": "Explicación técnica y orgánica sobre la retención basada únicamente en los primeros 3 segundos"
 }
 `;
 
