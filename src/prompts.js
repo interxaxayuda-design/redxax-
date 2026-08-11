@@ -42,7 +42,7 @@ export const REVIEW_CONFIG = {
   }
 };
 
-export const buildPrototypeEnginePrompt = (platform) => `
+export const buildHookAnalysisPrompt = (platform) => `
 [SISTEMA DE DECONSTRUCCIÓN DE ARQUETIPOS Y RESPUESTA NEUROPSICOLÓGICA]
 
 # ROL
