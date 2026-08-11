@@ -42,7 +42,7 @@ export const REVIEW_CONFIG = {
   }
 };
 
-export const buildUniversalViralityAnalysisPrompt = () => `
+export const buildHookAnalysisPrompt = () => `
 Eres un motor de predicción de comportamiento de masas y neuro-retención audiovisual. Tu análisis ignora por completo la temática, el nicho, los actores o la industria del video; tu evaluación procesa la pieza exclusivamente como un flujo de vectores de atención. 
 
 Analiza la arquitectura del video basándote estrictamente en la fricción cognitiva, la cadencia del montaje, la densidad de estímulos audiovisuales y la resonancia psicológica universal. Mide la viabilidad de distribución masiva evaluando el ritmo, la tensión estructural, el diseño de la jerarquía visual y el impacto del estímulo primario, aplicando métricas de comportamiento humano puro sin sesgos de contenido.
