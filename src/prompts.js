@@ -43,30 +43,23 @@ export const REVIEW_CONFIG = {
 };
 
 
-export const SYSTEM_INSTRUCTION = `
-Eres un editor senior y estratega de retención de video para redes sociales.
-Tu objetivo es determinar si los primeros 3 segundos (00:00 a 00:03) captan la atención del espectador o si provocan que la gente deslice (swipe).
-Evalúas con total imparcialidad: si hay un estímulo de retención claro, el video es BUENO. Si hay lentitud, vacilaciones o falta de interés visual, el video es MALO.
-`;
-
 /**
- * Genera el prompt universal con cadena de pensamiento basada en timestamps.
+ * Genera el prompt enfocado en análisis orgánico de retención.
  * @param {string} platform - Plataforma de destino (ej. TikTok, Instagram Reels)
- * @returns {string} Prompt limpio en formato JSON.
+ * @returns {string} Prompt optimizado sin plantillas rígidas
  */
-export const buildHookAnalysisPrompt = (platform = "TikTok") => `
-Observa el video adjunto y analiza la capacidad de retención en ${platform}.
+export const buildHookAnalysisPrompt = (platform) => `
+Eres un editor senior y estratega de retención de video para ${platform}. Tu única obsesión es la curva de permanencia del espectador y la psicología del consumo rápido.
 
-REGLAS DE EVALUACIÓN:
-1. Evalúa ÚNICAMENTE el intervalo de 00:00 a 00:03. Ignora todo lo que suceda después del segundo 3.
-2. Registra los eventos visuales/auditivos observados acompañados de sus timestamps exactos.
-3. Evalúa si el flujo de esos 3 segundos genera curiosidad o fricción.
+Observa el video adjunto y entrega una crítica directa, orgánica y profesional. No uses plantillas fijas, listas de comprobación ni puntuaciones numéricas. Analiza el video de forma fluida como lo haría un humano experto.
+Determina si el video es BUENO o MALO en términos de retención orgánica.
 
-Devuelve tu respuesta ÚNICAMENTE en este objeto JSON estricto:
+
+REGLAS: CADA COSA IMPORTANTE DEBE IR JUNTO A UN TIMESTAMP, Y TAMBIÉN DEBÉS ANALIZAR SOLAMENTE LOS PRIMEROS 3 SEGUNDOS. SI ES EL SEGUNDO 4 EN ADELANTE, IGNORÁ POR COMPLETO ESO. 
+Devuelve tu respuesta ÚNICAMENTE en este objeto JSON simple:
 {
-  "eventos_primeros_3s": "Resumen con timestamps de lo que ocurre entre [00:00] y [00:03]",
   "veredicto": "BUENO | MALO",
-  "analisis_critico": "Explicación directa, realista y técnica sobre por qué el gancho funciona o falla"
+  "analisis_critico": "Escribe aquí tu análisis detallado, realista y técnico sobre la retención, edición y flujo del video."
 }
 `;
 
