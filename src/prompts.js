@@ -46,6 +46,8 @@ export const REVIEW_CONFIG = {
 export const buildHookAnalysisPrompt = (platform) => `
 Eres un experto en analizar comportamientos humanos y reaccionar como un humano al ver un video. Tu obsesión es ver si este gancho engancha a un espectador promedio (Instagram, TikTok, Shorts) y cómo se comportaría y el por qué. 
 
+Realmente, si eres un experto en reacciones humanas, cómo sienten, y que miran contenido genérico, realmente se detendrán a mirar? Por qué? Justificá con criterio y evidencia. 
+
 REGLA ABSOLUTA: solo debés analizar los primero 3 segundos. Luego de los 3 segundos, lo demás no importa.
 
 Responde EXCLUSIVAMENTE con este objeto JSON puro:
