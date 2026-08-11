@@ -84,6 +84,10 @@ export function extractGeminiText(data) {
   return raw.replace(/```json|```/g, '').trim();
 }
 
+const safeVideoName = (name) =>
+  name?.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '') || 'video.mp4';
+
 const GEM_PACKAGES = [
   { id: 'starter', gems: 500,  price: 3,  label: 'Starter', analyses: '5 análisis',  popular: false },
   { id: 'pro',     gems: 1000, price: 6,  label: 'Pro',     analyses: '10 análisis', popular: true  },
@@ -895,12 +899,21 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
 //
     const cfg = REVIEW_CONFIG;
 
+    // Recorte exclusivo para el análisis del hook — no toca `storagePath` (video completo)
+    setStatusText('Preparando el clip del hook...');
+    const hookFile = await trimVideoTo3s(videoFile);
+    const hookStoragePath = `temp-analysis/hook-${Date.now()}-${safeVideoName(videoFile.name)}`;
+    const { error: hookUploadError } = await supabase.storage
+      .from('videos')
+      .upload(hookStoragePath, hookFile, { contentType: 'video/mp4', upsert: true });
+    if (hookUploadError) throw new Error('Error subiendo clip del hook: ' + hookUploadError.message);
+
     const [hookRes, desarrolloRes] = await Promise.all([
       supabase.functions.invoke('gemini-proxy', {
         body: {
           text: buildHookAnalysisPrompt(platform, industria, selectedObjetivo),
-          storagePath,
-          videoMimeType: mimeType,
+          storagePath: hookStoragePath,     // ← solo hook usa el clip de 3s
+          videoMimeType: 'video/mp4',
           videoFps: cfg.hook.videoFps,
           temperature: cfg.hook.temperature,
           expectsJson: false,
@@ -910,7 +923,7 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
       supabase.functions.invoke('gemini-proxy', {
         body: {
           text: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo),
-          storagePath,
+          storagePath,                       // ← desarrollo sigue usando el video completo
           videoMimeType: mimeType,
           videoFps: cfg.desarrollo.videoFps,
           temperature: cfg.desarrollo.temperature,
@@ -919,6 +932,7 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
         },
       }),
     ]);
+
 
     if (hookRes.error) throw new Error(hookRes.error.message);
     if (desarrolloRes.error) throw new Error(desarrolloRes.error.message);
@@ -1514,24 +1528,15 @@ ${currentMessage.text}
   <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-emerald-400 group-hover:scale-110 transition-all duration-500" />
   <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
   <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Corrigue tu video</p>
-        <input type="file" className="hidden" accept="video/*" onChange={async (e) => {
+        <input type="file" className="hidden" accept="video/*" onChange={(e) => {
   const file = e.target.files[0];
   if (file) {
-    setStatusText('Preparando el video...');
-    setStep('analyzing');
-    try {
-      const trimmedFile = await trimVideoTo3s(file);
-      const url = URL.createObjectURL(trimmedFile);
-      setVideoPreviewUrl(url);
-      setPendingVideoFile(trimmedFile);
-      setPendingVideoUrl(url);
-      setAnalysisMode('video');
-      setStep('platform_select');
-    } catch (err) {
-      console.error('Error recortando video:', err);
-      alert('No se pudo procesar el video.');
-      setStep('upload');
-    }
+    const url = URL.createObjectURL(file);
+    setVideoPreviewUrl(url);
+    setPendingVideoFile(file);
+    setPendingVideoUrl(url);
+    setAnalysisMode('video');
+    setStep('platform_select');
   }
 }} />
       </label>
