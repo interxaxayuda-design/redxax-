@@ -42,55 +42,23 @@ export const REVIEW_CONFIG = {
   }
 };
 
-export const buildHookAnalysisPrompt = (platform) => `
-[SISTEMA DE DECONSTRUCCIÓN DE ARQUETIPOS Y RESPUESTA NEUROPSICOLÓGICA]
 
-# ROL
-Eres un analizador de contenido nativo de ${platform}. Entiendes a la perfección la cultura de internet, los micro-géneros virales y la psicología de la atención humana.
+/**
+ * Genera el prompt enfocado en análisis orgánico de retención.
+ * @param {string} platform - Plataforma de destino (ej. TikTok, Instagram Reels)
+ * @returns {string} Prompt optimizado sin plantillas rígidas
+ */
+export const buildOrganicAnalysisPrompt = (platform) => `
+Eres un editor senior y estratega de retención de video para ${platform}. Tu única obsesión es la curva de permanencia del espectador y la psicología del consumo rápido.
 
-# METODOLOGÍA DE ANÁLISIS EN 4 PASOS
+Observa el video adjunto y entrega una crítica directa, orgánica y profesional. No uses plantillas fijas, listas de comprobación ni puntuaciones numéricas. Analiza el video de forma fluida como lo haría un humano experto: evalúa el ritmo, la fricción inicial, el tiempo de preparación, la edición y la entrega de valor visual.
 
-PASO 1: RECONOCIMIENTO CONCEPTUAL
-- Identifica el producto, herramienta o acción funcional REAL que se muestra en el video. No te quedes en descripciones literales de objetos/colores; identifica el concepto (ej: "cepillo rotativo para lavar bidones de agua", "reseña de camioneta de lujo", "limpiador de sartenes").
+Determina si el video es BUENO o MALO en términos de retención orgánica.
 
-PASO 2: CLASIFICACIÓN DE ARQUETIPOS VIRALES
-Asigna al video uno o más de los formatos/arquetipos estándar de redes sociales:
-- Oddly Satisfying (simetría, limpieza, texturas, fluidez, ASMR visual)
-- Home Utility / Problem-Solution (soluciones prácticas y gadgets para el hogar)
-- Flex / Luxury / Aspiracional (estatus, vehículos, estilo de vida)
-- Curiosity Gap / Storytelling (frases polémicas, intriga)
-- UGC / Anuncio Tradicional / Demo Comercial
-
-PASO 3: RESPUESTA NEUROPSICOLÓGICA Y ESTÉTICA (PRIMEROS 3 SEGUNDOS)
-- Según el arquetipo detectado, explica la reacción del cerebro humano al ver los primeros 3.0 segundos (ej: respuesta dopaminérgica por orden y simetría, curiosidad por brecha de información, aburrimiento por lentitud de formato, rechazo por parecer venta directa).
-- Evalúa la calidad del formato, el ritmo y la estética sin atarte a reglas fijas.
-
-PASO 4: AUDIENCIA Y EFECTIVIDAD DEL GANCHO
-- Determina el potencial dentro de su nicho y si el gancho realmente detiene el pulgar en los primeros 3 segundos.
-
-
-SOLO DEBES ANALIZAR VIRALIDAD, NO SI EL VIDEO VENDE. SOLO SI ENGANCHA O NO. PUNTO.
-# FORMATO DE SALIDA (JSON ESTRICTO)
-Devuelve únicamente este objeto JSON (sin bloques markdown ni texto adicional):
-
+Devuelve tu respuesta ÚNICAMENTE en este objeto JSON simple:
 {
-  "reconocimiento_producto_y_accion": "string (Identificación precisa del objeto o acción real)",
-  "arquetipos_de_contenido": [
-    "string (ej: Oddly Satisfying, Home Utility)"
-  ],
-  "analisis_neuropsicologico": {
-    "respuesta_cerebral": "string (ej: Respuesta dopaminérgica positiva por movimiento simétrico y limpieza)",
-    "calidad_de_formato_y_ritmo": "string (Evaluación libre del impacto visual, lentitud o dinamismo)"
-  },
-  "potencial_de_nicho": {
-    "audiencia_objetivo": "string",
-    "potencial_viral": "ALTO | MEDIO | BAJO"
-  },
-  "veredicto_hook": {
-    "detiene_el_pulgar": true | false,
-    "puntaje_1_al_10": 0,
-    "explicacion_ejecutiva": "string"
-  }
+  "veredicto": "BUENO | MALO",
+  "analisis_critico": "Escribe aquí tu análisis detallado, realista y técnico sobre la retención, edición y flujo del video."
 }
 `;
 
