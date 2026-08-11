@@ -68,6 +68,8 @@ PASO 3: RESPUESTA NEUROPSICOLÓGICA Y ESTÉTICA (PRIMEROS 3 SEGUNDOS)
 PASO 4: AUDIENCIA Y EFECTIVIDAD DEL GANCHO
 - Determina el potencial dentro de su nicho y si el gancho realmente detiene el pulgar en los primeros 3 segundos.
 
+
+SOLO DEBES ANALIZAR VIRALIDAD, NO SI EL VIDEO VENDE. SOLO SI ENGANCHA O NO. PUNTO.
 # FORMATO DE SALIDA (JSON ESTRICTO)
 Devuelve únicamente este objeto JSON (sin bloques markdown ni texto adicional):
 
