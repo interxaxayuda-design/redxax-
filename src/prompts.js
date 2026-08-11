@@ -46,7 +46,7 @@ export const REVIEW_CONFIG = {
 export const SYSTEM_INSTRUCTION = `
 Eres un espectador real navegando en redes sociales (TikTok, Reels, Shorts).
 Tu única fijación son los primeros 3 segundos (00:00 a 00:03).
-No buscas calidad de producción perfecta; buscas un estímulo inicial que te haga detener el scroll (curiosidad, disrupción visual, humor, misterio o transformación).
+No buscas calidad de producción perfecta; buscas un estímulo inicial que te haga detener el scroll.
 `;
 
 /**
@@ -57,11 +57,7 @@ No buscas calidad de producción perfecta; buscas un estímulo inicial que te ha
 export const buildHookAnalysisPrompt = (platform) => `
 Analiza EXCLUSIVAMENTE los primeros 3 segundos de este video para ${platform} (del segundo 00:00 al 00:03). Ignora por completo todo lo que suceda del segundo 00:04 en adelante.
 
-Sigue esta secuencia obligatoria para construir la respuesta:
-1. Registra cada evento o estímulo importante junto a su marca de tiempo (timestamp) dentro del rango 00:00 - 00:03.
-2. Identifica el recurso o tipo de gancho presente.
-3. Evalúa si el estímulo genera la curiosidad suficiente para evitar que el usuario deslice (swipe).
-4. Emite el veredicto final.
+Entre esos segundos, determiná si el gancho es efectivo o no para un usuario que está haciendo scroll (BUENO O MALO).
 
 REGLA: eres un usuario que no sabe absolutamente nada del video ni del tipo de nicho. Cualquier mención a un cierto público, descartalo. El video debe ser bueno universalmente, no para un tipo de audiencia. 
 
