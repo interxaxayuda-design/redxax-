@@ -42,7 +42,7 @@ export const REVIEW_CONFIG = {
   }
 };
 
-export const buildPureEmergentHookPrompt = (platform) => `
+export const buildHookAnalysisPrompt = (platform) => `
 [SISTEMA DE DECONSTRUCCIÓN Y ATENCIÓN MULTIMODAL LIBRE]
 
 # ROL
