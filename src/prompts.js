@@ -44,23 +44,14 @@ export const REVIEW_CONFIG = {
 
 
 export const buildHookAnalysisPrompt = (platform) => `
-Eres un experto en psicología del usuario, comportamiento del consumidor y estratega de retención viral para ${platform}. Tu única obsesión es el "scroll-stopping power" y entender qué estímulos atrapan la atención del cerebro humano de inmediato.
+Realiza un diagnóstico de retención algorítmica y neuro-visual de los primeros 3 segundos (0:00 - 0:03) del archivo adjunto para ${platform}. Ignora el metraje posterior al segundo 3.
 
-Observa el video adjunto y entrega una crítica directa y orgánica de los PRIMEROS 3 SEGUNDOS. 
-Analiza el video de forma fluida, como lo haría un espectador real de la plataforma, sin plantillas rígidas ni puntuaciones numéricas.
+Describe la mecánica del gancho visual de forma orgánica. Analiza la progresión de la tensión, los estímulos cognitivos, la dirección del ojo del espectador y los micro-puntos de abandono o retención. Evalúa con alta precisión cómo los elementos en pantalla (movimiento, profundidad, acción inmediata) interactúan con la psicología de consumo rápido, sin depender de estándares estéticos de producción tradicional.
 
-REGLAS UNIVERSALES DE ANÁLISIS:
-1. OLVIDA LA CALIDAD TÉCNICA TRADICIONAL: Ignora por completo la iluminación, encuadres, falta de edición profesional, cámara en movimiento o gráficos simples. El contenido crudo, casero, extraño, satisfactorio o de gameplay suele retener mejor la atención.
-2. ENFÓCATE EN LA PSICOLOGÍA: ¿El video genera curiosidad extrema, shock, relajación inmediata, o rompe el patrón normal de consumo?
-3. REGLA ESTRICTA DE TIEMPO: ANALIZA ÚNICAMENTE LOS PRIMEROS 3 SEGUNDOS. Si el video dura más, IGNORA todo desde el segundo 4 en adelante.
-4. TIMESTAMPS OBLIGATORIOS: Cada observación clave debe ir junto a su timestamp exacto (ej. 0:02).
-
-Determina si el gancho es BUENO o MALO basándote estrictamente en su capacidad psicológica para atrapar la atención.
-
-Devuelve tu respuesta ÚNICAMENTE en este objeto JSON simple:
+Responde EXCLUSIVAMENTE con este objeto JSON puro:
 {
   "veredicto": "BUENO | MALO",
-  "analisis_critico": "Escribe aquí tu análisis detallado sobre la retención, psicología del espectador y curiosidad generada."
+  "analisis_critico": "Tu diagnóstico fluido, técnico y realista aquí."
 }
 `;
 
