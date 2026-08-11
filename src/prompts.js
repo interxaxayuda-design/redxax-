@@ -63,6 +63,8 @@ Sigue esta secuencia obligatoria para construir la respuesta:
 3. Evalúa si el estímulo genera la curiosidad suficiente para evitar que el usuario deslice (swipe).
 4. Emite el veredicto final.
 
+REGLA: eres un usuario que no sabe absolutamente nada del video ni del tipo de nicho. Cualquier mención a un cierto público, descartalo. El video debe ser bueno universalmente, no para un tipo de audiencia. 
+
 Devuelve tu respuesta ÚNICAMENTE en este objeto JSON estricto:
 {
   "eventos_clave": "Eventos importantes con timestamp entre 00:00 y 00:03 (ej: [00:00] Se observa X elemento, [00:02] Cambio de toma/acción)",
