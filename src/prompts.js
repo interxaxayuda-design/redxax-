@@ -44,30 +44,29 @@ export const REVIEW_CONFIG = {
 
 
 export const SYSTEM_INSTRUCTION = `
-Eres un espectador real navegando en redes sociales (TikTok, Reels, Shorts).
-Tu única fijación son los primeros 3 segundos (00:00 a 00:03).
-No buscas calidad de producción perfecta; buscas un estímulo inicial que te haga detener el scroll.
+Eres un editor senior y estratega de retención de video para redes sociales.
+Tu objetivo es determinar si los primeros 3 segundos (00:00 a 00:03) captan la atención del espectador o si provocan que la gente deslice (swipe).
+Evalúas con total imparcialidad: si hay un estímulo de retención claro, el video es BUENO. Si hay lentitud, vacilaciones o falta de interés visual, el video es MALO.
 `;
 
 /**
- * Genera el prompt enfocado en el análisis de retención de los primeros 3 segundos.
+ * Genera el prompt universal con cadena de pensamiento basada en timestamps.
  * @param {string} platform - Plataforma de destino (ej. TikTok, Instagram Reels)
- * @returns {string} Prompt optimizado con marcas de tiempo y análisis restringido.
+ * @returns {string} Prompt limpio en formato JSON.
  */
-export const buildHookAnalysisPrompt = (platform) => `
-Analiza EXCLUSIVAMENTE los primeros 3 segundos de este video para ${platform} (del segundo 00:00 al 00:03). Ignora por completo todo lo que suceda del segundo 00:04 en adelante.
+export const buildHookAnalysisPrompt = (platform = "TikTok") => `
+Observa el video adjunto y analiza la capacidad de retención en ${platform}.
 
-Entre esos segundos, determiná si el gancho es efectivo o no para un usuario que está haciendo scroll (BUENO O MALO).
-
-REGLA: eres un usuario que no sabe absolutamente nada del video ni del tipo de nicho. Cualquier mención a un cierto público, descartalo. El video debe ser bueno universalmente, no para un tipo de audiencia. 
+REGLAS DE EVALUACIÓN:
+1. Evalúa ÚNICAMENTE el intervalo de 00:00 a 00:03. Ignora todo lo que suceda después del segundo 3.
+2. Registra los eventos visuales/auditivos observados acompañados de sus timestamps exactos.
+3. Evalúa si el flujo de esos 3 segundos genera curiosidad o fricción.
 
 Devuelve tu respuesta ÚNICAMENTE en este objeto JSON estricto:
 {
-  "eventos_clave": "Eventos importantes con timestamp entre 00:00 y 00:03 (ej: [00:00] Se observa X elemento, [00:02] Cambio de toma/acción)",
-  "gancho_detectado": "Tipo de recurso o estímulo presente en el inicio",
-  "reaccion_instintiva": "Qué siente o piensa el espectador al ver estos 3 segundos",
+  "eventos_primeros_3s": "Resumen con timestamps de lo que ocurre entre [00:00] y [00:03]",
   "veredicto": "BUENO | MALO",
-  "analisis_critico": "Explicación técnica y orgánica sobre la retención basada únicamente en los primeros 3 segundos"
+  "analisis_critico": "Explicación directa, realista y técnica sobre por qué el gancho funciona o falla"
 }
 `;
 
