@@ -47,7 +47,7 @@ export const REVIEW_CONFIG = {
  * @param {string} platform - Plataforma del contenido (ej: 'TikTok', 'Instagram Reels')
  * @returns {string} Prompt optimizado para detección dinámica sin condicionales rígidos
  */
-export const buildAdvancedHookPrompt = (platform) => `
+export const buildHookAnalysisPrompt = (platform) => `
 [SISTEMA DE EVALUACIÓN DE ATENCIÓN Y COMPORTAMIENTO HUMANO]
 
 # ROL Y ENFOQUE
