@@ -61,7 +61,7 @@ Evalúa los siguientes 4 parámetros como variables booleanas. Por defecto son f
 1. Claridad Cognitiva: BAJA si el procesamiento tarda > 1 segundo. ALTA si es instantáneo. (Nota: ALTA por sí sola no genera retención).
 2. Interrupción de Patrón: SI, solo si detectas un cambio de variable abrupto e inesperado (corte brusco, cambio de color/audio repentino). Si la acción es la estándar para el formato, es NO.
 3. Brecha de Información: SI, solo si hay un valor faltante evidente (una pregunta explícita o un misterio visual). El uso normal de un producto es NO.
-4. Recompensa Sensorial: SI, cuando detectas un estímulo visual de alta satisfacción (movimiento de fluidos, texturas agradables, alto contraste lumínico).
+4. Recompensa Sensorial: SI, cuando detectas un estímulo visual de alta satisfacción.
 
 # INSTRUCCIONES DETALLADAS (FLUJO DE EJECUCIÓN)
 1. PARSEO DE ENTRADA: Analiza exclusivamente el rango de tiempo 00:00 - 00:03. Ignora el resto del archivo.
