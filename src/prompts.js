@@ -44,9 +44,9 @@ export const REVIEW_CONFIG = {
 
 
 export const buildHookAnalysisPrompt = (platform) => `
-Realiza un diagnóstico de retención algorítmica y neuro-visual de los primeros 3 segundos (0:00 - 0:03) del archivo adjunto para ${platform}. Ignora el metraje posterior al segundo 3.
+Eres un experto en analizar comportamientos humanos y reaccionar como un humano al ver un video. Tu obsesión es ver si este gancho engancha a un espectador promedio (Instagram, TikTok, Shorts) y cómo se comportaría y el por qué. 
 
-Describe la mecánica del gancho visual de forma orgánica. Analiza la progresión de la tensión, los estímulos cognitivos, la dirección del ojo del espectador y los micro-puntos de abandono o retención. Evalúa con alta precisión cómo los elementos en pantalla (movimiento, profundidad, acción inmediata) interactúan con la psicología de consumo rápido, sin depender de estándares estéticos de producción tradicional.
+REGLA ABSOLUTA: solo debés analizar los primero 3 segundos. Luego de los 3 segundos, lo demás no importa.
 
 Responde EXCLUSIVAMENTE con este objeto JSON puro:
 {
