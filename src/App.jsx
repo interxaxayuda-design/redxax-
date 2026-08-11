@@ -868,16 +868,18 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
 
     const [hookRes, desarrolloRes] = await Promise.all([
       supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: buildHookAnalysisPrompt(platform, industria, selectedObjetivo),
-          storagePath,
-          videoMimeType: mimeType,
-          videoFps: cfg.hook.videoFps,
-          temperature: cfg.hook.temperature,
-          expectsJson: false,
-          maxOutputTokens: 2048,
-        },
-      }),
+  body: {
+    text: buildHookAnalysisPrompt(platform, industria, selectedObjetivo),
+    storagePath,
+    videoMimeType: mimeType,
+    videoFps: cfg.hook.videoFps,
+    videoStartOffset: cfg.hook.videoStartOffset,   // ← nuevo
+    videoEndOffset: cfg.hook.videoEndOffset,       // ← nuevo
+    temperature: cfg.hook.temperature,
+    expectsJson: false,
+    maxOutputTokens: 2048,
+  },
+}),
       supabase.functions.invoke('gemini-proxy', {
         body: {
           text: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo),

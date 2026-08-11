@@ -11,13 +11,15 @@
 
 export const REVIEW_CONFIG = {
   hook: {
-    model: "gemini-2.5-pro",
-    temperature: 0,
-    media_resolution: "medium",
-    thinkingConfig: { thinkingBudget: 3072 },
-    videoFps: 12,
-    seed: 42
-  },
+  model: "gemini-2.5-pro",
+  temperature: 0,
+  media_resolution: "medium",
+  thinkingConfig: { thinkingBudget: 3072 },
+  videoFps: 12,
+  seed: 42,
+  videoStartOffset: "0s",
+  videoEndOffset: "3s"   // ← nuevo
+},
   nicheSuggestion: {
     model: "gemini-2.5-flash",
     temperature: 0.0,
