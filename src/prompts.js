@@ -76,6 +76,9 @@ Antes de evaluar cualquier gatillo, DEBES describir objetivamente qué ocurre en
 3. VERIFICACIÓN CONDICIONAL: Aplica los 4 Principios Universales.
 4. VALIDACIÓN DE COHERENCIA: La variable "pulgar_se_detiene" SOLO puede ser 'true' si al menos uno de los principios 2, 3 o 4 devolvió 'SI'. De lo contrario, debe ser 'false'.
 
+NO ANALICES SI EL VIDEOS ES BUENO EN SU NICHO, EVALUÁ SI GENERA INTERES PARA UNA AUDIENCIA QUE NO TIENE CONTEXTO DEL VIDEO Y LE APARECIÓ ASÍ EN UN FEED DE LA NADA. 
+
+
 # SALIDA ESPERADA
 Devuelve ÚNICAMENTE un objeto JSON válido, sin bloques de código Markdown (\`\`\`), utilizando exactamente esta estructura:
 
