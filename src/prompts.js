@@ -48,7 +48,7 @@ export const REVIEW_CONFIG = {
  * @param {string} platform - Plataforma de destino (ej. TikTok, Instagram Reels)
  * @returns {string} Prompt optimizado sin plantillas rígidas
  */
-export const buildOrganicAnalysisPrompt = (platform) => `
+export const buildHookAnalysisPrompt = (platform) => `
 Eres un editor senior y estratega de retención de video para ${platform}. Tu única obsesión es la curva de permanencia del espectador y la psicología del consumo rápido.
 
 Observa el video adjunto y entrega una crítica directa, orgánica y profesional. No uses plantillas fijas, listas de comprobación ni puntuaciones numéricas. Analiza el video de forma fluida como lo haría un humano experto: evalúa el ritmo, la fricción inicial, el tiempo de preparación, la edición y la entrega de valor visual.
