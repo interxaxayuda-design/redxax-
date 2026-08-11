@@ -42,58 +42,52 @@ export const REVIEW_CONFIG = {
   }
 };
 
-export const buildHookAnalysisPrompt = (platform) => `
-[SISTEMA DE DECONSTRUCCIÓN Y ATENCIÓN MULTIMODAL LIBRE]
+export const buildPrototypeEnginePrompt = (platform) => `
+[SISTEMA DE DECONSTRUCCIÓN DE ARQUETIPOS Y RESPUESTA NEUROPSICOLÓGICA]
 
 # ROL
-Actúa como un usuario real haciendo scroll rápido en ${platform}. Tu cerebro procesa la pantalla de forma instintiva e inmediata. No tienes reglas predefinidas ni listas de verificación; simplemente reaccionas al contenido como lo haría un ser humano.
+Eres un analizador de contenido nativo de ${platform}. Entiendes a la perfección la cultura de internet, los micro-géneros virales y la psicología de la atención humana.
 
-# INSTRUCCIÓN DE ANÁLISIS LIBRE (PRIMEROS 3.0 SEGUNDOS)
-Observa ÚNICA Y EXCLUSIVAMENTE los primeros 3.0 segundos del video (00:00 a 00:03). Ignora todo lo que ocurra después.
+# METODOLOGÍA DE ANÁLISIS EN 4 PASOS
 
-Realiza una deconstrucción orgánica respondiendo libremente a estas preguntas:
+PASO 1: RECONOCIMIENTO CONCEPTUAL
+- Identifica el producto, herramienta o acción funcional REAL que se muestra en el video. No te quedes en descripciones literales de objetos/colores; identifica el concepto (ej: "cepillo rotativo para lavar bidones de agua", "reseña de camioneta de lujo", "limpiador de sartenes").
 
-1. SIMULACIÓN DE REACCIÓN EN TIEMPO REAL:
-   - ¿Qué ocurre segundo a segundo en esos 3 segundos?
-   - ¿Cuál es la primera sensación instintiva al ver y escuchar esto? (¿Aburrimiento, intriga, placer visual, rechazo por parecer un anuncio aburrido, lentitud, sorpresa, neutralidad?).
+PASO 2: CLASIFICACIÓN DE ARQUETIPOS VIRALES
+Asigna al video uno o más de los formatos/arquetipos estándar de redes sociales:
+- Oddly Satisfying (simetría, limpieza, texturas, fluidez, ASMR visual)
+- Home Utility / Problem-Solution (soluciones prácticas y gadgets para el hogar)
+- Flex / Luxury / Aspiracional (estatus, vehículos, estilo de vida)
+- Curiosity Gap / Storytelling (frases polémicas, intriga)
+- UGC / Anuncio Tradicional / Demo Comercial
 
-2. DECONSTRUCCIÓN LIBRE DEL IMPACTO:
-   - Sin encasillarte en categorías fijas, explica QUÉ elementos de ESTE video específico afectan la atención (positiva o negativamente).
-   - Analiza lo que creas relevante según el caso: el ritmo/edición, el formato (UGC, anuncio tradicional, vlog), la estética/iluminación, el tono, la velocidad de la acción, la propuesta, etc. Menciona solo lo que realmente importe para este video.
+PASO 3: RESPUESTA NEUROPSICOLÓGICA Y ESTÉTICA (PRIMEROS 3 SEGUNDOS)
+- Según el arquetipo detectado, explica la reacción del cerebro humano al ver los primeros 3.0 segundos (ej: respuesta dopaminérgica por orden y simetría, curiosidad por brecha de información, aburrimiento por lentitud de formato, rechazo por parecer venta directa).
+- Evalúa la calidad del formato, el ritmo y la estética sin atarte a reglas fijas.
 
-3. EVALUACIÓN DE NICHO Y AUDIENCIA:
-   - ¿Este gancho apela a un interés humano general o requiere que al espectador le importe un tema ultra específico para llamar su atención?
+PASO 4: AUDIENCIA Y EFECTIVIDAD DEL GANCHO
+- Determina el potencial dentro de su nicho y si el gancho realmente detiene el pulgar en los primeros 3 segundos.
 
-4. DIAGNÓSTICO FINAL:
-   - ¿El pulgar se detiene voluntariamente en los primeros 3 segundos?
-   - Asigna un puntaje de gancho de 1 a 10 y explica por qué.
-
-# SALIDA EN FORMATO JSON ESTRICTO
-Devuelve únicamente un objeto JSON con la siguiente estructura (sin bloques markdown ni texto adicional):
+# FORMATO DE SALIDA (JSON ESTRICTO)
+Devuelve únicamente este objeto JSON (sin bloques markdown ni texto adicional):
 
 {
-  "segundo_a_segundo_0_a_3": {
-    "00_01": "Descripción objetiva del segundo 1",
-    "00_02": "Descripción objetiva del segundo 2",
-    "00_03": "Descripción objetiva del segundo 3"
+  "reconocimiento_producto_y_accion": "string (Identificación precisa del objeto o acción real)",
+  "arquetipos_de_contenido": [
+    "string (ej: Oddly Satisfying, Home Utility)"
+  ],
+  "analisis_neuropsicologico": {
+    "respuesta_cerebral": "string (ej: Respuesta dopaminérgica positiva por movimiento simétrico y limpieza)",
+    "calidad_de_formato_y_ritmo": "string (Evaluación libre del impacto visual, lentitud o dinamismo)"
   },
-  "analisis_organico": {
-    "sensacion_instintiva": "string (ej: Siento que es un anuncio lento / Me hipnotizó el movimiento / Es muy confuso)",
-    "elementos_destacados": [
-      "Lista libre de factores clave detectados en este video en particular"
-    ],
-    "evaluacion_ritmo_y_formato": "Análisis libre de la cadencia, el formato y la estética del video"
+  "potencial_de_nicho": {
+    "audiencia_objetivo": "string",
+    "potencial_viral": "ALTO | MEDIO | BAJO"
   },
-  "analisis_audiencia": {
-    "dependencia_de_nicho": "ALTA | BAJA",
-    "audiencia_objetivo": " string",
-    "explicacion": "Por qué atrae a todo el mundo o solo a un grupo cerrado"
-  },
-  "veredicto": {
-    "pulgar_se_detiene": true | false,
-    "puntaje_gancho_1_al_10": 0,
-    "efectividad": "ALTA | MEDIA | BAJA",
-    "explicacion_final": "Conclusión honesta de por qué funciona o falla este gancho en particular"
+  "veredicto_hook": {
+    "detiene_el_pulgar": true | false,
+    "puntaje_1_al_10": 0,
+    "explicacion_ejecutiva": "string"
   }
 }
 `;
