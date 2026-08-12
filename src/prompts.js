@@ -44,7 +44,7 @@ export const REVIEW_CONFIG = {
 
 
 export const buildHookAnalysisPrompt = (platform) => `
-Evalúa si los primeros segundos de este video logran enganchar y retener al espectador en la plataforma ${platform}.
+Evalúa si los primeros segundos de este video logran enganchar y retener en la plataforma ${platform}.
 
 Devuelve tu respuesta ÚNICAMENTE en el siguiente JSON:
 {
