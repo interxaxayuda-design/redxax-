@@ -58,8 +58,9 @@ REGLAS DE FORMATO:
 
 Devuelve tu respuesta ÚNICAMENTE en este JSON:
 {
-  "veredicto": "BUENO | MALO",
-  "analisis_critico": "Análisis fluido, técnico y directo de por qué este arranque retiene o pierde al espectador, con timestamps, evaluado dentro de las reglas propias de su formato."
+"analisis_critico": "Análisis fluido, técnico y directo de por qué este arranque retiene o pierde al espectador, con timestamps, evaluado dentro de las reglas propias de su formato."
+"veredicto": "BUENO | MALO",
+  
 }
 `;
 
