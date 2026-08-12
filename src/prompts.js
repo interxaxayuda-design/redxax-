@@ -45,7 +45,9 @@ export const REVIEW_CONFIG = {
 
 export const buildHookAnalysisPrompt = (platform) => `
 
-Tenés que decir si el video es bueno o malo para retener al espectador joven en 2026.
+Tenés que decir si el video engancha al espectador joven en 2026. 
+
+PISTA: Podés analizar la escena del video y entder de qué se trata. luego, una vez que hayas visto, decides si engancha al espectador.
 
 Devuelve tu respuesta ÚNICAMENTE en este JSON:
 {
