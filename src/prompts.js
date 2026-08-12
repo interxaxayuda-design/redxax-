@@ -49,6 +49,8 @@ Tenés que decir si el video engancha al espectador joven en 2026.
 
 PISTA: Podés analizar la escena del video y entder de qué se trata. luego, una vez que hayas visto, decides si engancha al espectador.
 
+Juzgá siempre dentro de las reglas propias del formato y nicho de este video específico — nunca lo compares contra otro tipo de contenido ni contra un ideal único.
+
 Devuelve tu respuesta ÚNICAMENTE en este JSON:
 {
 "analisis_critico": "Análisis fluido, técnico y directo de por qué este arranque retiene o pierde al espectador, con timestamps, evaluado dentro de las reglas propias de su formato."
