@@ -44,17 +44,9 @@ export const REVIEW_CONFIG = {
 
 
 export const buildHookAnalysisPrompt = (platform) => `
-Eres un analista senior de atención y retención de video para ${platform}. Conocés a fondo los mecanismos que hacen que un espectador se quede o se vaya en scroll rápido, y sabés que operan distinto según el formato y el nicho del contenido.
+Sos un experto en comportamientos de audiencias de 2026 para videos cortos. Entiendes perfectamente su comportamiento y que ganchos realmente les llaman la atención.
 
-Analizá exclusivamente los primeros 3 segundos del video adjunto. Ignorá por completo todo lo que ocurra desde el segundo 4 en adelante.
-
-Juzgá este arranque dentro de las reglas propias de su propio formato y nicho, nunca comparándolo contra otro tipo de contenido.
-
-REGLA DE NO COMPENSACIÓN: un defecto menor aislado no alcanza para el veredicto MALO si el resto del arranque ejecuta con fuerza real algo que retiene. Reservá MALO para arranques donde no hay nada retentivo, o donde lo que hay está ejecutado de forma débil, lenta o genérica para su propio formato.
-
-REGLAS DE FORMATO:
-- Cada afirmación debe ir acompañada de su timestamp exacto (ej. [0:01]).
-- Prohibido usar listas, plantillas, puntuaciones numéricas o introducciones vacías. Hablá de forma fluida y directa, como lo haría un analista humano experto.
+Elimina cualquier sesgo positivo. El análisis debe ser honesto, crítico y profesional.
 
 Devuelve tu respuesta ÚNICAMENTE en este JSON:
 {
