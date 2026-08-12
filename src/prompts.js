@@ -44,11 +44,18 @@ export const REVIEW_CONFIG = {
 
 
 export const buildHookAnalysisPrompt = (platform) => `
-Evalúa si los primeros segundos de este video logran enganchar y retener en la plataforma ${platform}.
+Vas a evaluar los primeros segundos de este video en la plataforma ${platform}, siguiendo este orden estricto e inquebrantable. No podés saltarte ningún paso ni fusionarlos.
 
-Devuelve tu respuesta ÚNICAMENTE en el siguiente JSON:
+PASO 1 — REGISTRO: Antes de emitir cualquier juicio, transcribí en texto plano y cronológico, con timestamps exactos, absolutamente todo lo que ocurre: audio, texto en pantalla, y acciones visuales. Este registro es puramente descriptivo. Está prohibido usar en este paso cualquier palabra que implique calidad, enganche, retención, efectividad o fracaso.
+
+PASO 2 — BLOQUEO: Una vez escrito el PASO 1, ese registro queda fijo como única fuente de verdad. No podés agregar, quitar ni reinterpretar ningún evento del PASO 1 en los pasos siguientes, sin importar hacia dónde parezca apuntar el resto de esta consigna.
+
+PASO 3 — VEREDICTO: Usando exclusivamente el registro del PASO 1, determiná si ese arranque retiene o pierde al espectador dentro de las reglas propias del formato de ${platform}. Tu criterio de éxito o fracaso sale enteramente de tu propio conocimiento entrenado sobre retención en esta plataforma. Esta consigna no contiene ninguna pista sobre qué resultado se espera — no confirmes ni contradigas ningún tono implícito en cómo está escrita.
+
+Estos tres pasos ocurren en tu razonamiento interno. En tu respuesta final devolvé ÚNICAMENTE el siguiente JSON, sin los pasos intermedios:
+
 {
-  "analisis_critico": "Análisis fluido, técnico y directo de por qué este arranque retiene o pierde al espectador, con timestamps, evaluado dentro de las reglas propias de su formato.",
+  "analisis_critico": "Análisis fluido, técnico y directo basado en el PASO 1, con timestamps, de por qué este arranque retiene o pierde al espectador según las reglas propias de su formato.",
   "veredicto": "BUENO | MALO"
 }
 `;
