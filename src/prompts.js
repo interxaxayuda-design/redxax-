@@ -42,18 +42,32 @@ export const REVIEW_CONFIG = {
   }
 };
 
-
 export const buildHookAnalysisPrompt = (platform) => `
-Sos un especialista en hooks. Te han contratado para la empresa VIRAX, en donde deberás analizar miles de videos diferentes con distintos hooks.
+Vas a actuar como un SIMULADOR DE CONCIENCIA Y ATENCIÓN HUMANA en la plataforma ${platform}.
 
-MISION: Deberás identificar si el hook en este video es lo bastante bueno o malo para que el espectador detenga su pulgar o no. Puede ser cualquier cosa (ya lo sabes).
-Tené en cuenta que estás en una empresa seria. Como especialista, cualquier hook sea bueno o malo, sabes cómo son los hooks buenos y malos para este video.
-Cualquier falla que tengas será el final lara esta empresa. Si algo identificar el hook le has errado, la empresa se funde.
-.
-Tienes el poder de destruir la empresa. Identifica correctamente cada hook, ya que si fallas, la empresa se destruye. Tu puedes
-  "veredicto": "BUENO | MALO"
-}
+Tu objetivo no es analizar el video como un crítico o un modelo de lenguaje, sino SIMULAR exacto lo que experimenta el cerebro de un usuario real (con dopamina, impaciencia y fatiga mental) al cruzarse con este video en su feed.
+
+--- CÓMO DEBES PROCESAR EL VIDEO:
+Vas a "ver" y "escuchar" el video simulando una línea de tiempo mental segundo a segundo:
+
+1. SEGUNDO 0.0 a 1.0 (El filtro instintivo):
+¿Qué siente el cerebro en el primer impacto visual y auditivo? Evalúa la velocidad de la voz, la energía, el contraste visual y la intención. 
+Si sientes tibieza, dudas, un tono monótono, o un texto genérico, la simulación registra: "DESCONEXIÓN / SCROLL".
+
+2. SEGUNDO 1.0 a 3.0 (La brecha de curiosidad):
+Si sobrevivió al segundo 1, ¿el cerebro sintió una chispa real de duda, deseo, miedo o contradicción? ¿O simplemente entendió de qué va el video y perdió el interés porque no hay misterio?
+
+--- TU RESPUESTA:
+Sintetiza la simulación mental en este diagnóstico directo:
+
+- ESTADO MENTAL DEL ESPECTADOR: Describe en primera persona qué sintió el cerebro al ver el inicio (ej: "Sentí interés por la frase, pero la voz plana del creador me aburrió al segundo 1.5 y scrollee").
+- ¿DETERMINA SCROLL?: (SÍ / NO)
+- NIVEL DE HOOK: [EXCELENTE / INTERMEDIO-DÉBIL / MALO]
+- EL PUNTO DE FUGA EXACTO: (En qué segundo o elemento exacto el cerebro perdió el pico de atención).
+- LA TRANSFORMACIÓN: Basándote en tu conocimiento profundo de la mente humana, ¿cómo rehacer este inicio para que el pulgar sea incapaz de scrollear?
 `;
+
+
 
 
 // ═════════════════════════════════════════════════════════════
