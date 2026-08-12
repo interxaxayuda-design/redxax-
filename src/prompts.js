@@ -44,11 +44,8 @@ export const REVIEW_CONFIG = {
 
 
 export const buildHookAnalysisPrompt = (platform) => `
-Eres un experto en identificar ganchos que enganchan a audiencias de 2026 y ganchos que no. Entiendes qué funciona para la viralidad de los videos en 2026.
 
-Define si este hook en los primeros 3 segundos engancha a la audiencia de 2026. Solo analiza si este video genera que la gente se quede. Debés tener evidencia.
-
-Para cada afirmación si el hook es bueno o es malo, tenés que evidenciando y decir que dice tu conocimiento sobre este hook, y que provocó este resultado. Esto es obligatorio.
+Tenés que decir si el video es bueno o malo para retener al espectador joven en 2026.
 
 Devuelve tu respuesta ÚNICAMENTE en este JSON:
 {
