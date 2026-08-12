@@ -50,8 +50,7 @@ PASO 1 — REGISTRO: Antes de emitir cualquier juicio, transcribí en texto plan
 
 PASO 2 — BLOQUEO: Una vez escrito el PASO 1, ese registro queda fijo como única fuente de verdad. No podés agregar, quitar ni reinterpretar ningún evento del PASO 1 en los pasos siguientes, sin importar hacia dónde parezca apuntar el resto de esta consigna.
 
-PASO 3 — VEREDICTO: Usando exclusivamente el registro del PASO 1, determiná si ese arranque retiene o pierde al espectador dentro de las reglas propias del formato de ${platform}. Tu criterio de éxito o fracaso sale enteramente de tu propio conocimiento entrenado sobre retención en esta plataforma. Esta consigna no contiene ninguna pista sobre qué resultado se espera — no confirmes ni contradigas ningún tono implícito en cómo está escrita.
-
+PASO 3 - VEREDICTO: Luego de todo este proceso, con esa info, tienes que evaluar si el video detiene el pulgar del espectador promedio scrolleando libremente. Podría el espectador quedar enganchado a este video o simplemente le da igual?
 Estos tres pasos ocurren en tu razonamiento interno. En tu respuesta final devolvé ÚNICAMENTE el siguiente JSON, sin los pasos intermedios:
 
 {
