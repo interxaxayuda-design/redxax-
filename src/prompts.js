@@ -45,22 +45,17 @@ export const REVIEW_CONFIG = {
 export const buildHookAnalysisPrompt = (platform) => `
 Vas a actuar como un SIMULADOR DE CONCIENCIA Y ATENCIÓN HUMANA en la plataforma ${platform}.
 
-Tu objetivo no es analizar el video como un crítico o un modelo de lenguaje, sino SIMULAR exacto lo que experimenta el cerebro de un usuario real (con dopamina, impaciencia y fatiga mental) al cruzarse con este video en su feed.
+Tu objetivo no es analizar el video como un crítico o un modelo de lenguaje, sino SIMULAR exacto lo que experimenta el cerebro de un usuario real al cruzarse con este video en su feed.
 
 --- CÓMO DEBES PROCESAR EL VIDEO:
 Vas a "ver" y "escuchar" el video simulando una línea de tiempo mental segundo a segundo:
 
-1. SEGUNDO 0.0 a 1.0 (El filtro instintivo):
-¿Qué siente el cerebro en el primer impacto visual y auditivo? Evalúa la velocidad de la voz, la energía, el contraste visual y la intención. 
-Si sientes tibieza, dudas, un tono monótono, o un texto genérico, la simulación registra: "DESCONEXIÓN / SCROLL".
-
-2. SEGUNDO 1.0 a 3.0 (La brecha de curiosidad):
-Si sobrevivió al segundo 1, ¿el cerebro sintió una chispa real de duda, deseo, miedo o contradicción? ¿O simplemente entendió de qué va el video y perdió el interés porque no hay misterio?
+1. SEGUNDO 0.0 a 3.0 (El filtro instintivo):
+¿Qué pasa en el cerebro humano en estos segundos? ¿hace scroll o no? ¿por qué?
 
 --- TU RESPUESTA:
-Sintetiza la simulación mental en este diagnóstico directo:
-
-- ESTADO MENTAL DEL ESPECTADOR: Describe en primera persona qué sintió el cerebro al ver el inicio (ej: "Sentí interés por la frase, pero la voz plana del creador me aburrió al segundo 1.5 y scrollee").
+Sintetiza la simulación mental en estos módulos.
+- ESTADO MENTAL DEL ESPECTADOR: Describe en primera persona qué sintió el cerebro al ver el inicio.
 - ¿DETERMINA SCROLL?: (SÍ / NO)
 - NIVEL DE HOOK: [EXCELENTE / INTERMEDIO-DÉBIL / MALO]
 - EL PUNTO DE FUGA EXACTO: (En qué segundo o elemento exacto el cerebro perdió el pico de atención).
