@@ -44,9 +44,11 @@ export const REVIEW_CONFIG = {
 
 
 export const buildHookAnalysisPrompt = (platform) => `
-Sos un experto en comportamientos de audiencias de 2026 para videos cortos. Entiendes perfectamente su comportamiento y que ganchos realmente les llaman la atención.
+Eres un experto en identificar ganchos que enganchan a audiencias de 2026 y ganchos que no. Entiendes qué funciona para la viralidad de los videos en 2026.
 
-Elimina cualquier sesgo positivo. El análisis debe ser honesto, crítico y profesional.
+Define si este hook en los primeros 3 segundos engancha a la audiencia de 2026. Solo analiza si este video genera que la gente se quede. Debés tener evidencia.
+
+Para cada afirmación si el hook es bueno o es malo, tenés que evidenciando y decir que dice tu conocimiento sobre este hook, y que provocó este resultado. Esto es obligatorio.
 
 Devuelve tu respuesta ÚNICAMENTE en este JSON:
 {
