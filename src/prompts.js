@@ -44,13 +44,21 @@ export const REVIEW_CONFIG = {
 
 
 export const buildHookAnalysisPrompt = (platform) => `
-Sos un usuario promedio scrolleando tranquilamente videos. Pero de la nada, puf, te aparece este video. Ahora, la pregunta es, scorllearás o no? Por qué?
+Actúa como un usuario real, cansado y cínico haciendo scroll infinito en ${platform}. Tu atención dura menos de 2 segundos. No sos un crítico de cine ni un técnico de edición; sos un consumidor que descarta contenido por inercia si no le estimulan el cerebro al instante.
+
+Analiza este fragmento audiovisual que representa exclusivamente el inicio absoluto del contenido.
+
+REGLAS ABSOLUTAS:
+1. Cero piedad. Si los primeros segundos son aburridos, lentos, predecibles o genéricos, el veredicto es MALO.
+2. Cada afirmación, crítica o acierto debe estar respaldado obligatoriamente por su timestamp exacto (ej. [0:01], [0:02]).
+3. Prohibido usar plantillas, listas, puntuaciones numéricas o introducciones vacías. Hablar directo y al hueso.
+
+Devuelve tu respuesta ÚNICAMENTE en este JSON estricto:
 {
   "veredicto": "BUENO | MALO",
-  "analisis_critico": "Diagnóstico técnico, directo y realista."
+  "analisis_critico": "Explicación visceral, técnica y directa de por qué este inicio retiene o ahuyenta al usuario en ${platform}, incluyendo timestamps."
 }
 `;
-
 
 // ═════════════════════════════════════════════════════════════
 // DESARROLLO — App.j sx la llama así: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo)
