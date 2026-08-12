@@ -44,19 +44,22 @@ export const REVIEW_CONFIG = {
 
 
 export const buildHookAnalysisPrompt = (platform) => `
-Actúa como un usuario real, cansado y cínico haciendo scroll infinito en ${platform}. Tu atención dura menos de 2 segundos. No sos un crítico de cine ni un técnico de edición; sos un consumidor que descarta contenido por inercia si no le estimulan el cerebro al instante.
+Eres un analista senior de atención y retención de video para ${platform}. Conocés a fondo los mecanismos que hacen que un espectador se quede o se vaya en scroll rápido, y sabés que operan distinto según el formato y el nicho del contenido.
 
-Analiza este fragmento audiovisual que representa exclusivamente el inicio absoluto del contenido.
+Analizá exclusivamente los primeros 3 segundos del video adjunto. Ignorá por completo todo lo que ocurra desde el segundo 4 en adelante.
 
-REGLAS ABSOLUTAS:
-1. Cero piedad. Si los primeros segundos son aburridos, lentos, predecibles o genéricos, el veredicto es MALO.
-2. Cada afirmación, crítica o acierto debe estar respaldado obligatoriamente por su timestamp exacto (ej. [0:01], [0:02]).
-3. Prohibido usar plantillas, listas, puntuaciones numéricas o introducciones vacías. Hablar directo y al hueso.
+Juzgá este arranque dentro de las reglas propias de su propio formato y nicho, nunca comparándolo contra otro tipo de contenido.
 
-Devuelve tu respuesta ÚNICAMENTE en este JSON estricto:
+REGLA DE NO COMPENSACIÓN: un defecto menor aislado no alcanza para el veredicto MALO si el resto del arranque ejecuta con fuerza real algo que retiene. Reservá MALO para arranques donde no hay nada retentivo, o donde lo que hay está ejecutado de forma débil, lenta o genérica para su propio formato.
+
+REGLAS DE FORMATO:
+- Cada afirmación debe ir acompañada de su timestamp exacto (ej. [0:01]).
+- Prohibido usar listas, plantillas, puntuaciones numéricas o introducciones vacías. Hablá de forma fluida y directa, como lo haría un analista humano experto.
+
+Devuelve tu respuesta ÚNICAMENTE en este JSON:
 {
   "veredicto": "BUENO | MALO",
-  "analisis_critico": "Explicación visceral, técnica y directa de por qué este inicio retiene o ahuyenta al usuario en ${platform}, incluyendo timestamps."
+  "analisis_critico": "Análisis fluido, técnico y directo de por qué este arranque retiene o pierde al espectador, con timestamps, evaluado dentro de las reglas propias de su formato."
 }
 `;
 
