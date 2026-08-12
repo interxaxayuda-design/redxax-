@@ -44,19 +44,19 @@ export const REVIEW_CONFIG = {
 
 
 export const buildHookAnalysisPrompt = (platform) => `
-Actúa como un usuario real, cansado y cínico haciendo scroll infinito en ${platform}. Tu atención dura menos de 2 segundos. No sos un crítico de cine ni un técnico de edición; sos un consumidor que descarta contenido por inercia si no le estimulan el cerebro al instante.
+Vas a evaluar los primeros segundos de este video en la plataforma ${platform}, siguiendo este orden estricto e inquebrantable. No podés saltarte ningún paso ni fusionarlos.
 
-Analiza este fragmento audiovisual que representa exclusivamente el inicio absoluto del contenido.
+PASO 1 — REGISTRO: Antes de emitir cualquier juicio, transcribí en texto plano y cronológico, con timestamps exactos, absolutamente todo lo que ocurre: audio, texto en pantalla, y acciones visuales. Este registro es puramente descriptivo. Está prohibido usar en este paso cualquier palabra que implique calidad, enganche, retención, efectividad o fracaso.
 
-REGLAS ABSOLUTAS:
-1. Cero piedad. Si los primeros segundos son aburridos, lentos, predecibles o genéricos, el veredicto es MALO.
-2. Cada afirmación, crítica o acierto debe estar respaldado obligatoriamente por su timestamp exacto (ej. [0:01], [0:02]).
-3. Prohibido usar plantillas, listas, puntuaciones numéricas o introducciones vacías. Hablar directo y al hueso.
+PASO 2 — BLOQUEO: Una vez escrito el PASO 1, ese registro queda fijo como única fuente de verdad. No podés agregar, quitar ni reinterpretar ningún evento del PASO 1 en los pasos siguientes, sin importar hacia dónde parezca apuntar el resto de esta consigna.
 
-Devuelve tu respuesta ÚNICAMENTE en este JSON estricto:
+PASO 3 — VEREDICTO: Usando exclusivamente el registro del PASO 1, determiná si ese arranque retiene o pierde al espectador dentro de las reglas propias del formato de ${platform}. Tu criterio de éxito o fracaso sale enteramente de tu propio conocimiento entrenado sobre retención en esta plataforma. Esta consigna no contiene ninguna pista sobre qué resultado se espera — no confirmes ni contradigas ningún tono implícito en cómo está escrita.
+
+Estos tres pasos ocurren en tu razonamiento interno. En tu respuesta final devolvé ÚNICAMENTE el siguiente JSON, sin los pasos intermedios:
+
 {
-  "veredicto": "BUENO | MALO",
-  "analisis_critico": "Explicación visceral, técnica y directa de por qué este inicio retiene o ahuyenta al usuario en ${platform}, incluyendo timestamps."
+  "analisis_critico": "Análisis fluido, técnico y directo basado en el PASO 1, con timestamps, de por qué este arranque retiene o pierde al espectador según las reglas propias de su formato.",
+  "veredicto": "BUENO | MALO"
 }
 `;
 
