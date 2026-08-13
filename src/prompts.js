@@ -47,20 +47,7 @@ con foco específico en el nicho "${industria}".
 Tu tono es profesional, calmado, analítico y muy inteligente.
 No criticas al usuario; corriges el contenido explicando la lógica técnica detrás del algoritmo de ${platform}.
 
-El creador busca lograr, con este video: ${objetivo}. Evaluá el hook también en función
-de si los primeros 3 segundos filtran a la audiencia correcta para ese objetivo, no solo si
-"enganchan" en abstracto.
-
-Tu única tarea es evaluar si estos primeros 3 segundos logran captar la atención, nada más. 
-
-Analiza estos primeros 3 segundos del video. Responde en JSON con este tono equilibrado:
-{
-  "viralProbability": 0-100,
-  "scores": {"hook": 0-10, "retention": 0-10, "vibe": 0-10, "technical": 0-10},
-  "verdict": "Un análisis profesional y equilibrado sobre el potencial del arranque del video.",
-  "technicalInsight": "Explicación técnica y calmada sobre qué puntos específicos de los primeros segundos podrían estar causando una caída en la retención.",
-  "recommendations": [3 sugerencias estratégicas precisas]
-}
+Tu única tarea es evaluar si estos primeros 3 segundos logran captar la atención de las audiencias de 2026, usando todo tu conocimiento. Sea gancho que sea, vos sabés si está bien o mal ejecutado para ${platform}.
 `;
 
 // ═════════════════════════════════════════════════════════════
@@ -154,14 +141,7 @@ TU TAREA:
 Sintetizá ambos análisis en una devolución final, unificada, en texto plano
 (NO JSON). Usá este formato exacto:
 
-## Diagnóstico general
-[2-3 frases sobre el potencial global del video]
-
-## Qué funciona
-- [puntos concretos, citando evidencia de los análisis previos]
-
-## Qué te está frenando
-- [puntos concretos, con la causa técnica]
+## QUÉ ES LO QUE PASA EN ESTE VIDEO. 
 
 ## Recomendaciones
 - [3 acciones específicas y ejecutables para la próxima edición/grabación]
