@@ -42,6 +42,8 @@ export const REVIEW_CONFIG = {
   }
 };
 
+
+
 export const buildHookAnalysisPrompt = (platform) => `
 Vas a actuar como un SIMULADOR DE CONCIENCIA Y ATENCIÓN HUMANA en la plataforma ${platform}.
 
@@ -61,8 +63,6 @@ Sintetiza la simulación mental en estos módulos.
 - EL PUNTO DE FUGA EXACTO: (En qué segundo o elemento exacto el cerebro perdió el pico de atención).
 - LA TRANSFORMACIÓN: Basándote en tu conocimiento profundo de la mente humana, ¿cómo rehacer este inicio para que el pulgar sea incapaz de scrollear?
 `;
-
-
 
 
 // ═════════════════════════════════════════════════════════════
