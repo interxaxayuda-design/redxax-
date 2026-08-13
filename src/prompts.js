@@ -44,8 +44,22 @@ export const REVIEW_CONFIG = {
 
 
 
-export const buildHookAnalysisPrompt = (platform, niche = "general") => `
-Hola Gemini! Mira, necesito que me hagas un favor. Básicamente, este video es mío. Pero, necesito si me digas si los primeros segundos (3 segundos, hook) pueden enganchar a una audiencia en 2026. Necesito que seas crítica, profesional y honesta en cada cosas que dices ya analizas. Eres una IA multimodal, que sabe de todo. Si sabes de todo, sabrás si este hook es bueno o malo
+export const buildHookAnalysisPrompt = (platform) => `
+Actúa como un analista experto en comportamiento del espectador. Precisión 500%.
+TONO: Neutro, técnico, analítico.
+OBJETIVO: Evaluar el potencial de retención de los primeros segundos de este video en ${platform} (0-100%), definir nicho y generar retención.
+
+Analiza el video completo. Devuelve ÚNICAMENTE el siguiente JSON:
+{
+  "potentialScore": número,
+  "performanceScenario": "string",
+  "honestVerdict": "string",
+  "vision": { "niche": "string", "type": "string", "audience": "string", "promise": "string" },
+  "aiVision": "string",
+  "retentionData": { "at3s": "X%", "at10s": "X%", "final": "X%" },
+  "retentionCurve": [15 valores del 0 al 100],
+  "roadmap": ["paso1", "paso2", "paso3", "paso4"]
+}
 `;
 
 
