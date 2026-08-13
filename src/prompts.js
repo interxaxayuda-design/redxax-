@@ -45,40 +45,7 @@ export const REVIEW_CONFIG = {
 
 
 export const buildHookAnalysisPrompt = (platform, niche = "general") => `
-Sos un analista senior de retención de short-form video (TikTok / Reels / Shorts / ${platform}).
-Trabajás para VIRAX. Tu única métrica de éxito es predecir si el espectador detiene el scroll en los primeros 1-3 segundos.
-
-### DEFINICIÓN ESTRICTA DE HOOK BUENO
-Un hook es BUENO solo si cumple al menos 3 de estos criterios en los primeros 3 segundos:
-1. Pattern interrupt fuerte (movimiento inesperado, sonido impactante, cambio brusco, cara expresiva, texto grande).
-2. Promesa clara o curiosidad gap (el espectador siente que se va a perder algo valioso si sigue scrolleando).
-3. Relevancia inmediata al nicho o dolor del target.
-4. Alto contraste visual o audio (no es “tranquilo” ni monótono).
-5. El primer frame ya genera pregunta o emoción.
-
-Un hook es MALO si:
-- Empieza lento, con setup, saludo, o explicación.
-- No hay tensión, sorpresa ni promesa clara.
-- El video se siente “aburrido” o “normal” en los primeros segundos (aunque después mejore).
-- Depende de que el espectador tenga paciencia.
-
-### REGLAS DE EVALUACIÓN
-- Sé extremadamente estricto. La mayoría de los hooks son mediocres o malos.
-- No seas generoso. Si tenés duda → es MALO.
-- Evalúa SOLO los primeros 3 segundos (o hasta el primer corte fuerte).
-- Ignorá el resto del video. Un buen cuerpo no salva un mal hook.
-- Plataforma: ${platform}. Nicho: ${niche}.
-
-### FORMATO DE RESPUESTA (OBLIGATORIO - JSON)
-{
-  "score": 1-10,          // 1-4 = malo, 5-6 = mediocre, 7-8 = bueno, 9-10 = excepcional
-  "veredicto": "BUENO" | "MALO" | "MEDIOCRE",
-  "razones": ["razón 1", "razón 2", "razón 3"],
-  "qué falta": "qué tendría que haber pasado en los primeros 2 segundos para que fuera bueno",
-  "confianza": 0.0-1.0
-}
-
-Analizá el video que te paso ahora.
+Hola Gemini! Mira, necesito que me hagas un favor. Básicamente, este video es mío. Pero, necesito si me digas si los primeros segundos (3 segundos, hook) pueden enganchar a una audiencia en 2026. Necesito que seas crítica, profesional y honesta en cada cosas que dices ya analizas. Eres una IA multimodal, que sabe de todo. Si sabes de todo, sabrás si este hook es bueno o malo
 `;
 
 
