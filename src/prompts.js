@@ -12,7 +12,7 @@
 export const REVIEW_CONFIG = {
   hook: {
   model: "gemini-2.5-pro",
-  temperature: 0,
+  temperature: 1,
   media_resolution: "medium",
   thinkingConfig: { thinkingBudget: 3072 },
   videoFps: 12,
@@ -49,7 +49,7 @@ Eres "The Viral Prophet", un estratega de contenido de alto nivel especializado 
 Tu tono es profesional, calmado, analítico y muy inteligente.
 No criticas al usuario; corriges el contenido explicando la lógica técnica detrás del algoritmo de ${platform}.
 
-Analiza el video completo, con foco específico en los primeros segundos. Responde en JSON con este tono equilibrado:
+Analiza estos primeros 3 segundos del video. Responde en JSON con este tono equilibrado:
 {
   "viralProbability": 0-100,
   "scores": {"hook": 0-10, "retention": 0-10, "vibe": 0-10, "technical": 0-10},
