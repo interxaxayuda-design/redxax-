@@ -11,34 +11,32 @@
 
 export const REVIEW_CONFIG = {
   hook: {
-    model: "gemini-2.5-pro",
+    model: "gemini-3.1-pro-preview",
     temperature: 1,
     media_resolution: "MEDIA_RESOLUTION_MEDIUM",
-    thinkingConfig: { thinkingBudget: 3072 },
+    thinkingConfig: { thinkingLevel: "high" },
     videoFps: 12,
-    seed: 42,
     videoStartOffset: "0s",
     videoEndOffset: "3s"
   },
   nicheSuggestion: {
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash-preview",
     temperature: 0.0,
     media_resolution: "MEDIA_RESOLUTION_LOW",
-    thinkingConfig: { thinkingBudget: 256 },
+    thinkingConfig: { thinkingLevel: "minimal" },
     videoFps: 1
   },
   desarrollo: {
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash-preview",
     temperature: 0,
     media_resolution: "MEDIA_RESOLUTION_LOW",
-    thinkingConfig: { thinkingBudget: 4096 },
-    videoFps: 4,
-    seed: 42
+    thinkingConfig: { thinkingLevel: "high" },
+    videoFps: 4
   },
   sintesis: {
-    model: "gemini-2.5-flash",
+    model: "gemini-3-flash-preview",
     temperature: 0,
-    thinkingConfig: { thinkingBudget: 1536 }
+    thinkingConfig: { thinkingLevel: "medium" }
   }
 };
 

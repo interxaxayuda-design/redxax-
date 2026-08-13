@@ -821,7 +821,7 @@ const runNicheSuggestion = async (videoFile, platform) => {
         videoFps: REVIEW_CONFIG.nicheSuggestion.videoFps,
         model: REVIEW_CONFIG.nicheSuggestion.model,                                   // ← nuevo
         mediaResolution: REVIEW_CONFIG.nicheSuggestion.media_resolution,               // ← nuevo
-        thinkingBudget: REVIEW_CONFIG.nicheSuggestion.thinkingConfig.thinkingBudget,   // ← nuevo
+        thinkingLevel: REVIEW_CONFIG.nicheSuggestion.thinkingConfig.thinkingLevel,   // ← antes: thinkingBudget
         expectsJson: false,
         temperature: REVIEW_CONFIG.nicheSuggestion.temperature,
         maxOutputTokens: 30,
@@ -881,8 +881,7 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
     temperature: cfg.hook.temperature,
     model: cfg.hook.model,                                    // ← nuevo
     mediaResolution: cfg.hook.media_resolution,                // ← nuevo
-    thinkingBudget: cfg.hook.thinkingConfig.thinkingBudget,     // ← nuevo
-    expectsJson: true,
+    thinkingLevel: cfg.hook.thinkingConfig.thinkingLevel,   // ← antes: thinkingBudget: cfg.hook.thinkingConfig.thinkingBudget    expectsJson: true,
     maxOutputTokens: 2048,
   },
 }),
@@ -895,7 +894,7 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
           temperature: cfg.desarrollo.temperature,
           model: cfg.desarrollo.model,                                  // ← nuevo
           mediaResolution: cfg.desarrollo.media_resolution,              // ← nuevo
-          thinkingBudget: cfg.desarrollo.thinkingConfig.thinkingBudget,  // ← nuevo
+          thinkingLevel: cfg.desarrollo.thinkingConfig.thinkingLevel,  // ← nuevo
           expectsJson: false,
           maxOutputTokens: 2048,
         },
@@ -915,8 +914,8 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
       body: {
         text: buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, selectedObjetivo),
         temperature: cfg.sintesis.temperature,
-        model: cfg.sintesis.model,                                    // ← nuevo (ver abajo)
-        thinkingBudget: cfg.sintesis.thinkingConfig.thinkingBudget,    // ← nuevo
+        model: cfg.sintesis.model,  
+        thinkingLevel: cfg.sintesis.thinkingConfig.thinkingLevel,                                  // ← nuevo (ver abajo)
         expectsJson: false,
         maxOutputTokens: 3072,
       },
