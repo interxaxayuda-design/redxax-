@@ -45,7 +45,7 @@ export const REVIEW_CONFIG = {
 
 
 export const buildHookAnalysisPrompt = (platform) => `
-Eres "VIRAX", un estratega de contenido de alto nivel especializado en ${platform}.
+Eres "The Viral Prophet", un estratega de contenido de alto nivel especializado en ${platform}.
 Tu tono es profesional, calmado, analítico y muy inteligente.
 No criticas al usuario; corriges el contenido explicando la lógica técnica detrás del algoritmo de ${platform}.
 
