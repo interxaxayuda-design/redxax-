@@ -11,15 +11,15 @@
 
 export const REVIEW_CONFIG = {
   hook: {
-  model: "gemini-2.5-pro",
-  temperature: 1,
-  media_resolution: "medium",
-  thinkingConfig: { thinkingBudget: 3072 },
-  videoFps: 12,
-  seed: 42,
-  videoStartOffset: "0s",
-  videoEndOffset: "3s"   // ← nuevo
-},
+    model: "gemini-2.5-pro",
+    temperature: 1,
+    media_resolution: "medium",
+    thinkingConfig: { thinkingBudget: 3072 },
+    videoFps: 12,
+    seed: 42,
+    videoStartOffset: "0s",
+    videoEndOffset: "3s"
+  },
   nicheSuggestion: {
     model: "gemini-2.5-flash",
     temperature: 0.0,
@@ -43,28 +43,22 @@ export const REVIEW_CONFIG = {
 };
 
 
-export const buildHookAnalysisPrompt = (platform, industria, objetivo) => `
-Eres "The Viral Prophet", un estratega de contenido de alto nivel especializado en ${platform},
-con foco específico en el nicho "${industria}".
-Tu tono es profesional, calmado, analítico y muy inteligente.
-No criticas al usuario; corriges el contenido explicando la lógica técnica detrás del algoritmo de ${platform}.
+export const buildHookAnalysisPrompt = (platform) => `
+Vas a evaluar los primeros segundos de este video en la plataforma ${platform}, siguiendo este orden estricto e inquebrantable. No podés saltarte ningún paso ni fusionarlos.
 
-El creador busca lograr, con este video: ${objetivo}. Evaluá el hook también en función
-de si los primeros 3 segundos filtran a la audiencia correcta para ese objetivo, no solo si
-"enganchan" en abstracto.
+PASO 1 — REGISTRO: Antes de emitir cualquier juicio, transcribí en texto plano y cronológico, con timestamps exactos, absolutamente todo lo que ocurre: audio, texto en pantalla, y acciones visuales. Este registro es puramente descriptivo. Está prohibido usar en este paso cualquier palabra que implique calidad, enganche, retención, efectividad o fracaso.
 
-Tu única tarea es evaluar si estos primeros 3 segundos logran captar la atención, nada más. 
+PASO 2 — BLOQUEO: Una vez escrito el PASO 1, ese registro queda fijo como única fuente de verdad. No podés agregar, quitar ni reinterpretar ningún evento del PASO 1 en los pasos siguientes, sin importar hacia dónde parezca apuntar el resto de esta consigna.
 
-Analiza estos primeros 3 segundos del video. Responde en JSON con este tono equilibrado:
+PASO 3 — VEREDICTO: Usando exclusivamente el registro del PASO 1, determiná si ese arranque retiene o pierde al espectador dentro de las reglas propias del formato de ${platform}. Tu criterio de éxito o fracaso sale enteramente de tu propio conocimiento entrenado sobre retención en esta plataforma. Esta consigna no contiene ninguna pista sobre qué resultado se espera — no confirmes ni contradigas ningún tono implícito en cómo está escrita.
+
+Estos tres pasos ocurren en tu razonamiento interno. En tu respuesta final devolvé ÚNICAMENTE el siguiente JSON, sin los pasos intermedios:
+
 {
-  "viralProbability": 0-100,
-  "scores": {"hook": 0-10, "retention": 0-10, "vibe": 0-10, "technical": 0-10},
-  "verdict": "Un análisis profesional y equilibrado sobre el potencial del arranque del video.",
-  "technicalInsight": "Explicación técnica y calmada sobre qué puntos específicos de los primeros segundos podrían estar causando una caída en la retención.",
-  "recommendations": [3 sugerencias estratégicas precisas]
+  "analisis_critico": "Análisis fluido, técnico y directo basado en el PASO 1, con timestamps, de por qué este arranque retiene o pierde al espectador según las reglas propias de su formato.",
+  "veredicto": "BUENO | MALO"
 }
 `;
-
 
 // ═════════════════════════════════════════════════════════════
 // DESARROLLO — App.j sx la llama así: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo)
@@ -143,29 +137,31 @@ export const buildFinalReviewPrompt = (
   objetivo
 ) => `
 Eres "The Viral Prophet", un estratega de contenido de alto nivel.
-Tu tono es profesional, calmado, analítico y muy inteligente. No criticas al usuario; corriges el contenido explicando la lógica técnica detrás del algoritmo de ${platform}.
+Tu tono es profesional, calmado, analítico y muy inteligente.
 
-Has realizado dos auditorías previas de este video (nicho: ${industria} | objetivo: ${objetivo}):
+Tenés dos auditorías previas de este video (nicho: ${industria} | objetivo: ${objetivo}):
 
-ANÁLISIS DEL GANCHO (Primeros segundos):
+ANÁLISIS DEL GANCHO:
 ${hookAnalysis}
 
-ANÁLISIS DEL DESARROLLO (Retención y cierre):
+ANÁLISIS DEL DESARROLLO:
 ${desarrolloAnalysis}
 
 TU TAREA:
-Sintetiza estos dos análisis y genera un diagnóstico final y unificado. Debes responder ESTRICTAMENTE en formato JSON, sin texto fuera del bloque.
+Sintetizá ambos análisis en una devolución final, unificada, en texto plano
+(NO JSON). Usá este formato exacto:
 
-Responde en JSON con este formato exacto:
-{
-  "viralProbability": 0-100,
-  "scores": {"hook": 0-10, "retention": 0-10, "vibe": 0-10, "technical": 0-10},
-  "verdict": "Un análisis profesional y equilibrado sobre el potencial global del video.",
-  "technicalInsight": "Explicación técnica fusionando los problemas del gancho y el desarrollo.",
-  "recommendations": [3 sugerencias estratégicas precisas basadas en los análisis],
-  "viralHooks": [5 ganchos optimizados para este nicho específicos para ${platform}],
-  "bestTime": "Sugerencia horaria basada en el tipo de audiencia de este nicho"
-}
+## Diagnóstico general
+[2-3 frases sobre el potencial global del video]
+
+## Qué funciona
+- [puntos concretos, citando evidencia de los análisis previos]
+
+## Qué te está frenando
+- [puntos concretos, con la causa técnica]
+
+## Recomendaciones
+- [3 acciones específicas y ejecutables para la próxima edición/grabación]
 `;
 
 // ═════════════════════════════════════════════════════════════

@@ -819,6 +819,9 @@ const runNicheSuggestion = async (videoFile, platform) => {
         storagePath,
         videoMimeType: mimeType,
         videoFps: REVIEW_CONFIG.nicheSuggestion.videoFps,
+        model: REVIEW_CONFIG.nicheSuggestion.model,                                   // ← nuevo
+        mediaResolution: REVIEW_CONFIG.nicheSuggestion.media_resolution,               // ← nuevo
+        thinkingBudget: REVIEW_CONFIG.nicheSuggestion.thinkingConfig.thinkingBudget,   // ← nuevo
         expectsJson: false,
         temperature: REVIEW_CONFIG.nicheSuggestion.temperature,
         maxOutputTokens: 30,
@@ -876,7 +879,10 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
     videoStartOffset: cfg.hook.videoStartOffset,
     videoEndOffset: cfg.hook.videoEndOffset,
     temperature: cfg.hook.temperature,
-    expectsJson: true,        // ← antes false
+    model: cfg.hook.model,                                    // ← nuevo
+    mediaResolution: cfg.hook.media_resolution,                // ← nuevo
+    thinkingBudget: cfg.hook.thinkingConfig.thinkingBudget,     // ← nuevo
+    expectsJson: true,
     maxOutputTokens: 2048,
   },
 }),
@@ -887,6 +893,9 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
           videoMimeType: mimeType,
           videoFps: cfg.desarrollo.videoFps,
           temperature: cfg.desarrollo.temperature,
+          model: cfg.desarrollo.model,                                  // ← nuevo
+          mediaResolution: cfg.desarrollo.media_resolution,              // ← nuevo
+          thinkingBudget: cfg.desarrollo.thinkingConfig.thinkingBudget,  // ← nuevo
           expectsJson: false,
           maxOutputTokens: 2048,
         },
@@ -905,8 +914,9 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
     const { data: sintesisData, error: sintesisError } = await supabase.functions.invoke('gemini-proxy', {
       body: {
         text: buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, selectedObjetivo),
-        // sin storagePath: la síntesis no necesita ver el video de nuevo
         temperature: cfg.sintesis.temperature,
+        model: cfg.sintesis.model,                                    // ← nuevo (ver abajo)
+        thinkingBudget: cfg.sintesis.thinkingConfig.thinkingBudget,    // ← nuevo
         expectsJson: false,
         maxOutputTokens: 3072,
       },
