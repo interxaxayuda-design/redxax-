@@ -12,7 +12,7 @@
 export const REVIEW_CONFIG = {
   hook: {
   model: "gemini-2.5-pro",
-  temperature: 0,
+  temperature: 1,
   media_resolution: "medium",
   thinkingConfig: { thinkingBudget: 3072 },
   videoFps: 12,
@@ -62,6 +62,7 @@ Analiza estos primeros 3 segundos del video. Responde en JSON con este tono equi
   "recommendations": [3 sugerencias estratégicas precisas]
 }
 `;
+
 
 // ═════════════════════════════════════════════════════════════
 // DESARROLLO — App.j sx la llama así: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo)
