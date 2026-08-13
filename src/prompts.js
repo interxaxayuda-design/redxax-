@@ -44,24 +44,41 @@ export const REVIEW_CONFIG = {
 
 
 
-export const buildHookAnalysisPrompt = (platform) => `
-Vas a actuar como un SIMULADOR DE CONCIENCIA Y ATENCIÓN HUMANA en la plataforma ${platform}.
+export const buildHookAnalysisPrompt = (platform, niche = "general") => `
+Sos un analista senior de retención de short-form video (TikTok / Reels / Shorts / ${platform}).
+Trabajás para VIRAX. Tu única métrica de éxito es predecir si el espectador detiene el scroll en los primeros 1-3 segundos.
 
-Tu objetivo no es analizar el video como un crítico o un modelo de lenguaje, sino SIMULAR exacto lo que experimenta el cerebro de un usuario real al cruzarse con este video en su feed.
+### DEFINICIÓN ESTRICTA DE HOOK BUENO
+Un hook es BUENO solo si cumple al menos 3 de estos criterios en los primeros 3 segundos:
+1. Pattern interrupt fuerte (movimiento inesperado, sonido impactante, cambio brusco, cara expresiva, texto grande).
+2. Promesa clara o curiosidad gap (el espectador siente que se va a perder algo valioso si sigue scrolleando).
+3. Relevancia inmediata al nicho o dolor del target.
+4. Alto contraste visual o audio (no es “tranquilo” ni monótono).
+5. El primer frame ya genera pregunta o emoción.
 
---- CÓMO DEBES PROCESAR EL VIDEO:
-Vas a "ver" y "escuchar" el video simulando una línea de tiempo mental segundo a segundo:
+Un hook es MALO si:
+- Empieza lento, con setup, saludo, o explicación.
+- No hay tensión, sorpresa ni promesa clara.
+- El video se siente “aburrido” o “normal” en los primeros segundos (aunque después mejore).
+- Depende de que el espectador tenga paciencia.
 
-1. SEGUNDO 0.0 a 3.0 (El filtro instintivo):
-¿Qué pasa en el cerebro humano en estos segundos? ¿hace scroll o no? ¿por qué?
+### REGLAS DE EVALUACIÓN
+- Sé extremadamente estricto. La mayoría de los hooks son mediocres o malos.
+- No seas generoso. Si tenés duda → es MALO.
+- Evalúa SOLO los primeros 3 segundos (o hasta el primer corte fuerte).
+- Ignorá el resto del video. Un buen cuerpo no salva un mal hook.
+- Plataforma: ${platform}. Nicho: ${niche}.
 
---- TU RESPUESTA:
-Sintetiza la simulación mental en estos módulos.
-- ESTADO MENTAL DEL ESPECTADOR: Describe en primera persona qué sintió el cerebro al ver el inicio.
-- ¿DETERMINA SCROLL?: (SÍ / NO)
-- NIVEL DE HOOK: [EXCELENTE / INTERMEDIO-DÉBIL / MALO]
-- EL PUNTO DE FUGA EXACTO: (En qué segundo o elemento exacto el cerebro perdió el pico de atención).
-- LA TRANSFORMACIÓN: Basándote en tu conocimiento profundo de la mente humana, ¿cómo rehacer este inicio para que el pulgar sea incapaz de scrollear?
+### FORMATO DE RESPUESTA (OBLIGATORIO - JSON)
+{
+  "score": 1-10,          // 1-4 = malo, 5-6 = mediocre, 7-8 = bueno, 9-10 = excepcional
+  "veredicto": "BUENO" | "MALO" | "MEDIOCRE",
+  "razones": ["razón 1", "razón 2", "razón 3"],
+  "qué falta": "qué tendría que haber pasado en los primeros 2 segundos para que fuera bueno",
+  "confianza": 0.0-1.0
+}
+
+Analizá el video que te paso ahora.
 `;
 
 
