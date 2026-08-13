@@ -53,10 +53,7 @@ El creador busca lograr, con este video: ${objetivo}. Evaluá el hook también e
 de si los primeros 3 segundos filtran a la audiencia correcta para ese objetivo, no solo si
 "enganchan" en abstracto.
 
-Tu única tarea es evaluar si estos primeros 3 segundos logran captar y retener la atención
-del espectador — nada más. No evalúes potencial de venta, conversión, ni si el video cumple
-un objetivo comercial: eso se analiza en otra etapa. Enfocate exclusivamente en mecanismos de
-retención
+Tu única tarea es evaluar si estos primeros 3 segundos logran captar la atención, nada más. 
 
 Analiza estos primeros 3 segundos del video. Responde en JSON con este tono equilibrado:
 {
