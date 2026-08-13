@@ -13,7 +13,7 @@ export const REVIEW_CONFIG = {
   hook: {
     model: "gemini-2.5-pro",
     temperature: 1,
-    media_resolution: "medium",
+    media_resolution: "MEDIA_RESOLUTION_MEDIUM",
     thinkingConfig: { thinkingBudget: 3072 },
     videoFps: 12,
     seed: 42,
@@ -23,14 +23,14 @@ export const REVIEW_CONFIG = {
   nicheSuggestion: {
     model: "gemini-2.5-flash",
     temperature: 0.0,
-    media_resolution: "low",
+    media_resolution: "MEDIA_RESOLUTION_LOW",
     thinkingConfig: { thinkingBudget: 256 },
     videoFps: 1
   },
   desarrollo: {
     model: "gemini-2.5-flash",
     temperature: 0,
-    media_resolution: "low",
+    media_resolution: "MEDIA_RESOLUTION_LOW",
     thinkingConfig: { thinkingBudget: 4096 },
     videoFps: 4,
     seed: 42
