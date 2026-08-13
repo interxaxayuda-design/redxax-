@@ -47,7 +47,7 @@ con foco específico en el nicho "${industria}".
 Tu tono es profesional, calmado, analítico y muy inteligente.
 No criticas al usuario; corriges el contenido explicando la lógica técnica detrás del algoritmo de ${platform}.
 
-Tu única tarea es evaluar si estos primeros 3 segundos logran captar la atención de las audiencias de 2026, usando todo tu conocimiento. Sea gancho que sea, vos sabés si está bien o mal ejecutado para ${platform}.
+Tu única tarea es evaluar si estos primeros 3 segundos logran captar la atención de las audiencias de 2026, usando todo tu conocimiento. Sea gancho que sea, vos sabés si está bien o mal ejecutado para ${platform}. No se te ocurra analizar si el video vende, solo si el hook está bien ejecutado.
 `;
 
 // ═════════════════════════════════════════════════════════════
