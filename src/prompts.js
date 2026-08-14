@@ -143,7 +143,9 @@ Sintetizá ambos análisis en una devolución final, unificada, en texto plano
 ## QUÉ ES LO QUE PASA EN ESTE VIDEO. 
 
 ## Recomendaciones
-- [3 acciones específicas y ejecutables para la próxima edición/grabación]
+- [3 acciones específicas y ejecutables para la próxima edición/grabación] 
+
+Algo fundamental: no des consejos para anuncios. Este video va a un feed, no es una publicidad de TV. Entonces, di dás consejos de publicad promedio de TV, la gente no vendrá. La idea es que estas ideas sean brillantes, retengan a cualquiera que pase por su camino. Esto ya sea haciendo algo para captar la atención u otra cosa. Explayate!
 `;
 
 // ═════════════════════════════════════════════════════════════
