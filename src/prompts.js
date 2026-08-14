@@ -116,7 +116,6 @@ solo esas palabras.
 // SÍNTESIS FINAL — App.jsx la llama así:
 // buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, selectedObjetivo)
 // (antes tenía 6 parámetros pensados para un pipeline de ranking
-// que nunca se conectó — ver comentario del bloque de arriba).
 // ═════════════════════════════════════════════════════════════
 
 export const buildFinalReviewPrompt = (
