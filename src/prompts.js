@@ -110,6 +110,8 @@ al que pertenece, en 2 a 4 palabras (por ejemplo: "fitness casero",
 
 No agregues explicación, comillas, puntos ni ningún texto adicional —
 solo esas palabras.
+
+IMPORTANTE: Si ves que el video es muy dependiente de que alguien ya esté interesado en el tema o que tenga experiencia, podés marcarlo como una limitación, ¿por qué? por uq el a idea es que el video pueda engacnhar a cualquier espectador, desde un niño de 7 años que ve coches a un señor mayor de edad (estos personajes son inventados, no te lo tomes literal)
 `;
 
 // ═════════════════════════════════════════════════════════════
