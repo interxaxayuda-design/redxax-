@@ -1220,9 +1220,9 @@ ${currentMessage.text}
 
       <p className="text-center text-[11px] text-slate-600 mt-6">
         Para ver las condiciones y política de privacidad, accedé a{' '}
-        <a href="https://virax.com/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:text-emerald-300 underline">
-          este link
-        </a>
+        <a href="https://redxax.vercel.app/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:text-emerald-300 underline">
+  este link
+</a>
         .
       </p>
 
