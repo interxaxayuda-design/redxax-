@@ -1216,13 +1216,22 @@ ${currentMessage.text}
             <li>• Genera recomendaciones específicas y justificadas para mejorar el contenido.</li>
           </ul>
         </div>
+
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400 mb-2">Qué vas a obtener</p>
+          <ul className="space-y-1.5 text-slate-400">
+            <li>• Un diagnóstico técnico sobre la capacidad de tu video para captar y mantener atención.</li>
+            <li>• Recomendaciones concretas y ejecutables para tu próxima grabación o edición.</li>
+            <li>• Un análisis pensado para feeds saturados, no consejos genéricos de marketing.</li>
+          </ul>
+        </div>
       </div>
 
       <p className="text-center text-[11px] text-slate-600 mt-6">
         Para ver las condiciones y política de privacidad, accedé a{' '}
         <a href="https://redxax.vercel.app/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:text-emerald-300 underline">
-  este link
-</a>
+          este link
+        </a>
         .
       </p>
 
