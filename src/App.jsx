@@ -824,7 +824,7 @@ const runNicheSuggestion = async (videoFile, platform) => {
         thinkingLevel: REVIEW_CONFIG.nicheSuggestion.thinkingConfig.thinkingLevel,   // ← antes: thinkingBudget
         expectsJson: false,
         temperature: REVIEW_CONFIG.nicheSuggestion.temperature,
-        maxOutputTokens: 3040,
+        maxOutputTokens: 870,
       }
     });
     if (error) throw new Error(error.message);
