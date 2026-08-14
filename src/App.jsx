@@ -7,6 +7,7 @@ import {
   X
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import PrivacyPolicy from './PrivacyPolicy';
 import logo from './logo.png';
 import {
   REVIEW_CONFIG,
@@ -1169,6 +1170,10 @@ ${currentMessage.text}
 
   const objetivo = aiResult?.objetivo || 'ventas';  // ← acá} //setAiResult(parsed);
 
+  if (window.location.pathname === '/privacy') {
+       return <PrivacyPolicy />;
+     }
+
   return (
      <div className="min-h-screen bg-[#020203] text-white font-sans selection:bg-emerald-500/50 overflow-x-hidden">    
        <DottedBackground />
@@ -1211,20 +1216,19 @@ ${currentMessage.text}
             <li>• Genera recomendaciones específicas y justificadas para mejorar el contenido.</li>
           </ul>
         </div>
-
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-widest text-emerald-400 mb-2">Qué vas a obtener</p>
-          <ul className="space-y-1.5 text-slate-400">
-            <li>• Un diagnóstico técnico sobre la capacidad de tu video para captar y mantener atención.</li>
-            <li>• Recomendaciones concretas y ejecutables para tu próxima grabación o edición.</li>
-            <li>• Un análisis pensado para feeds saturados, no consejos genéricos de marketing.</li>
-          </ul>
-        </div>
       </div>
+
+      <p className="text-center text-[11px] text-slate-600 mt-6">
+        Para ver las condiciones y política de privacidad, accedé a{' '}
+        <a href="https://virax.com/privacy" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:text-emerald-300 underline">
+          este link
+        </a>
+        .
+      </p>
 
       <button
         onClick={dismissWelcome}
-        className="w-full mt-8 bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all active:scale-95"
+        className="w-full mt-4 bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-full text-sm font-black italic uppercase tracking-wider transition-all active:scale-95"
       >
         Entendido →
       </button>
