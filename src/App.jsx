@@ -1248,13 +1248,6 @@ ${currentMessage.text}
   </div>
 )}
 
-<button
-  onClick={() => setShowSupportId(true)}
-  className="text-slate-600 hover:text-slate-400 text-[10px] font-bold uppercase tracking-widest transition-colors"
->
-  Soporte
-</button>
-
       <GemToast notice={gemNotice} onClose={() => setGemNotice(null)} />
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-5%] left-[-5%] w-[45%] h-[45%] bg-emerald-600/[0.04] blur-[120px] rounded-full" />
@@ -1329,6 +1322,16 @@ ${currentMessage.text}
               <div className="flex items-center justify-center gap-2 mt-2 mb-6 text-slate-600 text-[10px] font-bold uppercase tracking-wider">
                 <span>🔒</span><span>Pago seguro · Las gemas no vencen · Sin suscripción</span>
               </div>
+<button
+  onClick={() => setShowSupportId(true)}
+  className="w-full flex items-center justify-center gap-2 text-slate-600 hover:text-slate-400 text-[10px] font-bold uppercase tracking-widest transition-colors mb-4"
+>
+  Soporte
+</button>
+
+<div id="paypal-button-container" className="min-h-[50px]" />
+            
+
               <div id="paypal-button-container" className="min-h-[50px]" />
               {gemError && <p className="text-red-400 text-xs font-bold text-center mt-4">{gemError}</p>}
             </div>
