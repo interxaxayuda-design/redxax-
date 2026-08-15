@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import PrivacyPolicy from './PrivacyPolicy';
+import SupportIdModal from './SupportIdModal';
 import logo from './logo.png';
 import {
   REVIEW_CONFIG,
@@ -558,6 +559,7 @@ const App = () => {
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [gems, setGems] = useState(null);
+  const [showSupportId, setShowSupportId] = useState(false);
   const [showGemStore, setShowGemStore] = useState(false);
   const [gemError, setGemError] = useState(null);
   const [uploadedVideoPath, setUploadedVideoPath] = useState(null);
@@ -1246,6 +1248,13 @@ ${currentMessage.text}
   </div>
 )}
 
+<button
+  onClick={() => setShowSupportId(true)}
+  className="text-slate-600 hover:text-slate-400 text-[10px] font-bold uppercase tracking-widest transition-colors"
+>
+  Soporte
+</button>
+
       <GemToast notice={gemNotice} onClose={() => setGemNotice(null)} />
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-5%] left-[-5%] w-[45%] h-[45%] bg-emerald-600/[0.04] blur-[120px] rounded-full" />
@@ -1326,6 +1335,9 @@ ${currentMessage.text}
           </div>
         </>
       )} 
+
+     {showSupportId && <SupportIdModal onClose={() => setShowSupportId(false)} />}
+
 
 <header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
   <style>{`
