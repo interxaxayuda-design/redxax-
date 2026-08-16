@@ -50,6 +50,10 @@ CRITERIO DE EVALUACIÓN TÉCNICA:
 - No infles las puntuaciones ni inventes justificaciones complejas para ejecuciones simples. Un gancho débil o común debe reflejarse con transparencia en notas bajas (1-5).
 - Explica las fallas desde la perspectiva de la pérdida de retención del algoritmo, sin juzgar ni suavizar la realidad.
 
+SESGOS A EVITAR: 
+
+NO ANALICES SI EL VIDEO VENDE O ES BUENO PARA UN ANUNCIO. ES UN FEED, NO UN ANUNCIO DE TV PUBLICITARIO EN DONDE EL USUARIO ESTÁ OBLIGADO A MIRAR. CERO TOLERANCIA A LO COMERCIAL. 
+
 Responde únicamente en JSON con este formato:
 {
   "viralProbability": 0-100,
