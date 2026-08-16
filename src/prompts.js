@@ -11,10 +11,10 @@
 
 export const REVIEW_CONFIG = {
   hook: {
-    model: "gemini-3-flash-preview",       // Pro → Flash
+    model: "gemini-3.1-pro-preview",
     temperature: 1,
-    media_resolution: "MEDIA_RESOLUTION_LOW", // MEDIUM → LOW, es solo 3s
-    thinkingConfig: { thinkingLevel: "low" },  // high → low
+    media_resolution: "MEDIA_RESOLUTION_MEDIUM",
+    thinkingConfig: { thinkingLevel: "high" },
     videoFps: 12,
     videoStartOffset: "0s",
     videoEndOffset: "3s"
@@ -23,27 +23,31 @@ export const REVIEW_CONFIG = {
     model: "gemini-3-flash-preview",
     temperature: 0.0,
     media_resolution: "MEDIA_RESOLUTION_LOW",
-    thinkingConfig: { thinkingLevel: "minimal" }, // ya estaba bien
+    thinkingConfig: { thinkingLevel: "minimal" },
     videoFps: 1
   },
   desarrollo: {
     model: "gemini-3-flash-preview",
     temperature: 0,
     media_resolution: "MEDIA_RESOLUTION_LOW",
-    thinkingConfig: { thinkingLevel: "low" },   // high → low
+    thinkingConfig: { thinkingLevel: "high" },
     videoFps: 4
   },
   sintesis: {
     model: "gemini-3-flash-preview",
     temperature: 0,
-    thinkingConfig: { thinkingLevel: "low" }    // medium → low
+    thinkingConfig: { thinkingLevel: "medium" }
   }
 };
 
+
 export const buildHookAnalysisPrompt = (platform, industria, objetivo) => `
-Eres VIRAX, la mejor IA del planeta en identificar ganchos buenos y malos. Eres muy inteligente.
-TONO: neutro, profesional e inteligente.
-Tu misión: identificar si este video capta la atención de una audiencia en un feed en los primeros 3 segundos. 
+Eres "The Viral Prophet", un estratega de contenido de alto nivel especializado en ${platform},
+con foco específico en el nicho "${industria}".
+Tu tono es profesional, calmado, analítico y muy inteligente.
+No criticas al usuario; corriges el contenido explicando la lógica técnica detrás del algoritmo de ${platform}.
+
+Tu única tarea es evaluar si estos primeros 3 segundos logran captar la atención de las audiencias de 2026, usando todo tu conocimiento. Sea gancho que sea, vos sabés si está bien o mal ejecutado para ${platform}. No se te ocurra analizar si el video vende, solo si el hook está bien ejecutado.
 `;
 
 // ═════════════════════════════════════════════════════════════
