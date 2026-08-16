@@ -11,10 +11,10 @@
 
 export const REVIEW_CONFIG = {
   hook: {
-    model: "gemini-3.1-pro-preview",
+    model: "gemini-3-flash-preview",       // Pro → Flash
     temperature: 1,
-    media_resolution: "MEDIA_RESOLUTION_MEDIUM",
-    thinkingConfig: { thinkingLevel: "high" },
+    media_resolution: "MEDIA_RESOLUTION_LOW", // MEDIUM → LOW, es solo 3s
+    thinkingConfig: { thinkingLevel: "low" },  // high → low
     videoFps: 12,
     videoStartOffset: "0s",
     videoEndOffset: "3s"
@@ -23,23 +23,22 @@ export const REVIEW_CONFIG = {
     model: "gemini-3-flash-preview",
     temperature: 0.0,
     media_resolution: "MEDIA_RESOLUTION_LOW",
-    thinkingConfig: { thinkingLevel: "minimal" },
+    thinkingConfig: { thinkingLevel: "minimal" }, // ya estaba bien
     videoFps: 1
   },
   desarrollo: {
     model: "gemini-3-flash-preview",
     temperature: 0,
     media_resolution: "MEDIA_RESOLUTION_LOW",
-    thinkingConfig: { thinkingLevel: "high" },
+    thinkingConfig: { thinkingLevel: "low" },   // high → low
     videoFps: 4
   },
   sintesis: {
     model: "gemini-3-flash-preview",
     temperature: 0,
-    thinkingConfig: { thinkingLevel: "medium" }
+    thinkingConfig: { thinkingLevel: "low" }    // medium → low
   }
 };
-
 
 export const buildHookAnalysisPrompt = (platform, industria, objetivo) => `
 Eres "The Viral Prophet", un estratega de contenido de alto nivel especializado en ${platform},
