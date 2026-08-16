@@ -14,8 +14,8 @@ export const REVIEW_CONFIG = {
     model: "gemini-3-flash-preview",       // Pro → Flash
     temperature: 1,
     media_resolution: "MEDIA_RESOLUTION_LOW", // MEDIUM → LOW, es solo 3s
-    thinkingConfig: { thinkingLevel: "low" },  // high → low
-    videoFps: 12,
+    thinkingConfig: { thinkingLevel: "high" },  // high → low
+    videoFps: 4,
     videoStartOffset: "0s",
     videoEndOffset: "3s"
   },
@@ -36,7 +36,7 @@ export const REVIEW_CONFIG = {
   sintesis: {
     model: "gemini-3-flash-preview",
     temperature: 0,
-    thinkingConfig: { thinkingLevel: "low" }    // medium → low
+    thinkingConfig: { thinkingLevel: "medium" }    // medium → low
   }
 };
 
