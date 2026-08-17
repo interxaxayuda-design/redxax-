@@ -64,8 +64,7 @@ export const buildHookAnalysisPrompt = (platform, industria, objetivo) =>
 // ═════════════════════════════════════════════════════════════
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo) => 
-
-`Eres "VIRAX", un estratega de contenido de alto nivel. 
+    `Eres "VIRAX", un estratega de contenido de alto nivel. 
       Tu tono es profesional, calmado, analítico y muy inteligente. 
       No criticas al usuario; corriges el contenido explicando la lógica técnica detrás del algoritmo.
       
@@ -79,7 +78,24 @@ export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo) =>
         "viralHooks": [5 ganchos optimizados para este nicho],
         "bestTime": "Sugerencia horaria basada en el tipo de audiencia"
         
-}`;
+  }`;
+
+
+// ═════════════════════════════════════════════════════════════
+// NICHO — App.jsx la llama sin argumentos: buildNicheSuggestionPrompt()
+// maxOutputTokens: 30, así que tiene que ser corta.
+// ═════════════════════════════════════════════════════════════
+
+export const buildNicheSuggestionPrompt = () => `
+Mirá este video y respondé ÚNICAMENTE con el nicho o tipo de contenido
+al que pertenece, en 2 a 4 palabras (por ejemplo: "fitness casero",
+"estética facial", "comida rápida", "inmobiliaria de lujo").
+
+No agregues explicación, comillas, puntos ni ningún texto adicional —
+solo esas palabras.
+
+IMPORTANTE: Si ves que el video es muy dependiente de que alguien ya esté interesado en el tema o que tenga experiencia, podés marcarlo como una limitación, ¿por qué? por uq el a idea es que el video pueda engacnhar a cualquier espectador, desde un niño de 7 años que ve coches a un señor mayor de edad (estos personajes son inventados, no te lo tomes literal)
+`;
 
 // ═════════════════════════════════════════════════════════════
 // SÍNTESIS FINAL — App.jsx la llama así:
