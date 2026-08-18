@@ -43,7 +43,7 @@ const FOLLOWER_RANGES = [
   { id: 'large', label: 'Cuenta grande',   range: '100K – 500K', emoji: '⚡' }, //const researchResponse = await fetch(`${SUPABASE_URL}/functions/v1/gemini-proxy`, {
   { id: 'mega',  label: 'Mega cuenta',     range: '500K+',       emoji: '👑' },
 ];
-
+//
 export function extractGeminiText(data) {
   if (data?.error) {
     throw new Error(`Edge Function error: ${data.error} — ${data.message ?? data.raw ?? ''}`);
