@@ -3,7 +3,6 @@ import {
   FileText, Gem,
   MessageSquare, Microscope, RotateCcw, Send,
   Target, TrendingUp,
-  Upload,
   X
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -1496,46 +1495,16 @@ ${currentMessage.text}
       <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
     <Microscope className="w-3 h-3" /> INTEGRADA CON IA 
      </div>
-      <h1 className="text-2xl sm:text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4 leading-tight max-w-5xl mx-auto whitespace-nowrap">
-  Sabé por qué tu video{' '}
-  <InlineRotatingWord words={['va a explotar 🔥', 'se va a estancar ⚠️', 'necesita un cambio 💪']} />
+      <h1 className="text-2xl sm:text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4 leading-tight max-w-5xl mx-auto md:whitespace-nowrap">
+  Sabé por qué tu video
+  <span className="block md:inline mt-2 md:mt-0 md:ml-2">
+    <InlineRotatingWord words={['va a explotar 🔥', 'se va a estancar ⚠️', 'necesita un cambio 💪']} />
+  </span>
 </h1>
       <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
         La IA analiza tu video y te dice exactamente<br/>
         <span className="text-slate-500">qué está funcionando y qué te está frenando.</span>
       </p>
-    </div>
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto px-4">
-     <div
-  className="group relative block border-2 border-dashed border-white/10 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 overflow-hidden shadow-2xl cursor-not-allowed select-none"
->
-  {/* Overlay oscuro */}
-  <div className="absolute inset-0 bg-black/55 z-[1] rounded-[4rem]" />
-
-  <div className="relative z-0 opacity-40">
-    <Microscope className="w-16 h-16 text-slate-800 mx-auto mb-6" />
-    <p className="text-3xl font-black italic tracking-tighter uppercase">Laboratorio de ideas</p>
-    <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Empieza a construir tu video</p>
-  </div>
-
-  <ComingSoonRibbon text="Próximamente" />
-</div>
-<label className="group relative block border-2 border-dashed border-white/10 hover:border-emerald-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
-  <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-emerald-400 group-hover:scale-110 transition-all duration-500" />
-  <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
-  <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Corrigue tu video</p>
-        <input type="file" className="hidden" accept="video/*" onChange={(e) => {
-          const file = e.target.files[0];
-          if (file) {
-            const url = URL.createObjectURL(file);
-            setVideoPreviewUrl(url);
-            setPendingVideoFile(file);
-            setPendingVideoUrl(url);
-            setAnalysisMode('video');
-            setStep('platform_select');
-          }
-        }} />
-      </label>
     </div>
   </div>
 )}
