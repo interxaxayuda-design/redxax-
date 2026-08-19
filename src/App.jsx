@@ -3,6 +3,7 @@ import {
   FileText, Gem,
   MessageSquare, Microscope, RotateCcw, Send,
   Target, TrendingUp,
+  Upload,
   X
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -42,7 +43,7 @@ const FOLLOWER_RANGES = [
   { id: 'large', label: 'Cuenta grande',   range: '100K – 500K', emoji: '⚡' }, //const researchResponse = await fetch(`${SUPABASE_URL}/functions/v1/gemini-proxy`, {
   { id: 'mega',  label: 'Mega cuenta',     range: '500K+',       emoji: '👑' },
 ];
-//
+
 export function extractGeminiText(data) {
   if (data?.error) {
     throw new Error(`Edge Function error: ${data.error} — ${data.message ?? data.raw ?? ''}`);
@@ -57,7 +58,7 @@ export function extractGeminiText(data) {
 }
 
 const GEM_PACKAGES = [
-  { id: 'starter', gems: 5000000,  price: 1,  label: 'Starter', analyses: '5 análisis',  popular: false },
+  { id: 'starter', gems: 500,  price: 2,  label: 'Starter', analyses: '5 análisis',  popular: false },
   { id: 'pro',     gems: 1000, price: 3,  label: 'Pro',     analyses: '10 análisis', popular: true  },
   { id: 'elite',   gems: 6000, price: 6, label: 'Elite',   analyses: '60 análisis', popular: false },
 ];
@@ -1495,9 +1496,9 @@ ${currentMessage.text}
       <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
     <Microscope className="w-3 h-3" /> INTEGRADA CON IA 
      </div>
-      <h1 className="text-2xl sm:text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4 leading-tight max-w-5xl mx-auto md:whitespace-nowrap">
+            <h1 className="text-2xl sm:text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4 leading-tight max-w-5xl mx-auto md:whitespace-nowrap">
   Sabé por qué tu video
-  <span className="block md:inline mt-2 md:mt-0 md:ml-2">
+    <span className="flex md:inline-flex justify-center mt-2 md:mt-0 md:ml-2">
     <InlineRotatingWord words={['va a explotar 🔥', 'se va a estancar ⚠️', 'necesita un cambio 💪']} />
   </span>
 </h1>
@@ -1505,6 +1506,24 @@ ${currentMessage.text}
         La IA analiza tu video y te dice exactamente<br/>
         <span className="text-slate-500">qué está funcionando y qué te está frenando.</span>
       </p>
+    </div>
+        <div className="max-w-xl mx-auto px-4">
+<label className="group relative block border-2 border-dashed border-white/10 hover:border-emerald-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
+  <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-emerald-400 group-hover:scale-110 transition-all duration-500" />
+  <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
+  <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Corrigue tu video</p>
+        <input type="file" className="hidden" accept="video/*" onChange={(e) => {
+          const file = e.target.files[0];
+          if (file) {
+            const url = URL.createObjectURL(file);
+            setVideoPreviewUrl(url);
+            setPendingVideoFile(file);
+            setPendingVideoUrl(url);
+            setAnalysisMode('video');
+            setStep('platform_select');
+          }
+        }} />
+      </label>
     </div>
   </div>
 )}
