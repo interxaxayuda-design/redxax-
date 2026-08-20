@@ -390,12 +390,12 @@ function InlineRotatingWord({ words, interval = 2600 }) {
     <span className="relative inline-block align-baseline whitespace-nowrap" style={{ minWidth: `${longest.length}ch` }}>
       <span className="invisible whitespace-nowrap">{longest}</span>
       <span
-        className="absolute left-0 top-0 text-emerald-400 whitespace-nowrap"
+        className="absolute left-1/2 top-0 text-emerald-400 whitespace-nowrap"
         style={{
+          transform: visible ? 'translateX(-50%) translateY(0px)' : 'translateX(-50%) translateY(-6px)',
           transition: 'opacity 0.35s ease, filter 0.35s ease, transform 0.35s ease',
           opacity: visible ? 1 : 0,
           filter: visible ? 'blur(0px)' : 'blur(6px)',
-          transform: visible ? 'translateY(0px)' : 'translateY(-6px)',
           willChange: 'opacity, filter, transform',
         }}
       >
