@@ -7,6 +7,7 @@ import {
   X
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Login } from './Login';
 import PrivacyPolicy from './PrivacyPolicy';
 import SupportIdModal from './SupportIdModal';
 import logo from './logo.png';
@@ -21,10 +22,10 @@ import {
 } from './prompts.js';
 import wordmark from './virax_wordmark.png';
 
-import { createClient } from '@supabase/supabase-js';
-const supabaseUrl = 'https://mvmilbpraefwprexgnpz.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12bWlsYnByYWVmd3ByZXhnbnB6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5NjA1MzcsImV4cCI6MjA4ODUzNjUzN30.xH72_trpTpJhtZJw0BXI-Sewp9vnbBigKhmVBNI4wso';
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+
+import { supabase } from './supabaseClient';
+
 
 
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
@@ -550,6 +551,8 @@ const App = () => {
   const [videoPreviewUrl, setVideoPreviewUrl] = useState(null);
   const [gemNotice, setGemNotice] = useState(null); 
   const [analysisProgress, setAnalysisProgress] = useState(0);
+ const [session, setSession] = useState(null);
+ const [authChecked, setAuthChecked] = useState(false); 
   const [aiResult, setAiResult] = useState(null);
   const [userCount, setUserCount] = useState(0);
   const [isLoadingCount, setIsLoadingCount] = useState(true);
@@ -628,6 +631,20 @@ useEffect(() => {
       reloadGems();
     }
   }, []);
+
+  useEffect(() => {
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    setSession(session);
+    setAuthChecked(true);
+  });
+
+  const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    setSession(session);
+    setAuthChecked(true);
+  });
+
+  return () => subscription.unsubscribe();
+}, []);
 
   useEffect(() => {
     const initUser = async () => {
@@ -1172,9 +1189,21 @@ ${currentMessage.text}
 
   const objetivo = aiResult?.objetivo || 'ventas';  // ← acá} //setAiResult(parsed);
 
-  if (window.location.pathname === '/privacy') {
-       return <PrivacyPolicy />;
-     }
+   if (window.location.pathname === '/privacy') {
+    return <PrivacyPolicy />;
+  }
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <Login />;
+  }
 
   return (
      <div className="min-h-screen bg-[#020203] text-white font-sans selection:bg-emerald-500/50 overflow-x-hidden">    
