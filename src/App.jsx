@@ -1,3 +1,6 @@
+import { App as CapacitorApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import {
   BrainCircuit,
   FileText, Gem,
@@ -7,7 +10,7 @@ import {
   X
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Login } from './Login';
+import Login from './Login';
 import PrivacyPolicy from './PrivacyPolicy';
 import SupportIdModal from './SupportIdModal';
 import logo from './logo.png';
@@ -682,6 +685,34 @@ useEffect(() => {
     };
     initUser();
   }, []);
+
+  useEffect(() => {
+  if (!Capacitor.isNativePlatform()) return;
+
+  const listenerPromise = CapacitorApp.addListener('appUrlOpen', async ({ url }) => {
+    if (!url.startsWith('redxax://login-callback')) return;
+
+    try { await Browser.close(); } catch (_) {}
+
+    if (url.includes('code=')) {
+      // Flujo PKCE
+      const { error } = await supabase.auth.exchangeCodeForSession(url);
+      if (error) console.error('Error exchangeCodeForSession:', error);
+    } else if (url.includes('access_token=')) {
+      // Flujo implícito — tokens vienen en el fragmento
+      const hash = url.split('#')[1];
+      const params = new URLSearchParams(hash);
+      const access_token = params.get('access_token');
+      const refresh_token = params.get('refresh_token');
+      if (access_token && refresh_token) {
+        const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+        if (error) console.error('Error setSession:', error);
+      }
+    }
+  });
+
+  return () => { listenerPromise.then(sub => sub.remove()); };
+}, []);
 
   
 

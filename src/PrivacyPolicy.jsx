@@ -96,7 +96,7 @@ const PrivacyPolicy = () => {
             Si tenés preguntas sobre esta Política de Privacidad o querés ejercer tus derechos
             sobre tus datos, contactanos en:
           </p>
-          <p className="text-white font-bold">Correo electrónico: [tu-email-de-contacto]</p>
+          <p className="text-white font-bold">Correo electrónico: [helpmevirax@gmail.com]</p>
         </div>
 
         <h2 className="text-xl font-black uppercase tracking-tight mt-10 mb-3 border-b border-white/10 pb-2">
@@ -111,5 +111,5 @@ const PrivacyPolicy = () => {
     </div>
   );
 };
-
+s
 export default PrivacyPolicy;
