@@ -12,7 +12,6 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import Login from './Login';
 import PrivacyPolicy from './PrivacyPolicy';
-import SupportIdModal from './SupportIdModal';
 import logo from './logo.png';
 import {
   REVIEW_CONFIG,
@@ -23,6 +22,7 @@ import {
   buildHookAnalysisPrompt,
   buildNicheSuggestionPrompt,
 } from './prompts.js';
+import { compressVideoIfNeeded } from './videoCompression';
 import wordmark from './virax_wordmark.png';
 
 
@@ -565,7 +565,6 @@ const App = () => {
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [gems, setGems] = useState(null);
-  const [showSupportId, setShowSupportId] = useState(false);
   const [showGemStore, setShowGemStore] = useState(false);
   const [gemError, setGemError] = useState(null);
   const [uploadedVideoPath, setUploadedVideoPath] = useState(null);
@@ -621,7 +620,7 @@ useEffect(() => {
     if (params.get('payment') === 'success') {
       window.history.replaceState({}, '', '/');
       const reloadGems = async () => {
-        const userId = localStorage.getItem('redxax_user_id');
+       const userId = session.user.id;
         await new Promise(r => setTimeout(r, 4000));
         const { data } = await supabase.functions.invoke('get-gems', { body: { userId } });
         if (data?.balance !== undefined) {
@@ -649,42 +648,45 @@ useEffect(() => {
   return () => subscription.unsubscribe();
 }, []);
 
-  useEffect(() => {
-    const initUser = async () => {
-      try {
-        const storedUserId = localStorage.getItem('redxax_user_id');
-        const isNewUser = !storedUserId;
-        const userId = storedUserId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        if (isNewUser) localStorage.setItem('redxax_user_id', userId);
+  // Reemplazá el useEffect de initUser por este:
+useEffect(() => {
+  if (!authChecked || !session?.user) {
+    if (authChecked) setIsLoadingCount(false);
+    return;
+  }
 
-        const { data: gemsData, error: gemsError } = await supabase.functions.invoke('get-gems', { body: { userId } });
-        setGems(!gemsError && gemsData?.balance !== undefined ? gemsData.balance : 150);
+  const initUser = async () => {
+    try {
+      const userId = session.user.id; // UUID de Supabase Auth, ya no es aleatorio
 
-        const { data: historyData } = await supabase
-          .from('analysis_history').select('*').eq('user_id', userId)
-          .order('created_at', { ascending: false }).limit(20);
-        if (historyData) setHistory(historyData);
+      const { data: gemsData, error: gemsError } = await supabase.functions.invoke('get-gems', { body: { userId } });
+      setGems(!gemsError && gemsData?.balance !== undefined ? gemsData.balance : 150);
 
-        const { error: upsertError } = await supabase
-          .from('user_visits').upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true });
-        const { data: statsData } = await supabase
-          .from('app_stats').select('total_users').eq('id', 1).single();
-        const currentCount = statsData?.total_users || 0;
-        if (isNewUser && !upsertError) {
-          const newCount = Math.min(currentCount + 1, 500);
-          await supabase.from('app_stats').update({ total_users: newCount }).eq('id', 1);
-          setUserCount(newCount);
-        } else {
-          setUserCount(currentCount);
-        }
-      } catch (error) {
-        console.error('Error init:', error);
-      } finally {
-        setIsLoadingCount(false);
+      const { data: historyData } = await supabase
+        .from('analysis_history').select('*').eq('user_id', userId)
+        .order('created_at', { ascending: false }).limit(20);
+      if (historyData) setHistory(historyData);
+
+      const { error: upsertError } = await supabase
+        .from('user_visits').upsert({ user_id: userId }, { onConflict: 'user_id', ignoreDuplicates: true });
+      const { data: statsData } = await supabase
+        .from('app_stats').select('total_users').eq('id', 1).single();
+      const currentCount = statsData?.total_users || 0;
+      if (!upsertError) {
+        // upsert con ignoreDuplicates devuelve sin error tanto si insertó como si ya existía;
+        // si querés contar sólo altas nuevas, lo ideal es que el backend te devuelva si fue insert o no
+        setUserCount(currentCount);
+      } else {
+        setUserCount(currentCount);
       }
-    };
-    initUser();
-  }, []);
+    } catch (error) {
+      console.error('Error init:', error);
+    } finally {
+      setIsLoadingCount(false);
+    }
+  };
+  initUser();
+}, [authChecked, session]);
 
   useEffect(() => {
   if (!Capacitor.isNativePlatform()) return;
@@ -717,7 +719,7 @@ useEffect(() => {
   
 
   const handleBuyGems = async (pkg) => {
-    const userId = localStorage.getItem('redxax_user_id');
+  const userId = session.user.id;
     try {
       setGemError(null);
       const { data, error } = await supabase.functions.invoke('create-mp-preference', {
@@ -739,11 +741,14 @@ useEffect(() => {
 // de la respuesta para que puedas ver qué está tirando la función.
 
 const deductGems = async (amount, reason) => {
-  let userId = localStorage.getItem('redxax_user_id');
+  const userId = session?.user?.id;
   if (!userId) {
-    userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    localStorage.setItem('redxax_user_id', userId);
-    await supabase.functions.invoke('get-gems', { body: { userId } });
+    setGemNotice({
+      type: 'error',
+      title: 'Sesión no encontrada',
+      message: 'Tu sesión expiró. Volvé a iniciar sesión para continuar.',
+    });
+    return false;
   }
 
   try {
@@ -807,7 +812,7 @@ const saveChatToHistory = async (messages) => {
 };
 
   const saveAnalysisToHistory = async (result, mode) => {
-  const userId = localStorage.getItem('redxax_user_id');
+  const userId = session.user.id;
   if (!userId) return;
   const title = `${result.industria || 'Contenido'} — ${result.platform || mode}`;
     const { data, error } = await supabase
@@ -844,25 +849,39 @@ const stripFlags = (strategyText) =>
 
 const [nichoSugerido, setNichoSugerido] = useState('');
 
+
+
 const runNicheSuggestion = async (videoFile, platform) => {
   setStep('analyzing');
   setAnalysisMode('video');
-  setStatusText("Viendo el video...");
-  setAnalysisProgress(15);
-
-  const safeName = videoFile?.name
-    ?.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '') || 'video.mp4';
-  const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
-  const mimeType = videoFile.type || 'video/mp4';
+  setStatusText("Preparando el video...");
+  setAnalysisProgress(5);
 
   try {
+    // ── Comprime solo si el archivo supera el límite de subida ──
+    const finalFile = await compressVideoIfNeeded(videoFile, (pct) => {
+      setStatusText(`Comprimiendo video... ${pct}%`);
+      setAnalysisProgress(5 + Math.round(pct * 0.25)); // ocupa el tramo 5% → 30%
+    });
+
+    setStatusText("Viendo el video...");
+    setAnalysisProgress(35);
+
+    const safeName = finalFile?.name
+      ?.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '') || 'video.mp4';
+    const storagePath = `temp-analysis/${Date.now()}-${safeName}`;
+    const mimeType = finalFile.type || 'video/mp4';
+
     const { error: uploadError } = await supabase.storage
-      .from('videos').upload(storagePath, videoFile, { contentType: mimeType, upsert: true });
+      .from('videos').upload(storagePath, finalFile, { contentType: mimeType, upsert: true });
     if (uploadError) throw new Error("Error subiendo video: " + uploadError.message);
 
-    setUploadedVideoPath(storagePath);   // ← agregar acá
-    setUploadedVideoMime(mimeType);      // ← aregar acá
+    setUploadedVideoPath(storagePath);
+    setUploadedVideoMime(mimeType);
+
+    setStatusText("Analizando el contenido...");
+    setAnalysisProgress(50);
 
     const { data, error } = await supabase.functions.invoke('gemini-proxy', {
       body: {
@@ -870,9 +889,9 @@ const runNicheSuggestion = async (videoFile, platform) => {
         storagePath,
         videoMimeType: mimeType,
         videoFps: REVIEW_CONFIG.nicheSuggestion.videoFps,
-        model: REVIEW_CONFIG.nicheSuggestion.model,                                   // ← nuevo
-        mediaResolution: REVIEW_CONFIG.nicheSuggestion.media_resolution,               // ← nuevo
-        thinkingLevel: REVIEW_CONFIG.nicheSuggestion.thinkingConfig.thinkingLevel,   // ← antes: thinkingBudget
+        model: REVIEW_CONFIG.nicheSuggestion.model,
+        mediaResolution: REVIEW_CONFIG.nicheSuggestion.media_resolution,
+        thinkingLevel: REVIEW_CONFIG.nicheSuggestion.thinkingConfig.thinkingLevel,
         expectsJson: false,
         temperature: REVIEW_CONFIG.nicheSuggestion.temperature,
         maxOutputTokens: 870,
@@ -887,7 +906,7 @@ const runNicheSuggestion = async (videoFile, platform) => {
 
   } catch (err) {
     console.warn('No se pudo sugerir nicho, seguimos sin sugerencia:', err.message);
-    setNichoSugerido(''); ///
+    setNichoSugerido('');
     setStep('validation');
   }
 };
@@ -1382,12 +1401,6 @@ ${currentMessage.text}
               <div className="flex items-center justify-center gap-2 mt-2 mb-6 text-slate-600 text-[10px] font-bold uppercase tracking-wider">
                 <span>🔒</span><span>Pago seguro · Las gemas no vencen · Sin suscripción</span>
               </div>
-<button
-  onClick={() => setShowSupportId(true)}
-  className="w-full flex items-center justify-center gap-2 text-slate-600 hover:text-slate-400 text-[10px] font-bold uppercase tracking-widest transition-colors mb-4"
->
-  Soporte
-</button>
 
 <div id="paypal-button-container" className="min-h-[50px]" />
             
@@ -1399,7 +1412,6 @@ ${currentMessage.text}
         </>
       )} 
 
-     {showSupportId && <SupportIdModal onClose={() => setShowSupportId(false)} />}
 
 
 <header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
