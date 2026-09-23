@@ -912,49 +912,59 @@ const runNicheSuggestion = async (videoFile, platform) => {
 };
 
 const runDeepAnalysis = async (videoFile, platform, industria) => {
-  const cost = 100; 
+  const cost = 100;
   const approved = await deductGems(cost, 'video:deep_analysis');
   if (!approved) return;
 
   setStep('analyzing');
   setAnalysisMode('video');
-  setAnalysisProgress(20);
-  setStatusText('Analizando el hook...');
+  setAnalysisProgress(10);
+  setStatusText('Preparando el video...');
 
   try {
     let storagePath = uploadedVideoPath;
     let mimeType = uploadedVideoMime;
 
-    // Fallback: si por algo no quedó subido antes, lo subimos ahora
+    // Fallback: si por algo no quedó subido antes, lo comprimimos y subimos ahora
     if (!storagePath) {
-      const safeName = videoFile?.name
+      const finalFile = await compressVideoIfNeeded(videoFile, (pct) => {
+        setStatusText(`Comprimiendo video... ${pct}%`);
+        setAnalysisProgress(10 + Math.round(pct * 0.15)); // 10% → 25%
+      });
+
+      const safeName = finalFile?.name
         ?.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/g, '') || 'video.mp4';
       storagePath = `temp-analysis/${Date.now()}-${safeName}`;
-      mimeType = videoFile.type || 'video/mp4';
+      mimeType = finalFile.type || 'video/mp4';
+
       const { error: uploadError } = await supabase.storage
-        .from('videos').upload(storagePath, videoFile, { contentType: mimeType, upsert: true });
+        .from('videos').upload(storagePath, finalFile, { contentType: mimeType, upsert: true });
       if (uploadError) throw new Error('Error subiendo video: ' + uploadError.message);
     }
-//
+
+    setAnalysisProgress(30);
+    setStatusText('Analizando el hook...');
+
     const cfg = REVIEW_CONFIG;
 
     const [hookRes, desarrolloRes] = await Promise.all([
-     supabase.functions.invoke('gemini-proxy', {
-  body: {
-    text: buildHookAnalysisPrompt(platform, industria, selectedObjetivo),
-    storagePath,
-    videoMimeType: mimeType,
-    videoFps: cfg.hook.videoFps,
-    videoStartOffset: cfg.hook.videoStartOffset,
-    videoEndOffset: cfg.hook.videoEndOffset,
-    temperature: cfg.hook.temperature,
-    model: cfg.hook.model,                                    // ← nuevo
-    mediaResolution: cfg.hook.media_resolution,                // ← nuevo
-    thinkingLevel: cfg.hook.thinkingConfig.thinkingLevel,   // ← antes: thinkingBudget: cfg.hook.thinkingConfig.thinkingBudget    expectsJson: true,
-    maxOutputTokens: 2048,
-  },
-}),
+      supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: buildHookAnalysisPrompt(platform, industria, selectedObjetivo),
+          storagePath,
+          videoMimeType: mimeType,
+          videoFps: cfg.hook.videoFps,
+          videoStartOffset: cfg.hook.videoStartOffset,
+          videoEndOffset: cfg.hook.videoEndOffset,
+          temperature: cfg.hook.temperature,
+          model: cfg.hook.model,
+          mediaResolution: cfg.hook.media_resolution,
+          thinkingLevel: cfg.hook.thinkingConfig.thinkingLevel,
+          expectsJson: true,
+          maxOutputTokens: 2048,
+        },
+      }),
       supabase.functions.invoke('gemini-proxy', {
         body: {
           text: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo),
@@ -962,9 +972,9 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
           videoMimeType: mimeType,
           videoFps: cfg.desarrollo.videoFps,
           temperature: cfg.desarrollo.temperature,
-          model: cfg.desarrollo.model,                                  // ← nuevo
-          mediaResolution: cfg.desarrollo.media_resolution,              // ← nuevo
-          thinkingLevel: cfg.desarrollo.thinkingConfig.thinkingLevel,  // ← nuevo
+          model: cfg.desarrollo.model,
+          mediaResolution: cfg.desarrollo.media_resolution,
+          thinkingLevel: cfg.desarrollo.thinkingConfig.thinkingLevel,
           expectsJson: false,
           maxOutputTokens: 2048,
         },
@@ -984,8 +994,9 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
       body: {
         text: buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, selectedObjetivo),
         temperature: cfg.sintesis.temperature,
-        model: cfg.sintesis.model,  
-        thinkingLevel: cfg.sintesis.thinkingConfig.thinkingLevel,                                  // ← nuevo (ver abajo)
+        model: cfg.sintesis.model,
+        tools: cfg.sintesis.tools, // 👈 AGREGAR ESTA LÍNEA
+        thinkingLevel: cfg.sintesis.thinkingConfig.thinkingLevel,
         expectsJson: false,
         maxOutputTokens: 3072,
       },

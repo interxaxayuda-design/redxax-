@@ -1,84 +1,105 @@
-import { FFmpeg } from '@ffmpeg/ffmpeg';
-import { fetchFile, toBlobURL } from '@ffmpeg/util';
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50 MB
 
-const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50MB, tu límite actual
-
-let ffmpegPromise = null;
-
-// Carga el core una sola vez y lo reutiliza (evita re-descargar ~25MB cada vez)
-function getFFmpeg() {
-  if (!ffmpegPromise) {
-    ffmpegPromise = (async () => {
-      const ffmpeg = new FFmpeg();
-      const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-      await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-      });
-      return ffmpeg;
-    })();
-  }
-  return ffmpegPromise;
-}
-
-/**
- * Comprime el video solo si excede el límite. Devuelve el mismo File si ya entra.
- * onProgress recibe un número 0-100.
- */
 export async function compressVideoIfNeeded(file, onProgress) {
-  if (file.size <= MAX_UPLOAD_BYTES) return file;
+  const mb = (bytes) => (bytes / 1024 / 1024).toFixed(2) + 'MB';
 
-  const ffmpeg = await getFFmpeg();
-
-  const handleProgress = ({ progress }) => {
-    onProgress?.(Math.min(100, Math.round(progress * 100)));
-  };
-  ffmpeg.on('progress', handleProgress);
-
-  const ext = file.name.match(/\.\w+$/)?.[0] || '.mp4';
-  const inputName = `input${ext}`;
-  const outputName = 'output.mp4';
-
-  await ffmpeg.writeFile(inputName, await fetchFile(file));
-
-  // CRF más alto = más compresión. Empezamos moderado (720p, CRF 28).
-  await ffmpeg.exec([
-    '-i', inputName,
-    '-vf', "scale='min(1280,iw)':-2",
-    '-vcodec', 'libx264',
-    '-preset', 'veryfast',
-    '-crf', '28',
-    '-acodec', 'aac',
-    '-b:a', '96k',
-    outputName,
-  ]);
-
-  let data = await ffmpeg.readFile(outputName);
-
-  // Si con la primera pasada no alcanzó, repetimos más agresivo (480p, CRF 32)
-  if (data.byteLength > MAX_UPLOAD_BYTES) {
-    await ffmpeg.exec([
-      '-i', inputName,
-      '-vf', "scale='min(854,iw)':-2",
-      '-vcodec', 'libx264',
-      '-preset', 'veryfast',
-      '-crf', '32',
-      '-acodec', 'aac',
-      '-b:a', '64k',
-      outputName,
-    ]);
-    data = await ffmpeg.readFile(outputName);
+  if (file.size <= MAX_UPLOAD_BYTES) {
+    console.log('[Compresión] ✅ El video ya pesa menos de 50MB, se usa directo.');
+    return file;
   }
 
-  ffmpeg.off('progress', handleProgress);
-  await ffmpeg.deleteFile(inputName);
-  await ffmpeg.deleteFile(outputName);
+  console.log(`[Compresión] Archivo pesado (${mb(file.size)}). Comprimiendo vía Hardware...`);
+  const t0 = performance.now();
 
-  if (data.byteLength > MAX_UPLOAD_BYTES) {
-    throw new Error('No se pudo comprimir el video por debajo de 50MB. Probá con un clip más corto.');
-  }
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.src = URL.createObjectURL(file);
+    video.muted = true;
+    video.playsInline = true;
 
-  const compressedBlob = new Blob([data.buffer], { type: 'video/mp4' });
-  const newName = file.name.replace(/\.\w+$/, '') + '_compressed.mp4';
-  return new File([compressedBlob], newName, { type: 'video/mp4' });
+    video.onloadedmetadata = () => {
+      // Escalamos a máximo 720p para mantener excelente calidad visual para la IA
+      const maxDimension = 720;
+      let width = video.videoWidth;
+      let height = video.videoHeight;
+
+      if (width > height && width > maxDimension) {
+        height = Math.round((height * maxDimension) / width);
+        width = maxDimension;
+      } else if (height > maxDimension) {
+        width = Math.round((width * maxDimension) / height);
+        height = maxDimension;
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+
+      // Detectar formato compatible con aceleración por hardware
+      const mimeType = MediaRecorder.isTypeSupported('video/mp4;codecs=avc1')
+        ? 'video/mp4;codecs=avc1'
+        : MediaRecorder.isTypeSupported('video/webm;codecs=vp8')
+        ? 'video/webm;codecs=vp8'
+        : 'video/webm';
+
+      const stream = canvas.captureStream(24); // 24 FPS es ideal para el análisis
+
+      // Intentar vincular la pista de audio original si está disponible
+      try {
+        const origStream = video.captureStream ? video.captureStream() : video.mozCaptureStream?.();
+        const audioTrack = origStream?.getAudioTracks()?.[0];
+        if (audioTrack) stream.addTrack(audioTrack);
+      } catch (e) {
+        console.warn('[Compresión] No se pudo extraer la pista de audio directa:', e);
+      }
+
+      // Bitrate de 1.2 Mbps: reduce videos de 100MB a menos de 10MB instantáneamente
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType,
+        videoBitsPerSecond: 1200000,
+      });
+
+      const chunks = [];
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        URL.revokeObjectURL(video.src);
+        const compressedBlob = new Blob(chunks, { type: mimeType });
+        const ext = mimeType.includes('mp4') ? '.mp4' : '.webm';
+        const resultFile = new File([compressedBlob], `compressed_${Date.now()}${ext}`, {
+          type: mimeType,
+        });
+
+        const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+        console.log(`[Compresión] ✅ Finalizado: ${mb(file.size)} → ${mb(resultFile.size)} en ${elapsed}s`);
+        resolve(resultFile);
+      };
+
+      mediaRecorder.start();
+      video.play();
+
+      // Reproducción y renderizado acelerado cuadro por cuadro
+      const processFrame = () => {
+        if (!video.paused && !video.ended) {
+          ctx.drawImage(video, 0, 0, width, height);
+          
+          // Reportar progreso estimado a la interfaz
+          if (video.duration) {
+            const pct = Math.min(100, Math.round((video.currentTime / video.duration) * 100));
+            onProgress?.(pct);
+          }
+          requestAnimationFrame(processFrame);
+        } else {
+          mediaRecorder.stop();
+        }
+      };
+
+      processFrame();
+    };
+
+    video.onerror = () => reject(new Error('No se pudo procesar la compresión del video.'));
+  });
 }

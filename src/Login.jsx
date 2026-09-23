@@ -1,14 +1,21 @@
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
-import { ShieldCheck, Sparkles, Zap } from 'lucide-react';
+import { Globe, ShieldCheck, Sparkles, Zap } from 'lucide-react';
 import { useState } from 'react';
 import logo from './logo.png';
 import { supabase } from './supabaseClient';
+import { useAutoTranslate } from './useAutoTranslate';
 import wordmark from './virax_wordmark.png';
 
 export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const { lang, changeLanguage } = useAutoTranslate();
+
+  const toggleLanguage = () => {
+    const nextLang = lang === 'es' ? 'en' : 'es';
+    changeLanguage(nextLang);
+  };
 
   const handleGoogleLogin = async () => {
     try {
@@ -39,6 +46,16 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 relative overflow-hidden select-none">
+      
+      {/* Botón Flotante para cambiar Idioma */}
+      <button
+        onClick={toggleLanguage}
+        className="absolute top-6 right-6 z-20 flex items-center gap-2 bg-slate-900/80 hover:bg-slate-800 border border-slate-700 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-300 transition-all active:scale-95 notranslate"
+      >
+        <Globe className="w-4 h-4 text-emerald-400" />
+        <span className="uppercase">{lang === 'es' ? 'ES' : 'EN'}</span>
+      </button>
+
       {/* Luces de fondo ambientales */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-72 h-72 bg-purple-500/[0.06] rounded-full blur-[100px] pointer-events-none" />
@@ -53,7 +70,7 @@ export default function Login() {
         {/* Logos e Identidad */}
         <div className="flex flex-col items-center space-y-4">
           <img src={logo} alt="VIRAX Logo" className="w-20 h-20 object-contain drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]" />
-          <img src={wordmark} alt="VIRAX" className="h-8 object-contain" />
+          <img src={wordmark} alt="VIRAX" className="h-8 object-contain notranslate" />
           <p className="text-xs text-slate-400 font-medium max-w-[260px]">
             Predicción y optimización con inteligencia artificial para tu contenido
           </p>
