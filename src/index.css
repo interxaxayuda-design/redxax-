@@ -4,3 +4,51 @@ body {
   margin: 0;
   background-color: #020203;
 }
+
+/* 1. Ocultar el iframe y la barra superior de Google Translate (Móvil y Desktop) */
+iframe.skiptranslate,
+iframe.goog-te-banner-frame,
+.goog-te-banner-frame,
+.goog-te-banner {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+}
+
+/* 2. Forzar a HTML y BODY a mantenerse arriba de todo sin espacio blanco */
+html {
+  top: 0px !important;
+  padding-top: 0px !important;
+  margin-top: 0px !important;
+}
+
+body {
+  top: 0px !important;
+  position: static !important;
+  padding-top: 0px !important;
+  margin-top: 0px !important;
+}
+
+/* 3. Ocultar carteles emergentes y tooltips */
+#goog-gt-tt,
+.goog-te-balloon-frame,
+.goog-tooltip,
+.goog-tooltip:hover {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* 4. Quitar el resaltado azul/amarillo sobre el texto traducido */
+.goog-text-highlight {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* 5. Ocultar el widget desplegable nativo de Google */
+.goog-te-gadget,
+.goog-te-combo {
+  display: none !important;
+}
