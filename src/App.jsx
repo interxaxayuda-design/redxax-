@@ -1507,14 +1507,12 @@ ${currentMessage.text}
           animation: slideBlurIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 1s forwards;
         }
         @keyframes ventasPulse {
-          /* —— Reposo —— */
           0% {
             opacity: 1;
             transform: translateY(0px) scaleX(1) scaleY(1);
             filter: blur(0px) drop-shadow(0 0 0px transparent);
             background-position: -200% center;
           }
-          /* —— Salida: compresión + desliz arriba + blur —— */
           6% {
             opacity: 1;
             transform: translateY(-4px) scaleX(1.06) scaleY(0.88);
@@ -1527,21 +1525,18 @@ ${currentMessage.text}
             filter: blur(10px) drop-shadow(0 0 0px transparent);
             background-position: -200% center;
           }
-          /* —— Reset invisible abajo —— */
           13% {
             opacity: 0;
             transform: translateY(32px) scaleX(0.92) scaleY(0.7);
             filter: blur(10px);
             background-position: 200% center;
           }
-          /* —— Entrada: sube + desenfoca + shimmer sweep —— */
           26% {
             opacity: 1;
             transform: translateY(-5px) scaleX(1.04) scaleY(1.08);
             filter: blur(0px) drop-shadow(0 0 18px #4ade8088);
             background-position: 0% center;
           }
-          /* —— Rebote de asentamiento —— */
           30% {
             transform: translateY(3px) scaleX(0.99) scaleY(0.97);
             filter: blur(0px) drop-shadow(0 0 6px #4ade8044);
@@ -1552,7 +1547,6 @@ ${currentMessage.text}
             filter: blur(0px) drop-shadow(0 0 0px transparent);
             background-position: -200% center;
           }
-          /* —— Reposo hasta próximo ciclo —— */
           100% {
             opacity: 1;
             transform: translateY(0px) scaleX(1) scaleY(1);
@@ -1576,37 +1570,78 @@ ${currentMessage.text}
           -webkit-text-fill-color: transparent;
         }
       `}</style>
+
       <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full text-emerald-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
-    <Microscope className="w-3 h-3" /> INTEGRADA CON IA 
-     </div>
-            <h1 className="text-2xl sm:text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4 leading-tight max-w-5xl mx-auto md:whitespace-nowrap">
-  Sabé por qué tu video
-    <span className="flex md:inline-flex justify-center mt-2 md:mt-0 md:ml-2">
-    <InlineRotatingWord words={['va a explotar 🔥', 'se va a estancar ⚠️', 'necesita un cambio 💪']} />
-  </span>
-</h1>
+        <Microscope className="w-3 h-3" /> INTEGRADA CON IA
+      </div>
+
+      <h1 className="text-2xl sm:text-3xl md:text-5xl font-black italic uppercase tracking-tighter text-white text-center px-4 leading-tight max-w-5xl mx-auto md:whitespace-nowrap">
+        Sabé por qué tu video
+        <span className="flex md:inline-flex justify-center mt-2 md:mt-0 md:ml-2">
+          <InlineRotatingWord words={['va a explotar 🔥', 'se va a estancar ⚠️', 'necesita un cambio 💪']} />
+        </span>
+      </h1>
+
       <p className="text-slate-400 max-w-2xl mx-auto text-lg md:text-xl font-medium">
-        La IA analiza tu video y te dice exactamente<br/>
+        La IA analiza tu video y te dice exactamente<br />
         <span className="text-slate-500">qué está funcionando y qué te está frenando.</span>
       </p>
     </div>
-        <div className="max-w-xl mx-auto px-4">
-<label className="group relative block border-2 border-dashed border-white/10 hover:border-emerald-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
-  <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-emerald-400 group-hover:scale-110 transition-all duration-500" />
-  <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
-  <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Corrigue tu video</p>
-        <input type="file" className="hidden" accept="video/*" onChange={(e) => {
-          const file = e.target.files[0];
-          if (file) {
-            const url = URL.createObjectURL(file);
-            setVideoPreviewUrl(url);
-            setPendingVideoFile(file);
-            setPendingVideoUrl(url);
-            setAnalysisMode('video');
-            setStep('platform_select');
-          }
-        }} />
+
+    <div className="max-w-xl mx-auto px-4">
+      <label className="group relative block border-2 border-dashed border-white/10 hover:border-emerald-500/50 bg-white/[0.02] rounded-[4rem] p-24 md:p-36 transition-all cursor-pointer overflow-hidden shadow-2xl">
+        <Upload className="w-16 h-16 text-slate-800 mx-auto mb-6 group-hover:text-emerald-400 group-hover:scale-110 transition-all duration-500" />
+        <p className="text-3xl font-black italic tracking-tighter uppercase">Cargar Video</p>
+        <p className="text-xs text-slate-500 mt-2 font-bold uppercase tracking-widest">Fase 1: Corrigue tu video</p>
+        <input
+          type="file"
+          className="hidden"
+          accept="video/*"
+          onChange={(e) => {
+            const file = e.target.files[0];
+            if (file) {
+              const url = URL.createObjectURL(file);
+              setVideoPreviewUrl(url);
+              setPendingVideoFile(file);
+              setPendingVideoUrl(url);
+              setAnalysisMode('video');
+              setStep('platform_select');
+            }
+          }}
+        />
       </label>
+
+      {/* ── BOTÓN NUEVO: Empieza a imaginar ── */}
+      <button
+        onClick={() => { setAnalysisMode('script'); setStep('script_input'); }}
+        className="group relative w-full mt-6 flex items-center gap-4 text-left px-6 py-5 rounded-[2rem] border border-yellow-500/30 bg-yellow-500/[0.04] hover:bg-yellow-500/[0.08] hover:border-yellow-400/60 hover:-translate-y-px active:scale-[0.99] transition-all duration-200"
+      >
+        <span
+          className="absolute -top-2.5 left-6 px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-black shadow-[0_0_14px_rgba(251,191,36,0.45)]"
+          style={{
+            background: 'linear-gradient(90deg, #b8860b, #ffd700, #fffacd, #ffd700, #b8860b)',
+            backgroundSize: '200% auto',
+            animation: 'shimmer-text 3s linear infinite',
+          }}
+        >
+          Nuevo
+        </span>
+
+        <div className="w-11 h-11 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center flex-shrink-0">
+          <Sparkles className="w-5 h-5 text-yellow-400" />
+        </div>
+
+        <div className="flex-1">
+          <p className="text-lg font-black italic uppercase tracking-tighter text-white leading-tight">
+            Empieza a imaginar
+          </p>
+          <p className="text-xs text-slate-500 font-bold mt-0.5">
+            Crea tus ideas antes de publicar
+          </p>
+        </div>
+
+        <span className="text-yellow-400/60 group-hover:text-yellow-400 group-hover:translate-x-1 transition-all text-lg">→</span>
+      </button>
     </div>
   </div>
 )}
