@@ -5,6 +5,7 @@ import {
   BrainCircuit,
   FileText, Gem,
   MessageSquare, Microscope, RotateCcw, Send,
+  Sparkles,
   Target, TrendingUp,
   Upload,
   X
