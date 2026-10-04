@@ -15,6 +15,9 @@ const SUGGESTIONS = [
 ];
 
 const MAX_HISTORY_TURNS = 6;
+const MAX_OUTPUT_TOKENS = 8192;      // el razonamiento también consume de este tope
+const SESSION_TOKEN_LIMIT = 30000;   // tope total por sesión de chat
+
 
 // ── Helpers (locales para evitar import circular con App.jsx) ──
 const parsePlan = (raw) => {
@@ -215,6 +218,9 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [platform, setPlatform] = useState('tiktok');
+  const [tokensUsed, setTokensUsed] = useState(0);
+  const limitReached = tokensUsed >= SESSION_TOKEN_LIMIT;
+  const tokenPct = Math.min(100, Math.round((tokensUsed / SESSION_TOKEN_LIMIT) * 100));
   const endRef = useRef(null);
   const taRef = useRef(null);
 
@@ -228,58 +234,71 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
   }, [input]);
 
   const send = async (override) => {
-    const content = (override ?? input).trim();
-    if (!content || loading) return;
+  const content = (override ?? input).trim();
+  if (!content || loading || limitReached) return;
 
-    // Cobro de gemas (opcional): si devuelve false, no se envía
-    if (onBeforeSend) {
-      const ok = await onBeforeSend();
-      if (!ok) return;
+  // El tope se chequea ANTES de cobrar gemas
+  if (onBeforeSend) {
+    const ok = await onBeforeSend();
+    if (!ok) return;
+  }
+
+  const next = [...messages, { role: 'user', text: content }];
+  setMessages(next);
+  setInput('');
+  setLoading(true);
+
+  try {
+    const history = next.slice(0, -1).slice(-MAX_HISTORY_TURNS).map((m) => ({
+      role: m.role,
+      text: m.role === 'bot' ? (m.plan ? planToText(m.plan) : m.text) : m.text,
+    }));
+
+    const prompt = buildIdeaStructurePrompt({ idea: content, history, platform });
+    const cfg = REVIEW_CONFIG.sintesis;
+
+    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+      body: {
+        text: prompt,
+        model: cfg.model,
+        thinkingLevel: 'low',              // deja presupuesto para el JSON
+        temperature: 0.7,
+        expectsJson: true,
+        maxOutputTokens: MAX_OUTPUT_TOKENS,
+      },
+    });
+
+    if (error) {
+      let body = '';
+      try { body = await error.context?.text?.(); } catch (_) {}
+      throw new Error(body || error.message);
     }
 
-    const next = [...messages, { role: 'user', text: content }];
-    setMessages(next);
-    setInput('');
-    setLoading(true);
+    // ── Conteo de tokens (usa el dato real de Gemini; si no viene, estima) ──
+    const candidate = data?.candidates?.[0];
+    const outText = candidate?.content?.parts?.map((p) => p.text).filter(Boolean).join('') ?? '';
+    const used = data?.usageMetadata?.totalTokenCount
+      ?? Math.ceil((prompt.length + outText.length) / 4);
+    setTokensUsed((t) => t + used);
 
-    try {
-      const history = next.slice(0, -1).slice(-MAX_HISTORY_TURNS).map((m) => ({
-        role: m.role,
-        text: m.role === 'bot' ? (m.plan ? planToText(m.plan) : m.text) : m.text,
-      }));
-
-      const cfg = REVIEW_CONFIG.sintesis;
-      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: buildIdeaStructurePrompt({ idea: content, history, platform }),
-          model: cfg.model,
-          thinkingLevel: cfg.thinkingConfig?.thinkingLevel,
-          temperature: 0.7,
-          expectsJson: true,
-          maxOutputTokens: 4096,
-        },
-      });
-
-      if (error) {
-        let body = '';
-        try { body = await error.context?.text?.(); } catch (_) {}
-        throw new Error(body || error.message);
-      }
-
-      const raw = extractText(data);
-      const parsed = parsePlan(raw);
-
-      setMessages([...next, parsed
-        ? { role: 'bot', plan: parsed, text: parsed.mensaje ?? '' }
-        : { role: 'bot', text: raw.replace(/```json|```/g, '').trim() }]);
-    } catch (err) {
-      console.error('ChatScreen error:', err);
-      setMessages([...next, { role: 'bot', text: `Error: ${err.message || 'Se cortó la conexión. Intentá de nuevo.'}`, isError: true }]);
-    } finally {
-      setLoading(false);
+    // ── Respuesta cortada por falta de tokens ──
+    if (candidate?.finishReason === 'MAX_TOKENS' && !outText) {
+      throw new Error('La respuesta se cortó por longitud. Probá con una idea más puntual.');
     }
-  };
 
+    const raw = extractText(data);
+    const parsed = parsePlan(raw);
+
+    setMessages([...next, parsed
+      ? { role: 'bot', plan: parsed, text: parsed.mensaje ?? '' }
+      : { role: 'bot', text: raw.replace(/```json|```/g, '').trim() }]);
+  } catch (err) {
+    console.error('ChatScreen error:', err);
+    setMessages([...next, { role: 'bot', text: `Error: ${err.message || 'Se cortó la conexión. Intentá de nuevo.'}`, isError: true }]);
+  } finally {
+    setLoading(false);
+  }
+};
   return (
     <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-10 duration-500">
       <style>{`
@@ -382,26 +401,48 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
 
         {/* INPUT */}
         <div className="p-4 bg-black/50 border-t border-white/10">
-          <div className="bg-white/5 rounded-[1.75rem] p-2 pl-5 flex items-end gap-2">
-            <textarea
-              ref={taRef}
-              rows={1}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-              }}
-              placeholder="Describí tu idea, producto o público..."
-              className="bg-transparent border-none outline-none flex-1 text-sm text-white py-2.5 italic resize-none placeholder-slate-600"
-            />
-            <button
-              onClick={() => send()}
-              disabled={loading || !input.trim()}
-              className="bg-yellow-500 hover:bg-yellow-400 text-black disabled:opacity-30 p-3 rounded-full transition-all active:scale-90"
-            >
-              <Send className="w-4 h-4" />
-            </button>
+          <div className="mb-3 px-1">
+            <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-1.5">
+              <span className="text-white/25">Capacidad de la sesión</span>
+              <span className={tokenPct >= 85 ? 'text-red-400' : 'text-white/25'}>{tokenPct}%</span>
+            </div>
+            <div className="h-[3px] rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${tokenPct >= 85 ? 'bg-red-400' : 'bg-yellow-400'}`}
+                style={{ width: `${tokenPct}%` }}
+              />
+            </div>
           </div>
+
+          {limitReached ? (
+            <div className="flex items-center justify-center gap-2 py-3 px-5 bg-white/[0.03] border border-white/[0.07] rounded-2xl">
+              <span className="text-lg">🔒</span>
+              <p className="text-[11px] font-black uppercase tracking-widest text-white/30">
+                Límite de la sesión alcanzado
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white/5 rounded-[1.75rem] p-2 pl-5 flex items-end gap-2">
+              <textarea
+                ref={taRef}
+                rows={1}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+                }}
+                placeholder="Describí tu idea, producto o público..."
+                className="bg-transparent border-none outline-none flex-1 text-sm text-white py-2.5 italic resize-none placeholder-slate-600"
+              />
+              <button
+                onClick={() => send()}
+                disabled={loading || !input.trim()}
+                className="bg-yellow-500 hover:bg-yellow-400 text-black disabled:opacity-30 p-3 rounded-full transition-all active:scale-90"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
