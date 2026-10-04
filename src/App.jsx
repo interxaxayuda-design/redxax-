@@ -11,6 +11,7 @@ import {
   X
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import ChatScreen from './ChatScreen';
 import Login from './Login';
 import PrivacyPolicy from './PrivacyPolicy';
 import logo from './logo.png';
@@ -1614,9 +1615,9 @@ ${currentMessage.text}
 
       {/* ── BOTÓN NUEVO: Empieza a imaginar ── */}
       <button
-        onClick={() => { setAnalysisMode('script'); setStep('script_input'); }}
-        className="group relative w-full mt-6 flex items-center gap-4 text-left px-6 py-5 rounded-[2rem] border border-yellow-500/30 bg-yellow-500/[0.04] hover:bg-yellow-500/[0.08] hover:border-yellow-400/60 hover:-translate-y-px active:scale-[0.99] transition-all duration-200"
-      >
+  onClick={() => setStep('ideas_chat')}
+  className="group relative w-full mt-6 ..."
+>
         <span
           className="absolute -top-2.5 left-6 px-3 py-0.5 rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-black shadow-[0_0_14px_rgba(251,191,36,0.45)]"
           style={{
@@ -1642,10 +1643,21 @@ ${currentMessage.text}
         </div>
 
         <span className="text-yellow-400/60 group-hover:text-yellow-400 group-hover:translate-x-1 transition-all text-lg">→</span>
-      </button>
+           </button>
     </div>
   </div>
 )}
+
+{/* ── IDEAS CHAT ── */}
+{step === 'ideas_chat' && (
+  <ChatScreen
+    supabase={supabase}
+    userIcon={logo}
+    onBack={() => setStep('upload')}
+    onBeforeSend={() => deductGems(25, 'ideas:chat')}
+  />
+)}
+
         {step === 'platform_select' && (
   <div className="max-w-2xl mx-auto animate-in slide-in-from-bottom-10 duration-500">
     <div className="bg-white/[0.02] border border-white/10 rounded-[4rem] p-8 md:p-12 shadow-2xl overflow-y-auto max-h-[88vh]">
