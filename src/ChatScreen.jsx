@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Copy, Send, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, Copy, Mic, Send, Sparkles, Square } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { REVIEW_CONFIG, buildIdeaStructurePrompt } from './prompts.js';
 
@@ -79,6 +79,79 @@ const extractSources = (data) =>
     .slice(0, 5);
 
 const hostname = (uri) => { try { return new URL(uri).hostname; } catch { return uri; } };
+
+// ── Voice dictation (Web Speech API, no AI) ──
+const SpeechRecognitionAPI =
+  typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
+
+// "hola coma cómo estás punto" -> "Hola, cómo estás."
+const applyVoiceCommands = (text) =>
+  text
+    .replace(/\s*\babre interrogaci[oó]n\s*/gi, ' ¿')
+    .replace(/\s*\bcierra interrogaci[oó]n\b\s*/gi, '? ')
+    .replace(/\s*\babre exclamaci[oó]n\s*/gi, ' ¡')
+    .replace(/\s*\bcierra exclamaci[oó]n\b\s*/gi, '! ')
+    .replace(/\s*\bpunto y coma\b\s*/gi, '; ')
+    .replace(/\s*\bdos puntos\b\s*/gi, ': ')
+    .replace(/\s*\bpuntos suspensivos\b\s*/gi, '... ')
+    .replace(/\s*\b(?:nueva l[ií]nea|punto y aparte)\b\s*/gi, '.\n')
+    .replace(/\s*\bpunto\b\s*/gi, '. ')
+    .replace(/\s*\bcoma\b\s*/gi, ', ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/(^|[.!?]\s+|\n)([a-záéíóúñ])/g, (_, a, b) => a + b.toUpperCase());
+
+function useDictation(onText) {
+  const recRef = useRef(null);
+  const onTextRef = useRef(onText);
+  const [listening, setListening] = useState(false);
+  const [voiceError, setVoiceError] = useState('');
+
+  useEffect(() => { onTextRef.current = onText; }, [onText]);
+
+  const start = (baseText = '') => {
+    if (!SpeechRecognitionAPI || recRef.current) return;
+    const rec = new SpeechRecognitionAPI();
+    rec.lang = 'es-AR';
+    rec.continuous = true;
+    rec.interimResults = true;
+
+    const base = baseText ? baseText.replace(/\s*$/, ' ') : '';
+    let finalText = '';
+
+    rec.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += t;
+        else interim += t;
+      }
+      onTextRef.current(base + applyVoiceCommands(finalText + interim));
+    };
+    rec.onerror = (e) => {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+        setVoiceError('Permití el acceso al micrófono para dictar.');
+      } else if (e.error !== 'no-speech' && e.error !== 'aborted') {
+        setVoiceError('No se pudo usar el micrófono.');
+      }
+    };
+    rec.onend = () => { recRef.current = null; setListening(false); };
+
+    setVoiceError('');
+    recRef.current = rec;
+    try {
+      rec.start();
+      setListening(true);
+    } catch {
+      recRef.current = null;
+    }
+  };
+
+  const stop = () => recRef.current?.stop();
+
+  useEffect(() => () => recRef.current?.abort(), []);
+
+  return { supported: Boolean(SpeechRecognitionAPI), listening, voiceError, start, stop };
+}
 
 // ── UI atoms ──
 const SectionLabel = ({ children, color = 'text-emerald-400' }) => (
@@ -290,6 +363,7 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
   const tokenPct = Math.min(100, Math.round((tokensUsed / SESSION_TOKEN_LIMIT) * 100));
   const endRef = useRef(null);
   const taRef = useRef(null);
+  const dictation = useDictation(setInput);
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
 
@@ -303,6 +377,8 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
   const send = async (override) => {
     const content = (override ?? input).trim();
     if (!content || loading || limitReached) return;
+
+    dictation.stop();
 
     if (onBeforeSend) {
       const ok = await onBeforeSend();
@@ -492,6 +568,10 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
             </div>
           </div>
 
+          {dictation.voiceError && (
+            <p className="text-[11px] text-red-300/80 mb-2 px-1">{dictation.voiceError}</p>
+          )}
+
           {limitReached ? (
             <div className="flex items-center justify-center gap-2 py-3 px-5 bg-white/[0.03] border border-white/[0.07] rounded-2xl">
               <span className="text-lg">🔒</span>
@@ -509,9 +589,24 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
                 }}
-                placeholder="Describí tu idea, producto o público..."
+                placeholder={dictation.listening ? 'Escuchando…' : 'Describí tu idea, producto o público...'}
                 className="bg-transparent border-none outline-none flex-1 text-sm text-white py-2.5 italic resize-none placeholder-slate-600"
               />
+              {dictation.supported && (
+                <button
+                  type="button"
+                  onClick={() => (dictation.listening ? dictation.stop() : dictation.start(input))}
+                  disabled={loading}
+                  aria-label={dictation.listening ? 'Detener dictado' : 'Dictar por voz'}
+                  className={`p-3 rounded-full transition-all active:scale-90 disabled:opacity-30 ${
+                    dictation.listening
+                      ? 'bg-red-500/20 text-red-400 animate-pulse'
+                      : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {dictation.listening ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+              )}
               <button
                 onClick={() => send()}
                 disabled={loading || !input.trim()}
