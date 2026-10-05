@@ -15,11 +15,10 @@ const SUGGESTIONS = [
 ];
 
 const MAX_HISTORY_TURNS = 6;
-const MAX_OUTPUT_TOKENS = 8192;      // el razonamiento también consume de este tope
-const SESSION_TOKEN_LIMIT = 30000;   // tope total por sesión de chat
+const MAX_OUTPUT_TOKENS = 8192;      // reasoning also consumes this budget
+const SESSION_TOKEN_LIMIT = 30000;   // total cap per chat session
 
-
-// ── Helpers (locales para evitar import circular con App.jsx) ──
+// ── Helpers (local to avoid a circular import with App.jsx) ──
 const parsePlan = (raw) => {
   if (!raw) return null;
   const s = raw.replace(/```json|```/g, '').trim();
@@ -39,12 +38,14 @@ const extractText = (data) => {
 
 const planToText = (p) => {
   if (!p) return '';
+  if (p.tipo === 'pregunta') return p.mensaje ?? '';
   const L = [];
   if (p.titulo) L.push(p.titulo, '');
-  if (p.resumen) L.push(p.resumen, '');
+  if (p.veredicto) L.push(`Potencial ${p.veredicto.nivel}: ${p.veredicto.razon}`, '');
   if (p.hook) {
     L.push('HOOK');
-    if (p.hook.frase_hablada) L.push(`Dicho: ${p.hook.frase_hablada}`);
+    const frase = p.hook.recomendado ?? p.hook.frase_hablada;
+    if (frase) L.push(`Dicho: ${frase}`);
     if (p.hook.texto_en_pantalla) L.push(`Pantalla: ${p.hook.texto_en_pantalla}`);
     if (p.hook.visual) L.push(`Visual: ${p.hook.visual}`);
     L.push('');
@@ -57,14 +58,39 @@ const planToText = (p) => {
   }
   if (p.cta) L.push(`CTA: ${p.cta}`, '');
   if (p.errores_a_evitar?.length) L.push('EVITÁ', ...p.errores_a_evitar.map((x) => `- ${x}`), '');
-  if (p.checklist_grabacion?.length) L.push('CHECKLIST', ...p.checklist_grabacion.map((x) => `- ${x}`));
   return L.join('\n').trim();
 };
+
+// Every "basado_en" must point to an existing finding
+const validateBasis = (plan) => {
+  const ids = new Set((plan?.investigacion?.hallazgos ?? []).map((h) => h.id));
+  const refs = [
+    ...(plan?.hook?.basado_en ?? []),
+    ...(plan?.escenas ?? []).flatMap((e) => e.basado_en ?? []),
+  ];
+  return refs.length > 0 && refs.every((r) => ids.has(r));
+};
+
+// Real grounding sources (not the ones written by the model)
+const extractSources = (data) =>
+  (data?.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [])
+    .map((c) => ({ title: c.web?.title, uri: c.web?.uri }))
+    .filter((f) => f.uri)
+    .slice(0, 5);
+
+const hostname = (uri) => { try { return new URL(uri).hostname; } catch { return uri; } };
 
 // ── UI atoms ──
 const SectionLabel = ({ children, color = 'text-emerald-400' }) => (
   <p className={`text-[10px] font-black uppercase tracking-[0.25em] mb-3 ${color}`}>{children}</p>
 );
+
+const BasisChip = ({ ids }) =>
+  ids?.length > 0 ? (
+    <span className="inline-block text-[9px] font-black tracking-wider text-yellow-400/60 mt-1">
+      {ids.join(' · ')}
+    </span>
+  ) : null;
 
 function CopyBtn({ text }) {
   const [ok, setOk] = useState(false);
@@ -76,24 +102,6 @@ function CopyBtn({ text }) {
       {ok ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
       <span className={ok ? 'text-green-400' : ''}>{ok ? 'Copiado' : 'Copiar plan'}</span>
     </button>
-  );
-}
-
-function Thinking() {
-  return (
-    <div className="flex items-start gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <BotAvatar />
-      <div className="bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl px-4 py-3 flex items-center gap-3">
-        <div className="flex items-end gap-[3px] h-4">
-          {[5, 9, 14, 9, 5].map((h, i) => (
-            <span key={i} className="cs-bar" style={{ height: h, animationDelay: `${i * 0.15}s` }} />
-          ))}
-        </div>
-        <span className="font-mono text-[9.5px] tracking-[0.12em] uppercase text-white/30">
-          Estructurando tu idea
-        </span>
-      </div>
-    </div>
   );
 }
 
@@ -109,8 +117,29 @@ const UserAvatar = ({ src }) => (
   </div>
 );
 
-function PlanCard({ plan }) {
-  const { hook, escenas, cta, errores_a_evitar, checklist_grabacion } = plan;
+function Thinking() {
+  return (
+    <div className="flex items-start gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+      <BotAvatar />
+      <div className="bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl px-4 py-3 flex items-center gap-3">
+        <div className="flex items-end gap-[3px] h-4">
+          {[5, 9, 14, 9, 5].map((h, i) => (
+            <span key={i} className="cs-bar" style={{ height: h, animationDelay: `${i * 0.15}s` }} />
+          ))}
+        </div>
+        <span className="font-mono text-[9.5px] tracking-[0.12em] uppercase text-white/30">
+          Investigando y estructurando
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function PlanCard({ plan, fuentes = [], basisOk = true }) {
+  const { hook, escenas, cta, errores_a_evitar, veredicto, investigacion } = plan;
+  const levelColor = { bajo: 'text-red-400', medio: 'text-yellow-400', alto: 'text-emerald-400' };
+  const hallazgos = investigacion?.hallazgos ?? [];
+
   return (
     <div className="space-y-5">
       {plan.titulo && (
@@ -118,13 +147,62 @@ function PlanCard({ plan }) {
           {plan.titulo}
         </h4>
       )}
-      {plan.resumen && <p className="text-white/60 text-[13px] leading-relaxed">{plan.resumen}</p>}
+
+      {veredicto && (
+        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <SectionLabel color={levelColor[veredicto.nivel] ?? 'text-slate-400'}>
+            Potencial {veredicto.nivel}
+          </SectionLabel>
+          <p className="text-[13px] text-white/75 leading-snug">{veredicto.razon}</p>
+        </div>
+      )}
+
+      {!basisOk && (
+        <p className="text-[11px] text-yellow-400/80 border border-yellow-500/20 bg-yellow-500/[0.04] rounded-xl px-3 py-2">
+          Algunas recomendaciones no pudieron validarse contra la investigación. Tomalas con cautela.
+        </p>
+      )}
+
+      {hallazgos.length > 0 && (
+        <details>
+          <summary className="cursor-pointer text-[10px] font-black uppercase tracking-[0.25em] text-yellow-400/80">
+            Qué encontró la investigación ({hallazgos.length})
+          </summary>
+          <ul className="mt-3 space-y-2">
+            {hallazgos.map((h) => (
+              <li key={h.id} className="text-[12px] text-white/55">
+                <span className="text-yellow-400/80 font-black text-[9px] tracking-wider mr-2">
+                  {h.id} · {h.aplica_a}
+                </span>
+                {h.patron}
+              </li>
+            ))}
+          </ul>
+          {fuentes.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+              {fuentes.map((f, i) => (
+                <a
+                  key={i}
+                  href={f.uri}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-white/35 hover:text-white/70 underline truncate max-w-[180px]"
+                >
+                  {f.title || hostname(f.uri)}
+                </a>
+              ))}
+            </div>
+          )}
+        </details>
+      )}
 
       {hook && (
         <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05] p-4">
           <SectionLabel>Hook · 0–3s</SectionLabel>
-          {hook.frase_hablada && (
-            <p className="text-white font-bold text-[15px] leading-snug mb-2">"{hook.frase_hablada}"</p>
+          {(hook.recomendado || hook.frase_hablada) && (
+            <p className="text-white font-bold text-[15px] leading-snug mb-2">
+              "{hook.recomendado ?? hook.frase_hablada}"
+            </p>
           )}
           {hook.texto_en_pantalla && (
             <p className="text-[12px] text-white/50 mb-1">
@@ -138,9 +216,10 @@ function PlanCard({ plan }) {
               {hook.visual}
             </p>
           )}
-          {hook.por_que_funciona && (
-            <p className="text-[11px] italic text-white/35 mt-2">{hook.por_que_funciona}</p>
+          {(hook.mecanismo || hook.por_que_funciona) && (
+            <p className="text-[11px] italic text-white/35 mt-2">{hook.mecanismo ?? hook.por_que_funciona}</p>
           )}
+          <BasisChip ids={hook.basado_en} />
         </div>
       )}
 
@@ -163,6 +242,7 @@ function PlanCard({ plan }) {
                   {e.texto_pantalla && (
                     <p className="text-[11px] text-white/35 mt-1">Texto: {e.texto_pantalla}</p>
                   )}
+                  <BasisChip ids={e.basado_en} />
                 </div>
               </li>
             ))}
@@ -190,19 +270,6 @@ function PlanCard({ plan }) {
         </div>
       )}
 
-      {checklist_grabacion?.length > 0 && (
-        <div>
-          <SectionLabel color="text-slate-400">Checklist de grabación</SectionLabel>
-          <ul className="space-y-1.5">
-            {checklist_grabacion.map((x, i) => (
-              <li key={i} className="text-[12px] text-white/55 flex gap-2">
-                <span className="text-emerald-400/70">✓</span>{x}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {plan.pregunta_seguimiento && (
         <p className="text-[12px] text-purple-300/80 italic border-t border-white/5 pt-3">
           {plan.pregunta_seguimiento}
@@ -212,7 +279,7 @@ function PlanCard({ plan }) {
   );
 }
 
-// ── Pantalla principal ──
+// ── Main screen ──
 export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -234,71 +301,83 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
   }, [input]);
 
   const send = async (override) => {
-  const content = (override ?? input).trim();
-  if (!content || loading || limitReached) return;
+    const content = (override ?? input).trim();
+    if (!content || loading || limitReached) return;
 
-  // El tope se chequea ANTES de cobrar gemas
-  if (onBeforeSend) {
-    const ok = await onBeforeSend();
-    if (!ok) return;
-  }
-
-  const next = [...messages, { role: 'user', text: content }];
-  setMessages(next);
-  setInput('');
-  setLoading(true);
-
-  try {
-    const history = next.slice(0, -1).slice(-MAX_HISTORY_TURNS).map((m) => ({
-      role: m.role,
-      text: m.role === 'bot' ? (m.plan ? planToText(m.plan) : m.text) : m.text,
-    }));
-
-    const prompt = buildIdeaStructurePrompt({ idea: content, history, platform });
-    const cfg = REVIEW_CONFIG.sintesis;
-
-    const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-      body: {
-        text: prompt,
-        model: cfg.model,
-        thinkingLevel: 'low',              // deja presupuesto para el JSON
-        temperature: 0.7,
-        expectsJson: true,
-        maxOutputTokens: MAX_OUTPUT_TOKENS,
-      },
-    });
-
-    if (error) {
-      let body = '';
-      try { body = await error.context?.text?.(); } catch (_) {}
-      throw new Error(body || error.message);
+    if (onBeforeSend) {
+      const ok = await onBeforeSend();
+      if (!ok) return;
     }
 
-    // ── Conteo de tokens (usa el dato real de Gemini; si no viene, estima) ──
-    const candidate = data?.candidates?.[0];
-    const outText = candidate?.content?.parts?.map((p) => p.text).filter(Boolean).join('') ?? '';
-    const used = data?.usageMetadata?.totalTokenCount
-      ?? Math.ceil((prompt.length + outText.length) / 4);
-    setTokensUsed((t) => t + used);
+    const next = [...messages, { role: 'user', text: content }];
+    setMessages(next);
+    setInput('');
+    setLoading(true);
 
-    // ── Respuesta cortada por falta de tokens ──
-    if (candidate?.finishReason === 'MAX_TOKENS' && !outText) {
-      throw new Error('La respuesta se cortó por longitud. Probá con una idea más puntual.');
+    try {
+      const history = next.slice(0, -1).slice(-MAX_HISTORY_TURNS).map((m) => ({
+        role: m.role,
+        text: m.role === 'bot' ? (m.plan ? planToText(m.plan) : m.text) : m.text,
+      }));
+
+      const prompt = buildIdeaStructurePrompt({ idea: content, history, platform });
+      const cfg = REVIEW_CONFIG.sintesis;
+
+      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: prompt,
+          model: cfg.model,
+          thinkingLevel: 'medium',
+          temperature: 0.7,
+          expectsJson: false,              // the prompt enforces JSON; parsePlan cleans it
+          tools: cfg.tools ?? [{ google_search: {} }],
+          maxOutputTokens: MAX_OUTPUT_TOKENS,
+        },
+      });
+
+      if (error) {
+        let body = '';
+        try { body = await error.context?.text?.(); } catch (_) {}
+        throw new Error(body || error.message);
+      }
+
+      // Token count (real Gemini usage; falls back to an estimate)
+      const candidate = data?.candidates?.[0];
+      const outText = candidate?.content?.parts?.map((p) => p.text).filter(Boolean).join('') ?? '';
+      const used = data?.usageMetadata?.totalTokenCount
+        ?? Math.ceil((prompt.length + outText.length) / 4);
+      setTokensUsed((t) => t + used);
+
+      if (candidate?.finishReason === 'MAX_TOKENS' && !outText) {
+        throw new Error('La respuesta se cortó por longitud. Probá con una idea más puntual.');
+      }
+
+      const raw = extractText(data);
+      const parsed = parsePlan(raw);
+      const fuentes = extractSources(data);
+
+      // A plan without a real search behind it is not shown
+      if (parsed?.tipo === 'plan' && fuentes.length === 0) {
+        throw new Error('La IA no pudo consultar fuentes en internet para esta idea. Probá de nuevo en unos segundos.');
+      }
+
+      setMessages([...next, parsed
+        ? {
+            role: 'bot',
+            plan: parsed,
+            text: parsed.mensaje ?? '',
+            fuentes,
+            basisOk: parsed.tipo === 'plan' ? validateBasis(parsed) : true,
+          }
+        : { role: 'bot', text: raw.replace(/```json|```/g, '').trim() }]);
+    } catch (err) {
+      console.error('ChatScreen error:', err);
+      setMessages([...next, { role: 'bot', text: `Error: ${err.message || 'Se cortó la conexión. Intentá de nuevo.'}`, isError: true }]);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const raw = extractText(data);
-    const parsed = parsePlan(raw);
-
-    setMessages([...next, parsed
-      ? { role: 'bot', plan: parsed, text: parsed.mensaje ?? '' }
-      : { role: 'bot', text: raw.replace(/```json|```/g, '').trim() }]);
-  } catch (err) {
-    console.error('ChatScreen error:', err);
-    setMessages([...next, { role: 'bot', text: `Error: ${err.message || 'Se cortó la conexión. Intentá de nuevo.'}`, isError: true }]);
-  } finally {
-    setLoading(false);
-  }
-};
   return (
     <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-10 duration-500">
       <style>{`
@@ -342,7 +421,7 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
           </div>
         </div>
 
-        {/* MENSAJES */}
+        {/* MESSAGES */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5 cs-scroll">
           {messages.length === 0 && !loading && (
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
@@ -351,7 +430,7 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
               </div>
               <p className="text-xl font-black italic uppercase tracking-tighter text-white mb-2">Contame tu idea</p>
               <p className="text-slate-500 text-sm max-w-sm mb-6">
-                La IA la convierte en un plan listo para grabar: hook, escenas, cierre y checklist.
+                La IA investiga en internet y la convierte en un plan listo para grabar: hook, escenas y cierre.
               </p>
               <div className="flex flex-col gap-2 w-full max-w-md">
                 {SUGGESTIONS.map((s) => (
@@ -370,7 +449,7 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
           {messages.map((m, i) => (
             <div key={i} className={`flex items-start gap-2.5 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
               {m.role === 'user' ? <UserAvatar src={userIcon} /> : <BotAvatar />}
-              <div className={`flex flex-col gap-1 ${m.plan ? 'w-full max-w-[92%]' : 'max-w-[78%]'}`}>
+              <div className={`flex flex-col gap-1 ${m.plan?.tipo === 'plan' ? 'w-full max-w-[92%]' : 'max-w-[78%]'}`}>
                 <div className={`px-4 py-3 text-sm leading-relaxed font-medium
                   ${m.role === 'user'
                     ? 'bg-emerald-600/15 border border-emerald-500/20 rounded-sm rounded-tl-2xl rounded-bl-2xl rounded-br-2xl text-emerald-100/90'
@@ -380,10 +459,9 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
                 >
                   {m.plan ? (
                     <>
-                      {m.text && <p className="mb-4 text-white/70">{m.text}</p>}
-                      {(m.plan.hook || m.plan.escenas) && <PlanCard plan={m.plan} />}
-                      {!m.plan.hook && !m.plan.escenas && m.plan.pregunta_seguimiento && (
-                        <p>{m.plan.pregunta_seguimiento}</p>
+                      {m.text && <p className={m.plan.hook || m.plan.escenas ? 'mb-4 text-white/70' : ''}>{m.text}</p>}
+                      {(m.plan.hook || m.plan.escenas) && (
+                        <PlanCard plan={m.plan} fuentes={m.fuentes} basisOk={m.basisOk} />
                       )}
                     </>
                   ) : (
