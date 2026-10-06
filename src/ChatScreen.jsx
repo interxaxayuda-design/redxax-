@@ -116,16 +116,20 @@ function useDictation(onText) {
     rec.interimResults = true;
 
     const base = baseText ? baseText.replace(/\s*$/, ' ') : '';
-    let finalText = '';
 
+    // Se reconstruye todo el texto desde e.results en cada evento (no con +=):
+    // en Android/Chrome los resultados se re-emiten y acumular duplica el texto.
     rec.onresult = (e) => {
-      let interim = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) finalText += t;
-        else interim += t;
+      const parts = [];
+      for (let i = 0; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript.trim();
+        if (!t) continue;
+        const prev = parts[parts.length - 1];
+        // Chrome Android a veces entrega cada resultado como acumulado del anterior
+        if (prev && t.toLowerCase().startsWith(prev.toLowerCase())) parts[parts.length - 1] = t;
+        else parts.push(t);
       }
-      onTextRef.current(base + applyVoiceCommands(finalText + interim));
+      onTextRef.current(base + applyVoiceCommands(parts.join(' ')));
     };
     rec.onerror = (e) => {
       if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
@@ -399,42 +403,57 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
       const prompt = buildIdeaStructurePrompt({ idea: content, history, platform });
       const cfg = REVIEW_CONFIG.sintesis;
 
-      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: prompt,
-          model: cfg.model,
-          thinkingLevel: 'medium',
-          temperature: 0.7,
-          expectsJson: false,              // the prompt enforces JSON; parsePlan cleans it
-          tools: cfg.tools ?? [{ google_search: {} }],
-          maxOutputTokens: MAX_OUTPUT_TOKENS,
-        },
-      });
+      let parsed = null;
+      let raw = '';
+      let fuentes = [];
 
-      if (error) {
-        let body = '';
-        try { body = await error.context?.text?.(); } catch (_) {}
-        throw new Error(body || error.message);
-      }
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+          body: {
+            text: attempt === 0
+              ? prompt
+              : `${prompt}\n\nIMPORTANTE: antes de responder, usá la búsqueda en internet para investigar esta idea.`,
+            model: cfg.model,
+            thinkingLevel: 'medium',
+            temperature: 0.7,
+            expectsJson: false,              // the prompt enforces JSON; parsePlan cleans it
+            tools: cfg.tools ?? [{ google_search: {} }],
+            maxOutputTokens: MAX_OUTPUT_TOKENS,
+          },
+        });
 
-      // Token count (real Gemini usage; falls back to an estimate)
-      const candidate = data?.candidates?.[0];
-      const outText = candidate?.content?.parts?.map((p) => p.text).filter(Boolean).join('') ?? '';
-      const used = data?.usageMetadata?.totalTokenCount
-        ?? Math.ceil((prompt.length + outText.length) / 4);
-      setTokensUsed((t) => t + used);
+        if (error) {
+          let body = '';
+          try { body = await error.context?.text?.(); } catch (_) {}
+          throw new Error(body || error.message);
+        }
 
-      if (candidate?.finishReason === 'MAX_TOKENS' && !outText) {
-        throw new Error('La respuesta se cortó por longitud. Probá con una idea más puntual.');
-      }
+        // Token count (real Gemini usage; falls back to an estimate)
+        const candidate = data?.candidates?.[0];
+        const outText = candidate?.content?.parts?.map((p) => p.text).filter(Boolean).join('') ?? '';
+        const used = data?.usageMetadata?.totalTokenCount
+          ?? Math.ceil((prompt.length + outText.length) / 4);
+        setTokensUsed((t) => t + used);
 
-      const raw = extractText(data);
-      const parsed = parsePlan(raw);
-      const fuentes = extractSources(data);
+        if (candidate?.finishReason === 'MAX_TOKENS' && !outText) {
+          throw new Error('La respuesta se cortó por longitud. Probá con una idea más puntual.');
+        }
 
-      // A plan without a real search behind it is not shown
-      if (parsed?.tipo === 'plan' && fuentes.length === 0) {
-        throw new Error('La IA no pudo consultar fuentes en internet para esta idea. Probá de nuevo en unos segundos.');
+        raw = extractText(data);
+        parsed = parsePlan(raw);
+        fuentes = extractSources(data);
+
+        // La búsqueda cuenta como hecha si hay fuentes o si Gemini registró consultas
+        const searched = fuentes.length > 0
+          || (candidate?.groundingMetadata?.webSearchQueries?.length ?? 0) > 0;
+
+        if (parsed?.tipo !== 'plan' || searched) break;
+
+        console.warn('Plan sin búsqueda. groundingMetadata:', candidate?.groundingMetadata);
+        if (attempt === 1) {
+          // A plan without a real search behind it is not shown
+          throw new Error('La IA no pudo consultar fuentes en internet para esta idea. Probá de nuevo en unos segundos.');
+        }
       }
 
       setMessages([...next, parsed
