@@ -1,15 +1,23 @@
+// ideaPipeline.js — una llamada (2 solo si la autoauditoría no pasa).
+// Devuelve { plan, tokens, trace }. Si falla, el error trae err.tokens con lo ya gastado.
+// No usa buildChatSystemPrompt: ese prompt pide Markdown y acá la salida es JSON puro.
+
 const PERSONA =
   'Sos VIRAX Coach, estratega de contenido short-form. Español rioplatense, directo. Nunca inflás algo flojo.';
 
+// Gemini 3: temperature 1.0 (valores bajos pueden degradar el razonamiento).
+// maxOutputTokens incluye los tokens de pensamiento: dejá margen.
 const CFG = { thinkingLevel: 'high', temperature: 1.0, maxOutputTokens: 8192 };
 
-const MIN_HOOK = 7;
-const MIN_AVG = 7;
-const MAX_RETRIES = 1;
+const MIN_HOOK = 7;     // score mínimo verificado del criterio hook
+const MIN_AVG = 7;      // promedio mínimo verificado de los 8 criterios
+const MAX_RETRIES = 1;  // 0 = nunca reintenta
 
 const CRITERIOS = [
   'hook', 'emotion', 'shareability', 'novelty', 'retention', 'trend_fit', 'clarity_cta', 'platform_fit',
 ];
+
+// ── Prompt ───────────────────────────────────────────────────
 
 const historyBlock = (history) =>
   history.length
@@ -101,7 +109,48 @@ Una de estas tres formas:
 (hooks_candidatos: exactamente 3)
 </salida>`.trim();
 
-// ── Lógica determinística (gratis) ───────────────────────────
+// ── Llamada al proxy ─────────────────────────────────────────
+
+const parseJson = (raw) => {
+  const s = raw.replace(/```json|```/g, '').trim();
+  const a = s.indexOf('{');
+  const b = s.lastIndexOf('}');
+  if (a === -1 || b === -1) return null;
+  try { return JSON.parse(s.slice(a, b + 1)); } catch { return null; }
+};
+
+const callGemini = async (supabase, body) => {
+  const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+    body: { ...body, expectsJson: true },
+  });
+
+  if (error) {
+    let msg = '';
+    try { msg = await error.context?.text?.(); } catch (_) {}
+    throw new Error(msg || error.message);
+  }
+  if (data?.error) throw new Error(`${data.error} ${data.message ?? ''}`);
+
+  const cand = data?.candidates?.[0];
+  const raw = cand?.content?.parts?.map((p) => p.text).filter(Boolean).join('') ?? data?.text ?? '';
+  const tokens = data?.usageMetadata?.totalTokenCount ?? Math.ceil((body.text.length + raw.length) / 4);
+
+  const fail = (message) => { const e = new Error(message); e.tokens = tokens; throw e; };
+
+  if (cand?.finishReason && cand.finishReason !== 'STOP') {
+    console.warn('Gemini finishReason:', cand.finishReason, data?.usageMetadata);
+  }
+  if (!raw) {
+    fail(cand?.finishReason === 'MAX_TOKENS'
+      ? 'La respuesta se cortó por longitud. Probá con una idea más puntual.'
+      : (data?.promptFeedback?.blockReason ?? 'Respuesta vacía de la IA'));
+  }
+  const json = parseJson(raw);
+  if (!json) fail('La IA devolvió un formato inesperado. Probá de nuevo.');
+  return { json, tokens };
+};
+
+// ── Lógica determinística (gratis: no gasta tokens) ──────────
 
 const num = (v) => {
   const n = Number(v);
@@ -133,28 +182,36 @@ const audit = (out) => {
 
 const levelFor = (s) => (s >= 8 ? 'alto' : s >= 6 ? 'medio' : 'bajo');
 
-const validPlan = (o) => o?.tipo === 'plan' && o.hook?.recomendado && Array.isArray(o.escenas) && o.escenas.length;
+const validPlan = (o) =>
+  o?.tipo === 'plan' && o.hook?.recomendado && Array.isArray(o.escenas) && o.escenas.length > 0;
 
-// ── Pipeline (1 llamada, 2 solo si la autoauditoría no pasa) ─
+// ── Pipeline ─────────────────────────────────────────────────
 
 export const runIdeaPipeline = async ({ supabase, model, idea, history = [], platform = 'tiktok', lastPlan = null }) => {
   const trace = [];
   const total = () => trace.reduce((s, t) => s + t.tokens, 0);
 
   const run = async (feedback) => {
-    const r = await callGemini(supabase, { ...CFG, model, text: buildPrompt({ idea, history, platform, lastPlan, feedback }) });
+    const r = await callGemini(supabase, {
+      ...CFG,
+      model,
+      text: buildPrompt({ idea, history, platform, lastPlan, feedback }),
+    });
     trace.push({ stage: 'coach', tokens: r.tokens });
     return r.json;
   };
 
   try {
-    let out = await run();
+    const out = await run();
 
-    if (out.tipo === 'pregunta') return { plan: { tipo: 'pregunta', mensaje: out.mensaje }, tokens: total(), trace };
+    if (out.tipo === 'pregunta') {
+      return { plan: { tipo: 'pregunta', mensaje: out.mensaje }, tokens: total(), trace };
+    }
     if (out.tipo === 'ajuste_sin_plan') {
       return {
         plan: { tipo: 'pregunta', mensaje: '¿Sobre qué video querés trabajar? Contame la idea y armo el plan.' },
-        tokens: total(), trace,
+        tokens: total(),
+        trace,
       };
     }
     if (!validPlan(out)) throw new Error('La IA devolvió un formato inesperado. Probá de nuevo.');
@@ -164,7 +221,9 @@ export const runIdeaPipeline = async ({ supabase, model, idea, history = [], pla
     for (let r = 0; r < MAX_RETRIES && !best.a.ok; r++) {
       const feedback = [
         'La versión anterior no pasó la auditoría. Reescribila corrigiendo SOLO esto (mantené lo que ya funciona):',
-        ...best.a.rows.filter((x) => x.score < MIN_HOOK).map((x) => `- ${x.k} ${x.score}/10: ${x.fix}`),
+        ...best.a.rows
+          .filter((x) => x.score < MIN_HOOK)
+          .map((x) => `- ${x.k} ${x.score}/10: ${x.fix || 'subir el estándar'}`),
       ].join('\n');
 
       const retry = await run(feedback);
