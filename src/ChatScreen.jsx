@@ -48,6 +48,11 @@ const planToText = (p) => {
     if (frase) L.push(`Dicho: ${frase}`);
     if (p.hook.texto_en_pantalla) L.push(`Pantalla: ${p.hook.texto_en_pantalla}`);
     if (p.hook.visual) L.push(`Visual: ${p.hook.visual}`);
+    if (p.hook.alternativas?.length) {
+      L.push('Alternativas:');
+      p.hook.alternativas.forEach((a) =>
+        L.push(`- (${a.tipo}) ${a.frase_hablada}${a.texto_en_pantalla ? ` | Pantalla: ${a.texto_en_pantalla}` : ''}`));
+    }
     L.push('');
   }
   if (p.escenas?.length) {
@@ -60,25 +65,6 @@ const planToText = (p) => {
   if (p.errores_a_evitar?.length) L.push('EVITÁ', ...p.errores_a_evitar.map((x) => `- ${x}`), '');
   return L.join('\n').trim();
 };
-
-// Every "basado_en" must point to an existing finding
-const validateBasis = (plan) => {
-  const ids = new Set((plan?.investigacion?.hallazgos ?? []).map((h) => h.id));
-  const refs = [
-    ...(plan?.hook?.basado_en ?? []),
-    ...(plan?.escenas ?? []).flatMap((e) => e.basado_en ?? []),
-  ];
-  return refs.length > 0 && refs.every((r) => ids.has(r));
-};
-
-// Real grounding sources (not the ones written by the model)
-const extractSources = (data) =>
-  (data?.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [])
-    .map((c) => ({ title: c.web?.title, uri: c.web?.uri }))
-    .filter((f) => f.uri)
-    .slice(0, 5);
-
-const hostname = (uri) => { try { return new URL(uri).hostname; } catch { return uri; } };
 
 // ── Voice dictation (Web Speech API, no AI) ──
 const SpeechRecognitionAPI =
@@ -162,13 +148,6 @@ const SectionLabel = ({ children, color = 'text-emerald-400' }) => (
   <p className={`text-[10px] font-black uppercase tracking-[0.25em] mb-3 ${color}`}>{children}</p>
 );
 
-const BasisChip = ({ ids }) =>
-  ids?.length > 0 ? (
-    <span className="inline-block text-[9px] font-black tracking-wider text-yellow-400/60 mt-1">
-      {ids.join(' · ')}
-    </span>
-  ) : null;
-
 function CopyBtn({ text }) {
   const [ok, setOk] = useState(false);
   return (
@@ -205,17 +184,17 @@ function Thinking() {
           ))}
         </div>
         <span className="font-mono text-[9.5px] tracking-[0.12em] uppercase text-white/30">
-          Investigando y estructurando
+          Armando tu plan
         </span>
       </div>
     </div>
   );
 }
 
-function PlanCard({ plan, fuentes = [], basisOk = true }) {
-  const { hook, escenas, cta, errores_a_evitar, veredicto, investigacion } = plan;
+function PlanCard({ plan }) {
+  const { hook, escenas, cta, errores_a_evitar, veredicto } = plan;
   const levelColor = { bajo: 'text-red-400', medio: 'text-yellow-400', alto: 'text-emerald-400' };
-  const hallazgos = investigacion?.hallazgos ?? [];
+  const alternativas = hook?.alternativas ?? [];
 
   return (
     <div className="space-y-5">
@@ -234,48 +213,11 @@ function PlanCard({ plan, fuentes = [], basisOk = true }) {
         </div>
       )}
 
-      {!basisOk && (
-        <p className="text-[11px] text-yellow-400/80 border border-yellow-500/20 bg-yellow-500/[0.04] rounded-xl px-3 py-2">
-          Algunas recomendaciones no pudieron validarse contra la investigación. Tomalas con cautela.
-        </p>
-      )}
-
-      {hallazgos.length > 0 && (
-        <details>
-          <summary className="cursor-pointer text-[10px] font-black uppercase tracking-[0.25em] text-yellow-400/80">
-            Qué encontró la investigación ({hallazgos.length})
-          </summary>
-          <ul className="mt-3 space-y-2">
-            {hallazgos.map((h) => (
-              <li key={h.id} className="text-[12px] text-white/55">
-                <span className="text-yellow-400/80 font-black text-[9px] tracking-wider mr-2">
-                  {h.id} · {h.aplica_a}
-                </span>
-                {h.patron}
-              </li>
-            ))}
-          </ul>
-          {fuentes.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
-              {fuentes.map((f, i) => (
-                <a
-                  key={i}
-                  href={f.uri}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[10px] text-white/35 hover:text-white/70 underline truncate max-w-[180px]"
-                >
-                  {f.title || hostname(f.uri)}
-                </a>
-              ))}
-            </div>
-          )}
-        </details>
-      )}
-
       {hook && (
         <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05] p-4">
-          <SectionLabel>Hook · 0–3s</SectionLabel>
+          <SectionLabel>
+            Hook · 0–3s{hook.tipo ? ` · ${hook.tipo}` : ''}
+          </SectionLabel>
           {(hook.recomendado || hook.frase_hablada) && (
             <p className="text-white font-bold text-[15px] leading-snug mb-2">
               "{hook.recomendado ?? hook.frase_hablada}"
@@ -296,7 +238,25 @@ function PlanCard({ plan, fuentes = [], basisOk = true }) {
           {(hook.mecanismo || hook.por_que_funciona) && (
             <p className="text-[11px] italic text-white/35 mt-2">{hook.mecanismo ?? hook.por_que_funciona}</p>
           )}
-          <BasisChip ids={hook.basado_en} />
+
+          {alternativas.length > 0 && (
+            <details className="mt-3">
+              <summary className="cursor-pointer text-[10px] font-black uppercase tracking-[0.25em] text-emerald-400/80">
+                Otros hooks ({alternativas.length})
+              </summary>
+              <ul className="mt-3 space-y-3">
+                {alternativas.map((a, i) => (
+                  <li key={i} className="text-[12px] text-white/60">
+                    <span className="text-yellow-400/80 font-black text-[9px] tracking-wider mr-2 uppercase">{a.tipo}</span>
+                    "{a.frase_hablada}"
+                    {a.texto_en_pantalla && (
+                      <span className="block text-[11px] text-white/35 mt-0.5">Pantalla: {a.texto_en_pantalla}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       )}
 
@@ -319,7 +279,6 @@ function PlanCard({ plan, fuentes = [], basisOk = true }) {
                   {e.texto_pantalla && (
                     <p className="text-[11px] text-white/35 mt-1">Texto: {e.texto_pantalla}</p>
                   )}
-                  <BasisChip ids={e.basado_en} />
                 </div>
               </li>
             ))}
@@ -403,66 +362,42 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
       const prompt = buildIdeaStructurePrompt({ idea: content, history, platform });
       const cfg = REVIEW_CONFIG.sintesis;
 
-      let parsed = null;
-      let raw = '';
-      let fuentes = [];
+      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
+        body: {
+          text: prompt,
+          model: cfg.model,
+          thinkingLevel: 'medium',
+          temperature: 0.7,
+          expectsJson: true,
+          maxOutputTokens: MAX_OUTPUT_TOKENS,
+        },
+      });
 
-      for (let attempt = 0; attempt < 2; attempt++) {
-        const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-          body: {
-            text: attempt === 0
-              ? prompt
-              : `${prompt}\n\nIMPORTANTE: antes de responder, usá la búsqueda en internet para investigar esta idea.`,
-            model: cfg.model,
-            thinkingLevel: 'medium',
-            temperature: 0.7,
-            expectsJson: false,              // the prompt enforces JSON; parsePlan cleans it
-            tools: cfg.tools ?? [{ google_search: {} }],
-            maxOutputTokens: MAX_OUTPUT_TOKENS,
-          },
-        });
-
-        if (error) {
-          let body = '';
-          try { body = await error.context?.text?.(); } catch (_) {}
-          throw new Error(body || error.message);
-        }
-
-        // Token count (real Gemini usage; falls back to an estimate)
-        const candidate = data?.candidates?.[0];
-        const outText = candidate?.content?.parts?.map((p) => p.text).filter(Boolean).join('') ?? '';
-        const used = data?.usageMetadata?.totalTokenCount
-          ?? Math.ceil((prompt.length + outText.length) / 4);
-        setTokensUsed((t) => t + used);
-
-        if (candidate?.finishReason === 'MAX_TOKENS' && !outText) {
-          throw new Error('La respuesta se cortó por longitud. Probá con una idea más puntual.');
-        }
-
-        raw = extractText(data);
-        parsed = parsePlan(raw);
-        fuentes = extractSources(data);
-
-        // La búsqueda cuenta como hecha si hay fuentes o si Gemini registró consultas
-        const searched = fuentes.length > 0
-          || (candidate?.groundingMetadata?.webSearchQueries?.length ?? 0) > 0;
-
-        if (parsed?.tipo !== 'plan' || searched) break;
-
-        console.warn('Plan sin búsqueda. groundingMetadata:', candidate?.groundingMetadata);
-        if (attempt === 1) {
-          // A plan without a real search behind it is not shown
-          throw new Error('La IA no pudo consultar fuentes en internet para esta idea. Probá de nuevo en unos segundos.');
-        }
+      if (error) {
+        let body = '';
+        try { body = await error.context?.text?.(); } catch (_) {}
+        throw new Error(body || error.message);
       }
+
+      // Token count (real Gemini usage; falls back to an estimate)
+      const candidate = data?.candidates?.[0];
+      const outText = candidate?.content?.parts?.map((p) => p.text).filter(Boolean).join('') ?? '';
+      const used = data?.usageMetadata?.totalTokenCount
+        ?? Math.ceil((prompt.length + outText.length) / 4);
+      setTokensUsed((t) => t + used);
+
+      if (candidate?.finishReason === 'MAX_TOKENS' && !outText) {
+        throw new Error('La respuesta se cortó por longitud. Probá con una idea más puntual.');
+      }
+
+      const raw = extractText(data);
+      const parsed = parsePlan(raw);
 
       setMessages([...next, parsed
         ? {
             role: 'bot',
             plan: parsed,
             text: parsed.mensaje ?? '',
-            fuentes,
-            basisOk: parsed.tipo === 'plan' ? validateBasis(parsed) : true,
           }
         : { role: 'bot', text: raw.replace(/```json|```/g, '').trim() }]);
     } catch (err) {
@@ -525,7 +460,7 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
               </div>
               <p className="text-xl font-black italic uppercase tracking-tighter text-white mb-2">Contame tu idea</p>
               <p className="text-slate-500 text-sm max-w-sm mb-6">
-                La IA investiga en internet y la convierte en un plan listo para grabar: hook, escenas y cierre.
+                La IA lo convierte en un plan listo para grabar: hook, escenas y cierre.
               </p>
               <div className="flex flex-col gap-2 w-full max-w-md">
                 {SUGGESTIONS.map((s) => (
@@ -556,7 +491,7 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
                     <>
                       {m.text && <p className={m.plan.hook || m.plan.escenas ? 'mb-4 text-white/70' : ''}>{m.text}</p>}
                       {(m.plan.hook || m.plan.escenas) && (
-                        <PlanCard plan={m.plan} fuentes={m.fuentes} basisOk={m.basisOk} />
+                        <PlanCard plan={m.plan} />
                       )}
                     </>
                   ) : (

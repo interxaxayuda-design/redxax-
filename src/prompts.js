@@ -204,49 +204,6 @@ Explayate y desarrolla cada punto con la máxima densidad técnica posible.
 // CHAT — sin cambios, ya estaban bien.
 // ═════════════════════════════════════════════════════════════
 
-export const buildChatSystemPrompt = () => `
-Sos VIRAX Coach — un consultor de contenido que ayuda a creadores a mejorar
-videos concretos, con acceso completo a todos los brains del sistema VIRAX.
-
-TU PRIORIDAD, EN ESTE ORDEN:
-
-1. Que el usuario entienda QUÉ está fallando en SU video puntual, en criollo,
-   sin jerga de brains ni nombres de campos internos.
-2. Que se vaya con una acción concreta y ejecutable, no un diagnóstico abstracto.
-3. Recién después, si pregunta "por qué", rastreás el dato en los brains.
-
-TONO: Motivador pero honesto. Nunca inflás un video flojo para hacer sentir
-bien al usuario. Si algo está mal, decilo claro y después mostrale el camino
-de salida.
-
-FORMATO DE RESPUESTA (Markdown):
-- "## " para subtítulo corto, máximo 1-2 por respuesta.
-- "**texto**" para negrita en frases importantes.
-- Listas con "- " para pasos o ideas.
-`;
-
-export const buildChatContextBlock = (aiContext = {}) => {
-  const { reviewText, hookAnalysis, desarrolloAnalysis, industria, platform, objetivo } = aiContext;
-
-  if (!reviewText && !hookAnalysis && !desarrolloAnalysis) {
-    return '(Todavía no se analizó ningún video en esta sesión — respondé en base a lo que el usuario cuente)';
-  }
-
-  const meta = [
-    industria && `Nicho: ${industria}`,
-    platform && `Plataforma: ${platform}`,
-    objetivo && `Objetivo del creador: ${objetivo}`,
-  ].filter(Boolean).join(' | ');
-
-  const blocks = [
-    meta,
-    hookAnalysis && `<analisis_hook>\n${hookAnalysis}\n</analisis_hook>`,
-    desarrolloAnalysis && `<analisis_desarrollo>\n${desarrolloAnalysis}\n</analisis_desarrollo>`,
-    reviewText && `<devolucion_final>\n${reviewText}\n</devolucion_final>`,
-  ].filter(Boolean);
-
-  return blocks.join('\n\n');
-};
 export const buildIdeaStructurePrompt = ({ idea, history = [], platform = 'tiktok' }) => {
   const historyBlock = history.length
     ? history.map((m) => `${m.role === 'user' ? 'USUARIO' : 'VIRAX'}: ${m.text}`).join('\n\n')
@@ -257,14 +214,13 @@ export const buildIdeaStructurePrompt = ({ idea, history = [], platform = 'tikto
   return `
 ${buildChatSystemPrompt()}
 
-Sos un estratega de contenido. Tu objetivo es que, con las ideas del usuarios, puedas armar algo que retenga a cualqier persona. Desde un nnño de 6 años
-hasta una persona super ocupada de 60 años. Tienes que utilizar cualquier técnnica de retención moderna y que funcione (ejemplos: texto, hook negativo, baait, y el resto lo sacás de tu entrenamiento)
+Sos un estratega de contenido. Tu objetivo es que, con las ideas del usuario, puedas armar algo que retenga a cualquier persona. Desde un niño de 6 años hasta una persona súper ocupada de 60 años. Tenés que utilizar cualquier técnica de retención moderna y que funcione (ejemplos: texto, hook negativo, bait, y el resto lo sacás de tu entrenamiento).
 
-Una vez que tengas los consejos a mano, antes de enviarlo al usuario, preguntáte internamente "¿Por qué un niño de 6 años  hasta un mayor de 60 quieren mirar este video? ¿Les podrá interesar o scrollean? Si la respuesta es no, modificá la estratégia hasta que sí.}
+Una vez que tengas los consejos a mano, antes de enviarlo al usuario, preguntáte internamente "¿Por qué un niño de 6 años hasta un mayor de 60 quieren mirar este video? ¿Les podrá interesar o scrollean?" Si la respuesta es no, modificá la estrategia hasta que sí.
 
-Cada pensamiento que tengas debe ser 100% con profesionalidad, y entendiendo como funciona el algoritmo. 
+Cada pensamiento que tengas debe ser 100% con profesionalidad, y entendiendo cómo funciona el algoritmo.
 
-IMPORTANTE: No puedes investigar en internet. Todo debe de venir de tu conocimiento más reciente. 
+IMPORTANTE: No podés investigar en internet. Todo debe venir de tu conocimiento más reciente.
 
 
 HISTORIAL:
@@ -278,25 +234,20 @@ SOLO un objeto JSON válido, sin markdown ni backticks, en español rioplatense,
 sin escapar dentro de los valores.
 - Si falta algo clave (producto, público u objetivo): {"tipo":"pregunta","mensaje":"<una pregunta concreta>"}
 - Si pide un ajuste, devolvé el plan completo actualizado.
-- Máximo 5 hallazgos, 5 escenas y 3 errores_a_evitar.
+- Máximo 5 escenas y 3 errores_a_evitar.
 
 {
   "tipo": "plan",
   "titulo": "string",
   "veredicto": { "nivel": "bajo | medio | alto", "razon": "máx. 2 oraciones" },
-  "investigacion": {
-    "nivel_evidencia": "alto | parcial | nulo",
-    "hallazgos": [ { "id": "H1", "aplica_a": "hook | lenguaje | ritmo | cta | saturacion", "patron": "string" } ]
-  },
   "hook": {
     "recomendado": "frase hablada",
     "texto_en_pantalla": "máx. 6 palabras",
     "visual": "qué se ve en el primer cuadro",
-    "mecanismo": "por qué detiene el scroll",
-    "basado_en": ["H1"]
+    "mecanismo": "por qué detiene el scroll"
   },
   "escenas": [
-    { "tiempo": "3-8s", "accion": "string", "dialogo": "string o vacío", "texto_pantalla": "string o vacío", "basado_en": ["H2"] }
+    { "tiempo": "3-8s", "accion": "string", "dialogo": "string o vacío", "texto_pantalla": "string o vacío" }
   ],
   "cta": "coherente con lo prometido, sin urgencia falsa",
   "errores_a_evitar": ["específico de esta idea (razón entre paréntesis)"],
