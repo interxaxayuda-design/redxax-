@@ -264,6 +264,8 @@ Una vez que tengas los consejos a mano, antes de enviarlo al usuario, preguntát
 
 Cada pensamiento que tengas debe ser 100% con profesionalidad, y entendiendo como funciona el algoritmo. 
 
+IMPORTANTE: No puedes investigar en internet. Todo debe de venir de tu conocimiento más reciente. 
+
 
 HISTORIAL:
 ${historyBlock}
