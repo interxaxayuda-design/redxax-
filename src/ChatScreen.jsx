@@ -1,6 +1,7 @@
 import { ArrowLeft, Check, Copy, Mic, Send, Sparkles, Square } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { REVIEW_CONFIG, buildIdeaStructurePrompt } from './prompts.js';
+import { runIdeaPipeline } from './ideaPipeline.js';
+import { REVIEW_CONFIG } from './prompts.js';
 
 const PLATFORMS = [
   { id: 'tiktok', label: 'TikTok' },
@@ -15,19 +16,9 @@ const SUGGESTIONS = [
 ];
 
 const MAX_HISTORY_TURNS = 6;
-const MAX_OUTPUT_TOKENS = 8192;      // reasoning also consumes this budget
-const SESSION_TOKEN_LIMIT = 30000;   // total cap per chat session
+const SESSION_TOKEN_LIMIT = 60000;   // total cap per chat session (el pipeline gasta ~3 llamadas por mensaje)
 
 // ── Helpers (local to avoid a circular import with App.jsx) ──
-const parsePlan = (raw) => {
-  if (!raw) return null;
-  const s = raw.replace(/```json|```/g, '').trim();
-  const a = s.indexOf('{');
-  const b = s.lastIndexOf('}');
-  if (a === -1 || b === -1) return null;
-  try { return JSON.parse(s.slice(a, b + 1)); } catch { return null; }
-};
-
 const pick = (o, keys) => {
   for (const k of keys) {
     if (o?.[k] != null && o[k] !== '') return o[k];
@@ -60,14 +51,6 @@ const normalizePlan = (p) => {
 };
 
 const isRenderable = (p) => Boolean(p && (p.mensaje || p.hook || p.escenas?.length));
-
-const extractText = (data) => {
-  if (data?.error) throw new Error(`${data.error} ${data.message ?? ''}`);
-  const parts = data?.candidates?.[0]?.content?.parts;
-  const text = parts?.map((p) => p.text).filter(Boolean).join('') ?? data?.text;
-  if (!text) throw new Error(data?.promptFeedback?.blockReason ?? 'Respuesta vacía de la IA');
-  return text;
-};
 
 const planToText = (p) => {
   if (!p) return '';
@@ -396,53 +379,27 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
         text: m.role === 'bot' ? (m.plan ? planToText(m.plan) : m.text) : m.text,
       }));
 
-      const prompt = buildIdeaStructurePrompt({ idea: content, history, platform });
-      const cfg = REVIEW_CONFIG.sintesis;
+      const lastPlan = [...messages].reverse().find((m) => m.plan?.tipo === 'plan')?.plan ?? null;
 
-      const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-        body: {
-          text: prompt,
-          model: cfg.model,
-          thinkingLevel: 'medium',
-          temperature: 1.0,
-          expectsJson: true,
-          maxOutputTokens: MAX_OUTPUT_TOKENS,
-        },
+      const { plan, tokens, trace } = await runIdeaPipeline({
+        supabase,
+        model: REVIEW_CONFIG.sintesis.model,
+        idea: content,
+        history,
+        platform,
+        lastPlan,
       });
 
-      if (error) {
-        let body = '';
-        try { body = await error.context?.text?.(); } catch (_) {}
-        throw new Error(body || error.message);
-      }
+      setTokensUsed((t) => t + tokens);
+      console.table(trace); // tokens reales por etapa: candidatos / juez / plan
 
-      // Token count (real Gemini usage; falls back to an estimate)
-      const candidate = data?.candidates?.[0];
-      const outText = candidate?.content?.parts?.map((p) => p.text).filter(Boolean).join('') ?? '';
-      const used = data?.usageMetadata?.totalTokenCount
-        ?? Math.ceil((prompt.length + outText.length) / 4);
-      setTokensUsed((t) => t + used);
+      const parsed = normalizePlan(plan);
+      if (!isRenderable(parsed)) throw new Error('La IA devolvió un formato inesperado. Probá de nuevo.');
 
-      if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
-        console.warn('Gemini finishReason:', candidate.finishReason, data?.usageMetadata);
-      }
-      if (candidate?.finishReason === 'MAX_TOKENS' && !outText) {
-        throw new Error('La respuesta se cortó por longitud. Probá con una idea más puntual.');
-      }
-
-      const raw = extractText(data);
-      const parsed = normalizePlan(parsePlan(raw));
-
-      if (parsed && !isRenderable(parsed)) {
-        console.warn('Formato inesperado de la IA:', raw);
-        throw new Error('La IA devolvió un formato inesperado. Probá de nuevo.');
-      }
-
-      setMessages([...next, parsed
-        ? { role: 'bot', plan: parsed, text: parsed.mensaje ?? '' }
-        : { role: 'bot', text: raw.replace(/```json|```/g, '').trim() }]);
+      setMessages([...next, { role: 'bot', plan: parsed, text: parsed.mensaje ?? '' }]);
     } catch (err) {
       console.error('ChatScreen error:', err);
+      if (err.tokens) setTokensUsed((t) => t + err.tokens);
       setMessages([...next, { role: 'bot', text: `Error: ${err.message || 'Se cortó la conexión. Intentá de nuevo.'}`, isError: true }]);
     } finally {
       setLoading(false);

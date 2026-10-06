@@ -86,7 +86,6 @@ hook=8 (evidence: "me cobró $400 en comisiones", fix: mostrar el resultado en e
 retention=7, emotion=7, shareability=8, novelty=5, confidence=medium
 </output_summary>
 </example>
-"""
 `;
 
 
@@ -139,7 +138,6 @@ hook=8 (evidence: "me cobró $400 en comisiones", fix: mostrar el resultado en e
 retention=7, emotion=7, shareability=8, novelty=5, confidence=medium
 </output_summary>
 </example>
-"""
 `;
 
 export const buildNicheSuggestionPrompt = () => `
@@ -246,68 +244,4 @@ export const buildChatContextBlock = (aiContext = {}) => {
   ].filter(Boolean);
 
   return blocks.join('\n\n');
-};
-
-// Reemplaza a buildIdeaStructurePrompt dentro de prompts.js (buildChatSystemPrompt ya vive en ese archivo).
-export const buildIdeaStructurePrompt = ({ idea, history = [], platform = 'tiktok' }) => {
-  const historyBlock = history.length
-    ? history.map((m) => `${m.role === 'user' ? 'USUARIO' : 'VIRAX'}: ${m.text}`).join('\n\n')
-    : '(primera interacción)';
-
-  return `
-${buildChatSystemPrompt()}
-
-<objetivo>
-Armar el plan con mayor probabilidad de que lo vea completo alguien que no te conoce, no busca este tema y está scrolleando en ${platform}.
-Tu estándar para juzgar contenido ajeno es estricto: aplicá exactamente ese estándar a tu propio plan. Si lo analizaras como video terminado, tendría que sacar 8 o más en hook, retención y novedad.
-</objetivo>
-
-<restricciones>
-- El hook se apoya en un hecho concreto y verdadero de la idea del usuario, nunca en un superlativo ni en una promesa vacía.
-- Devolvé tipo "pregunta" solo si la idea no contiene NINGÚN dato verificable que sirva de ancla. Si hay datos pero faltan los que harían el hook fuerte (precio, m², vista, zona, ventaja frente a la competencia), armá el plan con lo que hay y pedí lo que falta en pregunta_seguimiento.
-- Los 5 hooks candidatos deben usar mecanismos distintos entre sí. Si dos se parecen, reemplazá uno.
-- Si el mejor candidato saca menos de 8 con tu propia severidad, descartá la tanda y escribí otra más arriesgada antes de seguir.
-- Sin investigación externa: todo sale de tu conocimiento.
-- Español rioplatense.
-</restricciones>
-
-<historial>
-${historyBlock}
-</historial>
-
-<mensaje_usuario>
-${idea}
-</mensaje_usuario>
-
-<salida>
-SOLO un objeto JSON válido, sin markdown ni backticks, sin comillas dobles sin escapar dentro de los valores.
-Respetá los nombres de clave y su orden EXACTOS. hecho_ancla y hooks_candidatos van primero: son tu borrador, y el resto se decide a partir de ellos.
-
-- Si no hay ningún dato ancla: {"tipo":"pregunta","mensaje":"<una pregunta concreta>"}
-- Si el usuario pide un ajuste, devolvé el plan completo actualizado.
-- Máximo 5 escenas y 3 errores_a_evitar.
-
-{
-  "tipo": "plan",
-  "titulo": "string",
-  "hecho_ancla": "el dato concreto de la idea del que se cuelga el hook",
-  "hooks_candidatos": [
-    { "hook": "frase hablada", "mecanismo": "por qué frena el scroll", "score": 0, "critica": "por qué no es un 10" }
-  ],
-  "veredicto": { "nivel": "bajo | medio | alto", "razon": "máx. 2 oraciones" },
-  "hook": {
-    "recomendado": "frase hablada del mejor candidato",
-    "texto_en_pantalla": "máx. 6 palabras",
-    "visual": "qué se ve en el primer cuadro",
-    "mecanismo": "por qué detiene el scroll"
-  },
-  "escenas": [
-    { "tiempo": "3-8s", "accion": "string", "dialogo": "string o vacío", "texto_pantalla": "string o vacío" }
-  ],
-  "cta": "coherente con lo prometido, sin urgencia falsa",
-  "errores_a_evitar": ["específico de esta idea (razón entre paréntesis)"],
-  "pregunta_seguimiento": "una sola pregunta"
-}
-(hooks_candidatos tiene exactamente 5 objetos.)
-</salida>`.trim();
 };
