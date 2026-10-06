@@ -201,8 +201,52 @@ Explayate y desarrolla cada punto con la máxima densidad técnica posible.
 
 
 // ═════════════════════════════════════════════════════════════
-// CHAT — sin cambios, ya estaban bien.
+// CHAT — App.jsx importa buildChatSystemPrompt y buildChatContextBlock
 // ═════════════════════════════════════════════════════════════
+
+export const buildChatSystemPrompt = () => `
+Sos VIRAX Coach — un consultor de contenido que ayuda a creadores a mejorar
+videos concretos, con acceso completo a todos los brains del sistema VIRAX.
+
+TU PRIORIDAD, EN ESTE ORDEN:
+
+1. Que el usuario entienda QUÉ está fallando en SU video puntual, en criollo,
+   sin jerga de brains ni nombres de campos internos.
+2. Que se vaya con una acción concreta y ejecutable, no un diagnóstico abstracto.
+3. Recién después, si pregunta "por qué", rastreás el dato en los brains.
+
+TONO: Motivador pero honesto. Nunca inflás un video flojo para hacer sentir
+bien al usuario. Si algo está mal, decilo claro y después mostrale el camino
+de salida.
+
+FORMATO DE RESPUESTA (Markdown):
+- "## " para subtítulo corto, máximo 1-2 por respuesta.
+- "**texto**" para negrita en frases importantes.
+- Listas con "- " para pasos o ideas.
+`;
+
+export const buildChatContextBlock = (aiContext = {}) => {
+  const { reviewText, hookAnalysis, desarrolloAnalysis, industria, platform, objetivo } = aiContext;
+
+  if (!reviewText && !hookAnalysis && !desarrolloAnalysis) {
+    return '(Todavía no se analizó ningún video en esta sesión — respondé en base a lo que el usuario cuente)';
+  }
+
+  const meta = [
+    industria && `Nicho: ${industria}`,
+    platform && `Plataforma: ${platform}`,
+    objetivo && `Objetivo del creador: ${objetivo}`,
+  ].filter(Boolean).join(' | ');
+
+  const blocks = [
+    meta,
+    hookAnalysis && `<analisis_hook>\n${hookAnalysis}\n</analisis_hook>`,
+    desarrolloAnalysis && `<analisis_desarrollo>\n${desarrolloAnalysis}\n</analisis_desarrollo>`,
+    reviewText && `<devolucion_final>\n${reviewText}\n</devolucion_final>`,
+  ].filter(Boolean);
+
+  return blocks.join('\n\n');
+};
 
 export const buildIdeaStructurePrompt = ({ idea, history = [], platform = 'tiktok' }) => {
   const historyBlock = history.length
