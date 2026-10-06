@@ -253,48 +253,29 @@ export const buildIdeaStructurePrompt = ({ idea, history = [], platform = 'tikto
     ? history.map((m) => `${m.role === 'user' ? 'USUARIO' : 'VIRAX'}: ${m.text}`).join('\n\n')
     : '(primera interacción)';
 
-  const today = new Date().toISOString().slice(0, 10);
-
   return `
 ${buildChatSystemPrompt()}
 
-Sos un estratega de contenido. Tu objetivo es que, con las ideas del usuario, puedas armar algo que retenga a cualquier persona. Desde un niño de 6 años hasta una persona súper ocupada de 60 años. Tenés que utilizar cualquier técnica de retención moderna y que funcione (ejemplos: texto, hook negativo, bait, y el resto lo sacás de tu entrenamiento).
+<objetivo>
+Armar el plan con mayor probabilidad de que lo vea completo alguien que no te conoce, no busca este tema y está scrolleando en ${platform}.
+Tu estándar para juzgar contenido ajeno es estricto: aplicá exactamente ese estándar a tu propio plan. Si lo analizaras como video terminado, tendría que sacar 8 o más en hook, retención y novedad.
+</objetivo>
 
-Una vez que tengas los consejos a mano, antes de enviarlo al usuario, preguntáte internamente "¿Por qué un niño de 6 años hasta un mayor de 60 quieren mirar este video? ¿Les podrá interesar o scrollean?" Si la respuesta es no, modificá la estrategia hasta que sí.
+<restricciones>
+- El hook se apoya en un hecho concreto y verdadero de la idea del usuario, nunca en un superlativo ni en una promesa vacía.
+- Si la idea no contiene ese hecho, devolvé tipo "pregunta" pidiéndolo.
+- Los 5 hooks candidatos deben usar mecanismos distintos entre sí. Si dos se parecen, reemplazá uno.
+- Si el mejor candidato saca menos de 8 con tu propia severidad, descartá la tanda y escribí otra más arriesgada antes de seguir.
+- Sin investigación externa: todo sale de tu conocimiento.
+- Español rioplatense.
+</restricciones>
 
-Cada pensamiento que tengas debe ser 100% con profesionalidad, y entendiendo cómo funciona el algoritmo.
-
-IMPORTANTE: No podés investigar en internet. Todo debe venir de tu conocimiento más reciente.
-
-
-HISTORIAL:
+<historial>
 ${historyBlock}
+</historial>
 
-MENSAJE DEL USUARIO:
+<mensaje_usuario>
 ${idea}
-
-# SALIDA
-SOLO un objeto JSON válido, sin markdown ni backticks, en español rioplatense, sin comillas dobles
-sin escapar dentro de los valores.
-- Si falta algo clave (producto, público u objetivo): {"tipo":"pregunta","mensaje":"<una pregunta concreta>"}
-- Si pide un ajuste, devolvé el plan completo actualizado.
-- Máximo 5 escenas y 3 errores_a_evitar.
-
-{
-  "tipo": "plan",
-  "titulo": "string",
-  "veredicto": { "nivel": "bajo | medio | alto", "razon": "máx. 2 oraciones" },
-  "hook": {
-    "recomendado": "frase hablada",
-    "texto_en_pantalla": "máx. 6 palabras",
-    "visual": "qué se ve en el primer cuadro",
-    "mecanismo": "por qué detiene el scroll"
-  },
-  "escenas": [
-    { "tiempo": "3-8s", "accion": "string", "dialogo": "string o vacío", "texto_pantalla": "string o vacío" }
-  ],
-  "cta": "coherente con lo prometido, sin urgencia falsa",
-  "errores_a_evitar": ["específico de esta idea (razón entre paréntesis)"],
-  "pregunta_seguimiento": "una sola pregunta"
-}`.trim();
+</mensaje_usuario>
+`.trim();
 };
