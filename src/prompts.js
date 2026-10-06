@@ -37,8 +37,14 @@ export const REVIEW_CONFIG = {
     model: "gemini-3-flash-preview",
     temperature: 0,
     thinkingConfig: { thinkingLevel: "medium" },
-    // 💡 AGREGAR ESTO: Habilita la búsqueda web activa en la síntesis
+    // Habilita la búsqueda web activa en la síntesis
     tools: [{ googleSearch: {} }]
+  },
+  // Chat "Empieza a imaginar" (ideaPipeline.js). Solo se lee `model` desde ChatScreen;
+  // thinkingLevel / temperature / maxOutputTokens viven en CFG dentro de ideaPipeline.js.
+  // Gemini 3: temperature 1.0 (el 0 puede degradar el razonamiento).
+  coach: {
+    model: "gemini-3-flash-preview"
   }
 };
 
@@ -90,7 +96,7 @@ retention=7, emotion=7, shareability=8, novelty=5, confidence=medium
 
 
 // ═════════════════════════════════════════════════════════════
-// DESARROLLO — App.j sx la llama así: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo)
+// DESARROLLO — App.jsx la llama así: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo)
 // ═════════════════════════════════════════════════════════════
 
 export const buildDesarrolloAnalysisPrompt = (platform, industria, objetivo) => 
@@ -140,6 +146,11 @@ retention=7, emotion=7, shareability=8, novelty=5, confidence=medium
 </example>
 `;
 
+// ═════════════════════════════════════════════════════════════
+// NICHO — App.jsx la llama sin argumentos: buildNicheSuggestionPrompt()
+// maxOutputTokens: 30, así que tiene que ser corta.
+// ═════════════════════════════════════════════════════════════
+
 export const buildNicheSuggestionPrompt = () => `
 Nada más tenés que decir qué nicho es en 2 palabras. 
 `;
@@ -147,7 +158,6 @@ Nada más tenés que decir qué nicho es en 2 palabras.
 // ═════════════════════════════════════════════════════════════
 // SÍNTESIS FINAL — App.jsx la llama así:
 // buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, selectedObjetivo)
-// (antes tenía 6 parámetros pensados para un pipeline de ranking
 // ═════════════════════════════════════════════════════════════
 
 export const buildFinalReviewPrompt = (
@@ -179,27 +189,18 @@ ESTRUCTURA DE SALIDA (Texto plano estricto):
 (Diagnóstico sintético y clínico de la falla estructural de retención y el comportamiento esperado del usuario en el feed).
 
 ## Recomendaciones
-Para hacer esto, debes pensar como la perspectivda de un humano y pensar "¿Si este video es malo, qué técnicas puede usar oara haberme podido retener hasta el final?" 
+Pensá desde la perspectiva de un espectador humano: "Si este video es malo, ¿qué técnicas habrían podido retenerme hasta el final?"
 
-Las recomendaciones deben ser concretas, no muy largas (máximo unos 800 carácteres), fácil de entender para cualquiera y que retenga a cualquier usuario que paso por el video.
-
-
-
+Las recomendaciones deben ser concretas, fáciles de entender para cualquiera y capaces de retener a cualquier usuario que pase por el video. Máximo unos 800 caracteres en total para toda la sección; dentro de ese límite, cada punto con la mayor densidad técnica posible.
 
 EJEMPLO DEL NIVEL DE PROFUNDIDAD ESPERADO EN LAS RECOMENDACIONES:
 "- En lugar de decir 'hoy te enseño X', corta los primeros 1.2 segundos y comienza in-media-res mostrando el resultado fallido mientras rompes una hoja de papel frente a cámara. Esto genera un Open Loop inmediato antes de que el cerebro del usuario decida deslizar."
-
-Explayate y desarrolla cada punto con la máxima densidad técnica posible.
 `;
-
-// ═════════════════════════════════════════════════════════════
-// NICHO — App.jsx la llama sin argumentos: buildNicheSuggestionPrompt()
-// maxOutputTokens: 30, así que tiene que ser corta.
-// ═════════════════════════════════════════════════════════════
 
 
 // ═════════════════════════════════════════════════════════════
 // CHAT — App.jsx importa buildChatSystemPrompt y buildChatContextBlock
+// (el chat "Empieza a imaginar" NO los usa: tiene su propio prompt en ideaPipeline.js)
 // ═════════════════════════════════════════════════════════════
 
 export const buildChatSystemPrompt = () => `

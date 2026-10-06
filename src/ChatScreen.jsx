@@ -1,6 +1,7 @@
 import { ArrowLeft, Check, Copy, Mic, Send, Sparkles, Square } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { runIdeaPipeline } from './ideaPipeline.js';
+
 import { REVIEW_CONFIG } from './prompts.js';
 
 const PLATFORMS = [
@@ -16,7 +17,9 @@ const SUGGESTIONS = [
 ];
 
 const MAX_HISTORY_TURNS = 6;
-const SESSION_TOKEN_LIMIT = 60000;   // total cap per chat session (el pipeline gasta ~3 llamadas por mensaje)
+// Tope total por sesión. El pipeline hace 1 llamada por mensaje (2 si la autoauditoría no pasa)
+// con thinking alto: medí el consumo real en console.table(trace) y ajustá este valor.
+const SESSION_TOKEN_LIMIT = 80000;
 
 // ── Helpers (local to avoid a circular import with App.jsx) ──
 const pick = (o, keys) => {
@@ -82,6 +85,14 @@ const planToText = (p) => {
   if (p.cta) L.push(`CTA: ${p.cta}`, '');
   if (p.errores_a_evitar?.length) L.push('EVITÁ', ...p.errores_a_evitar.map((x) => `- ${x}`), '');
   return L.join('\n').trim();
+};
+
+// Historial para el modelo: el plan completo ya viaja en <plan_anterior> (lastPlan),
+// así que acá se manda solo una línea por plan para no pagar los mismos tokens dos veces.
+const historyText = (m) => {
+  if (m.role !== 'bot') return m.text;
+  if (m.plan?.tipo === 'plan') return `(Plan entregado: ${m.plan.titulo ?? 'sin título'})`;
+  return m.plan ? planToText(m.plan) : m.text;
 };
 
 // ── Voice dictation (Web Speech API, no AI) ──
@@ -376,14 +387,14 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
     try {
       const history = next.slice(0, -1).slice(-MAX_HISTORY_TURNS).map((m) => ({
         role: m.role,
-        text: m.role === 'bot' ? (m.plan ? planToText(m.plan) : m.text) : m.text,
+        text: historyText(m),
       }));
 
       const lastPlan = [...messages].reverse().find((m) => m.plan?.tipo === 'plan')?.plan ?? null;
 
       const { plan, tokens, trace } = await runIdeaPipeline({
         supabase,
-        model: REVIEW_CONFIG.sintesis.model,
+        model: REVIEW_CONFIG.coach.model,
         idea: content,
         history,
         platform,
@@ -391,7 +402,7 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
       });
 
       setTokensUsed((t) => t + tokens);
-      console.table(trace); // tokens reales por etapa: candidatos / juez / plan
+      console.table(trace); // tokens reales por llamada (coach; una fila más si hubo reintento)
 
       const parsed = normalizePlan(plan);
       if (!isRenderable(parsed)) throw new Error('La IA devolvió un formato inesperado. Probá de nuevo.');
