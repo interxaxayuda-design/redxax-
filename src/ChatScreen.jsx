@@ -28,6 +28,39 @@ const parsePlan = (raw) => {
   try { return JSON.parse(s.slice(a, b + 1)); } catch { return null; }
 };
 
+const pick = (o, keys) => {
+  for (const k of keys) {
+    if (o?.[k] != null && o[k] !== '') return o[k];
+  }
+  return undefined;
+};
+
+// Tolera variaciones de claves del modelo y nunca deja pasar un objeto sin nada que mostrar.
+const normalizePlan = (p) => {
+  if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
+  const plan = { ...p };
+
+  if (typeof plan.hook === 'string') plan.hook = { recomendado: plan.hook };
+
+  if (plan.veredicto && typeof plan.veredicto === 'object') {
+    plan.veredicto = {
+      ...plan.veredicto,
+      razon: pick(plan.veredicto, ['razon', 'razón', 'motivo', 'justificacion', 'justificación']),
+    };
+  }
+
+  const msg = pick(plan, ['mensaje', 'pregunta', 'pregunta_seguimiento']);
+  const hasPlanBody = Boolean(plan.hook) || plan.escenas?.length > 0;
+
+  if (plan.tipo === 'pregunta' || !hasPlanBody) {
+    plan.tipo = 'pregunta';
+    plan.mensaje = plan.mensaje ?? msg;
+  }
+  return plan;
+};
+
+const isRenderable = (p) => Boolean(p && (p.mensaje || p.hook || p.escenas?.length));
+
 const extractText = (data) => {
   if (data?.error) throw new Error(`${data.error} ${data.message ?? ''}`);
   const parts = data?.candidates?.[0]?.content?.parts;
@@ -41,7 +74,9 @@ const planToText = (p) => {
   if (p.tipo === 'pregunta') return p.mensaje ?? '';
   const L = [];
   if (p.titulo) L.push(p.titulo, '');
-  if (p.veredicto) L.push(`Potencial ${p.veredicto.nivel}: ${p.veredicto.razon}`, '');
+  if (p.veredicto) {
+    L.push(`Potencial ${p.veredicto.nivel ?? ''}${p.veredicto.razon ? `: ${p.veredicto.razon}` : ''}`.trim(), '');
+  }
   if (p.hook) {
     L.push('HOOK');
     const frase = p.hook.recomendado ?? p.hook.frase_hablada;
@@ -209,7 +244,9 @@ function PlanCard({ plan }) {
           <SectionLabel color={levelColor[veredicto.nivel] ?? 'text-slate-400'}>
             Potencial {veredicto.nivel}
           </SectionLabel>
-          <p className="text-[13px] text-white/75 leading-snug">{veredicto.razon}</p>
+          {veredicto.razon && (
+            <p className="text-[13px] text-white/75 leading-snug">{veredicto.razon}</p>
+          )}
         </div>
       )}
 
@@ -367,7 +404,7 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
           text: prompt,
           model: cfg.model,
           thinkingLevel: 'medium',
-          temperature: 0.7,
+          temperature: 1.0,
           expectsJson: true,
           maxOutputTokens: MAX_OUTPUT_TOKENS,
         },
@@ -386,19 +423,23 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
         ?? Math.ceil((prompt.length + outText.length) / 4);
       setTokensUsed((t) => t + used);
 
+      if (candidate?.finishReason && candidate.finishReason !== 'STOP') {
+        console.warn('Gemini finishReason:', candidate.finishReason, data?.usageMetadata);
+      }
       if (candidate?.finishReason === 'MAX_TOKENS' && !outText) {
         throw new Error('La respuesta se cortó por longitud. Probá con una idea más puntual.');
       }
 
       const raw = extractText(data);
-      const parsed = parsePlan(raw);
+      const parsed = normalizePlan(parsePlan(raw));
+
+      if (parsed && !isRenderable(parsed)) {
+        console.warn('Formato inesperado de la IA:', raw);
+        throw new Error('La IA devolvió un formato inesperado. Probá de nuevo.');
+      }
 
       setMessages([...next, parsed
-        ? {
-            role: 'bot',
-            plan: parsed,
-            text: parsed.mensaje ?? '',
-          }
+        ? { role: 'bot', plan: parsed, text: parsed.mensaje ?? '' }
         : { role: 'bot', text: raw.replace(/```json|```/g, '').trim() }]);
     } catch (err) {
       console.error('ChatScreen error:', err);
@@ -476,32 +517,33 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
             </div>
           )}
 
-          {messages.map((m, i) => (
-            <div key={i} className={`flex items-start gap-2.5 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              {m.role === 'user' ? <UserAvatar src={userIcon} /> : <BotAvatar />}
-              <div className={`flex flex-col gap-1 ${m.plan?.tipo === 'plan' ? 'w-full max-w-[92%]' : 'max-w-[78%]'}`}>
-                <div className={`px-4 py-3 text-sm leading-relaxed font-medium
-                  ${m.role === 'user'
-                    ? 'bg-emerald-600/15 border border-emerald-500/20 rounded-sm rounded-tl-2xl rounded-bl-2xl rounded-br-2xl text-emerald-100/90'
-                    : m.isError
-                      ? 'bg-red-500/[0.07] border border-red-500/25 rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-red-200/80'
-                      : 'bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-white/80'}`}
-                >
-                  {m.plan ? (
-                    <>
-                      {m.text && <p className={m.plan.hook || m.plan.escenas ? 'mb-4 text-white/70' : ''}>{m.text}</p>}
-                      {(m.plan.hook || m.plan.escenas) && (
-                        <PlanCard plan={m.plan} />
-                      )}
-                    </>
-                  ) : (
-                    <p className="whitespace-pre-wrap">{m.text}</p>
-                  )}
+          {messages.map((m, i) => {
+            const isFullPlan = Boolean(m.plan?.hook || m.plan?.escenas?.length);
+            return (
+              <div key={i} className={`flex items-start gap-2.5 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                {m.role === 'user' ? <UserAvatar src={userIcon} /> : <BotAvatar />}
+                <div className={`flex flex-col gap-1 ${isFullPlan ? 'w-full max-w-[92%]' : 'max-w-[78%]'}`}>
+                  <div className={`px-4 py-3 text-sm leading-relaxed font-medium
+                    ${m.role === 'user'
+                      ? 'bg-emerald-600/15 border border-emerald-500/20 rounded-sm rounded-tl-2xl rounded-bl-2xl rounded-br-2xl text-emerald-100/90'
+                      : m.isError
+                        ? 'bg-red-500/[0.07] border border-red-500/25 rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-red-200/80'
+                        : 'bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-white/80'}`}
+                  >
+                    {m.plan ? (
+                      <>
+                        {m.text && <p className={isFullPlan ? 'mb-4 text-white/70' : ''}>{m.text}</p>}
+                        {isFullPlan && <PlanCard plan={m.plan} />}
+                      </>
+                    ) : (
+                      <p className="whitespace-pre-wrap">{m.text}</p>
+                    )}
+                  </div>
+                  {m.plan?.hook && <CopyBtn text={planToText(m.plan)} />}
                 </div>
-                {m.plan?.hook && <CopyBtn text={planToText(m.plan)} />}
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {loading && <Thinking />}
           <div ref={endRef} />
