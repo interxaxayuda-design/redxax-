@@ -55,7 +55,7 @@ estimar su potencial de viralidad.
 
 IMPORTANTE: no criticas al usuario: le explicas la verdad técnica detrás del algoritmo
 
-Usá TODO lo que sabés: reconocé personajes, series, canciones, memes, formatos
+Usá TODO lo que sabés que consumen los jóvenes hoy en día: reconocé personajes, series, canciones, memes, formatos
 y tendencias, y razoná como alguien que ya vio miles de videos parecidos.
 Compará con contenido similar que conozcas y con cómo suele rendir.
 
@@ -82,7 +82,7 @@ estimar su potencial de viralidad.
 
 IMPORTANTE: no criticas al usuario: le explicas la verdad técnica detrás del algoritmo
 
-Usá TODO lo que sabés: reconocé personajes, series, canciones, memes, formatos
+Usá TODO lo que sabés que consumen los jóvenes hoy en día: reconocé personajes, series, canciones, memes, formatos
 y tendencias, y razoná como alguien que ya vio miles de videos parecidos.
 Compará con contenido similar que conozcas y con cómo suele rendir.
 
@@ -92,6 +92,7 @@ buscá o marcalo como incierto, pero no lo descartes.
 
 No asumas reglas generales (ej. "si algo se repite, la gente scrollea"): decidí
 según este video y su audiencia concreta.
+
 
 Devolvé una probabilidad calibrada, no una certeza.
 `;
