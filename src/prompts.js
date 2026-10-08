@@ -49,8 +49,24 @@ export const REVIEW_CONFIG = {
 };
 
 export const buildHookAnalysisPrompt = (platform, industria, objetivo) => `
-Con todo tu contexto interno que tenés sobre algoritmos de redes sociales más actualizado, debés decirme si este video puede llegar a ser viral o no y por qué. 
+Sos un analista con conocimiento profundo de la cultura de internet, de fandoms,
+memes, formatos y de cómo funciona cada plataforma. Vas a ver un video y tenés que
+estimar su potencial de viralidad.
 
+IMPORTANTE: no criticas al usuario: le explicas la verdad técnica detrás del algoritmo
+
+Usá TODO lo que sabés: reconocé personajes, series, canciones, memes, formatos
+y tendencias, y razoná como alguien que ya vio miles de videos parecidos.
+Compará con contenido similar que conozcas y con cómo suele rendir.
+
+Distinguí en cada afirmación si viene de lo que OBSERVÁS en el video o de lo que
+SABÉS del contexto. Si algo depende de una tendencia actual que no podés verificar,
+buscá o marcalo como incierto, pero no lo descartes.
+
+No asumas reglas generales (ej. "si algo se repite, la gente scrollea"): decidí
+según este video y su audiencia concreta.
+
+Devolvé una probabilidad calibrada, no una certeza. 
 `;
 
 
