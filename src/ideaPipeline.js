@@ -7,6 +7,7 @@ const PERSONA =
 
 // Gemini 3: temperature 1.0 (valores bajos pueden degradar el razonamiento).
 // maxOutputTokens incluye los tokens de pensamiento: dejá margen.
+// Si ves finishReason MAX_TOKENS en consola, bajá thinkingLevel a 'medium'.
 const CFG = { thinkingLevel: 'high', temperature: 1.0, maxOutputTokens: 8192 };
 
 const MIN_HOOK = 7;     // score mínimo verificado del criterio hook
@@ -24,37 +25,97 @@ const historyBlock = (history) =>
     ? history.map((m) => `${m.role === 'user' ? 'USUARIO' : 'VIRAX'}: ${m.text}`).join('\n\n')
     : '(primera interacción)';
 
+const SCHEMA = `
+Respondé SOLO con un objeto JSON válido, sin texto extra ni markdown. Elegí UNO de estos formatos:
+
+A) Si falta información clave para trabajar la idea:
+{ "tipo": "pregunta", "mensaje": "una sola pregunta concreta" }
+
+B) Si el usuario pide ajustar algo pero no hay plan previo:
+{ "tipo": "ajuste_sin_plan" }
+
+C) Plan completo:
+{
+  "tipo": "plan",
+  "titulo": "string corto",
+  "veredicto": { "razon": "por qué esta idea tiene o no potencial, en 1-2 frases" },
+  "hook": {
+    "recomendado": "frase hablada exacta de los primeros 3 segundos",
+    "texto_en_pantalla": "string",
+    "visual": "qué se ve en cámara",
+    "tipo": "curiosidad | contraste | pregunta | promesa | etc.",
+    "mecanismo": "qué mecanismo de atención activa, ligado a algo observable en la idea",
+    "alternativas": [
+      { "tipo": "string", "frase_hablada": "string", "texto_en_pantalla": "string" }
+    ]
+  },
+  "escenas": [
+    {
+      "tiempo": "0-3s",
+      "accion": "qué se graba, tan específico que otra persona lo pueda grabar sin pedir aclaraciones",
+      "dialogo": "string o vacío",
+      "texto_pantalla": "string o vacío"
+    }
+  ],
+  "cta": "cierre concreto",
+  "errores_a_evitar": ["máx 3, específicos de esta idea"],
+  "pregunta_seguimiento": "string opcional",
+  "auditoria": {
+    "hook":         { "score": 0, "evidence": "fragmento LITERAL copiado del plan", "fix": "string" },
+    "emotion":      { "score": 0, "evidence": "...", "fix": "..." },
+    "shareability": { "score": 0, "evidence": "...", "fix": "..." },
+    "novelty":      { "score": 0, "evidence": "...", "fix": "..." },
+    "retention":    { "score": 0, "evidence": "...", "fix": "..." },
+    "trend_fit":    { "score": 0, "evidence": "...", "fix": "..." },
+    "clarity_cta":  { "score": 0, "evidence": "...", "fix": "..." },
+    "platform_fit": { "score": 0, "evidence": "...", "fix": "..." }
+  }
+}
+
+Condiciones:
+- "score" es un número de 0 a 10.
+- Entre 3 y 5 escenas.
+- "evidence" debe ser texto copiado TAL CUAL de hook.recomendado, hook.texto_en_pantalla, hook.visual, hook.mecanismo, escenas (accion/dialogo/texto_pantalla) o cta. Si no es literal, el score se topa en 3.
+- Si el mensaje es una idea mínimamente trabajable, devolvé el plan (C); preguntá (A) solo si realmente no se puede avanzar.
+`.trim();
+
 const buildPrompt = ({ idea, history, platform, lastPlan, feedback }) => `
 ${PERSONA}
 
-Sos VIRAX Coach.
-
 Tu trabajo no es dar consejos genéricos de creador de contenido.
-
-Tu trabajo es detectar qué mecanismos específicos de atención podrían existir en esta idea y amplificarlos.
+Tu trabajo es detectar qué mecanismos específicos de atención existen en esta idea y amplificarlos.
 
 Reglas:
-
 - Si un consejo podría servir para cualquier video, descartalo.
 - Cada recomendación debe partir de algo observable en la idea.
-- No hables de teoría.
-- No hables de algoritmos.
-- No hables de "más emoción", "más curiosidad" o "mejor hook" sin explicar exactamente cómo lograrlo.
+- No hables de teoría ni de algoritmos.
+- No digas "más emoción", "más curiosidad" o "mejor hook" sin explicar exactamente cómo lograrlo.
 - Priorizá cambios pequeños que generen grandes diferencias.
-- Compará mentalmente con contenido que haya funcionado por mecanismos similares, aunque pertenezca a categorías distintas.
-- Pensá primero cómo y por qué este video podría fracasar.
-- Luego diseñá modificaciones para evitar esos puntos de fuga.
+- Compará mentalmente con contenido que haya funcionado por mecanismos similares, aunque sea de otras categorías.
+- Pensá primero cómo y por qué este video podría fracasar; luego diseñá modificaciones que eviten esos puntos de fuga.
+- Todo debe ser tan específico que otra persona pueda grabarlo sin pedir aclaraciones.
 
-Para cada recomendación devolvé:
+Dentro del JSON, reflejá tus recomendaciones así:
+- OBSERVACIÓN + MECANISMO → hook.mecanismo y veredicto.razon
+- CAMBIO PROPUESTO → hook, escenas y cta
+- EFECTO ESPERADO → veredicto.razon y errores_a_evitar
 
-OBSERVACIÓN
-MECANISMO
-CAMBIO PROPUESTO
-EFECTO ESPERADO
+Plataforma: ${platform}
 
-Las recomendaciones deben ser tan específicas que otra persona pueda grabarlas sin pedir aclaraciones.
+<historial>
+${historyBlock(history)}
+</historial>
 
+<plan_anterior>
+${lastPlan ? JSON.stringify(lastPlan) : '(ninguno)'}
+</plan_anterior>
 
+<mensaje_actual>
+${idea}
+</mensaje_actual>
+
+${feedback ? `<correccion>\n${feedback}\n</correccion>\n` : ''}
+${SCHEMA}
 `.trim();
 
 // ── Llamada al proxy ─────────────────────────────────────────
@@ -94,7 +155,10 @@ const callGemini = async (supabase, body) => {
       : (data?.promptFeedback?.blockReason ?? 'Respuesta vacía de la IA'));
   }
   const json = parseJson(raw);
-  if (!json) fail('La IA devolvió un formato inesperado. Probá de nuevo.');
+  if (!json) {
+    console.warn('RAW (no parseable):', raw.slice(0, 800));
+    fail('La IA devolvió un formato inesperado. Probá de nuevo.');
+  }
   return { json, tokens };
 };
 
@@ -162,7 +226,10 @@ export const runIdeaPipeline = async ({ supabase, model, idea, history = [], pla
         trace,
       };
     }
-    if (!validPlan(out)) throw new Error('La IA devolvió un formato inesperado. Probá de nuevo.');
+    if (!validPlan(out)) {
+      console.warn('Plan inválido, JSON recibido:', JSON.stringify(out).slice(0, 800));
+      throw new Error('La IA devolvió un formato inesperado. Probá de nuevo.');
+    }
 
     let best = { out, a: audit(out) };
 
@@ -172,6 +239,7 @@ export const runIdeaPipeline = async ({ supabase, model, idea, history = [], pla
         ...best.a.rows
           .filter((x) => x.score < MIN_HOOK)
           .map((x) => `- ${x.k} ${x.score}/10: ${x.fix || 'subir el estándar'}`),
+        'Recordá: "evidence" debe ser texto copiado literal del plan.',
       ].join('\n');
 
       const retry = await run(feedback);
