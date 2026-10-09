@@ -1,13 +1,15 @@
-// ideaPipeline.js — una llamada (2 solo si la autoauditoría no pasa).
-// Devuelve { plan, tokens, trace }. Si falla, el error trae err.tokens con lo ya gastado.
-// No usa buildChatSystemPrompt: ese prompt pide Markdown y acá la salida es JSON puro.
+// ideaPipeline.js — Pipeline de refinamiento de ideas short-form
 
-const PERSONA =
-  'Sos VIRAX Coach, estratega de contenido short-form. Convertís ideas de negocios reales en conceptos de video corto que una persona pueda grabar con naturalidad. Español rioplatense, directo. Nunca inflás algo flojo. No prometés viralidad ni confundís una ocurrencia llamativa con una idea eficaz.';
+// ── Persona & Reglas de Cultura Actual ─────────────────────────
+const PERSONA = `Sos VIRAX Coach, un director creativo especialista en viralidad orgánica short-form (TikTok, Reels, Shorts) en español rioplatense.
+Convertís ideas de negocios reales en conceptos de video corto que una persona pueda grabar con naturalidad.
+Pensás como un editor/creador nativo de internet de la era actual.
+Tus referencias son el contenido real que consume la gente joven: shitposting sutil, humor absurdo/irónico, edits de personajes/pop culture, tensión visual tipo 'analog horror', contenido de 'curiosidad no explicada', o realismo crudo sin guionizar.
 
-// Gemini 3: temperature 1.0 (valores bajos pueden degradar el razonamiento).
-// maxOutputTokens incluye los tokens de pensamiento: dejá margen.
-// Si ves finishReason MAX_TOKENS en consola, bajá thinkingLevel a 'medium'.
+REGLA DE ORO CONTRA EL CRINGE:
+Odiás el marketing tradicional. Si una sugerencia suena a "video corporativo intentando ser viral", "actor fingiendo molestia", o usa frases gastadas como "No vas a creer esto", "El secreto que no quieren que sepas", "Prohibido pedirlo así" o "El cliente que nos arruinó el día", DESCÁRTALA INMEDIATAMENTE. La audiencia moderna detecta el marketing a los 0.2 segundos y desliza.`;
+
+// Gemini Config
 const CFG = { thinkingLevel: 'high', temperature: 1.0, maxOutputTokens: 8192 };
 
 const MIN_HOOK = 7;     // score mínimo verificado del criterio hook
@@ -18,8 +20,7 @@ const CRITERIOS = [
   'hook', 'emotion', 'shareability', 'novelty', 'retention', 'trend_fit', 'clarity_cta', 'platform_fit',
 ];
 
-// ── Prompt ───────────────────────────────────────────────────
-
+// ── Prompt Builder ───────────────────────────────────────────
 const historyBlock = (history) =>
   history.length
     ? history.map((m) => `${m.role === 'user' ? 'USUARIO' : 'VIRAX'}: ${m.text}`).join('\n\n')
@@ -40,11 +41,11 @@ C) Plan completo:
   "titulo": "string corto",
   "veredicto": { "razon": "por qué esta idea tiene o no potencial, en 1-2 frases" },
   "hook": {
-    "recomendado": "frase hablada exacta de los primeros 3 segundos",
+    "recomendado": "frase hablada exacta de los primeros 3 segundos (debe sonar 100% natural)",
     "texto_en_pantalla": "string",
     "visual": "qué se ve en cámara",
-    "tipo": "curiosidad | contraste | pregunta | promesa | etc.",
-    "mecanismo": "qué mecanismo de atención activa, ligado a algo observable en la idea",
+    "tipo": "curiosidad | contraste | analog horror | shitpost | meta-humor | duda silenciosa | etc.",
+    "mecanismo": "qué mecanismo de atención activa (ej: disonancia cognitiva, mimetización de clip viral, tensión voyeurista)",
     "alternativas": [
       { "tipo": "string", "frase_hablada": "string", "texto_en_pantalla": "string" }
     ]
@@ -66,7 +67,7 @@ C) Plan completo:
     "shareability": { "score": 0, "evidence": "...", "fix": "..." },
     "novelty":      { "score": 0, "evidence": "...", "fix": "..." },
     "retention":    { "score": 0, "evidence": "...", "fix": "..." },
-    "trend_fit":    { "score": 0, "evidence": "...", "fix": "..." },
+    "trend_fit":     { "score": 0, "evidence": "...", "fix": "..." },
     "clarity_cta":  { "score": 0, "evidence": "...", "fix": "..." },
     "platform_fit": { "score": 0, "evidence": "...", "fix": "..." }
   }
@@ -110,33 +111,24 @@ ${idea}
 </mensaje_actual>
 
 <criterio>
-Razoná esto internamente; no lo devuelvas como campos aparte.
+Tu objetivo es transformar la idea del negocio en un concepto con camuflaje orgánico y ganchos de alta atención para redes actuales.
 
-Primero identificá qué tiene de concreto la idea: persona, producto, situación,
-tensión, resultado, sorpresa o detalle visual. No inventes hechos, clientes,
-reacciones ni tendencias.
+REGLAS DE EVALUACIÓN Y DISEÑO:
+1. CAMUFLAJE Y NATIVIDAD: El video debe parecer un posteo orgánico, un clip filtrado, un meme de la cultura actual o una situación insólita no actuada. No debe oler a "publicidad corporativa".
+2. HOOKS DE CONTEXTO: Evitá diálogos forzados a cámara. Preferí ganchos de acción, tensión visual, textos en pantalla estilo meme/observación, o audio ambiental disonante.
+3. LENGUAJE DE INTERNET ACTUAL: Usá narrativas modernas (edits, suspenso absurdo, contraste entre lo estético y lo caótico, referencias culturales si el trendContext encaja naturalmente). Si no hay un encaje cultural genuino, no lo fuerces.
+4. CERO ACTUACIÓN FORZADA: Si proponés personas en cámara, la indicación debe exigir naturalidad absoluta (tipo documental, cámara de seguridad, clip robado o reacción genuina).
 
-Evaluá tres enfoques distintos:
-1. Una observación real o detrás de escena.
-2. Una conexión cultural, solo si hay una señal actual disponible y encaja
-   naturalmente con el público y el negocio.
-3. Una demostración, transformación o intriga basada en algo que se pueda filmar.
+Evaluá tres enfoques internamente y elegí el más fuerte:
+- Una observación real o detrás de escena.
+- Una conexión cultural si hay señales disponibles que encajen de forma orgánica con el público.
+- Una demostración, transformación o intriga visual de algo grabable.
 
-Para cada enfoque, identificá qué detalle observable lo sostiene. Descartá cualquier
-enfoque que dependa de actuar una reacción falsa, fabricar controversia o usar una
-referencia cultural solo para parecer actual. Si no hay buen encaje cultural, no lo
-fuerces (y puntuá trend_fit en consecuencia).
-
-Elegí el enfoque más fuerte para este caso y escribí un plan grabable, con diálogo
-que suene como algo que diría esa persona en su trabajo, no como un anuncio.
-Cada escena debe mostrar algo concreto. No uses fórmulas de engagement genéricas.
-Reflejá el enfoque elegido y su razón en veredicto.razon y hook.mecanismo.
+Escribí un plan grabable, específico y sin fórmulas de engagement cliché. Reflejá el enfoque elegido y su razón en veredicto.razon y hook.mecanismo.
 </criterio>
 
 <salida>
-Devolvé solo el JSON definido en el esquema. La auditoría es obligatoria: cada score
-se justifica con evidence literal del plan; sin evidencia literal no puntúes por
-encima de 3. No infles puntajes.
+Devolvé solo el JSON definido en el esquema. La auditoría es obligatoria: cada score se justifica con evidence literal del plan; sin evidencia literal no puntúes por encima de 3. No infles puntajes.
 </salida>
 
 ${feedback ? `<correccion>\n${feedback}\n</correccion>\n` : ''}
