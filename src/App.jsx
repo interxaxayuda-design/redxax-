@@ -1415,11 +1415,23 @@ ${currentMessage.text}
                 <span>🔒</span><span>Pago seguro · Las gemas no vencen · Sin suscripción</span>
               </div>
 
-<div id="paypal-button-container" className="min-h-[50px]" />
-            
+{gemError && <p className="text-red-400 text-xs font-bold text-center mb-4">{gemError}</p>}
 
-              <div id="paypal-button-container" className="min-h-[50px]" />
-              {gemError && <p className="text-red-400 text-xs font-bold text-center mt-4">{gemError}</p>}
+<p className="text-center text-[11px] font-medium text-slate-500">
+  ¿Un problema? ¡Contáctanos!:{' '}
+  <a
+    href="mailto:helpmevirax@gmail.com?subject=Ayuda%20con%20VIRAX"
+    className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors"
+    onClick={async (e) => {
+      if (Capacitor.isNativePlatform()) {
+        e.preventDefault();
+        await Browser.open({ url: 'mailto:helpmevirax@gmail.com?subject=Ayuda%20con%20VIRAX' });
+      }
+    }}
+  >
+    helpmevirax@gmail.com
+  </a>
+</p>
             </div>
           </div>
         </>
