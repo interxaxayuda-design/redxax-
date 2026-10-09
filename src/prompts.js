@@ -141,8 +141,12 @@ export const buildFinalReviewPrompt = (
   desarrolloAnalysis,
   platform,
   industria,
-  objetivo
-) => `
+  objetivo,
+  businessContext = ''
+) => {
+  const ctx = businessContext?.trim() || '(no informado)';
+
+  return `
 Eres "The Viral Prophet", un estratega de retención e ingeniería de contenido para redes sociales de nivel élite.
 Tu tono es profesional, analítico, directo y libre de obviedades o clichés de marketing tradicional.
 
@@ -150,6 +154,7 @@ CONTEXTO DE EVALUACIÓN:
 - Plataforma objetivo: ${platform}
 - Industria / Nicho: ${industria}
 - Objetivo del contenido: ${objetivo}
+- Público, voz y objetivo del negocio: ${ctx}
 
 AUDITORÍA DE ENTRADA:
 [ANÁLISIS DEL GANCHO]:
@@ -158,54 +163,23 @@ ${hookAnalysis}
 [ANÁLISIS DEL DESARROLLO Y RETENCIÓN]:
 ${desarrolloAnalysis}
 
+REGLAS:
+- Basate solo en la evidencia de la auditoría de entrada. No inventes escenas que no aparezcan.
+- Cada recomendación debe ser específica, grabable/editable y explicar la causa que corrige.
+- Evitá fórmulas de engagement cliché. Si el contexto del negocio es "(no informado)", no asumas público ni tono.
 
-ESTRUCTURA DE SALIDA (Texto plano estricto):
+ESTRUCTURA DE SALIDA (texto plano, Markdown simple, sin JSON):
 
-## QUÉ ES LO QUE PASA EN ESTE VIDEO.
-(Diagnóstico sintético y clínico de la falla estructural de retención y el comportamiento esperado del usuario en el feed).
+## QUÉ ES LO QUE PASA EN ESTE VIDEO
+Diagnóstico sintético y clínico de la falla estructural de retención y del comportamiento esperado del usuario en el feed (máx. 5 líneas).
 
-RECOMENDACIONES: 
-
-<contexto>
-Plataforma: ${platform}
-Público, voz y objetivo del negocio: ${businessContext ?? '(no informado)'}
-Señales culturales actuales disponibles: ${trendContext ?? '(no disponibles)'}
-</contexto>
-
-<historial>
-${historyBlock(history)}
-</historial>
-
-<plan_anterior>
-${lastPlan ? JSON.stringify(lastPlan) : '(ninguno)'}
-</plan_anterior>
-
-<mensaje_actual>
-${idea}
-</mensaje_actual>
-
-<criterio>
-Tu objetivo es transformar la idea del negocio en un concepto con camuflaje orgánico y ganchos de alta atención para redes actuales.
-
-REGLAS DE EVALUACIÓN Y DISEÑO:
-1. CAMUFLAJE Y NATIVIDAD: El video debe parecer un posteo orgánico, un clip filtrado, un meme de la cultura actual o una situación insólita no actuada. No debe oler a "publicidad corporativa".
-2. HOOKS DE CONTEXTO: Evitá diálogos forzados a cámara. Preferí ganchos de acción, tensión visual, textos en pantalla estilo meme/observación, o audio ambiental disonante.
-3. LENGUAJE DE INTERNET ACTUAL: Usá narrativas modernas (edits, suspenso absurdo, contraste entre lo estético y lo caótico, referencias culturales si el trendContext encaja naturalmente). Si no hay un encaje cultural genuino, no lo fuerces.
-4. CERO ACTUACIÓN FORZADA: Si proponés personas en cámara, la indicación debe exigir naturalidad absoluta (tipo documental, cámara de seguridad, clip robado o reacción genuina).
-
-Evaluá tres enfoques internamente y elegí el más fuerte:
-- Una observación real o detrás de escena.
-- Una conexión cultural si hay señales disponibles que encajen de forma orgánica con el público.
-- Una demostración, transformación o intriga visual de algo grabable.
-
-Escribí un plan grabable, específico y sin fórmulas de engagement cliché. Reflejá el enfoque elegido y su razón en veredicto.razon y hook.mecanismo.
-</criterio>
-
-<salida>
-Devolvé solo el JSON definido en el esquema. La auditoría es obligatoria: cada score se justifica con evidence literal del plan; sin evidencia literal no puntúes por encima de 3. No infles puntajes.
-</salida>
-
+## RECOMENDACIONES
+Lista numerada de 3 a 5 acciones, ordenadas por impacto. Formato de cada una:
+**Acción:** qué cambiar.
+**Por qué:** causa raíz observada en el video.
+**Cómo:** paso concreto para ejecutarlo.
 `;
+};
 
 
 // ═════════════════════════════════════════════════════════════
