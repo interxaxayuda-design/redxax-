@@ -3,7 +3,7 @@
 // No usa buildChatSystemPrompt: ese prompt pide Markdown y acá la salida es JSON puro.
 
 const PERSONA =
-  'Sos VIRAX Coach, estratega de contenido short-form. Español rioplatense, directo. Nunca inflás algo flojo.';
+  'Sos VIRAX Coach, estratega de contenido short-form. Convertís ideas de negocios reales en conceptos de video corto que una persona pueda grabar con naturalidad. Español rioplatense, directo. Nunca inflás algo flojo. No prometés viralidad ni confundís una ocurrencia llamativa con una idea eficaz.';
 
 // Gemini 3: temperature 1.0 (valores bajos pueden degradar el razonamiento).
 // maxOutputTokens incluye los tokens de pensamiento: dejá margen.
@@ -75,55 +75,27 @@ C) Plan completo:
 Condiciones:
 - "score" es un número de 0 a 10.
 - Entre 3 y 5 escenas.
+- "auditoria" es OBLIGATORIA en el formato C, con los 8 criterios.
 - "evidence" debe ser texto copiado TAL CUAL de hook.recomendado, hook.texto_en_pantalla, hook.visual, hook.mecanismo, escenas (accion/dialogo/texto_pantalla) o cta. Si no es literal, el score se topa en 3.
 - Si el mensaje es una idea mínimamente trabajable, devolvé el plan (C); preguntá (A) solo si realmente no se puede avanzar.
 `.trim();
 
-const buildPrompt = ({ idea, history, platform, lastPlan, feedback }) => `
+const buildPrompt = ({
+  idea,
+  history,
+  platform,
+  lastPlan,
+  feedback,
+  businessContext = null,
+  trendContext = null,
+}) => `
 ${PERSONA}
-
-Sos VIRAX Coach: convertís ideas de negocios reales en conceptos de video corto
-que una persona pueda grabar con naturalidad. Hablás en español rioplatense.
-No prometés viralidad ni confundís una ocurrencia llamativa con una idea eficaz.
 
 <contexto>
 Plataforma: ${platform}
-Idea: ${idea}
-Historial: ${historyBlock(history)}
-Plan anterior: ${lastPlan ? JSON.stringify(lastPlan) : '(ninguno)'}
 Público, voz y objetivo del negocio: ${businessContext ?? '(no informado)'}
 Señales culturales actuales disponibles: ${trendContext ?? '(no disponibles)'}
 </contexto>
-
-<criterio>
-Primero identificá qué tiene de concreto esta idea: persona, producto, situación,
-tensión, resultado, sorpresa o detalle visual. No inventes hechos, clientes,
-reacciones ni tendencias.
-
-Generá tres enfoques distintos:
-1. Una observación real o detrás de escena.
-2. Una conexión cultural, solo si hay una señal actual disponible y encaja
-   naturalmente con el público y el negocio.
-3. Una demostración, transformación o intriga basada en algo que se pueda filmar.
-
-Para cada enfoque, explicá en una frase qué detalle observable lo sostiene.
-Descartá cualquier enfoque que dependa de actuar una reacción falsa, fabricar
-controversia o usar una referencia cultural solo para parecer actual.
-Si no hay buen encaje cultural, indicá que no conviene forzarlo.
-
-Elegí el enfoque más fuerte para este caso. Escribí un plan grabable, con diálogo
-que suene como algo que diría esa persona en su trabajo, no como un anuncio.
-Cada escena debe mostrar algo concreto. No uses fórmulas de engagement genéricas.
-</criterio>
-
-<salida>
-Devolvé solo el JSON definido por el esquema de la API.
-Incluí: enfoques, recomendado, razón, hook, escenas, CTA y riesgos específicos.
-No incluyas puntajes de auditoría salvo que cada puntaje tenga un criterio
-operacional y una evidencia observable.
-</salida>
-
-Plataforma: ${platform}
 
 <historial>
 ${historyBlock(history)}
@@ -136,6 +108,36 @@ ${lastPlan ? JSON.stringify(lastPlan) : '(ninguno)'}
 <mensaje_actual>
 ${idea}
 </mensaje_actual>
+
+<criterio>
+Razoná esto internamente; no lo devuelvas como campos aparte.
+
+Primero identificá qué tiene de concreto la idea: persona, producto, situación,
+tensión, resultado, sorpresa o detalle visual. No inventes hechos, clientes,
+reacciones ni tendencias.
+
+Evaluá tres enfoques distintos:
+1. Una observación real o detrás de escena.
+2. Una conexión cultural, solo si hay una señal actual disponible y encaja
+   naturalmente con el público y el negocio.
+3. Una demostración, transformación o intriga basada en algo que se pueda filmar.
+
+Para cada enfoque, identificá qué detalle observable lo sostiene. Descartá cualquier
+enfoque que dependa de actuar una reacción falsa, fabricar controversia o usar una
+referencia cultural solo para parecer actual. Si no hay buen encaje cultural, no lo
+fuerces (y puntuá trend_fit en consecuencia).
+
+Elegí el enfoque más fuerte para este caso y escribí un plan grabable, con diálogo
+que suene como algo que diría esa persona en su trabajo, no como un anuncio.
+Cada escena debe mostrar algo concreto. No uses fórmulas de engagement genéricas.
+Reflejá el enfoque elegido y su razón en veredicto.razon y hook.mecanismo.
+</criterio>
+
+<salida>
+Devolvé solo el JSON definido en el esquema. La auditoría es obligatoria: cada score
+se justifica con evidence literal del plan; sin evidencia literal no puntúes por
+encima de 3. No infles puntajes.
+</salida>
 
 ${feedback ? `<correccion>\n${feedback}\n</correccion>\n` : ''}
 ${SCHEMA}
@@ -222,7 +224,16 @@ const validPlan = (o) =>
 
 // ── Pipeline ─────────────────────────────────────────────────
 
-export const runIdeaPipeline = async ({ supabase, model, idea, history = [], platform = 'tiktok', lastPlan = null }) => {
+export const runIdeaPipeline = async ({
+  supabase,
+  model,
+  idea,
+  history = [],
+  platform = 'tiktok',
+  lastPlan = null,
+  businessContext = null,
+  trendContext = null,
+}) => {
   const trace = [];
   const total = () => trace.reduce((s, t) => s + t.tokens, 0);
 
@@ -230,7 +241,7 @@ export const runIdeaPipeline = async ({ supabase, model, idea, history = [], pla
     const r = await callGemini(supabase, {
       ...CFG,
       model,
-      text: buildPrompt({ idea, history, platform, lastPlan, feedback }),
+      text: buildPrompt({ idea, history, platform, lastPlan, feedback, businessContext, trendContext }),
     });
     trace.push({ stage: 'coach', tokens: r.tokens });
     return r.json;

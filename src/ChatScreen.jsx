@@ -95,6 +95,12 @@ const historyText = (m) => {
   return m.plan ? planToText(m.plan) : m.text;
 };
 
+// Errores de código (no de red/IA) no se muestran crudos al usuario.
+const friendlyError = (err) =>
+  err instanceof ReferenceError || err instanceof TypeError || err instanceof SyntaxError
+    ? 'Algo falló de nuestro lado. Probá de nuevo.'
+    : err?.message || 'Se cortó la conexión. Intentá de nuevo.';
+
 // ── Voice dictation (Web Speech API, no AI) ──
 const SpeechRecognitionAPI =
   typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
@@ -347,7 +353,13 @@ function PlanCard({ plan }) {
 }
 
 // ── Main screen ──
-export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend }) {
+export default function ChatScreen({
+  supabase,
+  userIcon,
+  onBack,
+  onBeforeSend,
+  businessContext = null, // ej: 'Panadería artesanal, público 25-40, tono cercano, objetivo: pedidos por WhatsApp'
+}) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -385,10 +397,12 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
     setLoading(true);
 
     try {
-      const history = next.slice(0, -1).slice(-MAX_HISTORY_TURNS).map((m) => ({
-        role: m.role,
-        text: historyText(m),
-      }));
+      // Los mensajes de error no son parte de la conversación: no se mandan al modelo.
+      const history = next
+        .slice(0, -1)
+        .filter((m) => !m.isError)
+        .slice(-MAX_HISTORY_TURNS)
+        .map((m) => ({ role: m.role, text: historyText(m) }));
 
       const lastPlan = [...messages].reverse().find((m) => m.plan?.tipo === 'plan')?.plan ?? null;
 
@@ -399,6 +413,8 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
         history,
         platform,
         lastPlan,
+        businessContext,
+        trendContext: null, // dejalo null hasta tener una fuente real de tendencias
       });
 
       setTokensUsed((t) => t + tokens);
@@ -411,7 +427,7 @@ export default function ChatScreen({ supabase, userIcon, onBack, onBeforeSend })
     } catch (err) {
       console.error('ChatScreen error:', err);
       if (err.tokens) setTokensUsed((t) => t + err.tokens);
-      setMessages([...next, { role: 'bot', text: `Error: ${err.message || 'Se cortó la conexión. Intentá de nuevo.'}`, isError: true }]);
+      setMessages([...next, { role: 'bot', text: `Error: ${friendlyError(err)}`, isError: true }]);
     } finally {
       setLoading(false);
     }
