@@ -4,6 +4,7 @@ import { Capacitor } from '@capacitor/core';
 import {
   BrainCircuit,
   FileText, Gem,
+  LogOut,
   MessageSquare, Microscope, RotateCcw, Send,
   Sparkles,
   Target, TrendingUp,
@@ -718,6 +719,35 @@ useEffect(() => {
   return () => { listenerPromise.then(sub => sub.remove()); };
 }, []);
 
+const handleLogout = async () => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  } catch (err) {
+    console.error('Error al cerrar sesión:', err);
+    setGemNotice({
+      type: 'error',
+      title: 'No se pudo cerrar sesión',
+      message: 'Intentá de nuevo en unos segundos.',
+    });
+    return;
+  }
+
+  // Limpia el estado en memoria para que el próximo usuario no vea datos del anterior
+  setGems(null);
+  setHistory([]);
+  setAiResult(null);
+  setChatMessages([]);
+  setCurrentHistoryId(null);
+  setUploadedVideoPath(null);
+  setUploadedVideoMime(null);
+  setPendingVideoFile(null);
+  setPendingVideoUrl(null);
+  setVideoPreviewUrl(null);
+  setShowChat(false);
+  setShowGemStore(false);
+  setStep('upload');
+};
   
 
   const handleBuyGems = async (pkg) => {
@@ -1489,19 +1519,34 @@ ${currentMessage.text}
 </div>
 
   <div className="flex items-center gap-4">
-   <div onClick={() => setShowGemStore(true)}
-  className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all hover:bg-emerald-500/20 cursor-pointer">
-  <Gem className="w-4 h-4 text-emerald-400" fill="currentColor" />
-  <span className="text-emerald-300 font-black italic tracking-tighter tabular-nums text-lg leading-none">{gems}</span>
-    </div>
-    {step === 'results' && (
-      <button onClick={() => window.location.reload()} className="bg-white/5 border border-white/10 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 hover:bg-white/20 active:scale-95">
-        <RotateCcw className="w-3 h-3" /> Nuevo Test
-      </button>
-    )}
+  <div
+    onClick={() => setShowGemStore(true)}
+    className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.1)] transition-all hover:bg-emerald-500/20 cursor-pointer"
+  >
+    <Gem className="w-4 h-4 text-emerald-400" fill="currentColor" />
+    <span className="text-emerald-300 font-black italic tracking-tighter tabular-nums text-lg leading-none">{gems}</span>
   </div>
-</header>
 
+  {step === 'results' && (
+    <button
+      onClick={() => window.location.reload()}
+      className="bg-white/5 border border-white/10 px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 hover:bg-white/20 active:scale-95"
+    >
+      <RotateCcw className="w-3 h-3" /> Nuevo Test
+    </button>
+  )}
+
+  <button
+    onClick={handleLogout}
+    title="Cerrar sesión"
+    aria-label="Cerrar sesión"
+    className="flex items-center gap-2 bg-white/5 border border-white/10 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 text-slate-400 px-3 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] transition-all active:scale-95"
+  >
+    <LogOut className="w-3.5 h-3.5" />
+    <span className="hidden sm:inline">Salir</span>
+  </button>
+</div>
+</header>
       <main className="relative z-10 max-w-6xl mx-auto p-4 py-12">
 
       {/* ── UPLOAD ── */}
