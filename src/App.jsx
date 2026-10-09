@@ -611,6 +611,8 @@ useEffect(() => {
   return () => window.removeEventListener('deviceorientation', handleOrientation);
 }, []);
 
+const [businessContext, setBusinessContext] = useState('');
+
   const chatEndRef = useRef(null);
   const scrollToBottom = () => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });   //<header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
 
@@ -983,7 +985,7 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
     const [hookRes, desarrolloRes] = await Promise.all([
       supabase.functions.invoke('gemini-proxy', {
         body: {
-          text: buildHookAnalysisPrompt(platform, industria, selectedObjetivo),
+          text: buildHookAnalysisPrompt(platform, industria, selectedObjetivo, businessContext),
           storagePath,
           videoMimeType: mimeType,
           videoFps: cfg.hook.videoFps,
@@ -999,7 +1001,7 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
       }),
       supabase.functions.invoke('gemini-proxy', {
         body: {
-          text: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo),
+          text: buildDesarrolloAnalysisPrompt(platform, industria, selectedObjetivo, businessContext),
           storagePath,
           videoMimeType: mimeType,
           videoFps: cfg.desarrollo.videoFps,
@@ -1024,7 +1026,7 @@ const runDeepAnalysis = async (videoFile, platform, industria) => {
 
     const { data: sintesisData, error: sintesisError } = await supabase.functions.invoke('gemini-proxy', {
       body: {
-        text: buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, selectedObjetivo),
+        text: buildFinalReviewPrompt(hookAnalysis, desarrolloAnalysis, platform, industria, selectedObjetivo, businessContext),
         temperature: cfg.sintesis.temperature,
         model: cfg.sintesis.model,
         tools: cfg.sintesis.tools, // 👈 AGREGAR ESTA LÍNEA
