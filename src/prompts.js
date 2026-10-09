@@ -164,13 +164,47 @@ ESTRUCTURA DE SALIDA (Texto plano estricto):
 ## QUÉ ES LO QUE PASA EN ESTE VIDEO.
 (Diagnóstico sintético y clínico de la falla estructural de retención y el comportamiento esperado del usuario en el feed).
 
-## Recomendaciones
-Pensá desde la perspectiva de un espectador humano: "Si este video es malo, ¿qué técnicas habrían podido retenerme hasta el final?"
+RECOMENDACIONES: 
 
-Las recomendaciones deben ser concretas, fáciles de entender para cualquiera y capaces de retener a cualquier usuario que pase por el video. Máximo unos 800 caracteres en total para toda la sección; dentro de ese límite, cada punto con la mayor densidad técnica posible.
+<contexto>
+Plataforma: ${platform}
+Público, voz y objetivo del negocio: ${businessContext ?? '(no informado)'}
+Señales culturales actuales disponibles: ${trendContext ?? '(no disponibles)'}
+</contexto>
 
-EJEMPLO DEL NIVEL DE PROFUNDIDAD ESPERADO EN LAS RECOMENDACIONES:
-"- En lugar de decir 'hoy te enseño X', corta los primeros 1.2 segundos y comienza in-media-res mostrando el resultado fallido mientras rompes una hoja de papel frente a cámara. Esto genera un Open Loop inmediato antes de que el cerebro del usuario decida deslizar."
+<historial>
+${historyBlock(history)}
+</historial>
+
+<plan_anterior>
+${lastPlan ? JSON.stringify(lastPlan) : '(ninguno)'}
+</plan_anterior>
+
+<mensaje_actual>
+${idea}
+</mensaje_actual>
+
+<criterio>
+Tu objetivo es transformar la idea del negocio en un concepto con camuflaje orgánico y ganchos de alta atención para redes actuales.
+
+REGLAS DE EVALUACIÓN Y DISEÑO:
+1. CAMUFLAJE Y NATIVIDAD: El video debe parecer un posteo orgánico, un clip filtrado, un meme de la cultura actual o una situación insólita no actuada. No debe oler a "publicidad corporativa".
+2. HOOKS DE CONTEXTO: Evitá diálogos forzados a cámara. Preferí ganchos de acción, tensión visual, textos en pantalla estilo meme/observación, o audio ambiental disonante.
+3. LENGUAJE DE INTERNET ACTUAL: Usá narrativas modernas (edits, suspenso absurdo, contraste entre lo estético y lo caótico, referencias culturales si el trendContext encaja naturalmente). Si no hay un encaje cultural genuino, no lo fuerces.
+4. CERO ACTUACIÓN FORZADA: Si proponés personas en cámara, la indicación debe exigir naturalidad absoluta (tipo documental, cámara de seguridad, clip robado o reacción genuina).
+
+Evaluá tres enfoques internamente y elegí el más fuerte:
+- Una observación real o detrás de escena.
+- Una conexión cultural si hay señales disponibles que encajen de forma orgánica con el público.
+- Una demostración, transformación o intriga visual de algo grabable.
+
+Escribí un plan grabable, específico y sin fórmulas de engagement cliché. Reflejá el enfoque elegido y su razón en veredicto.razon y hook.mecanismo.
+</criterio>
+
+<salida>
+Devolvé solo el JSON definido en el esquema. La auditoría es obligatoria: cada score se justifica con evidence literal del plan; sin evidencia literal no puntúes por encima de 3. No infles puntajes.
+</salida>
+
 `;
 
 
