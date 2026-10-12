@@ -209,7 +209,16 @@ const UserAvatar = ({ src }) => (
   </div>
 );
 
+// ── Intro modal (se muestra una sola vez por navegador) ──
 const INTRO_KEY = 'virax_ideas_intro_seen';
+
+const readIntroSeen = () => {
+  try { return localStorage.getItem(INTRO_KEY) === '1'; } catch { return false; }
+};
+
+const writeIntroSeen = () => {
+  try { localStorage.setItem(INTRO_KEY, '1'); } catch { /* storage bloqueado: se cierra igual */ }
+};
 
 function IdeasIntroModal({ onClose }) {
   return createPortal(
@@ -425,11 +434,18 @@ export default function ChatScreen({
   const [loading, setLoading] = useState(false);
   const [platform, setPlatform] = useState('tiktok');
   const [tokensUsed, setTokensUsed] = useState(0);
+  // Lazy init: se lee localStorage una sola vez, sin parpadeo del cartel si ya se vio.
+  const [showIntro, setShowIntro] = useState(() => !readIntroSeen());
   const limitReached = tokensUsed >= SESSION_TOKEN_LIMIT;
   const tokenPct = Math.min(100, Math.round((tokensUsed / SESSION_TOKEN_LIMIT) * 100));
   const endRef = useRef(null);
   const taRef = useRef(null);
   const dictation = useDictation(setInput);
+
+  const dismissIntro = () => {
+    writeIntroSeen();
+    setShowIntro(false);
+  };
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
 
@@ -498,14 +514,14 @@ export default function ChatScreen({
       {showIntro && <IdeasIntroModal onClose={dismissIntro} />}
       <style>{`
         @keyframes cs-shimmer { 0% { background-position: 200% center } 100% { background-position: -200% center } }
-       .cs-gold {
-       background: linear-gradient(90deg, #b8860b, #ffd700, #fffacd, #ffd700, #b8860b);
-       background-size: 200% auto;
-       -webkit-background-clip: text;
-       background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: cs-shimmer 3s linear infinite;
-}
+        .cs-gold {
+          background: linear-gradient(90deg, #b8860b, #ffd700, #fffacd, #ffd700, #b8860b);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: cs-shimmer 3s linear infinite;
+        }
       `}</style>
 
       <div className="bg-[#050507] border border-white/[0.07] rounded-[3rem] overflow-hidden flex flex-col h-[78vh] min-h-[520px] shadow-2xl">
