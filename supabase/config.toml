@@ -9,4 +9,4 @@ enabled = true
 verify_jwt = false
 
 [functions.benchmark-collector]
-verify_jwt = false
+verify_jwt = false 

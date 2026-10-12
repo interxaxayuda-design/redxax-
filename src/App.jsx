@@ -3,11 +3,16 @@ import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import {
   BrainCircuit,
-  FileText, Gem,
+  FileText,
+  Gem,
   LogOut,
-  MessageSquare, Microscope, RotateCcw, Send,
+  MessageSquare,
+  Microscope,
+  RotateCcw,
+  Send,
   Sparkles,
-  Target, TrendingUp,
+  Target,
+  TrendingUp,
   Upload,
   X
 } from 'lucide-react';
@@ -15,6 +20,7 @@ import { useEffect, useRef, useState } from 'react';
 import ChatScreen from './ChatScreen';
 import Login from './Login';
 import PrivacyPolicy from './PrivacyPolicy';
+import { buyWithPlay, initBilling } from './billing';
 import logo from './logo.png';
 import {
   REVIEW_CONFIG,
@@ -25,12 +31,11 @@ import {
   buildHookAnalysisPrompt,
   buildNicheSuggestionPrompt,
 } from './prompts.js';
+import { supabase } from './supabaseClient';
 import { compressVideoIfNeeded } from './videoCompression';
 import wordmark from './virax_wordmark.png';
 
 
-
-import { supabase } from './supabaseClient';
 
 
 
@@ -65,9 +70,9 @@ export function extractGeminiText(data) {
 }
 
 const GEM_PACKAGES = [
-  { id: 'starter', gems: 500,  price: 2,  label: 'Starter', analyses: '5 análisis',  popular: false },
-  { id: 'pro',     gems: 1000, price: 3,  label: 'Pro',     analyses: '10 análisis', popular: true  },
-  { id: 'elite',   gems: 6000, price: 6, label: 'Elite',   analyses: '60 análisis', popular: false },
+  { id: 'starter', productId: 'gems_500',  gems: 500,  price: 2, label: 'Starter', analyses: '5 análisis',  popular: false },
+  { id: 'pro',     productId: 'gems_1000', gems: 1000, price: 3, label: 'Pro',     analyses: '10 análisis', popular: true  },
+  { id: 'elite',   productId: 'gems_6000', gems: 6000, price: 6, label: 'Elite',   analyses: '60 análisis', popular: false },
 ];
 
 export const safeParseJSON = (rawText, context = '') => {
@@ -621,23 +626,46 @@ const [businessContext, setBusinessContext] = useState('');
   }, [chatMessages, isTyping]);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('payment') === 'success') {
-      window.history.replaceState({}, '', '/');
-      const reloadGems = async () => {
-       const userId = session.user.id;
-        await new Promise(r => setTimeout(r, 4000));
-        const { data } = await supabase.functions.invoke('get-gems', { body: { userId } });
-        if (data?.balance !== undefined) {
-          setGems(data.balance);
-          alert('✅ ¡Pago exitoso! Tus gemas fueron acreditadas.');
-        } else {
-          alert('⏳ Pago procesado. Si las gemas no aparecen, recargá la página.');
-        } //const points = [
-      };
-      reloadGems();
+  if (!session?.user) return;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('payment') !== 'success') return;
+
+  window.history.replaceState({}, '', '/');
+  const reloadGems = async () => {
+    const userId = session.user.id;
+    await new Promise((r) => setTimeout(r, 4000));
+    const { data } = await supabase.functions.invoke('get-gems', { body: { userId } });
+    if (data?.balance !== undefined) {
+      setGems(data.balance);
+      setGemNotice({ type: 'info', title: 'Pago exitoso', message: 'Tus gemas fueron acreditadas.' });
+    } else {
+      setGemNotice({ type: 'warning', title: 'Pago procesado', message: 'Si las gemas no aparecen, recarga la página.' });
     }
-  }, []);
+  };
+  reloadGems();
+}, [session]);
+
+  useEffect(() => {
+  if (!session?.user) return;
+  initBilling({
+    onCredited: (newBalance) => {
+      setGems(newBalance);
+      setShowGemStore(false);
+      setGemNotice({ type: 'info', title: 'Compra exitosa', message: 'Tus gemas fueron acreditadas.' });
+    },
+    onError: (msg) => setGemNotice({ type: 'error', title: 'Error en la compra', message: msg }),
+  });
+}, [session]);
+
+const handleBuy = async (pkg) => {
+  if (!Capacitor.isNativePlatform()) return handleBuyGems(pkg); // Mercado Pago solo en web
+  try {
+    setGemError(null);
+    await buyWithPlay(pkg.productId);
+  } catch (err) {
+    setGemError(err.message || 'No se pudo iniciar la compra.');
+  }
+};
 
   useEffect(() => {
   supabase.auth.getSession().then(({ data: { session } }) => {
@@ -1418,7 +1446,7 @@ ${currentMessage.text}
                         ${pkg.id === 'elite' ? 'rounded-[1.9rem] bg-[#0d0d0f] hover:bg-yellow-500/10'
                         : pkg.popular ? 'rounded-[2rem] border border-emerald-500/50 bg-emerald-500/10 hover:bg-emerald-500/15'
                         : 'rounded-[2rem] border border-white/10 bg-white/[0.02] hover:border-white/20'}`}
-                      onClick={() => handleBuyGems(pkg)}
+                      onClick={() => handleBuy(pkg)}
                     >
                       {pkg.id === 'elite' && <div className="absolute -top-3 left-6 bg-yellow-500 text-black text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">⚡ Más popular</div>}
                       {pkg.popular && <div className="absolute -top-3 left-6 bg-purple-600 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full">🔥 Mejor valor</div>}
@@ -1426,7 +1454,7 @@ ${currentMessage.text}
                         <Gem className={`w-6 h-6 ${pkg.id === 'elite' ? 'text-yellow-400' : 'text-purple-400'}`} fill="currentColor" />
                         <div>
                           <p className="font-black italic text-white text-lg">{pkg.gems.toLocaleString()} gemas</p>
-                          <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">{pkg.analyses} · {pkg.perGem}</p>
+                          <p className="text-slate-500 text-xs font-bold uppercase tracking-wider">{pkg.analyses}</p>
                           {savings && <p className="text-green-400 text-[10px] font-black uppercase tracking-wider mt-0.5">✓ {savings}</p>}
                         </div>
                       </div>

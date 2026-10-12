@@ -1,5 +1,6 @@
 import { ArrowLeft, Check, Copy, Mic, Send, Sparkles, Square } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { runIdeaPipeline } from './ideaPipeline.js';
 
 import { REVIEW_CONFIG } from './prompts.js';
@@ -207,6 +208,65 @@ const UserAvatar = ({ src }) => (
     <img src={src} alt="Tú" className="w-full h-full object-cover" />
   </div>
 );
+
+const INTRO_KEY = 'virax_ideas_intro_seen';
+
+function IdeasIntroModal({ onClose }) {
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[160] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-300"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="ideas-intro-title"
+    >
+      <div className="relative w-full max-w-md overflow-hidden rounded-[2.5rem] border border-yellow-500/20 bg-[#0d0d0f] p-8 md:p-10 shadow-2xl animate-in zoom-in-95 duration-300">
+
+        {/* Resplandor dorado */}
+        <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-yellow-500/20 blur-[70px]" />
+
+        <div className="relative flex flex-col items-center text-center">
+          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-yellow-500/30 bg-yellow-500/10 shadow-[0_0_30px_rgba(251,191,36,0.25)]">
+            <Sparkles className="h-7 w-7 text-yellow-400" />
+          </div>
+
+          <h2
+            id="ideas-intro-title"
+            className="cs-gold mb-4 text-5xl font-black italic uppercase tracking-tighter"
+          >
+            Nuevo
+          </h2>
+
+          <p className="text-sm leading-relaxed text-slate-300 md:text-[15px]">
+            Convierte cualquier idea en una{' '}
+            <span className="font-bold text-white">estrategia de video ganadora</span>.
+            Escríbele o cuéntale tu idea general, el formato o el objetivo de tu video,
+            y el chatbot de VIRAX creará al instante una estrategia completa: desde el
+            gancho inicial hasta el guion paso a paso y el llamado a la acción.
+          </p>
+
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
+            {['Gancho', 'Guion paso a paso', 'Llamado a la acción'].map((chip) => (
+              <span
+                key={chip}
+                className="rounded-full border border-yellow-500/20 bg-yellow-500/[0.07] px-3 py-1 text-[10px] font-black uppercase tracking-widest text-yellow-300/90"
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
+
+          <button
+            onClick={onClose}
+            className="mt-8 w-full rounded-full bg-yellow-500 px-8 py-4 text-sm font-black italic uppercase tracking-wider text-black shadow-[0_0_24px_rgba(251,191,36,0.35)] transition-all hover:bg-yellow-400 active:scale-95"
+          >
+            Entiendo →
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body
+  );
+}
 
 function Thinking() {
   return (
@@ -435,11 +495,17 @@ export default function ChatScreen({
 
   return (
     <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-10 duration-500">
+      {showIntro && <IdeasIntroModal onClose={dismissIntro} />}
       <style>{`
-        @keyframes cs-bar { 0%,100% { transform: scaleY(.35); opacity:.35 } 50% { transform: scaleY(1); opacity:1 } }
-        .cs-bar { width:2.5px; border-radius:2px; background: rgba(250,204,21,.55); animation: cs-bar 1.1s ease-in-out infinite; }
-        .cs-scroll::-webkit-scrollbar { width: 4px; }
-        .cs-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 10px; }
+        @keyframes cs-shimmer { 0% { background-position: 200% center } 100% { background-position: -200% center } }
+       .cs-gold {
+       background: linear-gradient(90deg, #b8860b, #ffd700, #fffacd, #ffd700, #b8860b);
+       background-size: 200% auto;
+       -webkit-background-clip: text;
+       background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: cs-shimmer 3s linear infinite;
+}
       `}</style>
 
       <div className="bg-[#050507] border border-white/[0.07] rounded-[3rem] overflow-hidden flex flex-col h-[78vh] min-h-[520px] shadow-2xl">
