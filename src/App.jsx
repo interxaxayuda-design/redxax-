@@ -1,8 +1,12 @@
 import { App as CapacitorApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
+import { Clipboard } from '@capacitor/clipboard';
+
 import { Capacitor } from '@capacitor/core';
 import {
   BrainCircuit,
+  Check,
+  Copy,
   FileText,
   Gem,
   LogOut,
@@ -328,6 +332,55 @@ function CopyButton({ text }) {
   );
 }
 
+const SUPPORT_EMAIL = 'helpmevirax@gmail.com';
+const SUPPORT_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=Ayuda%20con%20VIRAX`;
+
+function SupportContact() {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await Clipboard.write({ string: SUPPORT_EMAIL });
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('No se pudo copiar:', err);
+    }
+  };
+
+  return (
+    <p className="text-center text-[11px] font-medium text-slate-500">
+      ¿Un problema? ¡Contáctanos!:{' '}
+      <span className="inline-flex items-center gap-1.5">
+        <a
+          href={SUPPORT_MAILTO}
+          className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors"
+          onClick={async (e) => {
+            if (Capacitor.isNativePlatform()) {
+              e.preventDefault();
+              await Browser.open({ url: SUPPORT_MAILTO });
+            }
+          }}
+        >
+          {SUPPORT_EMAIL}
+        </a>
+        <button
+          type="button"
+          onClick={handleCopy}
+          aria-label="Copiar correo"
+          className="inline-flex items-center justify-center rounded p-1 text-slate-400 hover:text-emerald-300 active:scale-95 transition-all"
+        >
+          {copied ? (
+            <Check className="h-3.5 w-3.5 text-emerald-400" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
+        </button>
+      </span>
+    </p>
+  );
+}
+
 function DottedBackground() {
   const canvasRef = useRef(null);
 
@@ -378,6 +431,8 @@ function DottedBackground() {
 
   return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ zIndex: 0 }} />;
 }
+
+
 
 
 function InlineRotatingWord({ words, interval = 2600 }) {
@@ -1328,10 +1383,6 @@ ${currentMessage.text}
     return <Login />;
   }
 
-  const SUPPORT_EMAIL = 'helpmevirax@gmail.com';
-  const MAILTO = `mailto:${SUPPORT_EMAIL}?subject=Ayuda%20con%20VIRAX`;
-
-
   return (
      <div className="min-h-screen bg-[#020203] text-white font-sans selection:bg-emerald-500/50 overflow-x-hidden">    
        <DottedBackground />
@@ -1481,40 +1532,11 @@ ${currentMessage.text}
 
 {gemError && <p className="text-red-400 text-xs font-bold text-center mb-4">{gemError}</p>}
 
- <p className="text-center text-[11px] font-medium text-slate-500">
-      ¿Un problema? ¡Contáctanos!:{' '}
-      <span className="inline-flex items-center gap-1.5">
-        <a
-          href={MAILTO}
-          className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2 transition-colors"
-          onClick={async (e) => {
-            if (Capacitor.isNativePlatform()) {
-              e.preventDefault();
-              await Browser.open({ url: MAILTO });
-            }
-          }}
-        >
-          {SUPPORT_EMAIL}
-        </a>
-        <button
-          type="button"
-          onClick={handleCopy}
-          aria-label="Copiar correo"
-          className="inline-flex items-center justify-center rounded p-1 text-slate-400 hover:text-emerald-300 active:scale-95 transition-all"
-        >
-          {copied ? (
-            <Check className="h-3.5 w-3.5 text-emerald-400" />
-          ) : (
-            <Copy className="h-3.5 w-3.5" />
-          )}
-        </button>
-      </span>
-    </p>
+<SupportContact />
             </div>
           </div>
         </>
-      )} 
-
+      )}
 
 
 <header className="relative z-10 p-6 flex justify-between items-center max-w-7xl mx-auto border-b border-white/5 backdrop-blur-md">
