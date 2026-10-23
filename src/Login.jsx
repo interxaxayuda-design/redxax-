@@ -1,23 +1,26 @@
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
-import { Globe, Play, ShieldCheck } from 'lucide-react';
+import { Globe, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
+import clipMalo from './assets/malo.mp4';
+import clipMedio from './assets/medio.mp4';
+import clipViral1 from './assets/viral1.mp4';
+import clipViral2 from './assets/viral2.mp4';
+import clipViral3 from './assets/viral3.mp4';
 import logo from './logo.png';
 import { supabase } from './supabaseClient';
 import { useAutoTranslate } from './useAutoTranslate';
 
 /*
-  CLIPS: la tira de arriba.
-  - Sin `src`, se muestra una tarjeta de ejemplo (funciona desde ya).
-  - Para usar videos reales: poné archivos cortos (3-5 s, sin audio, 540x960, menos de 1 MB cada uno)
-    en /public/clips/ y completá `src`, por ejemplo: src: '/clips/1.mp4'
+  CLIPS: la tira de arriba. 3 virales, 1 medio y 1 malo, intercalados.
+  `score` solo controla el largo y el color de la barra (no se muestra el número).
 */
 const CLIPS = [
-  { src: null, score: 92, note: 'Gancho fuerte', from: '#0f766e', to: '#052e2b' },
-  { src: null, score: 61, note: 'Se cae a mitad', from: '#6d28d9', to: '#1e1038' },
-  { src: null, score: 84, note: 'Buen ritmo', from: '#0e7490', to: '#07242e' },
-  { src: null, score: 38, note: 'Arranque lento', from: '#9f1239', to: '#2a0a14' },
-  { src: null, score: 77, note: 'Final flojo', from: '#4d7c0f', to: '#14240a' },
+  { src: clipViral1, score: 92, from: '#0f766e', to: '#052e2b' },
+  { src: clipMalo, score: 24, from: '#9f1239', to: '#2a0a14' },
+  { src: clipViral2, score: 88, from: '#0e7490', to: '#07242e' },
+  { src: clipMedio, score: 58, from: '#6d28d9', to: '#1e1038' },
+  { src: clipViral3, score: 84, from: '#4d7c0f', to: '#14240a' },
 ];
 
 const scoreColor = (s) => (s >= 75 ? '#34d399' : s >= 50 ? '#fbbf24' : '#fb7185');
@@ -26,43 +29,24 @@ function ClipCard({ clip, index }) {
   const color = scoreColor(clip.score);
   return (
     <div
-      className="relative shrink-0 w-[118px] h-[210px] rounded-2xl overflow-hidden border border-white/10"
+      className="relative shrink-0 mr-3 w-[118px] h-[210px] rounded-2xl overflow-hidden border border-white/10"
       style={{
         marginTop: index % 2 === 0 ? 0 : 28,
         background: `linear-gradient(160deg, ${clip.from}, ${clip.to})`,
       }}
     >
-      {clip.src ? (
-        <video
-          src={clip.src}
-          muted
-          loop
-          autoPlay
-          playsInline
-          preload="metadata"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-      ) : (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center">
-            <Play className="w-4 h-4 text-white/80 fill-white/80" />
-          </div>
-        </div>
-      )}
+      <video
+        src={clip.src}
+        muted
+        loop
+        autoPlay
+        playsInline
+        preload="auto"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
 
-      <div className="absolute inset-x-0 bottom-0 p-2.5 pt-8 bg-gradient-to-t from-black/85 to-transparent">
-        <div className="flex items-end justify-between gap-2">
-          <span className="text-[11px] leading-tight text-slate-200 font-medium notranslate">
-            {clip.note}
-          </span>
-          <span
-            className="text-lg font-black leading-none tabular-nums notranslate"
-            style={{ color }}
-          >
-            {clip.score}
-          </span>
-        </div>
-        <div className="mt-1.5 h-1 rounded-full bg-white/15 overflow-hidden">
+      <div className="absolute inset-x-0 bottom-0 px-3 pb-3 pt-10 bg-gradient-to-t from-black/80 to-transparent">
+        <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
           <div className="h-full rounded-full" style={{ width: `${clip.score}%`, background: color }} />
         </div>
       </div>
@@ -106,7 +90,7 @@ export default function Login() {
     }
   };
 
-  // Se duplica la lista para que el movimiento sea continuo, sin saltos.
+  // Dos copias y avance de exactamente la mitad: el final calza con el inicio, sin saltos.
   const loop = [...CLIPS, ...CLIPS];
 
   return (
@@ -154,7 +138,7 @@ export default function Login() {
           maskImage: 'linear-gradient(to right, transparent, #000 14%, #000 86%, transparent)',
         }}
       >
-        <div className="virax-track flex gap-3 w-max px-3">
+        <div className="virax-track flex w-max">
           {loop.map((clip, i) => (
             <ClipCard key={i} clip={clip} index={i} />
           ))}
