@@ -12,8 +12,7 @@ import { supabase } from './supabaseClient';
 import { useAutoTranslate } from './useAutoTranslate';
 
 /*
-  CLIPS ampliado: más variedad para evitar la sensación de repetición rápida.
-  `score` solo controla el largo y el color de la barra (no se muestra el número).
+  CLIPS ampliado con variedad para evitar sensación de repetición.
 */
 const CLIPS = [
   { src: clipViral1, score: 92, from: '#0f766e', to: '#052e2b' },
@@ -21,7 +20,7 @@ const CLIPS = [
   { src: clipViral2, score: 88, from: '#0e7490', to: '#07242e' },
   { src: clipMalo, score: 24, from: '#9f1239', to: '#2a0a14' },
   { src: clipViral3, score: 84, from: '#4d7c0f', to: '#14240a' },
-  { src: clipViral1, score: 95, from: '#115e59', to: '#042f2e' }, // Variación visual para romper patrón
+  { src: clipViral1, score: 95, from: '#115e59', to: '#042f2e' },
   { src: clipMedio, score: 58, from: '#5b21b6', to: '#180d2b' },
   { src: clipViral2, score: 90, from: '#155e75', to: '#082f3c' },
 ];
@@ -32,7 +31,7 @@ function ClipCard({ clip, index }) {
   const color = scoreColor(clip.score);
   return (
     <div
-      className="relative shrink-0 mr-4 w-[150px] h-[270px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
+      className="relative shrink-0 mr-4 w-[150px] h-[270px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl transition-transform duration-300 hover:scale-105"
       style={{
         marginTop: index % 2 === 0 ? 0 : 36,
         background: `linear-gradient(160deg, ${clip.from}, ${clip.to})`,
@@ -93,7 +92,6 @@ export default function Login() {
     }
   };
 
-  // Dos copias y avance de exactamente la mitad: el final calza con el inicio, sin saltos.
   const loop = [...CLIPS, ...CLIPS];
 
   return (
@@ -105,37 +103,67 @@ export default function Login() {
       }}
     >
       <style>{`
-        @keyframes virax-slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        .virax-track { animation: virax-slide 45s linear infinite; }
-        @media (prefers-reduced-motion: reduce) { .virax-track { animation: none; } }
+        @keyframes viraxSlide { 
+          from { transform: translateX(0); } 
+          to { transform: translateX(-50%); } 
+        }
+        @keyframes fadeInDown {
+          from { opacity: 0; transform: translateY(-20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(30px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes scaleIn {
+          from { opacity: 0; transform: scale(0.94); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes pulseGlow {
+          0%, 100% { opacity: 0.1; transform: scale(1); }
+          50% { opacity: 0.22; transform: scale(1.08); }
+        }
+
+        .virax-track { animation: viraxSlide 45s linear infinite; }
+        .animate-fade-down { animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-fade-up { animation: fadeInUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-scale-in { animation: scaleIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .animate-glow { animation: pulseGlow 6s ease-in-out infinite; }
+
+        @media (prefers-reduced-motion: reduce) { 
+          .virax-track, .animate-fade-down, .animate-fade-up, .animate-scale-in, .animate-glow { 
+            animation: none !important; 
+          } 
+        }
       `}</style>
 
-      {/* Luz de fondo */}
-      <div className="absolute top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-[110px] pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-72 h-72 bg-purple-500/[0.07] rounded-full blur-[100px] pointer-events-none" />
+      {/* Luces de fondo dinámicas */}
+      <div className="absolute top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/15 rounded-full blur-[110px] pointer-events-none animate-glow" />
+      <div className="absolute bottom-0 right-0 w-72 h-72 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none animate-glow" style={{ animationDelay: '3s' }} />
 
-      {/* Barra superior: logo e idioma */}
-      <header className="relative z-20 flex items-center justify-between px-5 pt-5">
+      {/* Barra superior: logo e idioma (Entrada desde arriba) */}
+      <header className="relative z-20 flex items-center justify-between px-5 pt-5 animate-fade-down opacity-0" style={{ animationDelay: '0.1s' }}>
         <img
           src={logo}
           alt="VIRAX"
-          className="w-9 h-9 object-contain drop-shadow-[0_0_12px_rgba(16,185,129,0.35)]"
+          className="w-9 h-9 object-contain drop-shadow-[0_0_12px_rgba(16,185,129,0.35)] transition-transform hover:scale-110 duration-300"
         />
         <button
           onClick={toggleLanguage}
           aria-label="Cambiar idioma"
-          className="flex items-center gap-2 bg-slate-900/80 border border-slate-700 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-300 active:scale-95 transition-transform notranslate"
+          className="flex items-center gap-2 bg-slate-900/80 border border-slate-700 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-300 active:scale-95 transition-transform notranslate hover:border-emerald-500/50"
         >
           <Globe className="w-4 h-4 text-emerald-400" />
           <span>{lang === 'es' ? 'ES' : 'EN'}</span>
         </button>
       </header>
 
-      {/* Tira de videos con su puntaje */}
+      {/* Tira de videos con animación de escala/aparición */}
       <section
         aria-hidden="true"
-        className="relative z-10 mt-6"
+        className="relative z-10 mt-6 animate-scale-in opacity-0"
         style={{
+          animationDelay: '0.3s',
           WebkitMaskImage:
             'linear-gradient(to right, transparent, #000 14%, #000 86%, transparent)',
           maskImage: 'linear-gradient(to right, transparent, #000 14%, #000 86%, transparent)',
@@ -148,8 +176,8 @@ export default function Login() {
         </div>
       </section>
 
-      {/* Mensaje principal y acceso */}
-      <main className="relative z-10 flex-1 flex flex-col justify-end px-6 pt-8 pb-6">
+      {/* Mensaje principal y acceso (Entrada ascendente escalonada) */}
+      <main className="relative z-10 flex-1 flex flex-col justify-end px-6 pt-8 pb-6 animate-fade-up opacity-0" style={{ animationDelay: '0.5s' }}>
         <div className="max-w-sm w-full mx-auto text-center space-y-6">
           <div className="space-y-3">
             <h1 className="text-[28px] leading-[1.15] font-black tracking-tight">
@@ -163,7 +191,7 @@ export default function Login() {
           {error && (
             <div
               role="alert"
-              className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold"
+              className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold animate-shake"
             >
               {error}
             </div>
@@ -172,7 +200,7 @@ export default function Login() {
           <button
             onClick={handleGoogleLogin}
             disabled={loading}
-            className="w-full bg-white hover:bg-slate-100 text-black font-bold py-4 px-4 rounded-2xl transition-all duration-200 flex items-center justify-center gap-3 shadow-[0_0_40px_rgba(16,185,129,0.18)] active:scale-[0.98] disabled:opacity-50"
+            className="w-full bg-white hover:bg-slate-100 text-black font-bold py-4 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center gap-3 shadow-[0_0_40px_rgba(16,185,129,0.18)] active:scale-[0.98] hover:shadow-[0_0_50px_rgba(16,185,129,0.3)] disabled:opacity-50"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
@@ -200,7 +228,7 @@ export default function Login() {
                 href="https://redxax.vercel.app/privacy"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-emerald-400 underline"
+                className="text-emerald-400 underline hover:text-emerald-300"
               >
                 Política de Privacidad
               </a>
