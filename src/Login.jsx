@@ -12,15 +12,18 @@ import { supabase } from './supabaseClient';
 import { useAutoTranslate } from './useAutoTranslate';
 
 /*
-  CLIPS: la tira de arriba. 3 virales, 1 medio y 1 malo, intercalados.
+  CLIPS ampliado: más variedad para evitar la sensación de repetición rápida.
   `score` solo controla el largo y el color de la barra (no se muestra el número).
 */
 const CLIPS = [
   { src: clipViral1, score: 92, from: '#0f766e', to: '#052e2b' },
-  { src: clipMalo, score: 24, from: '#9f1239', to: '#2a0a14' },
+  { src: clipMedio, score: 62, from: '#6d28d9', to: '#1e1038' },
   { src: clipViral2, score: 88, from: '#0e7490', to: '#07242e' },
-  { src: clipMedio, score: 58, from: '#6d28d9', to: '#1e1038' },
+  { src: clipMalo, score: 24, from: '#9f1239', to: '#2a0a14' },
   { src: clipViral3, score: 84, from: '#4d7c0f', to: '#14240a' },
+  { src: clipViral1, score: 95, from: '#115e59', to: '#042f2e' }, // Variación visual para romper patrón
+  { src: clipMedio, score: 58, from: '#5b21b6', to: '#180d2b' },
+  { src: clipViral2, score: 90, from: '#155e75', to: '#082f3c' },
 ];
 
 const scoreColor = (s) => (s >= 75 ? '#34d399' : s >= 50 ? '#fbbf24' : '#fb7185');
@@ -29,9 +32,9 @@ function ClipCard({ clip, index }) {
   const color = scoreColor(clip.score);
   return (
     <div
-      className="relative shrink-0 mr-3 w-[118px] h-[210px] rounded-2xl overflow-hidden border border-white/10"
+      className="relative shrink-0 mr-4 w-[150px] h-[270px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl"
       style={{
-        marginTop: index % 2 === 0 ? 0 : 28,
+        marginTop: index % 2 === 0 ? 0 : 36,
         background: `linear-gradient(160deg, ${clip.from}, ${clip.to})`,
       }}
     >
@@ -103,7 +106,7 @@ export default function Login() {
     >
       <style>{`
         @keyframes virax-slide { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        .virax-track { animation: virax-slide 34s linear infinite; }
+        .virax-track { animation: virax-slide 45s linear infinite; }
         @media (prefers-reduced-motion: reduce) { .virax-track { animation: none; } }
       `}</style>
 
