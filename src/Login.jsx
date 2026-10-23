@@ -12,7 +12,7 @@ import { supabase } from './supabaseClient';
 import { useAutoTranslate } from './useAutoTranslate';
 
 /*
-  CLIPS ampliado con variedad para evitar sensación de repetición.
+  CLIPS ampliado para mayor variedad en el carrusel cinemático.
 */
 const CLIPS = [
   { src: clipViral1, score: 92, from: '#0f766e', to: '#052e2b' },
@@ -29,12 +29,16 @@ const scoreColor = (s) => (s >= 75 ? '#34d399' : s >= 50 ? '#fbbf24' : '#fb7185'
 
 function ClipCard({ clip, index }) {
   const color = scoreColor(clip.score);
+  // Retraso dinámico para que cada tarjeta entre una tras otra en cascada tipo "edit"
+  const entranceDelay = `${0.2 + index * 0.08}s`;
+
   return (
     <div
-      className="relative shrink-0 mr-4 w-[150px] h-[270px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl transition-transform duration-300 hover:scale-105"
+      className="relative shrink-0 mr-4 w-[150px] h-[270px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl opacity-0 animate-cinematic-card hover:scale-105 transition-transform duration-300"
       style={{
         marginTop: index % 2 === 0 ? 0 : 36,
         background: `linear-gradient(160deg, ${clip.from}, ${clip.to})`,
+        animationDelay: entranceDelay,
       }}
     >
       <video
@@ -107,63 +111,111 @@ export default function Login() {
           from { transform: translateX(0); } 
           to { transform: translateX(-50%); } 
         }
-        @keyframes fadeInDown {
-          from { opacity: 0; transform: translateY(-20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scaleIn {
-          from { opacity: 0; transform: scale(0.94); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes pulseGlow {
-          0%, 100% { opacity: 0.1; transform: scale(1); }
-          50% { opacity: 0.22; transform: scale(1.08); }
+        
+        /* Animación de entrada estilo edit cinemático para las tarjetas */
+        @keyframes cinematicCard {
+          0% {
+            opacity: 0;
+            transform: scale(0.85) translateY(40px);
+            filter: brightness(2);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+            filter: brightness(1);
+          }
         }
 
-        .virax-track { animation: viraxSlide 45s linear infinite; }
-        .animate-fade-down { animation: fadeInDown 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-fade-up { animation: fadeInUp 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-scale-in { animation: scaleIn 1s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        .animate-glow { animation: pulseGlow 6s ease-in-out infinite; }
+        /* Aparición dramática del Logo */
+        @keyframes logoPop {
+          0% {
+            opacity: 0;
+            transform: scale(0.5) rotate(-10deg);
+          }
+          70% {
+            transform: scale(1.1) rotate(3deg);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+          }
+        }
+
+        /* Ascenso fluido del contenido principal */
+        @keyframes cinematicUp {
+          0% {
+            opacity: 0;
+            transform: translateY(50px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* Pulso de fondo estilo ambiente de video */
+        @keyframes ambientGlow {
+          0%, 100% { opacity: 0.05; transform: scale(1); }
+          50% { opacity: 0.2; transform: scale(1.15); }
+        }
+
+        .virax-track { 
+          animation: viraxSlide 45s linear infinite; 
+          animation-delay: 1.2s; /* Comienza a moverse después de que aparecen las tarjetas */
+        }
+
+        .animate-cinematic-card {
+          animation: cinematicCard 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-logo-pop {
+          animation: logoPop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .animate-cinematic-up {
+          animation: cinematicUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .animate-ambient {
+          animation: ambientGlow 7s ease-in-out infinite;
+        }
 
         @media (prefers-reduced-motion: reduce) { 
-          .virax-track, .animate-fade-down, .animate-fade-up, .animate-scale-in, .animate-glow { 
+          .virax-track, .animate-cinematic-card, .animate-logo-pop, .animate-cinematic-up, .animate-ambient { 
             animation: none !important; 
+            opacity: 1 !important;
           } 
         }
       `}</style>
 
       {/* Luces de fondo dinámicas */}
-      <div className="absolute top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/15 rounded-full blur-[110px] pointer-events-none animate-glow" />
-      <div className="absolute bottom-0 right-0 w-72 h-72 bg-purple-500/10 rounded-full blur-[100px] pointer-events-none animate-glow" style={{ animationDelay: '3s' }} />
+      <div className="absolute top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/15 rounded-full blur-[120px] pointer-events-none animate-ambient" />
+      <div className="absolute bottom-0 right-0 w-72 h-72 bg-purple-500/10 rounded-full blur-[110px] pointer-events-none animate-ambient" style={{ animationDelay: '3.5s' }} />
 
-      {/* Barra superior: logo e idioma (Entrada desde arriba) */}
-      <header className="relative z-20 flex items-center justify-between px-5 pt-5 animate-fade-down opacity-0" style={{ animationDelay: '0.1s' }}>
+      {/* Barra superior: logo (aparece después) e idioma */}
+      <header className="relative z-20 flex items-center justify-between px-5 pt-5">
         <img
           src={logo}
           alt="VIRAX"
-          className="w-9 h-9 object-contain drop-shadow-[0_0_12px_rgba(16,185,129,0.35)] transition-transform hover:scale-110 duration-300"
+          className="w-10 h-10 object-contain drop-shadow-[0_0_16px_rgba(16,185,129,0.5)] opacity-0 animate-logo-pop"
+          style={{ animationDelay: '0.9s' }}
         />
         <button
           onClick={toggleLanguage}
           aria-label="Cambiar idioma"
-          className="flex items-center gap-2 bg-slate-900/80 border border-slate-700 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-300 active:scale-95 transition-transform notranslate hover:border-emerald-500/50"
+          className="flex items-center gap-2 bg-slate-900/80 border border-slate-700 px-3 py-1.5 rounded-full text-xs font-semibold text-slate-300 active:scale-95 transition-transform notranslate opacity-0 animate-cinematic-up"
+          style={{ animationDelay: '1.0s' }}
         >
           <Globe className="w-4 h-4 text-emerald-400" />
           <span>{lang === 'es' ? 'ES' : 'EN'}</span>
         </button>
       </header>
 
-      {/* Tira de videos con animación de escala/aparición */}
+      {/* Tira de videos con entrada en cascada tipo edit */}
       <section
         aria-hidden="true"
-        className="relative z-10 mt-6 animate-scale-in opacity-0"
+        className="relative z-10 mt-6 overflow-hidden"
         style={{
-          animationDelay: '0.3s',
           WebkitMaskImage:
             'linear-gradient(to right, transparent, #000 14%, #000 86%, transparent)',
           maskImage: 'linear-gradient(to right, transparent, #000 14%, #000 86%, transparent)',
@@ -176,8 +228,8 @@ export default function Login() {
         </div>
       </section>
 
-      {/* Mensaje principal y acceso (Entrada ascendente escalonada) */}
-      <main className="relative z-10 flex-1 flex flex-col justify-end px-6 pt-8 pb-6 animate-fade-up opacity-0" style={{ animationDelay: '0.5s' }}>
+      {/* Mensaje principal y acceso (Aparece al final con deslizamiento elegante) */}
+      <main className="relative z-10 flex-1 flex flex-col justify-end px-6 pt-8 pb-6 opacity-0 animate-cinematic-up" style={{ animationDelay: '1.3s' }}>
         <div className="max-w-sm w-full mx-auto text-center space-y-6">
           <div className="space-y-3">
             <h1 className="text-[28px] leading-[1.15] font-black tracking-tight">
@@ -226,6 +278,7 @@ export default function Login() {
               Al continuar, aceptás nuestra{' '}
               <a
                 href="https://redxax.vercel.app/privacy"
+                title="Política de Privacidad"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-emerald-400 underline hover:text-emerald-300"
