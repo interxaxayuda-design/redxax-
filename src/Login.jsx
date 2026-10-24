@@ -35,7 +35,7 @@ function ClipCard({ clip, index }) {
     <div
       className="relative shrink-0 w-[150px] h-[270px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl opacity-0 animate-cinematic-card hover:scale-105 transition-transform duration-300"
       style={{
-        marginTop: index % 2 === 0 ? 0 : 36,
+        marginTop: index % 2 === 0 ? 0 : 28,
         background: `linear-gradient(160deg, ${clip.from}, ${clip.to})`,
         animationDelay: entranceDelay,
       }}
@@ -95,7 +95,6 @@ export default function Login() {
     }
   };
 
-  // Duplicamos exactamente la lista original
   const loop = [...CLIPS, ...CLIPS];
 
   return (
@@ -107,7 +106,6 @@ export default function Login() {
       }}
     >
       <style>{`
-        /* Usamos translate3d para forzar renderizado por aceleración de hardware (GPU) */
         @keyframes viraxSlide { 
           0% { transform: translate3d(0, 0, 0); } 
           100% { transform: translate3d(-50%, 0, 0); } 
@@ -209,10 +207,10 @@ export default function Login() {
         </button>
       </header>
 
-      {/* Tira de videos con gap estricto y loop suave */}
+      {/* Tira de videos con espacio vertical (padding) suficiente para evitar recortes */}
       <section
         aria-hidden="true"
-        className="relative z-10 mt-6 overflow-hidden"
+        className="relative z-10 my-2 overflow-hidden py-6"
         style={{
           WebkitMaskImage:
             'linear-gradient(to right, transparent, #000 14%, #000 86%, transparent)',
@@ -227,7 +225,7 @@ export default function Login() {
       </section>
 
       {/* Mensaje principal y acceso */}
-      <main className="relative z-10 flex-1 flex flex-col justify-end px-6 pt-8 pb-6 opacity-0 animate-cinematic-up" style={{ animationDelay: '1.3s' }}>
+      <main className="relative z-10 flex-1 flex flex-col justify-end px-6 pt-4 pb-6 opacity-0 animate-cinematic-up" style={{ animationDelay: '1.3s' }}>
         <div className="max-w-sm w-full mx-auto text-center space-y-6">
           <div className="space-y-3">
             <h1 className="text-[28px] leading-[1.15] font-black tracking-tight">
