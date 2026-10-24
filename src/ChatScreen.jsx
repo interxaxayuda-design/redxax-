@@ -1,52 +1,43 @@
-import { ArrowLeft, Check, Copy, Mic, Send, Sparkles, Square } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight, Check, ChevronDown, Copy, Gem, Mic, RotateCcw, Send, Sparkles, Square } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { runIdeaPipeline } from './ideaPipeline.js';
-
 import { REVIEW_CONFIG } from './prompts.js';
 
 const PLATFORMS = [
   { id: 'tiktok', label: 'TikTok' },
-  { id: 'reels',  label: 'Reels'  },
+  { id: 'reels', label: 'Reels' },
   { id: 'shorts', label: 'Shorts' },
 ];
 
 const SUGGESTIONS = [
-  'Quiero vender un producto de skincare con un video corto',
-  'Tengo una inmobiliaria y no sé cómo mostrar una propiedad',
-  'Idea para promocionar mi restaurante sin parecer anuncio',
+  { tag: 'Producto', text: 'Quiero vender un producto de skincare con un video corto' },
+  { tag: 'Inmobiliaria', text: 'Tengo una inmobiliaria y no sé cómo mostrar una propiedad' },
+  { tag: 'Restaurante', text: 'Idea para promocionar mi restaurante sin parecer anuncio' },
 ];
 
+const THINKING_STEPS = ['Pensando el gancho', 'Armando las escenas', 'Puliendo el cierre'];
 const MAX_HISTORY_TURNS = 6;
-// Tope total por sesión. El pipeline hace 1 llamada por mensaje (2 si la autoauditoría no pasa)
-// con thinking alto: medí el consumo real en console.table(trace) y ajustá este valor.
 const SESSION_TOKEN_LIMIT = 80000;
 
-// ── Helpers (local to avoid a circular import with App.jsx) ──
+// ── Lógica (sin cambios de comportamiento) ──
 const pick = (o, keys) => {
-  for (const k of keys) {
-    if (o?.[k] != null && o[k] !== '') return o[k];
-  }
+  for (const k of keys) if (o?.[k] != null && o[k] !== '') return o[k];
   return undefined;
 };
 
-// Tolera variaciones de claves del modelo y nunca deja pasar un objeto sin nada que mostrar.
 const normalizePlan = (p) => {
   if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
   const plan = { ...p };
-
   if (typeof plan.hook === 'string') plan.hook = { recomendado: plan.hook };
-
   if (plan.veredicto && typeof plan.veredicto === 'object') {
     plan.veredicto = {
       ...plan.veredicto,
       razon: pick(plan.veredicto, ['razon', 'razón', 'motivo', 'justificacion', 'justificación']),
     };
   }
-
   const msg = pick(plan, ['mensaje', 'pregunta', 'pregunta_seguimiento']);
   const hasPlanBody = Boolean(plan.hook) || plan.escenas?.length > 0;
-
   if (plan.tipo === 'pregunta' || !hasPlanBody) {
     plan.tipo = 'pregunta';
     plan.mensaje = plan.mensaje ?? msg;
@@ -80,7 +71,7 @@ const planToText = (p) => {
   if (p.escenas?.length) {
     L.push('ESCENAS');
     p.escenas.forEach((e, i) =>
-      L.push(`${i + 1}. [${e.tiempo}] ${e.accion}${e.dialogo ? ` — "${e.dialogo}"` : ''}`));
+      L.push(`${i + 1}. [${e.tiempo}] ${e.accion}${e.dialogo ? ` — “${e.dialogo}”` : ''}`));
     L.push('');
   }
   if (p.cta) L.push(`CTA: ${p.cta}`, '');
@@ -88,25 +79,27 @@ const planToText = (p) => {
   return L.join('\n').trim();
 };
 
-// Historial para el modelo: el plan completo ya viaja en <plan_anterior> (lastPlan),
-// así que acá se manda solo una línea por plan para no pagar los mismos tokens dos veces.
 const historyText = (m) => {
   if (m.role !== 'bot') return m.text;
   if (m.plan?.tipo === 'plan') return `(Plan entregado: ${m.plan.titulo ?? 'sin título'})`;
   return m.plan ? planToText(m.plan) : m.text;
 };
 
-// Errores de código (no de red/IA) no se muestran crudos al usuario.
-const friendlyError = (err) =>
-  err instanceof ReferenceError || err instanceof TypeError || err instanceof SyntaxError
-    ? 'Algo falló de nuestro lado. Probá de nuevo.'
-    : err?.message || 'Se cortó la conexión. Intentá de nuevo.';
+const friendlyError = (err) => {
+  const msg = err?.message || '';
+  if (err instanceof ReferenceError || err instanceof TypeError || err instanceof SyntaxError) {
+    return 'Algo falló de nuestro lado. Probá de nuevo.';
+  }
+  if (/non-2xx|Edge Function|402|RESOURCE_EXHAUSTED/i.test(msg)) {
+    return 'El servicio está con mucha demanda. Probá de nuevo en unos minutos.';
+  }
+  return msg || 'Se cortó la conexión. Intentá de nuevo.';
+};
 
-// ── Voice dictation (Web Speech API, no AI) ──
+// ── Dictado por voz ──
 const SpeechRecognitionAPI =
   typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
 
-// "hola coma cómo estás punto" -> "Hola, cómo estás."
 const applyVoiceCommands = (text) =>
   text
     .replace(/\s*\babre interrogaci[oó]n\s*/gi, ' ¿')
@@ -136,18 +129,14 @@ function useDictation(onText) {
     rec.lang = 'es-AR';
     rec.continuous = true;
     rec.interimResults = true;
-
     const base = baseText ? baseText.replace(/\s*$/, ' ') : '';
 
-    // Se reconstruye todo el texto desde e.results en cada evento (no con +=):
-    // en Android/Chrome los resultados se re-emiten y acumular duplica el texto.
     rec.onresult = (e) => {
       const parts = [];
       for (let i = 0; i < e.results.length; i++) {
         const t = e.results[i][0].transcript.trim();
         if (!t) continue;
         const prev = parts[parts.length - 1];
-        // Chrome Android a veces entrega cada resultado como acumulado del anterior
         if (prev && t.toLowerCase().startsWith(prev.toLowerCase())) parts[parts.length - 1] = t;
         else parts.push(t);
       }
@@ -164,61 +153,228 @@ function useDictation(onText) {
 
     setVoiceError('');
     recRef.current = rec;
-    try {
-      rec.start();
-      setListening(true);
-    } catch {
-      recRef.current = null;
-    }
+    try { rec.start(); setListening(true); } catch { recRef.current = null; }
   };
 
   const stop = () => recRef.current?.stop();
-
   useEffect(() => () => recRef.current?.abort(), []);
 
   return { supported: Boolean(SpeechRecognitionAPI), listening, voiceError, start, stop };
 }
 
-// ── UI atoms ──
-const SectionLabel = ({ children, color = 'text-emerald-400' }) => (
-  <p className={`text-[10px] font-black uppercase tracking-[0.25em] mb-3 ${color}`}>{children}</p>
+// ── Piezas de interfaz ──
+const Label = ({ children, className = 'text-amber-300/80' }) => (
+  <p className={`text-[10px] font-semibold uppercase tracking-[0.22em] mb-2.5 ${className}`}>{children}</p>
 );
 
-function CopyBtn({ text }) {
+const Avatar = ({ logo }) => (
+  <div className="w-8 h-8 rounded-full bg-[#0c0c12] border border-amber-400/25 flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden shadow-[0_0_18px_rgba(251,191,36,0.12)]">
+    {logo ? <img src={logo} alt="VIRAX" className="w-5 h-5 object-contain" /> : <Sparkles className="w-4 h-4 text-amber-300" />}
+  </div>
+);
+
+function CopyBtn({ text, label, primary = false }) {
   const [ok, setOk] = useState(false);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setOk(true);
+      setTimeout(() => setOk(false), 1800);
+    } catch { /* sin permiso de portapapeles */ }
+  };
   return (
     <button
-      onClick={() => navigator.clipboard.writeText(text).then(() => { setOk(true); setTimeout(() => setOk(false), 1800); })}
-      className="self-start flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-slate-600 hover:text-slate-300 hover:bg-white/5 transition-all"
+      onClick={copy}
+      className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[11px] font-semibold tracking-wide transition-all active:scale-95 ${
+        primary
+          ? 'bg-amber-400/90 hover:bg-amber-300 text-black'
+          : 'border border-white/10 text-white/55 hover:text-white hover:bg-white/[0.06]'
+      }`}
     >
-      {ok ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
-      <span className={ok ? 'text-green-400' : ''}>{ok ? 'Copiado' : 'Copiar plan'}</span>
+      {ok ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+      {ok ? 'Copiado' : label}
     </button>
   );
 }
 
-const BotAvatar = () => (
-  <div className="w-7 h-7 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center flex-shrink-0 mt-0.5">
-    <Sparkles className="w-3.5 h-3.5 text-yellow-400" />
-  </div>
-);
+function Thinking({ logo }) {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setI((n) => (n + 1) % THINKING_STEPS.length), 2200);
+    return () => clearInterval(t);
+  }, []);
+  return (
+    <div className="flex items-start gap-3 cs-rise">
+      <Avatar logo={logo} />
+      <div className="w-full max-w-[85%] rounded-3xl rounded-tl-md border border-white/[0.07] bg-white/[0.025] p-4 space-y-2.5">
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-end gap-[3px] h-3.5">
+            {[5, 9, 13, 9, 5].map((h, k) => (
+              <span key={k} className="cs-bar" style={{ height: h, animationDelay: `${k * 0.15}s` }} />
+            ))}
+          </div>
+          <span className="text-[11px] font-medium text-amber-200/70">{THINKING_STEPS[i]}…</span>
+        </div>
+        <div className="cs-skel h-2.5 w-11/12 rounded-full" />
+        <div className="cs-skel h-2.5 w-8/12 rounded-full" />
+        <div className="cs-skel h-2.5 w-10/12 rounded-full" />
+      </div>
+    </div>
+  );
+}
 
-const UserAvatar = ({ src }) => (
-  <div className="w-7 h-7 rounded-full bg-[#0f0f18] border border-white/10 flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden">
-    <img src={src} alt="Tú" className="w-full h-full object-cover" />
-  </div>
-);
+const LEVELS = {
+  bajo: { n: 1, bar: 'bg-red-400', text: 'text-red-300' },
+  medio: { n: 2, bar: 'bg-amber-400', text: 'text-amber-300' },
+  alto: { n: 3, bar: 'bg-emerald-400', text: 'text-emerald-300' },
+};
 
-// ── Intro modal (se muestra una sola vez por navegador) ──
+function PlanCard({ plan }) {
+  const { hook, escenas, cta, errores_a_evitar, veredicto } = plan;
+  const [showAlt, setShowAlt] = useState(false);
+  const alternativas = hook?.alternativas ?? [];
+  const level = LEVELS[String(veredicto?.nivel ?? '').toLowerCase()];
+  const frase = hook?.recomendado ?? hook?.frase_hablada;
+  const rise = (i) => ({ animationDelay: `${i * 80}ms` });
+
+  return (
+    <div className="space-y-4">
+      {plan.titulo && (
+        <h4 className="cs-rise text-[19px] font-bold tracking-tight text-white leading-tight" style={rise(0)}>
+          {plan.titulo}
+        </h4>
+      )}
+
+      {veredicto && (
+        <div className="cs-rise rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4" style={rise(1)}>
+          <div className="flex items-center justify-between mb-3">
+            <Label className={`!mb-0 ${level?.text ?? 'text-white/50'}`}>Potencial {veredicto.nivel}</Label>
+            <div className="flex gap-1">
+              {[1, 2, 3].map((n) => (
+                <span key={n} className={`h-1.5 w-7 rounded-full ${level && n <= level.n ? level.bar : 'bg-white/10'}`} />
+              ))}
+            </div>
+          </div>
+          {veredicto.razon && <p className="text-[13px] text-white/70 leading-relaxed">{veredicto.razon}</p>}
+        </div>
+      )}
+
+      {hook && (
+        <div className="cs-rise relative overflow-hidden rounded-2xl border border-amber-400/25 bg-gradient-to-br from-amber-400/[0.09] to-transparent p-5" style={rise(2)}>
+          <div className="pointer-events-none absolute -top-10 -right-10 h-32 w-32 rounded-full bg-amber-400/15 blur-3xl" />
+          <Label>Gancho · 0–3 s{hook.tipo ? ` · ${hook.tipo}` : ''}</Label>
+          {frase && (
+            <p className="font-serif italic text-[21px] leading-snug text-white mb-3">“{frase}”</p>
+          )}
+          {hook.texto_en_pantalla && (
+            <p className="text-[12px] text-white/55 mb-1.5">
+              <span className="mr-2 text-[10px] font-semibold uppercase tracking-wider text-amber-300/80">Pantalla</span>
+              {hook.texto_en_pantalla}
+            </p>
+          )}
+          {hook.visual && (
+            <p className="text-[12px] text-white/55 mb-1.5">
+              <span className="mr-2 text-[10px] font-semibold uppercase tracking-wider text-amber-300/80">Visual</span>
+              {hook.visual}
+            </p>
+          )}
+          {(hook.mecanismo || hook.por_que_funciona) && (
+            <p className="mt-3 text-[11px] italic text-white/35 leading-relaxed">{hook.mecanismo ?? hook.por_que_funciona}</p>
+          )}
+
+          {alternativas.length > 0 && (
+            <div className="mt-4 border-t border-white/[0.07] pt-3">
+              <button
+                onClick={() => setShowAlt((v) => !v)}
+                className="flex w-full items-center justify-between text-[10px] font-semibold uppercase tracking-[0.22em] text-amber-300/80"
+              >
+                Otros ganchos ({alternativas.length})
+                <ChevronDown className={`h-4 w-4 transition-transform ${showAlt ? 'rotate-180' : ''}`} />
+              </button>
+              {showAlt && (
+                <ul className="mt-3 space-y-3">
+                  {alternativas.map((a, i) => (
+                    <li key={i} className="text-[13px] text-white/70 leading-snug">
+                      <span className="mr-2 text-[9px] font-semibold uppercase tracking-wider text-amber-300/70">{a.tipo}</span>
+                      <span className="font-serif italic">“{a.frase_hablada}”</span>
+                      {a.texto_en_pantalla && (
+                        <span className="mt-0.5 block text-[11px] text-white/35">Pantalla: {a.texto_en_pantalla}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {escenas?.length > 0 && (
+        <div className="cs-rise rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5" style={rise(3)}>
+          <Label className="text-violet-300/80">Guion por escenas</Label>
+          <ol>
+            {escenas.map((e, i) => (
+              <li key={i} className="flex gap-3.5">
+                <div className="flex flex-col items-center">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-full border border-violet-400/30 bg-violet-400/10 text-[10px] font-bold text-violet-200">
+                    {i + 1}
+                  </span>
+                  {i < escenas.length - 1 && <span className="my-1 w-px flex-1 bg-white/10" />}
+                </div>
+                <div className="flex-1 pb-5">
+                  <span className="mb-1.5 inline-block rounded-full bg-white/[0.06] px-2 py-0.5 text-[10px] font-semibold tracking-wider text-white/45">
+                    {e.tiempo}
+                  </span>
+                  <p className="text-[13px] leading-relaxed text-white/80">{e.accion}</p>
+                  {e.dialogo && (
+                    <p className="mt-2 border-l-2 border-violet-400/30 pl-3 font-serif text-[13px] italic text-white/55">“{e.dialogo}”</p>
+                  )}
+                  {e.texto_pantalla && (
+                    <p className="mt-1.5 text-[11px] text-white/35">Texto en pantalla: {e.texto_pantalla}</p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {cta && (
+        <div className="cs-rise rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.05] p-4" style={rise(4)}>
+          <Label className="text-emerald-300/80">Cierre</Label>
+          <p className="text-[13px] leading-relaxed text-white/80">{cta}</p>
+        </div>
+      )}
+
+      {errores_a_evitar?.length > 0 && (
+        <div className="cs-rise px-1" style={rise(5)}>
+          <Label className="text-red-300/70">Evitá esto</Label>
+          <ul className="space-y-1.5">
+            {errores_a_evitar.map((x, i) => (
+              <li key={i} className="flex gap-2 text-[12px] leading-relaxed text-white/50">
+                <span className="text-red-400/60">✕</span>{x}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {plan.pregunta_seguimiento && (
+        <p className="border-t border-white/[0.06] pt-3 text-[12px] italic text-violet-200/70">{plan.pregunta_seguimiento}</p>
+      )}
+
+      <div className="flex flex-wrap gap-2 pt-1">
+        <CopyBtn primary label="Copiar plan" text={planToText(plan)} />
+        {frase && <CopyBtn label="Copiar gancho" text={frase} />}
+      </div>
+    </div>
+  );
+}
+
+// ── Cartel de introducción (una sola vez) ──
 const INTRO_KEY = 'virax_ideas_intro_seen';
-
-const readIntroSeen = () => {
-  try { return localStorage.getItem(INTRO_KEY) === '1'; } catch { return false; }
-};
-
-const writeIntroSeen = () => {
-  try { localStorage.setItem(INTRO_KEY, '1'); } catch { /* storage bloqueado: se cierra igual */ }
-};
+const readIntroSeen = () => { try { return localStorage.getItem(INTRO_KEY) === '1'; } catch { return false; } };
+const writeIntroSeen = () => { try { localStorage.setItem(INTRO_KEY, '1'); } catch { /* storage bloqueado */ } };
 
 function IdeasIntroModal({ onClose }) {
   return createPortal(
@@ -228,45 +384,28 @@ function IdeasIntroModal({ onClose }) {
       aria-modal="true"
       aria-labelledby="ideas-intro-title"
     >
-      <div className="relative w-full max-w-md overflow-hidden rounded-[2.5rem] border border-yellow-500/20 bg-[#0d0d0f] p-8 md:p-10 shadow-2xl animate-in zoom-in-95 duration-300">
-
-        {/* Resplandor dorado */}
-        <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-yellow-500/20 blur-[70px]" />
-
+      <div className="relative w-full max-w-md overflow-hidden rounded-[2.5rem] border border-amber-400/20 bg-[#0d0d0f] p-8 md:p-10 shadow-2xl animate-in zoom-in-95 duration-300">
+        <div className="pointer-events-none absolute -top-24 left-1/2 h-48 w-48 -translate-x-1/2 rounded-full bg-amber-400/20 blur-[70px]" />
         <div className="relative flex flex-col items-center text-center">
-          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-yellow-500/30 bg-yellow-500/10 shadow-[0_0_30px_rgba(251,191,36,0.25)]">
-            <Sparkles className="h-7 w-7 text-yellow-400" />
+          <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10 shadow-[0_0_30px_rgba(251,191,36,0.25)]">
+            <Sparkles className="h-7 w-7 text-amber-300" />
           </div>
-
-          <h2
-            id="ideas-intro-title"
-            className="cs-gold mb-4 text-5xl font-black italic uppercase tracking-tighter"
-          >
-            Nuevo
-          </h2>
-
+          <h2 id="ideas-intro-title" className="cs-gold mb-4 text-5xl font-black italic uppercase tracking-tighter">Nuevo</h2>
           <p className="text-sm leading-relaxed text-slate-300 md:text-[15px]">
-            Convierte cualquier idea en una{' '}
-            <span className="font-bold text-white">estrategia de video ganadora</span>.
-            Escríbele o cuéntale tu idea general, el formato o el objetivo de tu video,
-            y el chatbot de VIRAX creará al instante una estrategia completa: desde el
-            gancho inicial hasta el guion paso a paso y el llamado a la acción.
+            Convierte cualquier idea en una <span className="font-bold text-white">estrategia de video ganadora</span>.
+            Contale tu idea, el formato o el objetivo de tu video, y VIRAX te arma al instante una estrategia
+            completa: desde el gancho inicial hasta el guion paso a paso y el llamado a la acción.
           </p>
-
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             {['Gancho', 'Guion paso a paso', 'Llamado a la acción'].map((chip) => (
-              <span
-                key={chip}
-                className="rounded-full border border-yellow-500/20 bg-yellow-500/[0.07] px-3 py-1 text-[10px] font-black uppercase tracking-widest text-yellow-300/90"
-              >
+              <span key={chip} className="rounded-full border border-amber-400/20 bg-amber-400/[0.07] px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-amber-200/90">
                 {chip}
               </span>
             ))}
           </div>
-
           <button
             onClick={onClose}
-            className="mt-8 w-full rounded-full bg-yellow-500 px-8 py-4 text-sm font-black italic uppercase tracking-wider text-black shadow-[0_0_24px_rgba(251,191,36,0.35)] transition-all hover:bg-yellow-400 active:scale-95"
+            className="mt-8 w-full rounded-full bg-gradient-to-r from-amber-300 to-amber-500 px-8 py-4 text-sm font-bold uppercase tracking-wider text-black shadow-[0_0_24px_rgba(251,191,36,0.35)] transition-all active:scale-95"
           >
             Entiendo →
           </button>
@@ -277,177 +416,36 @@ function IdeasIntroModal({ onClose }) {
   );
 }
 
-function Thinking() {
-  return (
-    <div className="flex items-start gap-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-      <BotAvatar />
-      <div className="bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl px-4 py-3 flex items-center gap-3">
-        <div className="flex items-end gap-[3px] h-4">
-          {[5, 9, 14, 9, 5].map((h, i) => (
-            <span key={i} className="cs-bar" style={{ height: h, animationDelay: `${i * 0.15}s` }} />
-          ))}
-        </div>
-        <span className="font-mono text-[9.5px] tracking-[0.12em] uppercase text-white/30">
-          Armando tu plan
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function PlanCard({ plan }) {
-  const { hook, escenas, cta, errores_a_evitar, veredicto } = plan;
-  const levelColor = { bajo: 'text-red-400', medio: 'text-yellow-400', alto: 'text-emerald-400' };
-  const alternativas = hook?.alternativas ?? [];
-
-  return (
-    <div className="space-y-5">
-      {plan.titulo && (
-        <h4 className="text-lg font-black italic uppercase tracking-tighter text-white leading-tight">
-          {plan.titulo}
-        </h4>
-      )}
-
-      {veredicto && (
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-          <SectionLabel color={levelColor[veredicto.nivel] ?? 'text-slate-400'}>
-            Potencial {veredicto.nivel}
-          </SectionLabel>
-          {veredicto.razon && (
-            <p className="text-[13px] text-white/75 leading-snug">{veredicto.razon}</p>
-          )}
-        </div>
-      )}
-
-      {hook && (
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.05] p-4">
-          <SectionLabel>
-            Hook · 0–3s{hook.tipo ? ` · ${hook.tipo}` : ''}
-          </SectionLabel>
-          {(hook.recomendado || hook.frase_hablada) && (
-            <p className="text-white font-bold text-[15px] leading-snug mb-2">
-              "{hook.recomendado ?? hook.frase_hablada}"
-            </p>
-          )}
-          {hook.texto_en_pantalla && (
-            <p className="text-[12px] text-white/50 mb-1">
-              <span className="text-emerald-400 font-black uppercase text-[10px] tracking-wider mr-2">Pantalla</span>
-              {hook.texto_en_pantalla}
-            </p>
-          )}
-          {hook.visual && (
-            <p className="text-[12px] text-white/50 mb-1">
-              <span className="text-emerald-400 font-black uppercase text-[10px] tracking-wider mr-2">Visual</span>
-              {hook.visual}
-            </p>
-          )}
-          {(hook.mecanismo || hook.por_que_funciona) && (
-            <p className="text-[11px] italic text-white/35 mt-2">{hook.mecanismo ?? hook.por_que_funciona}</p>
-          )}
-
-          {alternativas.length > 0 && (
-            <details className="mt-3">
-              <summary className="cursor-pointer text-[10px] font-black uppercase tracking-[0.25em] text-emerald-400/80">
-                Otros hooks ({alternativas.length})
-              </summary>
-              <ul className="mt-3 space-y-3">
-                {alternativas.map((a, i) => (
-                  <li key={i} className="text-[12px] text-white/60">
-                    <span className="text-yellow-400/80 font-black text-[9px] tracking-wider mr-2 uppercase">{a.tipo}</span>
-                    "{a.frase_hablada}"
-                    {a.texto_en_pantalla && (
-                      <span className="block text-[11px] text-white/35 mt-0.5">Pantalla: {a.texto_en_pantalla}</span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </div>
-      )}
-
-      {escenas?.length > 0 && (
-        <div>
-          <SectionLabel color="text-purple-300">Guion por escenas</SectionLabel>
-          <ol className="space-y-2.5">
-            {escenas.map((e, i) => (
-              <li key={i} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <span className="w-6 h-6 rounded-full bg-purple-500/15 border border-purple-500/30 text-purple-300 text-[10px] font-black flex items-center justify-center">
-                    {i + 1}
-                  </span>
-                  {i < escenas.length - 1 && <span className="flex-1 w-px bg-white/10 mt-1" />}
-                </div>
-                <div className="pb-2 flex-1">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-white/30">{e.tiempo}</p>
-                  <p className="text-[13px] text-white/80 leading-snug">{e.accion}</p>
-                  {e.dialogo && <p className="text-[12px] italic text-white/50 mt-1">"{e.dialogo}"</p>}
-                  {e.texto_pantalla && (
-                    <p className="text-[11px] text-white/35 mt-1">Texto: {e.texto_pantalla}</p>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-
-      {cta && (
-        <div className="rounded-2xl border border-yellow-500/25 bg-yellow-500/[0.05] p-4">
-          <SectionLabel color="text-yellow-400">Cierre / CTA</SectionLabel>
-          <p className="text-[13px] text-white/80 leading-snug">{cta}</p>
-        </div>
-      )}
-
-      {errores_a_evitar?.length > 0 && (
-        <div>
-          <SectionLabel color="text-red-400">Evitá esto</SectionLabel>
-          <ul className="space-y-1.5">
-            {errores_a_evitar.map((x, i) => (
-              <li key={i} className="text-[12px] text-white/55 flex gap-2">
-                <span className="text-red-400/70">✕</span>{x}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {plan.pregunta_seguimiento && (
-        <p className="text-[12px] text-purple-300/80 italic border-t border-white/5 pt-3">
-          {plan.pregunta_seguimiento}
-        </p>
-      )}
-    </div>
-  );
-}
-
-// ── Main screen ──
+// ── Pantalla principal ──
 export default function ChatScreen({
   supabase,
-  userIcon,
+  userIcon, // se usa como logo de VIRAX en los mensajes del asistente
   onBack,
   onBeforeSend,
-  businessContext = null, // ej: 'Panadería artesanal, público 25-40, tono cercano, objetivo: pedidos por WhatsApp'
+  businessContext = null,
+  gems = null, // opcional: saldo para mostrarlo en el encabezado
+  messageCost = 25, // opcional: debe coincidir con lo que descuenta onBeforeSend
 }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [platform, setPlatform] = useState('tiktok');
   const [tokensUsed, setTokensUsed] = useState(0);
-  // Lazy init: se lee localStorage una sola vez, sin parpadeo del cartel si ya se vio.
   const [showIntro, setShowIntro] = useState(() => !readIntroSeen());
   const limitReached = tokensUsed >= SESSION_TOKEN_LIMIT;
   const tokenPct = Math.min(100, Math.round((tokensUsed / SESSION_TOKEN_LIMIT) * 100));
-  const endRef = useRef(null);
+  const listRef = useRef(null);
   const taRef = useRef(null);
   const dictation = useDictation(setInput);
 
-  const dismissIntro = () => {
-    writeIntroSeen();
-    setShowIntro(false);
-  };
+  const dismissIntro = () => { writeIntroSeen(); setShowIntro(false); };
+  const resetChat = () => { setMessages([]); setTokensUsed(0); setInput(''); };
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
+  // Scroll dentro de la lista (scrollIntoView podía mover toda la página)
+  useEffect(() => {
+    const el = listRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [messages, loading]);
 
   useEffect(() => {
     const ta = taRef.current;
@@ -456,10 +454,9 @@ export default function ChatScreen({
     ta.style.height = `${Math.min(ta.scrollHeight, 140)}px`;
   }, [input]);
 
-  const send = async (override) => {
-    const content = (override ?? input).trim();
+  const send = async () => {
+    const content = input.trim();
     if (!content || loading || limitReached) return;
-
     dictation.stop();
 
     if (onBeforeSend) {
@@ -473,7 +470,6 @@ export default function ChatScreen({
     setLoading(true);
 
     try {
-      // Los mensajes de error no son parte de la conversación: no se mandan al modelo.
       const history = next
         .slice(0, -1)
         .filter((m) => !m.isError)
@@ -490,93 +486,119 @@ export default function ChatScreen({
         platform,
         lastPlan,
         businessContext,
-        trendContext: null, // dejalo null hasta tener una fuente real de tendencias
+        trendContext: null,
       });
 
       setTokensUsed((t) => t + tokens);
-      console.table(trace); // tokens reales por llamada (coach; una fila más si hubo reintento)
+      console.table(trace);
 
       const parsed = normalizePlan(plan);
       if (!isRenderable(parsed)) throw new Error('La IA devolvió un formato inesperado. Probá de nuevo.');
-
       setMessages([...next, { role: 'bot', plan: parsed, text: parsed.mensaje ?? '' }]);
     } catch (err) {
       console.error('ChatScreen error:', err);
       if (err.tokens) setTokensUsed((t) => t + err.tokens);
-      setMessages([...next, { role: 'bot', text: `Error: ${friendlyError(err)}`, isError: true }]);
+      setInput(content); // el texto vuelve al cuadro para no perderlo
+      setMessages([...next, { role: 'bot', text: `${friendlyError(err)} Tu mensaje quedó en el cuadro para reenviarlo.`, isError: true }]);
     } finally {
       setLoading(false);
     }
   };
 
+  const useSuggestion = (text) => {
+    setInput(text);
+    taRef.current?.focus();
+  };
+
   return (
-    <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-10 duration-500">
+    <div
+      className="fixed inset-0 z-[90] flex flex-col bg-[#050507] text-white"
+      style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
       {showIntro && <IdeasIntroModal onClose={dismissIntro} />}
       <style>{`
         @keyframes cs-shimmer { 0% { background-position: 200% center } 100% { background-position: -200% center } }
-        .cs-gold {
-          background: linear-gradient(90deg, #b8860b, #ffd700, #fffacd, #ffd700, #b8860b);
-          background-size: 200% auto;
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-          animation: cs-shimmer 3s linear infinite;
-        }
+        @keyframes cs-rise { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes cs-bar { 0%, 100% { transform: scaleY(0.35); opacity: .35 } 50% { transform: scaleY(1); opacity: 1 } }
+        .cs-gold { background: linear-gradient(90deg,#b8860b,#ffd700,#fffacd,#ffd700,#b8860b); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: cs-shimmer 3s linear infinite; }
+        .cs-rise { animation: cs-rise .5s cubic-bezier(.22,1,.36,1) both; }
+        .cs-bar { width: 3px; border-radius: 2px; background: rgba(251,191,36,.7); transform-origin: bottom; animation: cs-bar 1.1s ease-in-out infinite; }
+        .cs-skel { background: linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.1), rgba(255,255,255,.04)); background-size: 200% 100%; animation: cs-shimmer 1.6s linear infinite; }
+        .cs-scroll::-webkit-scrollbar { width: 4px }
+        .cs-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 10px }
+        @media (prefers-reduced-motion: reduce) { .cs-rise, .cs-bar, .cs-skel, .cs-gold { animation: none } }
       `}</style>
 
-      <div className="bg-[#050507] border border-white/[0.07] rounded-[3rem] overflow-hidden flex flex-col h-[78vh] min-h-[520px] shadow-2xl">
+      {/* Fondo */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-32 left-1/2 h-80 w-[36rem] -translate-x-1/2 rounded-full bg-amber-400/[0.07] blur-[110px]" />
+        <div className="absolute -bottom-32 right-0 h-72 w-72 rounded-full bg-emerald-500/[0.06] blur-[110px]" />
+      </div>
 
-        {/* HEADER */}
-        <div className="px-5 py-4 border-b border-white/[0.06] bg-[#0a0a0f] flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={onBack}
-              className="w-9 h-9 rounded-full bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] flex items-center justify-center transition-colors flex-shrink-0"
-            >
-              <ArrowLeft className="w-4 h-4 text-white/50" />
-            </button>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
-                <h3 className="font-black uppercase tracking-widest text-xs text-white/90">Empieza a imaginar</h3>
-              </div>
-              <p className="text-[10px] text-white/30 tracking-widest uppercase truncate">Creá tu idea antes de publicar</p>
-            </div>
-          </div>
-
-          <div className="flex gap-1 bg-white/[0.03] border border-white/[0.07] rounded-full p-1">
-            {PLATFORMS.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setPlatform(p.id)}
-                className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all
-                  ${platform === p.id ? 'bg-emerald-500/20 text-emerald-300' : 'text-white/30 hover:text-white/60'}`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+      {/* Encabezado */}
+      <header className="relative z-10 flex items-center gap-3 border-b border-white/[0.06] bg-black/40 px-4 py-3 backdrop-blur-xl">
+        <button
+          onClick={onBack}
+          aria-label="Volver"
+          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.04] transition-colors hover:bg-white/[0.09] active:scale-95"
+        >
+          <ArrowLeft className="h-4 w-4 text-white/60" />
+        </button>
+        <div className="min-w-0 flex-1">
+          <h3 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-white">
+            <Sparkles className="h-4 w-4 text-amber-300" /> Empieza a imaginar
+          </h3>
+          <p className="truncate text-[11px] text-white/35">Convertí tu idea en un plan listo para grabar</p>
         </div>
+        {gems != null && (
+          <div className="flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5">
+            <Gem className="h-3.5 w-3.5 text-emerald-400" fill="currentColor" />
+            <span className="text-sm font-bold tabular-nums text-emerald-300">{gems}</span>
+          </div>
+        )}
+      </header>
 
-        {/* MESSAGES */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5 cs-scroll">
+      {/* Plataforma */}
+      <div className="relative z-10 mx-auto w-full max-w-2xl px-4 pt-3">
+        <div className="inline-flex rounded-full border border-white/[0.07] bg-white/[0.04] p-1">
+          {PLATFORMS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => setPlatform(p.id)}
+              className={`rounded-full px-4 py-1.5 text-[11px] font-semibold tracking-wide transition-all ${
+                platform === p.id ? 'bg-amber-400/90 text-black' : 'text-white/40 hover:text-white/70'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Mensajes */}
+      <div ref={listRef} className="cs-scroll relative z-10 flex-1 overflow-y-auto">
+        <div className="mx-auto flex min-h-full w-full max-w-2xl flex-col space-y-6 px-4 py-5">
           {messages.length === 0 && !loading && (
-            <div className="h-full flex flex-col items-center justify-center text-center px-4">
-              <div className="w-14 h-14 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center mb-5">
-                <Sparkles className="w-6 h-6 text-yellow-400" />
+            <div className="cs-rise my-auto flex flex-col items-center py-6 text-center">
+              <div className="relative mb-6 flex h-16 w-16 items-center justify-center rounded-full border border-amber-400/30 bg-amber-400/10 shadow-[0_0_40px_rgba(251,191,36,0.2)]">
+                <Sparkles className="h-7 w-7 text-amber-300" />
               </div>
-              <p className="text-xl font-black italic uppercase tracking-tighter text-white mb-2">Contame tu idea</p>
-              <p className="text-slate-500 text-sm max-w-sm mb-6">
-                La IA lo convierte en un plan listo para grabar: hook, escenas y cierre.
+              <h2 className="mb-2 text-[26px] font-bold leading-tight tracking-tight">¿Qué querés grabar hoy?</h2>
+              <p className="mb-8 max-w-xs text-sm leading-relaxed text-white/45">
+                Contame tu idea y te devuelvo el gancho, las escenas y el cierre.
               </p>
-              <div className="flex flex-col gap-2 w-full max-w-md">
+              <div className="flex w-full max-w-md flex-col gap-2.5">
                 {SUGGESTIONS.map((s) => (
                   <button
-                    key={s}
-                    onClick={() => send(s)}
-                    className="text-left text-[12px] text-slate-400 hover:text-white bg-white/[0.02] hover:bg-white/[0.06] border border-white/[0.07] hover:border-yellow-500/30 rounded-2xl px-4 py-3 transition-all"
+                    key={s.tag}
+                    onClick={() => useSuggestion(s.text)}
+                    className="group flex items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.025] px-4 py-3.5 text-left transition-all hover:border-amber-400/30 hover:bg-white/[0.05] active:scale-[0.99]"
                   >
-                    {s}
+                    <div className="min-w-0 flex-1">
+                      <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-[0.2em] text-amber-300/70">{s.tag}</p>
+                      <p className="text-[13px] leading-snug text-white/65 group-hover:text-white/90">{s.text}</p>
+                    </div>
+                    <ArrowUpRight className="h-4 w-4 flex-shrink-0 text-white/20 transition-colors group-hover:text-amber-300" />
                   </button>
                 ))}
               </div>
@@ -584,99 +606,112 @@ export default function ChatScreen({
           )}
 
           {messages.map((m, i) => {
+            if (m.role === 'user') {
+              return (
+                <div key={i} className="cs-rise flex justify-end">
+                  <p className="max-w-[82%] whitespace-pre-wrap rounded-3xl rounded-br-md border border-emerald-400/20 bg-emerald-500/[0.12] px-4 py-3 text-[14px] leading-relaxed text-emerald-50/95">
+                    {m.text}
+                  </p>
+                </div>
+              );
+            }
             const isFullPlan = Boolean(m.plan?.hook || m.plan?.escenas?.length);
             return (
-              <div key={i} className={`flex items-start gap-2.5 ${m.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                {m.role === 'user' ? <UserAvatar src={userIcon} /> : <BotAvatar />}
-                <div className={`flex flex-col gap-1 ${isFullPlan ? 'w-full max-w-[92%]' : 'max-w-[78%]'}`}>
-                  <div className={`px-4 py-3 text-sm leading-relaxed font-medium
-                    ${m.role === 'user'
-                      ? 'bg-emerald-600/15 border border-emerald-500/20 rounded-sm rounded-tl-2xl rounded-bl-2xl rounded-br-2xl text-emerald-100/90'
-                      : m.isError
-                        ? 'bg-red-500/[0.07] border border-red-500/25 rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-red-200/80'
-                        : 'bg-white/[0.03] border border-white/[0.07] rounded-sm rounded-tr-2xl rounded-br-2xl rounded-bl-2xl text-white/80'}`}
-                  >
-                    {m.plan ? (
-                      <>
-                        {m.text && <p className={isFullPlan ? 'mb-4 text-white/70' : ''}>{m.text}</p>}
-                        {isFullPlan && <PlanCard plan={m.plan} />}
-                      </>
-                    ) : (
-                      <p className="whitespace-pre-wrap">{m.text}</p>
-                    )}
-                  </div>
-                  {m.plan?.hook && <CopyBtn text={planToText(m.plan)} />}
+              <div key={i} className="flex items-start gap-3">
+                <Avatar logo={userIcon} />
+                <div className="min-w-0 flex-1">
+                  {isFullPlan ? (
+                    <>
+                      {m.text && <p className="cs-rise mb-3 text-[14px] leading-relaxed text-white/70">{m.text}</p>}
+                      <PlanCard plan={m.plan} />
+                    </>
+                  ) : (
+                    <p
+                      className={`cs-rise inline-block max-w-[92%] whitespace-pre-wrap rounded-3xl rounded-tl-md border px-4 py-3 text-[14px] leading-relaxed ${
+                        m.isError
+                          ? 'border-red-400/25 bg-red-500/[0.07] text-red-100/80'
+                          : 'border-white/[0.07] bg-white/[0.03] text-white/80'
+                      }`}
+                    >
+                      {m.text}
+                    </p>
+                  )}
                 </div>
               </div>
             );
           })}
 
-          {loading && <Thinking />}
-          <div ref={endRef} />
+          {loading && <Thinking logo={userIcon} />}
         </div>
+      </div>
 
-        {/* INPUT */}
-        <div className="p-4 bg-black/50 border-t border-white/10">
-          <div className="mb-3 px-1">
-            <div className="flex justify-between text-[9px] font-black uppercase tracking-widest mb-1.5">
-              <span className="text-white/25">Capacidad de la sesión</span>
-              <span className={tokenPct >= 85 ? 'text-red-400' : 'text-white/25'}>{tokenPct}%</span>
-            </div>
-            <div className="h-[3px] rounded-full bg-white/[0.06] overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${tokenPct >= 85 ? 'bg-red-400' : 'bg-yellow-400'}`}
-                style={{ width: `${tokenPct}%` }}
-              />
-            </div>
-          </div>
-
-          {dictation.voiceError && (
-            <p className="text-[11px] text-red-300/80 mb-2 px-1">{dictation.voiceError}</p>
-          )}
+      {/* Cuadro de escritura */}
+      <div className="relative z-10 px-4 pt-2" style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom, 0px))' }}>
+        <div className="mx-auto w-full max-w-2xl">
+          {dictation.voiceError && <p className="mb-2 px-2 text-[11px] text-red-300/80">{dictation.voiceError}</p>}
 
           {limitReached ? (
-            <div className="flex items-center justify-center gap-2 py-3 px-5 bg-white/[0.03] border border-white/[0.07] rounded-2xl">
-              <span className="text-lg">🔒</span>
-              <p className="text-[11px] font-black uppercase tracking-widest text-white/30">
-                Límite de la sesión alcanzado
-              </p>
-            </div>
-          ) : (
-            <div className="bg-white/5 rounded-[1.75rem] p-2 pl-5 flex items-end gap-2">
-              <textarea
-                ref={taRef}
-                rows={1}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-                }}
-                placeholder={dictation.listening ? 'Escuchando…' : 'Describí tu idea, producto o público...'}
-                className="bg-transparent border-none outline-none flex-1 text-sm text-white py-2.5 italic resize-none placeholder-slate-600"
-              />
-              {dictation.supported && (
-                <button
-                  type="button"
-                  onClick={() => (dictation.listening ? dictation.stop() : dictation.start(input))}
-                  disabled={loading}
-                  aria-label={dictation.listening ? 'Detener dictado' : 'Dictar por voz'}
-                  className={`p-3 rounded-full transition-all active:scale-90 disabled:opacity-30 ${
-                    dictation.listening
-                      ? 'bg-red-500/20 text-red-400 animate-pulse'
-                      : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {dictation.listening ? <Square className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
-                </button>
-              )}
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-5 py-4 text-center">
+              <p className="text-[12px] text-white/50">Esta conversación llegó a su límite. Empezá una nueva para seguir.</p>
               <button
-                onClick={() => send()}
-                disabled={loading || !input.trim()}
-                className="bg-yellow-500 hover:bg-yellow-400 text-black disabled:opacity-30 p-3 rounded-full transition-all active:scale-90"
+                onClick={resetChat}
+                className="flex items-center gap-2 rounded-full bg-amber-400/90 px-5 py-2.5 text-[12px] font-semibold text-black transition-all hover:bg-amber-300 active:scale-95"
               >
-                <Send className="w-4 h-4" />
+                <RotateCcw className="h-3.5 w-3.5" /> Nueva conversación
               </button>
             </div>
+          ) : (
+            <>
+              <div className="flex items-end gap-2 rounded-[1.75rem] border border-white/10 bg-white/[0.05] p-2 pl-5 backdrop-blur-xl transition-all focus-within:border-amber-400/40 focus-within:shadow-[0_0_0_4px_rgba(251,191,36,0.07)]">
+                <textarea
+                  ref={taRef}
+                  rows={1}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); }
+                  }}
+                  placeholder={dictation.listening ? 'Escuchando…' : 'Describí tu idea, producto o público…'}
+                  className="flex-1 resize-none border-none bg-transparent py-2.5 text-[16px] leading-snug text-white outline-none placeholder:text-white/25"
+                />
+                {dictation.supported && (
+                  <button
+                    type="button"
+                    onClick={() => (dictation.listening ? dictation.stop() : dictation.start(input))}
+                    disabled={loading}
+                    aria-label={dictation.listening ? 'Detener dictado' : 'Dictar por voz'}
+                    className={`flex h-11 w-11 items-center justify-center rounded-full transition-all active:scale-90 disabled:opacity-30 ${
+                      dictation.listening ? 'animate-pulse bg-red-500/20 text-red-300' : 'text-white/45 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    {dictation.listening ? <Square className="h-4 w-4" /> : <Mic className="h-[18px] w-[18px]" />}
+                  </button>
+                )}
+                <button
+                  onClick={send}
+                  disabled={loading || !input.trim()}
+                  aria-label="Enviar"
+                  className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-amber-500 text-black shadow-[0_0_20px_rgba(251,191,36,0.25)] transition-all active:scale-90 disabled:opacity-30 disabled:shadow-none"
+                >
+                  <Send className="h-[18px] w-[18px]" />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between px-3 pt-2 text-[10px] text-white/30">
+                <span className="flex items-center gap-1">
+                  <Gem className="h-3 w-3 text-emerald-400/70" fill="currentColor" /> {messageCost} por mensaje
+                </span>
+                <span className="flex items-center gap-2">
+                  Sesión {tokenPct}%
+                  <span className="h-[3px] w-14 overflow-hidden rounded-full bg-white/[0.08]">
+                    <span
+                      className={`block h-full rounded-full transition-all duration-500 ${tokenPct >= 85 ? 'bg-red-400' : 'bg-amber-400/80'}`}
+                      style={{ width: `${tokenPct}%` }}
+                    />
+                  </span>
+                </span>
+              </div>
+            </>
           )}
         </div>
       </div>
