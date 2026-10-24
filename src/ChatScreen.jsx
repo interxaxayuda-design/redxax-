@@ -289,7 +289,7 @@ const LEVELS = {
 };
 
 const Section = ({ title, meta, i = 0, children }) => (
-  <section style={step(i)} className="cs-in overflow-hidden rounded-2xl bg-[#262626] ring-1 ring-white/[0.06]">
+  <section style={step(i)} className="cs-in overflow-hidden rounded-2xl bg-[#111111] ring-1 ring-white/[0.06]">
     <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2.5">
       <h4 className="text-[14px] font-semibold text-white">{title}</h4>
       {meta && <span className="text-[12px] text-neutral-500">{meta}</span>}
@@ -315,7 +315,7 @@ function PlanCard({ plan }) {
       )}
 
       {veredicto && (
-        <div style={step(nx())} className="cs-in rounded-2xl bg-[#262626] p-4 ring-1 ring-white/[0.06]">
+        <div style={step(nx())} className="cs-in rounded-2xl bg-[#111111] p-4 ring-1 ring-white/[0.06]">
           <div className="flex items-center justify-between">
             <span className={`text-[14px] font-semibold ${level?.text ?? 'text-white'}`}>
               {veredicto.nivel ? `Potencial ${veredicto.nivel}` : 'Potencial'}
@@ -449,7 +449,7 @@ function IdeasIntroModal({ onClose }) {
       aria-modal="true"
       aria-labelledby="ideas-intro-title"
     >
-      <div className="cs-in w-full max-w-sm rounded-2xl bg-[#2b2b2b] p-6 shadow-2xl">
+      <div className="cs-in w-full max-w-sm rounded-2xl bg-[#141414] p-6 shadow-2xl">
         <h2 id="ideas-intro-title" style={step(1)} className="cs-in mb-2 text-lg font-semibold text-white">Convierte tu idea en un video</h2>
         <p style={step(2)} className="cs-in text-[14px] leading-relaxed text-neutral-300">
           Cuéntale a VIRAX qué quieres grabar y te arma el gancho, el guion escena por escena y el cierre.
@@ -567,7 +567,7 @@ export default function ChatScreen({
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex flex-col bg-[#212121] text-neutral-100"
+      className="fixed inset-0 z-[90] flex flex-col bg-black text-neutral-100"
       style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       {showIntro && <IdeasIntroModal onClose={dismissIntro} />}
@@ -600,7 +600,7 @@ export default function ChatScreen({
                 aria-selected={platform === p.id}
                 onClick={() => setPlatform(p.id)}
                 className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
-                  platform === p.id ? 'bg-[#3a3a3a] text-white' : 'text-neutral-400 hover:text-neutral-200'
+                  platform === p.id ? 'bg-[#262626] text-white' : 'text-neutral-400 hover:text-neutral-200'
                 }`}
               >
                 {p.label}
@@ -622,7 +622,7 @@ export default function ChatScreen({
         <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-7 px-4 py-6">
           {isEmpty && (
             <div className="my-auto flex flex-col items-center py-8 text-center">
-              <div style={step(1)} className="cs-in mb-6 flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-[22px] bg-[#2a2a2a] shadow-lg shadow-black/30 ring-1 ring-white/10">
+              <div style={step(1)} className="cs-in mb-6 flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-[22px] bg-[#161616] shadow-lg shadow-black/30 ring-1 ring-white/10">
                 {userIcon ? (
                   <img src={userIcon} alt="VIRAX" className="h-11 w-11 object-contain" />
                 ) : (
@@ -633,7 +633,7 @@ export default function ChatScreen({
               <p style={step(3)} className="cs-in mt-2 max-w-sm text-[15px] leading-6 text-neutral-400">
                 Cuéntame tu idea y te armo el gancho, las escenas y el cierre.
               </p>
-              <ul style={step(4)} className="cs-in mt-9 w-full max-w-md divide-y divide-white/[0.06] overflow-hidden rounded-2xl bg-[#262626] text-left ring-1 ring-white/[0.06]">
+              <ul style={step(4)} className="cs-in mt-9 w-full max-w-md divide-y divide-white/[0.06] overflow-hidden rounded-2xl bg-[#111111] text-left ring-1 ring-white/[0.06]">
                 {SUGGESTIONS.map((s, i) => (
                   <li key={s.label} style={step(5 + i)} className="cs-in">
                     <button
@@ -658,7 +658,7 @@ export default function ChatScreen({
             if (m.role === 'user') {
               return (
                 <div key={i} className="cs-in flex justify-end">
-                  <p className="max-w-[85%] whitespace-pre-wrap rounded-3xl bg-[#2f2f2f] px-4 py-2.5 text-[15px] leading-relaxed text-white">
+                  <p className="max-w-[85%] whitespace-pre-wrap rounded-3xl bg-[#1a1a1a] px-4 py-2.5 text-[15px] leading-relaxed text-white">
                     {m.text}
                   </p>
                 </div>
@@ -699,7 +699,7 @@ export default function ChatScreen({
           {dictation.voiceError && <p className="mb-2 px-3 text-[12px] text-red-300">{dictation.voiceError}</p>}
 
           {limitReached ? (
-            <div className="flex flex-col items-center gap-3 rounded-3xl bg-[#2f2f2f] px-5 py-4 text-center">
+            <div className="flex flex-col items-center gap-3 rounded-3xl bg-[#1a1a1a] px-5 py-4 text-center">
               <p className="text-[14px] text-neutral-300">Esta conversación llegó a su límite. Empieza una nueva para seguir.</p>
               <button
                 onClick={resetChat}
@@ -711,7 +711,7 @@ export default function ChatScreen({
           ) : (
             <>
 
-              <div className="flex items-end gap-1 rounded-[28px] bg-[#2f2f2f] p-2 pl-5 ring-1 ring-white/[0.07] transition-shadow focus-within:ring-white/20">
+              <div className="flex items-end gap-1 rounded-[28px] bg-[#1a1a1a] p-2 pl-5 ring-1 ring-white/[0.07] transition-shadow focus-within:ring-white/20">
                 <textarea
                   ref={taRef}
                   rows={1}
