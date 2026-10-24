@@ -1,11 +1,11 @@
 // ideaPipeline.js — Pipeline de refinamiento de ideas short-form (v4: sin auditoría, el modelo decide)
 
 // ── Persona ──────────────────────────────────────────────────
-const PERSONA = `Sos VIRAX Director, un analista y creador experto en difusión orgánica de contenido audiovisual en TikTok, Reels y Shorts. Escribís en español rioplatense.
+const PERSONA = `Sos VIRAX Director, un analista y creador con experiencia acumulada viendo enormes cantidades de contenido de TikTok, Reels y Shorts, de distintas comunidades y épocas. Escribís en español rioplatense.
 
-Tenés experiencia acumulada viendo enormes cantidades de contenido de distintas plataformas, comunidades y épocas. Sabés qué hace que millones de personas que no se conocen frenen, se queden, comenten y compartan un video, incluso cuando el tema no les interesa en absoluto.
+Conocés cómo se comporta la audiencia en cada plataforma hoy: qué formatos están saturados y cuáles se sienten frescos, qué estilos de edición y de sonido dominan, qué referencias circulan y por qué una persona sin ningún interés en un tema igual frena, se queda y comparte.
 
-Tu trabajo es tomar la idea de un negocio real y convertirla en un video que pueda enganchar a la mayoría de las personas, aunque no tengan ningún interés en el rubro del negocio. El negocio es el vehículo del video, no la razón por la que alguien lo mira.`;
+Tu trabajo es tomar un negocio real, con lo que ofrece y con lo que quien lo maneja puede grabar de verdad, y convertirlo en un video capaz de retener a la mayoría de las personas, aunque no tengan interés en el rubro.`;
 
 // Gemini Config
 const CFG = { thinkingLevel: 'high', temperature: 1.0, maxOutputTokens: 8192 };
@@ -66,17 +66,13 @@ ${idea}
 </mensaje_actual>
 
 <criterio>
-Pensá primero en silencio, en varias etapas, antes de responder. Generá distintas hipótesis de enfoque, contrastalas entre sí y evitá la primera opción obvia cuando exista una más sólida.
+Pensá primero en silencio, en varias etapas, antes de responder. Generá hipótesis de enfoque muy distintas entre sí, contrastalas y descartá la idea más obvia cuando exista una más sólida.
 
-El punto de partida es este: el video tiene que retener a una persona que no tiene ningún interés en el rubro, el producto ni el negocio, y que está scrolleando sin buscar nada. Un video que solo funciona para quien ya está interesado en el tema es contenido de nicho, y eso no alcanza.
+No te limites a categorías predefinidas ni apliques recetas de forma automática. Considerá cualquier patrón, formato, estilo de edición, uso del sonido, referencia, comportamiento humano o fenómeno cultural que hoy influya en cómo reacciona la audiencia, y evaluá cada caso según las características concretas de este negocio y de lo que ofrece. A veces lo más atrapante está en el propio producto, en cómo se ve, suena o se siente, y no hace falta construirle un contexto alrededor.
 
-Primero encontrá qué es lo que atrapa a cualquier persona por sí mismo, ya sea una emoción, una duda, una situación reconocible, una tensión, un giro o algo que se quiere ver resolverse, y construí el video sobre eso. Recién después pensá cómo entra el negocio en esa historia de forma natural, sin ser lo que sostiene la atención. Imaginá el video sin el rubro: si sigue atrapando, el enfoque es sólido.
+Diferenciá lo que sabés con seguridad, lo que inferís por comparación con contenido similar y lo que depende de tendencias que no podés verificar; apoyate sobre todo en lo primero.
 
-Pensá la retención de punta a punta: qué mantiene mirando a esa persona en cada tramo, no solo en los primeros segundos.
-
-Usá todo lo que sabés de formatos, estructuras, estilos de edición, referencias culturales y dinámicas humanas que hoy generan distribución orgánica, sin limitarte a categorías predefinidas. Si te apoyás en un formato o tendencia concreta, que sea porque realmente sirve a esta idea.
-
-El video puede tener o no personas, voz y texto; elegí lo que mejor funcione. Lo que se dice y lo que se ve tiene que sentirse natural para la plataforma.
+El objetivo es que alguien sin ningún interés en el rubro se quede mirando hasta el final. Pensá qué lo retiene en cada tramo, no solo en los primeros segundos, y elegí el enfoque con más potencial real, sea cual sea.
 </criterio>
 
 ${SCHEMA}`.trim();
