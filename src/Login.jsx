@@ -30,6 +30,7 @@ const scoreColor = (s) => (s >= 75 ? '#34d399' : s >= 50 ? '#fbbf24' : '#fb7185'
 function ClipCard({ clip, index }) {
   const color = scoreColor(clip.score);
   const entranceDelay = `${0.2 + (index % CLIPS.length) * 0.08}s`;
+  const isViral = clip.score >= 75; // Detecta si es un video "bueno" o viral
 
   return (
     <div
@@ -50,7 +51,16 @@ function ClipCard({ clip, index }) {
         className="absolute inset-0 w-full h-full object-cover"
       />
 
-      <div className="absolute inset-x-0 bottom-0 px-3 pb-3 pt-10 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
+      {/* Emojis flotantes estilo TikTok (Solo en videos buenos/virales) */}
+      {isViral && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
+          <span className="absolute bottom-12 left-6 text-xl animate-tiktok-float opacity-0" style={{ animationDelay: '0s' }}>❤️</span>
+          <span className="absolute bottom-10 right-7 text-lg animate-tiktok-float opacity-0" style={{ animationDelay: '1.2s' }}>✨</span>
+          <span className="absolute bottom-16 left-1/2 text-lg animate-tiktok-float opacity-0" style={{ animationDelay: '2.4s' }}>🔥</span>
+        </div>
+      )}
+
+      <div className="absolute inset-x-0 bottom-0 px-3 pb-3 pt-10 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-20">
         <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
           <div className="h-full rounded-full" style={{ width: `${clip.score}%`, background: color }} />
         </div>
@@ -124,6 +134,26 @@ export default function Login() {
           }
         }
 
+        /* Animación estilo TikTok para los emojis flotantes */
+        @keyframes tiktokFloat {
+          0% {
+            opacity: 0;
+            transform: translateY(10px) scale(0.5) rotate(-15deg);
+          }
+          20% {
+            opacity: 1;
+            transform: translateY(-20px) scale(1.2) rotate(10deg);
+          }
+          80% {
+            opacity: 0.9;
+            transform: translateY(-80px) scale(1) rotate(-10deg);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-130px) scale(0.7) rotate(15deg);
+          }
+        }
+
         @keyframes logoPop {
           0% {
             opacity: 0;
@@ -164,6 +194,10 @@ export default function Login() {
           animation: cinematicCard 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
+        .animate-tiktok-float {
+          animation: tiktokFloat 3.5s ease-in-out infinite;
+        }
+
         .animate-logo-pop {
           animation: logoPop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
@@ -177,7 +211,7 @@ export default function Login() {
         }
 
         @media (prefers-reduced-motion: reduce) { 
-          .virax-track, .animate-cinematic-card, .animate-logo-pop, .animate-cinematic-up, .animate-ambient { 
+          .virax-track, .animate-cinematic-card, .animate-logo-pop, .animate-cinematic-up, .animate-ambient, .animate-tiktok-float { 
             animation: none !important; 
             opacity: 1 !important;
           } 
@@ -207,7 +241,7 @@ export default function Login() {
         </button>
       </header>
 
-      {/* Tira de videos con espacio vertical (padding) suficiente para evitar recortes */}
+      {/* Tira de videos */}
       <section
         aria-hidden="true"
         className="relative z-10 my-2 overflow-hidden py-6"
