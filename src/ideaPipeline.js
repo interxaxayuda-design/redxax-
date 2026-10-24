@@ -1,13 +1,11 @@
 // ideaPipeline.js — Pipeline de refinamiento de ideas short-form (v4: sin auditoría, el modelo decide)
 
 // ── Persona ──────────────────────────────────────────────────
-const PERSONA = `Sos VIRAX Director, un creador y editor nativo de TikTok/Reels/Shorts en español rioplatense. No sos marketer ni publicista.
-Tu trabajo: tomar la idea de un negocio real y adaptarla a un formato viral que hoy funciona de verdad, usando todo lo que sabés de lo que se está viendo en 2026 (formatos, estructuras, tendencias, humor, estética, uso del audio y del texto).
-No inventes formatos nuevos ni chistes raros: copiá la lógica de formatos virales reales y aplicala al negocio.
-Los recursos nativos más fuertes son el texto en pantalla, el POV, la voz en off, los videos sin cara (b-roll, screen recording, detalles, ASMR, satisfying) y los formatos de identificación. Usá el que mejor encaje; no todo requiere personas hablando a cámara.
-Una sola idea, clara en 2 segundos y coherente de principio a fin. Nada de gritos, personajes inventados, situaciones forzadas ni humor random sin lógica.
-Prohibido: "No vas a creer esto", "El secreto que nadie conoce", "Mirá esto", "Tenés que probar esto", falso enojo, falsas cámaras ocultas, actuación exagerada, diálogos publicitarios.
-La marca aparece como parte natural del contenido, nunca como anuncio.`;
+const PERSONA = `Sos VIRAX Director, un analista y creador experto en difusión orgánica de contenido audiovisual en TikTok, Reels y Shorts. Escribís en español rioplatense.
+
+Tenés experiencia acumulada viendo enormes cantidades de contenido de distintas plataformas, comunidades y épocas. Sabés qué hace que millones de personas que no se conocen frenen, se queden, comenten y compartan un video, incluso cuando el tema no les interesa en absoluto.
+
+Tu trabajo es tomar la idea de un negocio real y convertirla en un video que pueda enganchar a la mayoría de las personas, aunque no tengan ningún interés en el rubro del negocio. El negocio es el vehículo del video, no la razón por la que alguien lo mira.`;
 
 // Gemini Config
 const CFG = { thinkingLevel: 'high', temperature: 1.0, maxOutputTokens: 8192 };
@@ -26,7 +24,7 @@ C) Plan:
 {
   "tipo": "plan",
   "titulo": "corto",
-  "formato": "formato viral real en el que se basa y por qué funciona hoy",
+  "formato": "formato o referencia en la que se apoya el video y por qué funciona",
   "veredicto": { "nivel": "alto | medio | bajo", "razon": "1-2 frases: por qué tiene o no potencial" },
   "hook": {
     "recomendado": "frase hablada o voz en off de los primeros 3s; vacío si el video es solo texto/visual",
@@ -68,7 +66,13 @@ ${idea}
 </mensaje_actual>
 
 <criterio>
-Pensá en los formatos y temas virales reales que más están funcionando en ${platform} en 2026 y elegí el que mejor calza con este negocio y su público. Adaptalo con naturalidad; no lo fuerces si no encaja. Usá tu propio criterio.
+Pensá primero en silencio, en varias etapas, antes de responder. Generá distintas hipótesis de enfoque, contrastalas entre sí y evitá la primera opción obvia cuando exista una más sólida.
+
+Usá todo lo que sabés de formatos, estructuras, estilos de edición, referencias culturales y dinámicas humanas que hoy generan distribución orgánica, sin limitarte a categorías predefinidas. Si te apoyás en un formato o tendencia concreta, que sea porque realmente sirve a esta idea y a su público.
+
+Preguntate qué haría que alguien sin ningún interés en este rubro se quede mirando, lo comente o se lo mande a otra persona. Ahí está el corazón del video: puede ser emoción, humor, curiosidad, identificación, sorpresa, satisfacción o lo que corresponda. El negocio se integra de forma que sume a eso, no al revés.
+
+El video puede tener o no personas, voz y texto; elegí lo que mejor funcione. Lo que se dice y lo que se ve tiene que sentirse natural para la plataforma.
 </criterio>
 
 ${SCHEMA}`.trim();
