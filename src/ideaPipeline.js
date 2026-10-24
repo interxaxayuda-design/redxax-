@@ -25,7 +25,7 @@ C) Plan:
   "tipo": "plan",
   "titulo": "corto",
   "formato": "formato o referencia en la que se apoya el video y por qué funciona",
-  "veredicto": { "nivel": "alto | medio | bajo", "razon": "1-2 frases: por qué tiene o no potencial" },
+  "veredicto": { "nivel": "alto | medio | bajo", "razon": "1-2 frases: qué retendría a alguien sin ningún interés en el rubro y qué potencial real tiene" },
   "hook": {
     "recomendado": "frase hablada o voz en off de los primeros 3s; vacío si el video es solo texto/visual",
     "texto_en_pantalla": "texto del hook en pantalla",
@@ -40,7 +40,7 @@ C) Plan:
   "pregunta_seguimiento": "opcional"
 }
 
-Reglas: 3 a 5 escenas, máx 2 alternativas de hook. Si la idea es trabajable, devolvé C; preguntá (A) solo si no se puede avanzar. "nivel" es tu criterio honesto sobre el potencial real de la idea.`;
+Reglas: 3 a 5 escenas, máx 2 alternativas de hook. Si la idea es trabajable, devolvé C; preguntá (A) solo si no se puede avanzar. "nivel" es tu criterio honesto sobre cuánto retendría esta idea a una audiencia general sin interés en el rubro.`;
 
 const buildPrompt = ({
   idea, history, platform, lastPlan,
@@ -68,9 +68,13 @@ ${idea}
 <criterio>
 Pensá primero en silencio, en varias etapas, antes de responder. Generá distintas hipótesis de enfoque, contrastalas entre sí y evitá la primera opción obvia cuando exista una más sólida.
 
-Usá todo lo que sabés de formatos, estructuras, estilos de edición, referencias culturales y dinámicas humanas que hoy generan distribución orgánica, sin limitarte a categorías predefinidas. Si te apoyás en un formato o tendencia concreta, que sea porque realmente sirve a esta idea y a su público.
+El punto de partida es este: el video tiene que retener a una persona que no tiene ningún interés en el rubro, el producto ni el negocio, y que está scrolleando sin buscar nada. Un video que solo funciona para quien ya está interesado en el tema es contenido de nicho, y eso no alcanza.
 
-Preguntate qué haría que alguien sin ningún interés en este rubro se quede mirando, lo comente o se lo mande a otra persona. Ahí está el corazón del video: puede ser emoción, humor, curiosidad, identificación, sorpresa, satisfacción o lo que corresponda. El negocio se integra de forma que sume a eso, no al revés.
+Primero encontrá qué es lo que atrapa a cualquier persona por sí mismo, ya sea una emoción, una duda, una situación reconocible, una tensión, un giro o algo que se quiere ver resolverse, y construí el video sobre eso. Recién después pensá cómo entra el negocio en esa historia de forma natural, sin ser lo que sostiene la atención. Imaginá el video sin el rubro: si sigue atrapando, el enfoque es sólido.
+
+Pensá la retención de punta a punta: qué mantiene mirando a esa persona en cada tramo, no solo en los primeros segundos.
+
+Usá todo lo que sabés de formatos, estructuras, estilos de edición, referencias culturales y dinámicas humanas que hoy generan distribución orgánica, sin limitarte a categorías predefinidas. Si te apoyás en un formato o tendencia concreta, que sea porque realmente sirve a esta idea.
 
 El video puede tener o no personas, voz y texto; elegí lo que mejor funcione. Lo que se dice y lo que se ve tiene que sentirse natural para la plataforma.
 </criterio>
