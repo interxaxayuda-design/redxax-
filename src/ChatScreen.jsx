@@ -126,14 +126,14 @@ const planToText = (p) => {
   }
   if (p.hook) {
     L.push('HOOK');
-    const frase = p.hook.recomendado ?? p.hook.frase_hablada;
+    const frase = p.hook.recomendado || p.hook.frase_hablada;
     if (frase) L.push(`Dicho: ${frase}`);
     if (p.hook.texto_en_pantalla) L.push(`Pantalla: ${p.hook.texto_en_pantalla}`);
     if (p.hook.visual) L.push(`Visual: ${p.hook.visual}`);
     if (p.hook.alternativas?.length) {
       L.push('Alternativas:');
       p.hook.alternativas.forEach((a) =>
-        L.push(`- (${a.tipo}) ${a.frase_hablada}${a.texto_en_pantalla ? ` | Pantalla: ${a.texto_en_pantalla}` : ''}`));
+        L.push(`- (${a.tipo}) ${a.frase_hablada || a.texto_en_pantalla || ''}${a.frase_hablada && a.texto_en_pantalla ? ` | Pantalla: ${a.texto_en_pantalla}` : ''}`));
     }
     L.push('');
   }
@@ -303,7 +303,9 @@ function PlanCard({ plan }) {
   const [showAlt, setShowAlt] = useState(false);
   const alternativas = hook?.alternativas ?? [];
   const level = LEVELS[String(veredicto?.nivel ?? '').toLowerCase()];
-  const frase = hook?.recomendado ?? hook?.frase_hablada;
+  const frase = hook?.recomendado || hook?.frase_hablada;
+  // Videos sin voz: el gancho es el texto en pantalla
+  const destacado = frase || hook?.texto_en_pantalla;
   const mecanismo = hook?.mecanismo ?? hook?.por_que_funciona;
   let k = 2; // el primer paso lo ocupa el mensaje que acompaña al plan
   const nx = () => k++;
@@ -333,12 +335,12 @@ function PlanCard({ plan }) {
       {hook && (
         <Section i={nx()} title="Gancho" meta={`0–3 s${hook.tipo ? ` · ${hook.tipo}` : ''}`}>
           <div className="space-y-3 p-4">
-            {frase && (
-              <p className="border-l-2 border-emerald-400 pl-4 text-[17px] leading-snug text-white">“{frase}”</p>
+            {destacado && (
+              <p className="border-l-2 border-emerald-400 pl-4 text-[17px] leading-snug text-white">“{destacado}”</p>
             )}
-            {(hook.texto_en_pantalla || hook.visual) && (
+            {((frase && hook.texto_en_pantalla) || hook.visual) && (
               <dl className="grid grid-cols-[92px_1fr] gap-x-3 gap-y-1.5 text-[14px] leading-6">
-                {hook.texto_en_pantalla && (
+                {frase && hook.texto_en_pantalla && (
                   <>
                     <dt className="text-neutral-500">En pantalla</dt>
                     <dd className="text-neutral-300">{hook.texto_en_pantalla}</dd>
@@ -370,8 +372,8 @@ function PlanCard({ plan }) {
                   {alternativas.map((a, i) => (
                     <li key={i} className="text-[14px] leading-6 text-neutral-300">
                       {a.tipo && <span className="mr-2 text-[12px] text-neutral-500">{a.tipo}</span>}
-                      “{a.frase_hablada}”
-                      {a.texto_en_pantalla && (
+                      “{a.frase_hablada || a.texto_en_pantalla}”
+                      {a.frase_hablada && a.texto_en_pantalla && (
                         <span className="block text-[13px] text-neutral-500">En pantalla: {a.texto_en_pantalla}</span>
                       )}
                     </li>
@@ -430,7 +432,7 @@ function PlanCard({ plan }) {
 
       <div style={step(nx())} className="cs-in flex flex-wrap gap-2 pt-1">
         <CopyBtn label="Copiar plan" text={planToText(plan)} />
-        {frase && <CopyBtn label="Copiar gancho" text={frase} />}
+        {destacado && <CopyBtn label="Copiar gancho" text={destacado} />}
       </div>
     </div>
   );

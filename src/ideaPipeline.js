@@ -1,101 +1,79 @@
-// ideaPipeline.js — Pipeline de refinamiento de ideas short-form
+// ideaPipeline.js — Pipeline de refinamiento de ideas short-form (versión compacta)
 
-// ── Persona & Reglas de Cultura Actual ─────────────────────────
-const PERSONA = `Sos VIRAX Coach, un director creativo especialista en viralidad orgánica short-form (TikTok, Reels, Shorts) en español rioplatense.
-Convertís ideas de negocios reales en conceptos de video corto que una persona pueda grabar con naturalidad.
-Pensás como un editor/creador nativo de internet de la era actual.
-Tus referencias son el contenido real que consume la gente joven: shitposting sutil, humor absurdo/irónico, edits de personajes/pop culture, tensión visual tipo 'analog horror', contenido de 'curiosidad no explicada', o realismo crudo sin guionizar.
-
-REGLA DE ORO CONTRA EL CRINGE:
-Odiás el marketing tradicional. Si una sugerencia suena a "video corporativo intentando ser viral", "actor fingiendo molestia", o usa frases gastadas como "No vas a creer esto", "El secreto que no quieren que sepas", "Prohibido pedirlo así" o "El cliente que nos arruinó el día", DESCÁRTALA INMEDIATAMENTE. La audiencia moderna detecta el marketing a los 0.2 segundos y desliza.`;
+// ── Persona ──────────────────────────────────────────────────
+const PERSONA = `Sos VIRAX Director, un editor obsesionado con por qué la gente se queda mirando videos. No sos marketer ni copywriter.
+Convertís ideas de negocios reales en videos de TikTok/Reels/Shorts que funcionen sin seguidores ni branding. Español rioplatense.
+Pensás como editor de TikTok, creador de memes y consumidor crónico de internet. Competís contra memes, edits, historias reales y videos raros, no contra otras publicidades.
+El espectador detecta marketing al instante e ignora beneficios, promesas y CTAs forzados. Solo atiende algo raro, inesperado, divertido, incómodo o que necesita contexto.
+Su secuencia mental: "¿Qué está pasando?" → "¿Por qué?" → "¿Cómo pasó eso?". La venta viene después, nunca antes.
+Prohibido: "No vas a creer esto", "El secreto que nadie conoce", "Mirá esto", "Tenés que probar esto", falso enojo, falsas cámaras ocultas, reacciones actuadas, diálogos publicitarios.
+Si parece un anuncio disfrazado de contenido, fallaste. Si parece contenido que casualmente incluye una marca, vas bien.`;
 
 // Gemini Config
 const CFG = { thinkingLevel: 'high', temperature: 1.0, maxOutputTokens: 8192 };
 
-const MIN_HOOK = 7;     // score mínimo verificado del criterio hook
-const MIN_AVG = 7;      // promedio mínimo verificado de los 8 criterios
-const MAX_RETRIES = 1;  // 0 = nunca reintenta
+const MIN_SCROLL_STOP = 7; // score mínimo verificado de scroll_stop
+const MIN_AVG = 7;         // promedio mínimo verificado de los 8 criterios
+const MAX_RETRIES = 1;     // 0 = nunca reintenta
 
 const CRITERIOS = [
-  'hook', 'emotion', 'shareability', 'novelty', 'retention', 'trend_fit', 'clarity_cta', 'platform_fit',
+  'scroll_stop', 'context_gap', 'conversation_trigger', 'novelty',
+  'retention', 'authenticity', 'platform_fit', 'product_integration',
 ];
 
 // ── Prompt Builder ───────────────────────────────────────────
 const historyBlock = (history) =>
   history.length
-    ? history.map((m) => `${m.role === 'user' ? 'USUARIO' : 'VIRAX'}: ${m.text}`).join('\n\n')
+    ? history.map((m) => `${m.role === 'user' ? 'USUARIO' : 'VIRAX'}: ${m.text}`).join('\n')
     : '(primera interacción)';
 
-const SCHEMA = `
-Respondé SOLO con un objeto JSON válido, sin texto extra ni markdown. Elegí UNO de estos formatos:
+const SCHEMA = `Respondé SOLO con JSON válido, sin markdown. Elegí UNO:
 
-A) Si falta información clave para trabajar la idea:
-{ "tipo": "pregunta", "mensaje": "una sola pregunta concreta" }
-
-B) Si el usuario pide ajustar algo pero no hay plan previo:
-{ "tipo": "ajuste_sin_plan" }
-
-C) Plan completo:
+A) Falta información clave: { "tipo": "pregunta", "mensaje": "una sola pregunta concreta" }
+B) Piden ajustar pero no hay plan previo: { "tipo": "ajuste_sin_plan" }
+C) Plan:
 {
   "tipo": "plan",
-  "titulo": "string corto",
-  "veredicto": { "razon": "por qué esta idea tiene o no potencial, en 1-2 frases" },
+  "titulo": "corto",
+  "veredicto": { "razon": "1-2 frases: por qué tiene o no potencial y qué enfoque elegiste" },
   "hook": {
-    "recomendado": "frase hablada exacta de los primeros 3 segundos (debe sonar 100% natural)",
-    "texto_en_pantalla": "string",
+    "recomendado": "frase hablada exacta de los primeros 3s, 100% natural",
+    "texto_en_pantalla": "",
     "visual": "qué se ve en cámara",
     "tipo": "curiosidad | contraste | analog horror | shitpost | meta-humor | duda silenciosa | etc.",
-    "mecanismo": "qué mecanismo de atención activa (ej: disonancia cognitiva, mimetización de clip viral, tensión voyeurista)",
-    "alternativas": [
-      { "tipo": "string", "frase_hablada": "string", "texto_en_pantalla": "string" }
-    ]
+    "mecanismo": "qué mecanismo de atención activa",
+    "alternativas": [{ "tipo": "", "frase_hablada": "", "texto_en_pantalla": "" }]
   },
-  "escenas": [
-    {
-      "tiempo": "0-3s",
-      "accion": "qué se graba, tan específico que otra persona lo pueda grabar sin pedir aclaraciones",
-      "dialogo": "string o vacío",
-      "texto_pantalla": "string o vacío"
-    }
-  ],
+  "escenas": [{ "tiempo": "0-3s", "accion": "grabable sin pedir aclaraciones", "dialogo": "", "texto_pantalla": "" }],
   "cta": "cierre concreto",
-  "errores_a_evitar": ["máx 3, específicos de esta idea"],
-  "pregunta_seguimiento": "string opcional",
+  "errores_a_evitar": ["máx 3, específicos"],
+  "pregunta_seguimiento": "opcional",
   "auditoria": {
-    "hook":         { "score": 0, "evidence": "fragmento LITERAL copiado del plan", "fix": "string" },
-    "emotion":      { "score": 0, "evidence": "...", "fix": "..." },
-    "shareability": { "score": 0, "evidence": "...", "fix": "..." },
-    "novelty":      { "score": 0, "evidence": "...", "fix": "..." },
-    "retention":    { "score": 0, "evidence": "...", "fix": "..." },
-    "trend_fit":     { "score": 0, "evidence": "...", "fix": "..." },
-    "clarity_cta":  { "score": 0, "evidence": "...", "fix": "..." },
-    "platform_fit": { "score": 0, "evidence": "...", "fix": "..." }
+    "scroll_stop": { "score": 0, "evidence": "", "fix": "" },
+    "context_gap": { "score": 0, "evidence": "", "fix": "" },
+    "conversation_trigger": { "score": 0, "evidence": "", "fix": "" },
+    "novelty": { "score": 0, "evidence": "", "fix": "" },
+    "retention": { "score": 0, "evidence": "", "fix": "" },
+    "authenticity": { "score": 0, "evidence": "", "fix": "" },
+    "platform_fit": { "score": 0, "evidence": "", "fix": "" },
+    "product_integration": { "score": 0, "evidence": "", "fix": "" }
   }
 }
 
-Condiciones:
-- "score" es un número de 0 a 10.
-- Entre 3 y 5 escenas.
-- "auditoria" es OBLIGATORIA en el formato C, con los 8 criterios.
-- "evidence" debe ser texto copiado TAL CUAL de hook.recomendado, hook.texto_en_pantalla, hook.visual, hook.mecanismo, escenas (accion/dialogo/texto_pantalla) o cta. Si no es literal, el score se topa en 3.
-- Si el mensaje es una idea mínimamente trabajable, devolvé el plan (C); preguntá (A) solo si realmente no se puede avanzar.
-`.trim();
+Reglas:
+- 3 a 5 escenas, máx 2 alternativas de hook. Si la idea es trabajable, devolvé C; preguntá (A) solo si no se puede avanzar.
+- "auditoria" obligatoria en C. score 0-10. "evidence" = texto copiado TAL CUAL de hook.recomendado/texto_en_pantalla/visual/mecanismo, escenas o cta; si no es literal, el score se topa en 3. No infles puntajes.
+- Criterios (0 → 10): scroll_stop (invisible → imposible ignorarlo); context_gap (todo obvio → necesito quedarme para entender); conversation_trigger (nadie comenta → la gente necesita opinar); novelty (visto mil veces → se siente nuevo); retention (ya vi todo tras el hook → cada escena agrega algo); authenticity (publicidad obvia → contenido genuino); platform_fit (spot publicitario → nativo); product_integration (inserción forzada → parte orgánica de la historia).`;
 
 const buildPrompt = ({
-  idea,
-  history,
-  platform,
-  lastPlan,
-  feedback,
-  businessContext = null,
-  trendContext = null,
-}) => `
-${PERSONA}
+  idea, history, platform, lastPlan, feedback,
+  businessContext = null, trendContext = null,
+}) => `${PERSONA}
 
 <contexto>
 Plataforma: ${platform}
-Público, voz y objetivo del negocio: ${businessContext ?? '(no informado)'}
-Señales culturales actuales disponibles: ${trendContext ?? '(no disponibles)'}
+Negocio (público, voz, objetivo): ${businessContext ?? '(no informado)'}
+Señales culturales: ${trendContext ?? '(no disponibles)'}
 </contexto>
 
 <historial>
@@ -111,29 +89,13 @@ ${idea}
 </mensaje_actual>
 
 <criterio>
-Tu objetivo es transformar la idea del negocio en un concepto con camuflaje orgánico y ganchos de alta atención para redes actuales.
-
-REGLAS DE EVALUACIÓN Y DISEÑO:
-1. CAMUFLAJE Y NATIVIDAD: El video debe parecer un posteo orgánico, un clip filtrado, un meme de la cultura actual o una situación insólita no actuada. No debe oler a "publicidad corporativa".
-2. HOOKS DE CONTEXTO: Evitá diálogos forzados a cámara. Preferí ganchos de acción, tensión visual, textos en pantalla estilo meme/observación, o audio ambiental disonante.
-3. LENGUAJE DE INTERNET ACTUAL: Usá narrativas modernas (edits, suspenso absurdo, contraste entre lo estético y lo caótico, referencias culturales si el trendContext encaja naturalmente). Si no hay un encaje cultural genuino, no lo fuerces.
-4. CERO ACTUACIÓN FORZADA: Si proponés personas en cámara, la indicación debe exigir naturalidad absoluta (tipo documental, cámara de seguridad, clip robado o reacción genuina).
-
-Evaluá tres enfoques internamente y elegí el más fuerte:
-- Una observación real o detrás de escena.
-- Una conexión cultural si hay señales disponibles que encajen de forma orgánica con el público.
-- Una demostración, transformación o intriga visual de algo grabable.
-
-Escribí un plan grabable, específico y sin fórmulas de engagement cliché. Reflejá el enfoque elegido y su razón en veredicto.razon y hook.mecanismo.
+Buscá una situación interesante, no marketing. La marca existe para explicar la situación, no al revés.
+Descartá o replanteá la idea si: solo muestra una función; depende de que confíen en la marca; lo más interesante pasa después del segundo 5; sin la marca el video deja de ser interesante; no hay observación, anomalía, contradicción, situación social o curiosidad.
+Evaluá internamente tres enfoques (observación real, situación inesperada, anomalía que genera conversación) y elegí el mejor. Si hay señales culturales que encajen de forma orgánica, usalas; si no, no las fuerces.
+Priorizá tensión contextual, rareza, contradicción y observación humana. Evitá beneficios, promesas, explicaciones y demostraciones lineales.
 </criterio>
-
-<salida>
-Devolvé solo el JSON definido en el esquema. La auditoría es obligatoria: cada score se justifica con evidence literal del plan; sin evidencia literal no puntúes por encima de 3. No infles puntajes.
-</salida>
-
-${feedback ? `<correccion>\n${feedback}\n</correccion>\n` : ''}
-${SCHEMA}
-`.trim();
+${feedback ? `\n<correccion>\n${feedback}\n</correccion>\n` : ''}
+${SCHEMA}`.trim();
 
 // ── Llamada al proxy ─────────────────────────────────────────
 
@@ -205,8 +167,8 @@ const audit = (out) => {
     return { k, score: verificable ? num(x.score) : Math.min(num(x.score), 3), fix: x.fix ?? '' };
   });
   const avg = rows.reduce((s, r) => s + r.score, 0) / rows.length;
-  const hook = rows.find((r) => r.k === 'hook').score;
-  return { rows, avg, hook, ok: hook >= MIN_HOOK && avg >= MIN_AVG };
+  const scrollStop = rows.find((r) => r.k === 'scroll_stop').score;
+  return { rows, avg, scrollStop, ok: scrollStop >= MIN_SCROLL_STOP && avg >= MIN_AVG };
 };
 
 const levelFor = (s) => (s >= 8 ? 'alto' : s >= 6 ? 'medio' : 'bajo');
@@ -217,14 +179,8 @@ const validPlan = (o) =>
 // ── Pipeline ─────────────────────────────────────────────────
 
 export const runIdeaPipeline = async ({
-  supabase,
-  model,
-  idea,
-  history = [],
-  platform = 'tiktok',
-  lastPlan = null,
-  businessContext = null,
-  trendContext = null,
+  supabase, model, idea, history = [], platform = 'tiktok',
+  lastPlan = null, businessContext = null, trendContext = null,
 }) => {
   const trace = [];
   const total = () => trace.reduce((s, t) => s + t.tokens, 0);
@@ -263,7 +219,7 @@ export const runIdeaPipeline = async ({
       const feedback = [
         'La versión anterior no pasó la auditoría. Reescribila corrigiendo SOLO esto (mantené lo que ya funciona):',
         ...best.a.rows
-          .filter((x) => x.score < MIN_HOOK)
+          .filter((x) => x.score < MIN_SCROLL_STOP)
           .map((x) => `- ${x.k} ${x.score}/10: ${x.fix || 'subir el estándar'}`),
         'Recordá: "evidence" debe ser texto copiado literal del plan.',
       ].join('\n');
