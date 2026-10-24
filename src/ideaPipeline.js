@@ -3,9 +3,9 @@
 // ── Persona ──────────────────────────────────────────────────
 const PERSONA = `Sos VIRAX Director, un analista y creador con experiencia acumulada viendo enormes cantidades de contenido de TikTok, Reels y Shorts, de distintas comunidades y épocas. Escribís en español rioplatense.
 
-Conocés cómo se comporta la audiencia en cada plataforma hoy: qué formatos están saturados y cuáles se sienten frescos, qué estilos de edición y de sonido dominan, qué referencias circulan y por qué una persona sin ningún interés en un tema igual frena, se queda y comparte.
+Tu audiencia es la que hoy domina estas plataformas: personas jóvenes, nativas de internet, que en 2026 consumen cientos de videos por sesión, detectan en una fracción de segundo cuándo algo lo hizo una marca y desconfían de todo lo que suene a venta. Conocés qué formatos están saturados y cuáles se sienten frescos para ellas, qué estilos de edición, sonidos y humor circulan, y por qué se mandan un video entre amigos. Sabés que buena parte del contenido que más circula entre ellas no tiene a nadie hablando a cámara: se sostiene con edición, sonido, texto, imagen y ritmo.
 
-Tu trabajo es tomar un negocio real, con lo que ofrece y con lo que quien lo maneja puede grabar de verdad, y convertirlo en un video capaz de retener a la mayoría de las personas, aunque no tengan interés en el rubro.`;
+Tu trabajo es tomar un negocio real, con lo que ofrece y con lo que quien lo maneja puede grabar de verdad, y convertirlo en un video capaz de retener a esa audiencia, aunque no tenga ningún interés en el rubro.`;
 
 // Gemini Config
 const CFG = { thinkingLevel: 'high', temperature: 1.0, maxOutputTokens: 8192 };
@@ -27,14 +27,14 @@ C) Plan:
   "formato": "formato o referencia en la que se apoya el video y por qué funciona",
   "veredicto": { "nivel": "alto | medio | bajo", "razon": "1-2 frases: qué retendría a alguien sin ningún interés en el rubro y qué potencial real tiene" },
   "hook": {
-    "recomendado": "frase hablada o voz en off de los primeros 3s; vacío si el video es solo texto/visual",
-    "texto_en_pantalla": "texto del hook en pantalla",
     "visual": "qué se ve en los primeros 3s",
+    "texto_en_pantalla": "texto del hook en pantalla; vacío si no hay",
+    "recomendado": "frase hablada o voz en off; vacío si el video no lleva voz",
     "tipo": "tipo de gancho",
     "mecanismo": "qué mecanismo de atención activa",
     "alternativas": [{ "tipo": "", "frase_hablada": "", "texto_en_pantalla": "" }]
   },
-  "escenas": [{ "tiempo": "0-3s", "accion": "qué se ve/graba, tan específico que otra persona lo pueda grabar sin pedir aclaraciones", "dialogo": "voz o diálogo; vacío si no hay", "texto_pantalla": "texto en pantalla; vacío si no hay" }],
+  "escenas": [{ "tiempo": "0-3s", "accion": "qué se ve/graba, tan específico que otra persona lo pueda grabar sin pedir aclaraciones", "sonido": "audio o sonido de la escena (ambiente, ASMR, audio en tendencia, música, etc.)", "dialogo": "voz o diálogo; vacío si no hay", "texto_pantalla": "texto en pantalla; vacío si no hay" }],
   "cta": "cierre concreto y natural",
   "errores_a_evitar": ["máx 3, específicos"],
   "pregunta_seguimiento": "opcional"
@@ -68,11 +68,13 @@ ${idea}
 <criterio>
 Pensá primero en silencio, en varias etapas, antes de responder. Generá hipótesis de enfoque muy distintas entre sí, contrastalas y descartá la idea más obvia cuando exista una más sólida.
 
-No te limites a categorías predefinidas ni apliques recetas de forma automática. Considerá cualquier patrón, formato, estilo de edición, uso del sonido, referencia, comportamiento humano o fenómeno cultural que hoy influya en cómo reacciona la audiencia, y evaluá cada caso según las características concretas de este negocio y de lo que ofrece. A veces lo más atrapante está en el propio producto, en cómo se ve, suena o se siente, y no hace falta construirle un contexto alrededor.
+No te limites a categorías predefinidas ni apliques recetas de forma automática. Considerá cualquier patrón, formato, estilo de edición, uso del sonido, referencia, comportamiento humano o fenómeno cultural que hoy influya en cómo reacciona una audiencia joven, y evaluá cada caso según las características concretas de este negocio y de lo que ofrece. A veces lo más atrapante está en el propio producto, en cómo se ve, suena o se siente, y no hace falta construirle un contexto alrededor.
+
+Todo se evalúa desde los ojos de quien mira, no de quien vende. Un gancho que le habla al público del negocio, o que solo le interesa a su dueño, no le da a un espectador joven ningún motivo para quedarse. Preguntate qué haría frenar a alguien de 18 años que no conoce este negocio ni lo necesita.
 
 Diferenciá lo que sabés con seguridad, lo que inferís por comparación con contenido similar y lo que depende de tendencias que no podés verificar; apoyate sobre todo en lo primero.
 
-El objetivo es que alguien sin ningún interés en el rubro se quede mirando hasta el final. Pensá qué lo retiene en cada tramo, no solo en los primeros segundos, y elegí el enfoque con más potencial real, sea cual sea.
+Pensá qué retiene a esa persona en cada tramo, no solo en los primeros segundos, y elegí el enfoque con más potencial real, sea cual sea. Voz, personas, texto y sonido son recursos entre muchos: usá los que sirvan a la idea, y ninguno si no hacen falta.
 </criterio>
 
 ${SCHEMA}`.trim();
@@ -125,10 +127,10 @@ const callGemini = async (supabase, body) => {
 
 const NIVELES = ['alto', 'medio', 'bajo'];
 
-// Un video sin voz es válido: alcanza con texto en pantalla o frase hablada.
+// Un video sin voz ni texto es válido: alcanza con que el hook tenga visual, texto o frase hablada.
 const validPlan = (o) =>
   o?.tipo === 'plan' &&
-  (o.hook?.recomendado || o.hook?.texto_en_pantalla) &&
+  (o.hook?.recomendado || o.hook?.texto_en_pantalla || o.hook?.visual) &&
   Array.isArray(o.escenas) && o.escenas.length > 0;
 
 // ── Pipeline ─────────────────────────────────────────────────
