@@ -20,6 +20,9 @@ const THINKING_STEPS = ['Pensando el gancho', 'Armando las escenas', 'Puliendo e
 const MAX_HISTORY_TURNS = 6;
 const SESSION_TOKEN_LIMIT = 80000;
 
+// Entrada escalonada: cada elemento aparece un paso después del anterior
+const step = (i) => ({ '--i': i });
+
 // ── Lógica (sin cambios de comportamiento) ──
 const pick = (o, keys) => {
   for (const k of keys) if (o?.[k] != null && o[k] !== '') return o[k];
@@ -231,7 +234,7 @@ function useDictation(onText) {
 // ── Piezas de interfaz ──
 // Avatar mínimo: círculo chico con el logo (o una "V" si no hay logo)
 const Avatar = ({ logo }) => (
-  <div className="mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 text-[12px] font-semibold text-neutral-300">
+  <div className="cs-in mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 text-[12px] font-semibold text-neutral-300">
     {logo ? <img src={logo} alt="VIRAX" className="h-4 w-4 object-contain" /> : 'V'}
   </div>
 );
@@ -267,7 +270,7 @@ function Thinking({ logo }) {
   return (
     <div className="flex items-start gap-3">
       <Avatar logo={logo} />
-      <div className="flex items-center gap-2.5 pt-2">
+      <div style={step(1)} className="cs-in flex items-center gap-2.5 pt-2">
         <span className="flex gap-1">
           {[0, 1, 2].map((k) => (
             <span key={k} className="cs-dot" style={{ animationDelay: `${k * 0.16}s` }} />
@@ -285,8 +288,8 @@ const LEVELS = {
   alto: { n: 3, bar: 'bg-emerald-400', text: 'text-emerald-300' },
 };
 
-const Section = ({ title, meta, children }) => (
-  <section className="overflow-hidden rounded-2xl bg-[#262626] ring-1 ring-white/[0.06]">
+const Section = ({ title, meta, i = 0, children }) => (
+  <section style={step(i)} className="cs-in overflow-hidden rounded-2xl bg-[#262626] ring-1 ring-white/[0.06]">
     <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2.5">
       <h4 className="text-[14px] font-semibold text-white">{title}</h4>
       {meta && <span className="text-[12px] text-neutral-500">{meta}</span>}
@@ -302,15 +305,17 @@ function PlanCard({ plan }) {
   const level = LEVELS[String(veredicto?.nivel ?? '').toLowerCase()];
   const frase = hook?.recomendado ?? hook?.frase_hablada;
   const mecanismo = hook?.mecanismo ?? hook?.por_que_funciona;
+  let k = 2; // el primer paso lo ocupa el mensaje que acompaña al plan
+  const nx = () => k++;
 
   return (
     <div className="space-y-3.5 text-[15px] leading-7 text-neutral-200">
       {plan.titulo && (
-        <h3 className="text-[20px] font-semibold leading-snug tracking-tight text-white">{plan.titulo}</h3>
+        <h3 style={step(nx())} className="cs-in text-[20px] font-semibold leading-snug tracking-tight text-white">{plan.titulo}</h3>
       )}
 
       {veredicto && (
-        <div className="rounded-2xl bg-[#262626] p-4 ring-1 ring-white/[0.06]">
+        <div style={step(nx())} className="cs-in rounded-2xl bg-[#262626] p-4 ring-1 ring-white/[0.06]">
           <div className="flex items-center justify-between">
             <span className={`text-[14px] font-semibold ${level?.text ?? 'text-white'}`}>
               {veredicto.nivel ? `Potencial ${veredicto.nivel}` : 'Potencial'}
@@ -326,7 +331,7 @@ function PlanCard({ plan }) {
       )}
 
       {hook && (
-        <Section title="Gancho" meta={`0–3 s${hook.tipo ? ` · ${hook.tipo}` : ''}`}>
+        <Section i={nx()} title="Gancho" meta={`0–3 s${hook.tipo ? ` · ${hook.tipo}` : ''}`}>
           <div className="space-y-3 p-4">
             {frase && (
               <p className="border-l-2 border-emerald-400 pl-4 text-[17px] leading-snug text-white">“{frase}”</p>
@@ -379,10 +384,10 @@ function PlanCard({ plan }) {
       )}
 
       {escenas?.length > 0 && (
-        <Section title="Guion" meta={`${escenas.length} ${escenas.length === 1 ? 'escena' : 'escenas'}`}>
+        <Section i={nx()} title="Guion" meta={`${escenas.length} ${escenas.length === 1 ? 'escena' : 'escenas'}`}>
           <ol className="divide-y divide-white/[0.06]">
             {escenas.map((e, i) => (
-              <li key={i} className="flex gap-4 px-4 py-3.5">
+              <li key={i} style={step(nx())} className="cs-in flex gap-4 px-4 py-3.5">
                 <div className="w-14 flex-shrink-0 pt-0.5">
                   <span className="block text-[14px] font-semibold tabular-nums text-white">{i + 1}</span>
                   {e.tiempo && <span className="text-[12px] text-neutral-500">{e.tiempo}</span>}
@@ -403,13 +408,13 @@ function PlanCard({ plan }) {
       )}
 
       {cta && (
-        <Section title="Cierre">
+        <Section i={nx()} title="Cierre">
           <p className="p-4 text-[15px] leading-6 text-neutral-200">{cta}</p>
         </Section>
       )}
 
       {errores_a_evitar?.length > 0 && (
-        <Section title="Evita esto">
+        <Section i={nx()} title="Evita esto">
           <ul className="space-y-2 p-4">
             {errores_a_evitar.map((x, i) => (
               <li key={i} className="flex gap-2.5 text-[14px] leading-6 text-neutral-300">
@@ -421,9 +426,9 @@ function PlanCard({ plan }) {
         </Section>
       )}
 
-      {plan.pregunta_seguimiento && <p className="text-neutral-400">{plan.pregunta_seguimiento}</p>}
+      {plan.pregunta_seguimiento && <p style={step(nx())} className="cs-in text-neutral-400">{plan.pregunta_seguimiento}</p>}
 
-      <div className="flex flex-wrap gap-2 pt-1">
+      <div style={step(nx())} className="cs-in flex flex-wrap gap-2 pt-1">
         <CopyBtn label="Copiar plan" text={planToText(plan)} />
         {frase && <CopyBtn label="Copiar gancho" text={frase} />}
       </div>
@@ -444,14 +449,14 @@ function IdeasIntroModal({ onClose }) {
       aria-modal="true"
       aria-labelledby="ideas-intro-title"
     >
-      <div className="w-full max-w-sm rounded-2xl bg-[#2b2b2b] p-6 shadow-2xl">
-        <h2 id="ideas-intro-title" className="mb-2 text-lg font-semibold text-white">Convierte tu idea en un video</h2>
-        <p className="text-[14px] leading-relaxed text-neutral-300">
+      <div className="cs-in w-full max-w-sm rounded-2xl bg-[#2b2b2b] p-6 shadow-2xl">
+        <h2 id="ideas-intro-title" style={step(1)} className="cs-in mb-2 text-lg font-semibold text-white">Convierte tu idea en un video</h2>
+        <p style={step(2)} className="cs-in text-[14px] leading-relaxed text-neutral-300">
           Cuéntale a VIRAX qué quieres grabar y te arma el gancho, el guion escena por escena y el cierre.
         </p>
         <button
           onClick={onClose}
-          className="mt-5 w-full rounded-full bg-white py-3 text-[14px] font-semibold text-black transition-opacity hover:opacity-90 active:scale-[0.98]"
+          style={step(3)} className="cs-in mt-5 w-full rounded-full bg-white py-3 text-[14px] font-semibold text-black transition-opacity hover:opacity-90 active:scale-[0.98]"
         >
           Entendido
         </button>
@@ -569,13 +574,15 @@ export default function ChatScreen({
       <style>{`
         @keyframes cs-dot { 0%, 80%, 100% { opacity: .25; transform: scale(.8) } 40% { opacity: 1; transform: scale(1) } }
         .cs-dot { width: 6px; height: 6px; border-radius: 9999px; background: #a3a3a3; animation: cs-dot 1.2s ease-in-out infinite; }
+        .cs-in { animation: cs-in .6s cubic-bezier(.22,1,.36,1) both; animation-delay: calc(min(var(--i, 0), 16) * 80ms); }
+        @keyframes cs-in { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: translateY(0) } }
         .cs-scroll::-webkit-scrollbar { width: 6px }
         .cs-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 10px }
-        @media (prefers-reduced-motion: reduce) { .cs-dot { animation: none } }
+        @media (prefers-reduced-motion: reduce) { .cs-dot, .cs-in { animation: none } }
       `}</style>
 
       {/* Encabezado */}
-      <header className="flex items-center gap-1 border-b border-white/[0.05] px-2 py-2">
+      <header className="cs-in flex items-center gap-1 border-b border-white/[0.05] px-2 py-2">
         <button
           onClick={onBack}
           aria-label="Volver"
@@ -615,20 +622,20 @@ export default function ChatScreen({
         <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-7 px-4 py-6">
           {isEmpty && (
             <div className="my-auto flex flex-col items-center py-8 text-center">
-              <div className="mb-6 flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-[22px] bg-[#2a2a2a] shadow-lg shadow-black/30 ring-1 ring-white/10">
+              <div style={step(1)} className="cs-in mb-6 flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-[22px] bg-[#2a2a2a] shadow-lg shadow-black/30 ring-1 ring-white/10">
                 {userIcon ? (
                   <img src={userIcon} alt="VIRAX" className="h-11 w-11 object-contain" />
                 ) : (
                   <span className="text-3xl font-semibold text-white">V</span>
                 )}
               </div>
-              <h2 className="text-[28px] font-semibold leading-tight tracking-tight text-white">¿Qué quieres grabar hoy?</h2>
-              <p className="mt-2 max-w-sm text-[15px] leading-6 text-neutral-400">
+              <h2 style={step(2)} className="cs-in text-[28px] font-semibold leading-tight tracking-tight text-white">¿Qué quieres grabar hoy?</h2>
+              <p style={step(3)} className="cs-in mt-2 max-w-sm text-[15px] leading-6 text-neutral-400">
                 Cuéntame tu idea y te armo el gancho, las escenas y el cierre.
               </p>
-              <ul className="mt-9 w-full max-w-md divide-y divide-white/[0.06] overflow-hidden rounded-2xl bg-[#262626] text-left ring-1 ring-white/[0.06]">
-                {SUGGESTIONS.map((s) => (
-                  <li key={s.label}>
+              <ul style={step(4)} className="cs-in mt-9 w-full max-w-md divide-y divide-white/[0.06] overflow-hidden rounded-2xl bg-[#262626] text-left ring-1 ring-white/[0.06]">
+                {SUGGESTIONS.map((s, i) => (
+                  <li key={s.label} style={step(5 + i)} className="cs-in">
                     <button
                       onClick={() => useSuggestion(s.text)}
                       className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors hover:bg-white/[0.04]"
@@ -650,7 +657,7 @@ export default function ChatScreen({
           {messages.map((m, i) => {
             if (m.role === 'user') {
               return (
-                <div key={i} className="flex justify-end">
+                <div key={i} className="cs-in flex justify-end">
                   <p className="max-w-[85%] whitespace-pre-wrap rounded-3xl bg-[#2f2f2f] px-4 py-2.5 text-[15px] leading-relaxed text-white">
                     {m.text}
                   </p>
@@ -664,12 +671,13 @@ export default function ChatScreen({
                 <div className="min-w-0 flex-1">
                   {isFullPlan ? (
                     <>
-                      {m.text && <p className="mb-4 text-[15px] leading-7 text-neutral-200">{m.text}</p>}
+                      {m.text && <p style={step(1)} className="cs-in mb-4 text-[15px] leading-7 text-neutral-200">{m.text}</p>}
                       <PlanCard plan={m.plan} />
                     </>
                   ) : (
                     <p
-                      className={`whitespace-pre-wrap pt-0.5 text-[15px] leading-7 ${
+                      style={step(1)}
+                      className={`cs-in whitespace-pre-wrap pt-0.5 text-[15px] leading-7 ${
                         m.isError ? 'text-red-300' : 'text-neutral-200'
                       }`}
                     >
@@ -686,7 +694,7 @@ export default function ChatScreen({
       </div>
 
       {/* Cuadro de escritura */}
-      <div className="px-3 pt-1" style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom, 0px))' }}>
+      <div className="cs-in px-3 pt-1" style={{ '--i': 8, paddingBottom: 'max(10px, env(safe-area-inset-bottom, 0px))' }}>
         <div className="mx-auto w-full max-w-3xl">
           {dictation.voiceError && <p className="mb-2 px-3 text-[12px] text-red-300">{dictation.voiceError}</p>}
 
