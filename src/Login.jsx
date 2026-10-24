@@ -30,7 +30,6 @@ const scoreColor = (s) => (s >= 75 ? '#34d399' : s >= 50 ? '#fbbf24' : '#fb7185'
 function ClipCard({ clip, index }) {
   const color = scoreColor(clip.score);
   const entranceDelay = `${0.2 + (index % CLIPS.length) * 0.08}s`;
-  const isViral = clip.score >= 75; // Solo en videos buenos/virales
 
   return (
     <div
@@ -50,15 +49,6 @@ function ClipCard({ clip, index }) {
         preload="auto"
         className="absolute inset-0 w-full h-full object-cover"
       />
-
-      {/* Corazones flotantes rápidos a la derecha (Solo videos virales) */}
-      {isViral && (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
-          <span className="absolute bottom-10 right-3 text-lg animate-tiktok-float-fast opacity-0" style={{ animationDelay: '0s' }}>❤️</span>
-          <span className="absolute bottom-12 right-5 text-base animate-tiktok-float-fast opacity-0" style={{ animationDelay: '0.5s' }}>❤️</span>
-          <span className="absolute bottom-8 right-4 text-xl animate-tiktok-float-fast opacity-0" style={{ animationDelay: '1s' }}>❤️</span>
-        </div>
-      )}
 
       <div className="absolute inset-x-0 bottom-0 px-3 pb-3 pt-10 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-20">
         <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
@@ -134,22 +124,6 @@ export default function Login() {
           }
         }
 
-        /* Animación rápida de corazones a la derecha estilo TikTok */
-        @keyframes tiktokFloatFast {
-          0% {
-            opacity: 0;
-            transform: translateY(15px) scale(0.5);
-          }
-          20% {
-            opacity: 1;
-            transform: translateY(-20px) scale(1.2);
-          }
-          100% {
-            opacity: 0;
-            transform: translateY(-130px) scale(0.7);
-          }
-        }
-
         @keyframes logoPop {
           0% {
             opacity: 0;
@@ -190,10 +164,6 @@ export default function Login() {
           animation: cinematicCard 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        .animate-tiktok-float-fast {
-          animation: tiktokFloatFast 1.4s ease-out infinite;
-        }
-
         .animate-logo-pop {
           animation: logoPop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
@@ -207,7 +177,7 @@ export default function Login() {
         }
 
         @media (prefers-reduced-motion: reduce) { 
-          .virax-track, .animate-cinematic-card, .animate-logo-pop, .animate-cinematic-up, .animate-ambient, .animate-tiktok-float-fast { 
+          .virax-track, .animate-cinematic-card, .animate-logo-pop, .animate-cinematic-up, .animate-ambient { 
             animation: none !important; 
             opacity: 1 !important;
           } 
@@ -259,7 +229,10 @@ export default function Login() {
         <div className="max-w-sm w-full mx-auto text-center space-y-6">
           <div className="space-y-3">
             <h1 className="text-[28px] leading-[1.15] font-black tracking-tight">
-              Analiza el potencial viral de cualquier video con VIRAX
+              Analiza el potencial viral de cualquier video con{' '}
+              <span className="text-emerald-400 drop-shadow-[0_0_14px_rgba(52,211,153,0.45)]">
+                VIRAX
+              </span>
             </h1>
             <p className="text-sm text-slate-400 leading-relaxed">
               Subí tu video y recibí un puntaje y los cambios exactos para que la gente lo mire hasta el final.
