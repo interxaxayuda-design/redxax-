@@ -30,7 +30,7 @@ const scoreColor = (s) => (s >= 75 ? '#34d399' : s >= 50 ? '#fbbf24' : '#fb7185'
 function ClipCard({ clip, index }) {
   const color = scoreColor(clip.score);
   const entranceDelay = `${0.2 + (index % CLIPS.length) * 0.08}s`;
-  const isViral = clip.score >= 75; // Detecta si es un video "bueno" o viral
+  const isViral = clip.score >= 75; // Solo en videos buenos/virales
 
   return (
     <div
@@ -51,12 +51,12 @@ function ClipCard({ clip, index }) {
         className="absolute inset-0 w-full h-full object-cover"
       />
 
-      {/* Emojis flotantes estilo TikTok (Solo en videos buenos/virales) */}
+      {/* Corazones flotantes rápidos a la derecha (Solo videos virales) */}
       {isViral && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-10">
-          <span className="absolute bottom-12 left-6 text-xl animate-tiktok-float opacity-0" style={{ animationDelay: '0s' }}>❤️</span>
-          <span className="absolute bottom-10 right-7 text-lg animate-tiktok-float opacity-0" style={{ animationDelay: '1.2s' }}>✨</span>
-          <span className="absolute bottom-16 left-1/2 text-lg animate-tiktok-float opacity-0" style={{ animationDelay: '2.4s' }}>🔥</span>
+          <span className="absolute bottom-10 right-3 text-lg animate-tiktok-float-fast opacity-0" style={{ animationDelay: '0s' }}>❤️</span>
+          <span className="absolute bottom-12 right-5 text-base animate-tiktok-float-fast opacity-0" style={{ animationDelay: '0.5s' }}>❤️</span>
+          <span className="absolute bottom-8 right-4 text-xl animate-tiktok-float-fast opacity-0" style={{ animationDelay: '1s' }}>❤️</span>
         </div>
       )}
 
@@ -134,23 +134,19 @@ export default function Login() {
           }
         }
 
-        /* Animación estilo TikTok para los emojis flotantes */
-        @keyframes tiktokFloat {
+        /* Animación rápida de corazones a la derecha estilo TikTok */
+        @keyframes tiktokFloatFast {
           0% {
             opacity: 0;
-            transform: translateY(10px) scale(0.5) rotate(-15deg);
+            transform: translateY(15px) scale(0.5);
           }
           20% {
             opacity: 1;
-            transform: translateY(-20px) scale(1.2) rotate(10deg);
-          }
-          80% {
-            opacity: 0.9;
-            transform: translateY(-80px) scale(1) rotate(-10deg);
+            transform: translateY(-20px) scale(1.2);
           }
           100% {
             opacity: 0;
-            transform: translateY(-130px) scale(0.7) rotate(15deg);
+            transform: translateY(-130px) scale(0.7);
           }
         }
 
@@ -194,8 +190,8 @@ export default function Login() {
           animation: cinematicCard 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
-        .animate-tiktok-float {
-          animation: tiktokFloat 3.5s ease-in-out infinite;
+        .animate-tiktok-float-fast {
+          animation: tiktokFloatFast 1.4s ease-out infinite;
         }
 
         .animate-logo-pop {
@@ -211,7 +207,7 @@ export default function Login() {
         }
 
         @media (prefers-reduced-motion: reduce) { 
-          .virax-track, .animate-cinematic-card, .animate-logo-pop, .animate-cinematic-up, .animate-ambient, .animate-tiktok-float { 
+          .virax-track, .animate-cinematic-card, .animate-logo-pop, .animate-cinematic-up, .animate-ambient, .animate-tiktok-float-fast { 
             animation: none !important; 
             opacity: 1 !important;
           } 
