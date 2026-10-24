@@ -12,29 +12,28 @@ import { supabase } from './supabaseClient';
 import { useAutoTranslate } from './useAutoTranslate';
 
 /*
-  CLIPS ampliado para mayor variedad en el carrusel cinemático.
+  CLIPS ampliado.
 */
 const CLIPS = [
-  { src: clipViral1, score: 92, from: '#0f766e', to: '#052e2b' },
-  { src: clipMedio, score: 62, from: '#6d28d9', to: '#1e1038' },
-  { src: clipViral2, score: 88, from: '#0e7490', to: '#07242e' },
-  { src: clipMalo, score: 24, from: '#9f1239', to: '#2a0a14' },
-  { src: clipViral3, score: 84, from: '#4d7c0f', to: '#14240a' },
-  { src: clipViral1, score: 95, from: '#115e59', to: '#042f2e' },
-  { src: clipMedio, score: 58, from: '#5b21b6', to: '#180d2b' },
-  { src: clipViral2, score: 90, from: '#155e75', to: '#082f3c' },
+  { id: 'v1', src: clipViral1, score: 92, from: '#0f766e', to: '#052e2b' },
+  { id: 'm1', src: clipMedio, score: 62, from: '#6d28d9', to: '#1e1038' },
+  { id: 'v2', src: clipViral2, score: 88, from: '#0e7490', to: '#07242e' },
+  { id: 'b1', src: clipMalo, score: 24, from: '#9f1239', to: '#2a0a14' },
+  { id: 'v3', src: clipViral3, score: 84, from: '#4d7c0f', to: '#14240a' },
+  { id: 'v4', src: clipViral1, score: 95, from: '#115e59', to: '#042f2e' },
+  { id: 'm2', src: clipMedio, score: 58, from: '#5b21b6', to: '#180d2b' },
+  { id: 'v5', src: clipViral2, score: 90, from: '#155e75', to: '#082f3c' },
 ];
 
 const scoreColor = (s) => (s >= 75 ? '#34d399' : s >= 50 ? '#fbbf24' : '#fb7185');
 
 function ClipCard({ clip, index }) {
   const color = scoreColor(clip.score);
-  // Retraso dinámico para que cada tarjeta entre una tras otra en cascada tipo "edit"
-  const entranceDelay = `${0.2 + index * 0.08}s`;
+  const entranceDelay = `${0.2 + (index % CLIPS.length) * 0.08}s`;
 
   return (
     <div
-      className="relative shrink-0 mr-4 w-[150px] h-[270px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl opacity-0 animate-cinematic-card hover:scale-105 transition-transform duration-300"
+      className="relative shrink-0 w-[150px] h-[270px] rounded-2xl overflow-hidden border border-white/10 shadow-2xl opacity-0 animate-cinematic-card hover:scale-105 transition-transform duration-300"
       style={{
         marginTop: index % 2 === 0 ? 0 : 36,
         background: `linear-gradient(160deg, ${clip.from}, ${clip.to})`,
@@ -51,7 +50,7 @@ function ClipCard({ clip, index }) {
         className="absolute inset-0 w-full h-full object-cover"
       />
 
-      <div className="absolute inset-x-0 bottom-0 px-3 pb-3 pt-10 bg-gradient-to-t from-black/80 to-transparent">
+      <div className="absolute inset-x-0 bottom-0 px-3 pb-3 pt-10 bg-gradient-to-t from-black/80 to-transparent pointer-events-none">
         <div className="h-1.5 rounded-full bg-white/20 overflow-hidden">
           <div className="h-full rounded-full" style={{ width: `${clip.score}%`, background: color }} />
         </div>
@@ -96,6 +95,7 @@ export default function Login() {
     }
   };
 
+  // Duplicamos exactamente la lista original
   const loop = [...CLIPS, ...CLIPS];
 
   return (
@@ -107,12 +107,12 @@ export default function Login() {
       }}
     >
       <style>{`
+        /* Usamos translate3d para forzar renderizado por aceleración de hardware (GPU) */
         @keyframes viraxSlide { 
-          from { transform: translateX(0); } 
-          to { transform: translateX(-50%); } 
+          0% { transform: translate3d(0, 0, 0); } 
+          100% { transform: translate3d(-50%, 0, 0); } 
         }
-        
-        /* Animación de entrada estilo edit cinemático para las tarjetas */
+
         @keyframes cinematicCard {
           0% {
             opacity: 0;
@@ -126,7 +126,6 @@ export default function Login() {
           }
         }
 
-        /* Aparición dramática del Logo */
         @keyframes logoPop {
           0% {
             opacity: 0;
@@ -141,7 +140,6 @@ export default function Login() {
           }
         }
 
-        /* Ascenso fluido del contenido principal */
         @keyframes cinematicUp {
           0% {
             opacity: 0;
@@ -153,7 +151,6 @@ export default function Login() {
           }
         }
 
-        /* Pulso de fondo estilo ambiente de video */
         @keyframes ambientGlow {
           0%, 100% { opacity: 0.05; transform: scale(1); }
           50% { opacity: 0.2; transform: scale(1.15); }
@@ -161,7 +158,8 @@ export default function Login() {
 
         .virax-track { 
           animation: viraxSlide 45s linear infinite; 
-          animation-delay: 1.2s; /* Comienza a moverse después de que aparecen las tarjetas */
+          animation-delay: 1.2s;
+          will-change: transform;
         }
 
         .animate-cinematic-card {
@@ -192,7 +190,7 @@ export default function Login() {
       <div className="absolute top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-emerald-500/15 rounded-full blur-[120px] pointer-events-none animate-ambient" />
       <div className="absolute bottom-0 right-0 w-72 h-72 bg-purple-500/10 rounded-full blur-[110px] pointer-events-none animate-ambient" style={{ animationDelay: '3.5s' }} />
 
-      {/* Barra superior: logo (aparece después) e idioma */}
+      {/* Barra superior */}
       <header className="relative z-20 flex items-center justify-between px-5 pt-5">
         <img
           src={logo}
@@ -211,7 +209,7 @@ export default function Login() {
         </button>
       </header>
 
-      {/* Tira de videos con entrada en cascada tipo edit */}
+      {/* Tira de videos con gap estricto y loop suave */}
       <section
         aria-hidden="true"
         className="relative z-10 mt-6 overflow-hidden"
@@ -221,14 +219,14 @@ export default function Login() {
           maskImage: 'linear-gradient(to right, transparent, #000 14%, #000 86%, transparent)',
         }}
       >
-        <div className="virax-track flex w-max">
+        <div className="virax-track flex w-max gap-4 pr-4">
           {loop.map((clip, i) => (
-            <ClipCard key={i} clip={clip} index={i} />
+            <ClipCard key={`${clip.id}-${i}`} clip={clip} index={i} />
           ))}
         </div>
       </section>
 
-      {/* Mensaje principal y acceso (Aparece al final con deslizamiento elegante) */}
+      {/* Mensaje principal y acceso */}
       <main className="relative z-10 flex-1 flex flex-col justify-end px-6 pt-8 pb-6 opacity-0 animate-cinematic-up" style={{ animationDelay: '1.3s' }}>
         <div className="max-w-sm w-full mx-auto text-center space-y-6">
           <div className="space-y-3">
@@ -243,7 +241,7 @@ export default function Login() {
           {error && (
             <div
               role="alert"
-              className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold animate-shake"
+              className="p-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold"
             >
               {error}
             </div>
@@ -278,7 +276,6 @@ export default function Login() {
               Al continuar, aceptás nuestra{' '}
               <a
                 href="https://redxax.vercel.app/privacy"
-                title="Política de Privacidad"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-emerald-400 underline hover:text-emerald-300"
