@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowUp, Check, ChevronDown, Copy, Gem, Mic, RotateCcw, Square } from 'lucide-react';
+import { ArrowLeft, ArrowUp, Building2, Check, ChevronDown, Copy, Gem, Mic, RotateCcw, ShoppingBag, Square, UtensilsCrossed, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { runIdeaPipeline } from './ideaPipeline.js';
@@ -10,11 +10,10 @@ const PLATFORMS = [
   { id: 'shorts', label: 'Shorts' },
 ];
 
-// Sugerencias cortas, como chips (estilo ChatGPT)
 const SUGGESTIONS = [
-  { label: 'Vender skincare', text: 'Quiero vender un producto de skincare con un video corto' },
-  { label: 'Mostrar una propiedad', text: 'Tengo una inmobiliaria y no sé cómo mostrar una propiedad' },
-  { label: 'Promocionar mi restaurante', text: 'Idea para promocionar mi restaurante sin parecer anuncio' },
+  { icon: ShoppingBag, label: 'Vender un producto', hint: 'Skincare, ropa, accesorios…', text: 'Quiero vender un producto de skincare con un video corto' },
+  { icon: Building2, label: 'Mostrar una propiedad', hint: 'Recorridos y ventas inmobiliarias', text: 'Tengo una inmobiliaria y no sé cómo mostrar una propiedad' },
+  { icon: UtensilsCrossed, label: 'Promocionar un restaurante', hint: 'Sin que parezca un anuncio', text: 'Idea para promocionar mi restaurante sin parecer anuncio' },
 ];
 
 const THINKING_STEPS = ['Pensando el gancho', 'Armando las escenas', 'Puliendo el cierre'];
@@ -27,21 +26,87 @@ const pick = (o, keys) => {
   return undefined;
 };
 
-const normalizePlan = (p) => {
-  if (!p || typeof p !== 'object' || Array.isArray(p)) return null;
-  const plan = { ...p };
+// La respuesta puede llegar como objeto, como texto con JSON, dentro de ```json o envuelta en otra clave
+const parseMaybeJson = (v) => {
+  if (typeof v !== 'string') return v;
+  const t = v.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+  try { return JSON.parse(t); } catch { /* no era JSON puro */ }
+  const a = t.indexOf('{');
+  const b = t.lastIndexOf('}');
+  if (a !== -1 && b > a) { try { return JSON.parse(t.slice(a, b + 1)); } catch { /* sigue como texto */ } }
+  return v;
+};
+
+const WRAPPERS = ['plan', 'resultado', 'result', 'respuesta', 'response', 'data', 'output', 'content'];
+
+const unwrapPlan = (raw, depth = 0) => {
+  let p = parseMaybeJson(raw);
+  if (Array.isArray(p)) p = p.find((x) => x && typeof x === 'object') ?? p.find((x) => typeof x === 'string');
+  if (typeof p === 'string') return p.trim() ? { tipo: 'pregunta', mensaje: p.trim() } : null;
+  if (!p || typeof p !== 'object') return null;
+  const known = p.hook || p.gancho || p.escenas || p.scenes || p.guion || p.mensaje || p.pregunta;
+  if (!known && depth < 3) {
+    for (const k of WRAPPERS) {
+      if (p[k] != null) {
+        const inner = unwrapPlan(p[k], depth + 1);
+        if (inner) return inner;
+      }
+    }
+  }
+  return p;
+};
+
+const asText = (v, keys) => (typeof v === 'string' ? v : v && typeof v === 'object' ? pick(v, keys) : undefined);
+
+const normalizePlan = (raw) => {
+  const base = unwrapPlan(raw);
+  if (!base) return null;
+  const plan = { ...base };
+
+  plan.hook = plan.hook ?? plan.gancho;
   if (typeof plan.hook === 'string') plan.hook = { recomendado: plan.hook };
+  if (plan.hook?.alternativas) {
+    plan.hook = {
+      ...plan.hook,
+      alternativas: plan.hook.alternativas.map((a) => (typeof a === 'string' ? { frase_hablada: a } : a)),
+    };
+  }
+
+  const scenes = plan.escenas ?? plan.scenes ?? plan.guion;
+  if (Array.isArray(scenes)) {
+    plan.escenas = scenes.filter(Boolean).map((e) =>
+      typeof e === 'string'
+        ? { accion: e }
+        : {
+            ...e,
+            accion: pick(e, ['accion', 'acción', 'descripcion', 'descripción', 'escena', 'visual']),
+            tiempo: pick(e, ['tiempo', 'duracion', 'duración', 'segundos']),
+          });
+  }
+
+  plan.cta = asText(plan.cta ?? pick(plan, ['cierre', 'llamado_a_la_accion', 'llamado_a_la_acción', 'call_to_action']),
+    ['texto', 'frase', 'mensaje', 'accion', 'acción']);
+
+  const errs = plan.errores_a_evitar ?? plan.errores;
+  if (Array.isArray(errs)) {
+    plan.errores_a_evitar = errs.map((x) => asText(x, ['texto', 'error', 'descripcion', 'descripción'])).filter(Boolean);
+  }
+
+  if (typeof plan.veredicto === 'string') plan.veredicto = { razon: plan.veredicto };
   if (plan.veredicto && typeof plan.veredicto === 'object') {
     plan.veredicto = {
       ...plan.veredicto,
       razon: pick(plan.veredicto, ['razon', 'razón', 'motivo', 'justificacion', 'justificación']),
     };
   }
+
   const msg = pick(plan, ['mensaje', 'pregunta', 'pregunta_seguimiento']);
   const hasPlanBody = Boolean(plan.hook) || plan.escenas?.length > 0;
   if (plan.tipo === 'pregunta' || !hasPlanBody) {
     plan.tipo = 'pregunta';
     plan.mensaje = plan.mensaje ?? msg;
+  } else if (!plan.tipo) {
+    plan.tipo = 'plan';
   }
   return plan;
 };
@@ -185,7 +250,7 @@ function CopyBtn({ text, label }) {
   return (
     <button
       onClick={copy}
-      className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] text-neutral-400 transition-colors hover:bg-white/10 hover:text-white"
+      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3.5 py-2 text-[12px] font-medium text-neutral-300 transition-colors hover:bg-white/[0.06] hover:text-white"
     >
       {ok ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
       {ok ? 'Copiado' : label}
@@ -215,63 +280,94 @@ function Thinking({ logo }) {
 }
 
 const LEVELS = {
-  bajo: 'bg-red-400',
-  medio: 'bg-amber-400',
-  alto: 'bg-emerald-400',
+  bajo: { n: 1, bar: 'bg-red-400', text: 'text-red-300' },
+  medio: { n: 2, bar: 'bg-amber-400', text: 'text-amber-300' },
+  alto: { n: 3, bar: 'bg-emerald-400', text: 'text-emerald-300' },
 };
 
-// El plan se lee como una respuesta de chat: texto simple, sin tarjetas
+const Section = ({ title, meta, children }) => (
+  <section className="overflow-hidden rounded-2xl bg-[#262626] ring-1 ring-white/[0.06]">
+    <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2.5">
+      <h4 className="text-[14px] font-semibold text-white">{title}</h4>
+      {meta && <span className="text-[12px] text-neutral-500">{meta}</span>}
+    </div>
+    {children}
+  </section>
+);
+
 function PlanCard({ plan }) {
   const { hook, escenas, cta, errores_a_evitar, veredicto } = plan;
   const [showAlt, setShowAlt] = useState(false);
   const alternativas = hook?.alternativas ?? [];
-  const dot = LEVELS[String(veredicto?.nivel ?? '').toLowerCase()] ?? 'bg-neutral-500';
+  const level = LEVELS[String(veredicto?.nivel ?? '').toLowerCase()];
   const frase = hook?.recomendado ?? hook?.frase_hablada;
+  const mecanismo = hook?.mecanismo ?? hook?.por_que_funciona;
 
   return (
-    <div className="space-y-5 text-[15px] leading-7 text-neutral-200">
-      {plan.titulo && <h3 className="text-[19px] font-semibold leading-snug text-white">{plan.titulo}</h3>}
+    <div className="space-y-3.5 text-[15px] leading-7 text-neutral-200">
+      {plan.titulo && (
+        <h3 className="text-[20px] font-semibold leading-snug tracking-tight text-white">{plan.titulo}</h3>
+      )}
 
       {veredicto && (
-        <p>
-          <span className={`mr-2 inline-block h-2 w-2 rounded-full align-middle ${dot}`} />
-          <span className="font-medium text-white">Potencial {veredicto.nivel}.</span>{' '}
-          {veredicto.razon}
-        </p>
+        <div className="rounded-2xl bg-[#262626] p-4 ring-1 ring-white/[0.06]">
+          <div className="flex items-center justify-between">
+            <span className={`text-[14px] font-semibold ${level?.text ?? 'text-white'}`}>
+              {veredicto.nivel ? `Potencial ${veredicto.nivel}` : 'Potencial'}
+            </span>
+            <div className="flex gap-1" aria-hidden="true">
+              {[1, 2, 3].map((n) => (
+                <span key={n} className={`h-1.5 w-6 rounded-full ${level && n <= level.n ? level.bar : 'bg-white/10'}`} />
+              ))}
+            </div>
+          </div>
+          {veredicto.razon && <p className="mt-2 text-[14px] leading-6 text-neutral-400">{veredicto.razon}</p>}
+        </div>
       )}
 
       {hook && (
-        <section>
-          <H>Gancho (0–3 s){hook.tipo ? `, ${hook.tipo}` : ''}</H>
-          {frase && (
-            <blockquote className="my-2 border-l-2 border-neutral-600 pl-4 text-white">“{frase}”</blockquote>
-          )}
-          {hook.texto_en_pantalla && (
-            <p className="text-neutral-300"><span className="text-neutral-500">En pantalla:</span> {hook.texto_en_pantalla}</p>
-          )}
-          {hook.visual && (
-            <p className="text-neutral-300"><span className="text-neutral-500">Visual:</span> {hook.visual}</p>
-          )}
-          {(hook.mecanismo || hook.por_que_funciona) && (
-            <p className="mt-2 text-[14px] text-neutral-500">{hook.mecanismo ?? hook.por_que_funciona}</p>
-          )}
+        <Section title="Gancho" meta={`0–3 s${hook.tipo ? ` · ${hook.tipo}` : ''}`}>
+          <div className="space-y-3 p-4">
+            {frase && (
+              <p className="border-l-2 border-emerald-400 pl-4 text-[17px] leading-snug text-white">“{frase}”</p>
+            )}
+            {(hook.texto_en_pantalla || hook.visual) && (
+              <dl className="grid grid-cols-[92px_1fr] gap-x-3 gap-y-1.5 text-[14px] leading-6">
+                {hook.texto_en_pantalla && (
+                  <>
+                    <dt className="text-neutral-500">En pantalla</dt>
+                    <dd className="text-neutral-300">{hook.texto_en_pantalla}</dd>
+                  </>
+                )}
+                {hook.visual && (
+                  <>
+                    <dt className="text-neutral-500">Visual</dt>
+                    <dd className="text-neutral-300">{hook.visual}</dd>
+                  </>
+                )}
+              </dl>
+            )}
+            {mecanismo && <p className="text-[13px] leading-6 text-neutral-500">{mecanismo}</p>}
+          </div>
 
           {alternativas.length > 0 && (
-            <div className="mt-2">
+            <div className="border-t border-white/[0.06]">
               <button
                 onClick={() => setShowAlt((v) => !v)}
-                className="flex items-center gap-1 text-[14px] text-neutral-400 hover:text-white"
+                aria-expanded={showAlt}
+                className="flex w-full items-center justify-between px-4 py-3 text-[14px] text-neutral-300 transition-colors hover:bg-white/[0.03]"
               >
-                Ver otros ganchos ({alternativas.length})
-                <ChevronDown className={`h-4 w-4 transition-transform ${showAlt ? 'rotate-180' : ''}`} />
+                Otros ganchos ({alternativas.length})
+                <ChevronDown className={`h-4 w-4 text-neutral-500 transition-transform ${showAlt ? 'rotate-180' : ''}`} />
               </button>
               {showAlt && (
-                <ul className="mt-2 list-disc space-y-2 pl-5 marker:text-neutral-600">
+                <ul className="space-y-3 px-4 pb-4">
                   {alternativas.map((a, i) => (
-                    <li key={i}>
-                      <span className="text-neutral-500">{a.tipo}:</span> “{a.frase_hablada}”
+                    <li key={i} className="text-[14px] leading-6 text-neutral-300">
+                      {a.tipo && <span className="mr-2 text-[12px] text-neutral-500">{a.tipo}</span>}
+                      “{a.frase_hablada}”
                       {a.texto_en_pantalla && (
-                        <span className="block text-[14px] text-neutral-500">En pantalla: {a.texto_en_pantalla}</span>
+                        <span className="block text-[13px] text-neutral-500">En pantalla: {a.texto_en_pantalla}</span>
                       )}
                     </li>
                   ))}
@@ -279,46 +375,55 @@ function PlanCard({ plan }) {
               )}
             </div>
           )}
-        </section>
+        </Section>
       )}
 
       {escenas?.length > 0 && (
-        <section>
-          <H>Escenas</H>
-          <ol className="list-decimal space-y-3 pl-5 marker:text-neutral-500">
+        <Section title="Guion" meta={`${escenas.length} ${escenas.length === 1 ? 'escena' : 'escenas'}`}>
+          <ol className="divide-y divide-white/[0.06]">
             {escenas.map((e, i) => (
-              <li key={i} className="pl-1">
-                <span className="mr-2 text-[13px] text-neutral-500">{e.tiempo}</span>
-                {e.accion}
-                {e.dialogo && <span className="mt-1 block text-neutral-400">“{e.dialogo}”</span>}
-                {e.texto_pantalla && (
-                  <span className="block text-[14px] text-neutral-500">Texto en pantalla: {e.texto_pantalla}</span>
-                )}
+              <li key={i} className="flex gap-4 px-4 py-3.5">
+                <div className="w-14 flex-shrink-0 pt-0.5">
+                  <span className="block text-[14px] font-semibold tabular-nums text-white">{i + 1}</span>
+                  {e.tiempo && <span className="text-[12px] text-neutral-500">{e.tiempo}</span>}
+                </div>
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <p className="text-[15px] leading-6 text-neutral-200">{e.accion}</p>
+                  {e.dialogo && (
+                    <p className="border-l-2 border-white/15 pl-3 text-[14px] leading-6 text-neutral-400">“{e.dialogo}”</p>
+                  )}
+                  {e.texto_pantalla && (
+                    <p className="text-[13px] text-neutral-500">En pantalla: {e.texto_pantalla}</p>
+                  )}
+                </div>
               </li>
             ))}
           </ol>
-        </section>
+        </Section>
       )}
 
       {cta && (
-        <section>
-          <H>Cierre</H>
-          <p>{cta}</p>
-        </section>
+        <Section title="Cierre">
+          <p className="p-4 text-[15px] leading-6 text-neutral-200">{cta}</p>
+        </Section>
       )}
 
       {errores_a_evitar?.length > 0 && (
-        <section>
-          <H>Evita esto</H>
-          <ul className="list-disc space-y-1 pl-5 marker:text-neutral-600">
-            {errores_a_evitar.map((x, i) => <li key={i}>{x}</li>)}
+        <Section title="Evita esto">
+          <ul className="space-y-2 p-4">
+            {errores_a_evitar.map((x, i) => (
+              <li key={i} className="flex gap-2.5 text-[14px] leading-6 text-neutral-300">
+                <X className="mt-1 h-4 w-4 flex-shrink-0 text-red-400" />
+                {x}
+              </li>
+            ))}
           </ul>
-        </section>
+        </Section>
       )}
 
       {plan.pregunta_seguimiento && <p className="text-neutral-400">{plan.pregunta_seguimiento}</p>}
 
-      <div className="-ml-2.5 flex flex-wrap gap-1 pt-1">
+      <div className="flex flex-wrap gap-2 pt-1">
         <CopyBtn label="Copiar plan" text={planToText(plan)} />
         {frase && <CopyBtn label="Copiar gancho" text={frase} />}
       </div>
@@ -419,7 +524,7 @@ export default function ChatScreen({
 
       const lastPlan = [...messages].reverse().find((m) => m.plan?.tipo === 'plan')?.plan ?? null;
 
-      const { plan, tokens, trace } = await runIdeaPipeline({
+      const out = await runIdeaPipeline({
         supabase,
         model: REVIEW_CONFIG.coach.model,
         idea: content,
@@ -430,11 +535,15 @@ export default function ChatScreen({
         trendContext: null,
       });
 
-      setTokensUsed((t) => t + tokens);
-      console.table(trace);
+      const rawPlan = out?.plan ?? out?.resultado ?? out?.result ?? out?.data ?? out?.response ?? out?.respuesta ?? out?.text;
+      setTokensUsed((t) => t + (Number(out?.tokens) || 0));
+      try { if (out?.trace) console.table(out.trace); } catch { /* trace opcional */ }
 
-      const parsed = normalizePlan(plan);
-      if (!isRenderable(parsed)) throw new Error('La IA devolvió un formato inesperado. Inténtalo de nuevo.');
+      const parsed = normalizePlan(rawPlan);
+      if (!isRenderable(parsed)) {
+        console.error('Formato inesperado. Salida cruda del pipeline:', out);
+        throw new Error('La IA devolvió un formato inesperado. Inténtalo de nuevo.');
+      }
       setMessages([...next, { role: 'bot', plan: parsed, text: parsed.mensaje ?? '' }]);
     } catch (err) {
       console.error('ChatScreen error:', err);
@@ -466,7 +575,7 @@ export default function ChatScreen({
       `}</style>
 
       {/* Encabezado */}
-      <header className="flex items-center gap-1 px-2 py-2">
+      <header className="flex items-center gap-1 border-b border-white/[0.05] px-2 py-2">
         <button
           onClick={onBack}
           aria-label="Volver"
@@ -505,11 +614,36 @@ export default function ChatScreen({
       <div ref={listRef} className="cs-scroll flex-1 overflow-y-auto">
         <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-7 px-4 py-6">
           {isEmpty && (
-            <div className="my-auto flex flex-col items-center py-10 text-center">
-              <h2 className="text-[28px] font-semibold leading-tight text-white">¿Qué quieres grabar hoy?</h2>
-              <p className="mt-2 max-w-xs text-[15px] text-neutral-400">
+            <div className="my-auto flex flex-col items-center py-8 text-center">
+              <div className="mb-6 flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-[22px] bg-[#2a2a2a] shadow-lg shadow-black/30 ring-1 ring-white/10">
+                {userIcon ? (
+                  <img src={userIcon} alt="VIRAX" className="h-11 w-11 object-contain" />
+                ) : (
+                  <span className="text-3xl font-semibold text-white">V</span>
+                )}
+              </div>
+              <h2 className="text-[28px] font-semibold leading-tight tracking-tight text-white">¿Qué quieres grabar hoy?</h2>
+              <p className="mt-2 max-w-sm text-[15px] leading-6 text-neutral-400">
                 Cuéntame tu idea y te armo el gancho, las escenas y el cierre.
               </p>
+              <ul className="mt-9 w-full max-w-md divide-y divide-white/[0.06] overflow-hidden rounded-2xl bg-[#262626] text-left ring-1 ring-white/[0.06]">
+                {SUGGESTIONS.map((s) => (
+                  <li key={s.label}>
+                    <button
+                      onClick={() => useSuggestion(s.text)}
+                      className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors hover:bg-white/[0.04]"
+                    >
+                      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-emerald-400">
+                        <s.icon className="h-[18px] w-[18px]" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-[14px] font-medium text-white">{s.label}</span>
+                        <span className="block truncate text-[13px] text-neutral-500">{s.hint}</span>
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 
@@ -568,21 +702,8 @@ export default function ChatScreen({
             </div>
           ) : (
             <>
-              {isEmpty && (
-                <div className="mb-3 flex flex-wrap justify-center gap-2">
-                  {SUGGESTIONS.map((s) => (
-                    <button
-                      key={s.label}
-                      onClick={() => useSuggestion(s.text)}
-                      className="rounded-full border border-white/15 px-3.5 py-2 text-[13px] text-neutral-300 transition-colors hover:bg-white/[0.06] hover:text-white"
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              )}
 
-              <div className="flex items-end gap-1 rounded-[28px] bg-[#2f2f2f] p-2 pl-5">
+              <div className="flex items-end gap-1 rounded-[28px] bg-[#2f2f2f] p-2 pl-5 ring-1 ring-white/[0.07] transition-shadow focus-within:ring-white/20">
                 <textarea
                   ref={taRef}
                   rows={1}
