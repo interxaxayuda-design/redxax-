@@ -1,4 +1,4 @@
-// ideaPipeline.js — Pipeline de refinamiento de ideas short-form (v4: sin auditoría, el modelo decide)
+// ideaPipeline.js — Pipeline de refinamiento de ideas short-form (v5: máximo 5 preguntas)
 
 // ── Persona ──────────────────────────────────────────────────
 const PERSONA = `
@@ -60,21 +60,30 @@ Las ideas más fuertes suelen apoyarse en pocos elementos con mucha intensidad.
 // Gemini Config
 const CFG = { thinkingLevel: 'high', temperature: 1.0, maxOutputTokens: 8192 };
 
+// Máximo de preguntas que VIRAX puede hacer en toda la conversación.
+export const MAX_PREGUNTAS = 5;
+
+// ── Conteo de preguntas ──────────────────────────────────────
+// Cuenta los mensajes de VIRAX que son preguntas (terminan en "?").
+// Si tu front ya lleva la cuenta, pasá `questionsAsked` a runIdeaPipeline y se usa ese valor.
+const countQuestions = (history) =>
+  history.filter((m) => m.role !== 'user' && /\?\s*$/.test(String(m.text ?? '').trim())).length;
+
 // ── Prompt Builder ───────────────────────────────────────────
 const historyBlock = (history) =>
   history.length
     ? history.map((m) => `${m.role === 'user' ? 'USUARIO' : 'VIRAX'}: ${m.text}`).join('\n')
     : '(primera interacción)';
 
-const SCHEMA = `
-Respondé SOLO con JSON válido, sin texto antes ni después, sin bloques de código.
-
-A) Falta información imprescindible para trabajar:
+const SCHEMA_PREGUNTA = `
+A) Falta información SIN LA CUAL la idea sería genérica:
 {
   "tipo":"pregunta",
   "mensaje":"una sola pregunta concreta"
 }
+`;
 
+const SCHEMA_RESTO = `
 B) El usuario pide un ajuste/cambio pero no hay plan previo:
 {
   "tipo":"ajuste_sin_plan"
@@ -125,6 +134,26 @@ Reglas:
 - "veredicto.nivel" debe ser exactamente "alto", "medio" o "bajo".
 `;
 
+const buildSchema = (canAsk) =>
+  `Respondé SOLO con JSON válido, sin texto antes ni después, sin bloques de código.\n` +
+  (canAsk ? SCHEMA_PREGUNTA : '') +
+  SCHEMA_RESTO;
+
+const preguntasBlock = (asked, canAsk) =>
+  canAsk
+    ? `
+<limite_preguntas>
+Ya hiciste ${asked} de ${MAX_PREGUNTAS} preguntas posibles en esta conversación.
+Preguntar cuesta tiempo al usuario. Por defecto, NO preguntes: asumí lo más razonable con el contexto disponible y entregá un plan.
+Preguntá solo si sin esa respuesta cualquier idea sería genérica. Nunca más de una pregunta por mensaje.
+</limite_preguntas>`
+    : `
+<limite_preguntas>
+Ya agotaste las ${MAX_PREGUNTAS} preguntas permitidas. PROHIBIDO preguntar.
+Usá todo lo que ya sabés, asumí lo que falte con criterio y respondé SIEMPRE con un plan (tipo "plan").
+Si hay datos faltantes, resolvelos con la mejor suposición y mencionala brevemente en "razon" del veredicto.
+</limite_preguntas>`;
+
 const buildPrompt = ({
   idea,
   history,
@@ -132,7 +161,10 @@ const buildPrompt = ({
   lastPlan,
   businessContext = null,
   trendContext = null,
-}) => `
+  questionsAsked = 0,
+}) => {
+  const canAsk = questionsAsked < MAX_PREGUNTAS;
+  return `
 ${PERSONA}
 
 ${CRITERIO}
@@ -158,8 +190,10 @@ ${lastPlan ? JSON.stringify(lastPlan) : '(ninguno)'}
 <mensaje_usuario>
 ${idea}
 </mensaje_usuario>
+${preguntasBlock(questionsAsked, canAsk)}
 
-${SCHEMA}`.trim();
+${buildSchema(canAsk)}`.trim();
+};
 
 // ── Llamada al proxy ─────────────────────────────────────────
 
@@ -224,23 +258,42 @@ function norm(s) {
 export const runIdeaPipeline = async ({
   supabase, model, idea, history = [], platform = 'tiktok',
   lastPlan = null, businessContext = null, trendContext = null,
+  questionsAsked = null, // opcional: si tu front lleva la cuenta, pasala acá
 }) => {
   const trace = [];
   const total = () => trace.reduce((s, t) => s + t.tokens, 0);
 
-  try {
+  const asked = questionsAsked ?? countQuestions(history);
+  const canAsk = asked < MAX_PREGUNTAS;
+
+  const ask = async (stage, extraNote = '') => {
     const r = await callGemini(supabase, {
       ...CFG,
       model,
-      text: buildPrompt({ idea, history, platform, lastPlan, businessContext, trendContext }),
+      text: buildPrompt({
+        idea, history, platform, lastPlan, businessContext, trendContext,
+        questionsAsked: asked,
+      }) + extraNote,
     });
-    trace.push({ stage: 'coach', tokens: r.tokens });
-    const out = r.json;
+    trace.push({ stage, tokens: r.tokens });
+    return r.json;
+  };
 
-    if (out.tipo === 'pregunta') {
+  try {
+    let out = await ask('coach');
+
+    // Red de seguridad: si ya no puede preguntar pero el modelo igual preguntó, reintentar una vez forzando un plan.
+    if (!canAsk && (out.tipo === 'pregunta' || out.tipo === 'ajuste_sin_plan')) {
+      out = await ask(
+        'coach_retry',
+        '\n\nIMPORTANTE: no podés hacer más preguntas. Respondé ahora con un objeto de tipo "plan".'
+      );
+    }
+
+    if (out.tipo === 'pregunta' && canAsk) {
       return { plan: { tipo: 'pregunta', mensaje: out.mensaje }, tokens: total(), trace };
     }
-    if (out.tipo === 'ajuste_sin_plan') {
+    if (out.tipo === 'ajuste_sin_plan' && canAsk) {
       return {
         plan: { tipo: 'pregunta', mensaje: '¿Sobre qué video querés trabajar? Contame la idea y armo el plan.' },
         tokens: total(),
