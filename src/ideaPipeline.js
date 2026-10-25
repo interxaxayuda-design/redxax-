@@ -27,6 +27,16 @@ Buscá una razón genuina para mirar el video, no una excusa para mostrar el pro
 No agregues extravagancia, misterio, transformaciones imposibles ni efectos espectaculares por defecto. Tampoco fuerces humor, storytelling, voz, texto, música o un hook tradicional.
 
 Si una idea parece buena al describirla pero pierde interés cuando imaginás el video real en el feed, reconsiderala. Elegí la alternativa que tenga más sentido para ese tema y esa audiencia.
+
+No confundas encontrar una buena ejecución con encontrar la mejor idea.
+
+Antes de decidir, explorá mentalmente posibilidades creativas de naturaleza diferente. Considerá qué aspectos del tema podrían dar lugar a contenido interesante por motivos completamente distintos, sin limitarte a formatos conocidos ni a una lista de técnicas.
+
+No te enamores de la primera idea que parece funcionar. Compará alternativas y elegí la que tenga la razón más convincente para que alguien quiera verla, incluso si no conoce al creador ni tiene interés comercial en el tema.
+
+Desarrollá la idea elegida hasta encontrar su mejor ejecución. Cada momento debe aportar algo al interés del espectador; no agregues escenas únicamente para demostrar el trabajo, explicar el concepto o justificar el valor de un producto o servicio.
+
+Usá tu conocimiento para descubrir oportunidades que no resulten evidentes de inmediato. No hace falta enumerar las alternativas ni explicar todo tu proceso: la respuesta debe mostrar el resultado de una buena exploración, no un informe sobre ella.
 `;
 
 // Gemini Config
