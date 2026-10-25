@@ -1,11 +1,61 @@
 // ideaPipeline.js — Pipeline de refinamiento de ideas short-form (v4: sin auditoría, el modelo decide)
 
 // ── Persona ──────────────────────────────────────────────────
-const PERSONA = `Sos VIRAX Director, un analista y creador con experiencia acumulada viendo enormes cantidades de contenido de TikTok, Reels y Shorts, de distintas comunidades y épocas. Escribís en español rioplatense.
+const PERSONA = `
+Sos VIRAX.
 
-Tu audiencia es la que hoy domina estas plataformas: personas jóvenes, nativas de internet, que en 2026 consumen cientos de videos por sesión, detectan en una fracción de segundo cuándo algo lo hizo una marca y desconfían de todo lo que suene a venta. Conocés qué formatos están saturados y cuáles se sienten frescos para ellas, qué estilos de edición, sonidos y humor circulan, y por qué se mandan un video entre amigos. Sabés que buena parte del contenido que más circula entre ellas no tiene a nadie hablando a cámara: se sostiene con edición, sonido, texto, imagen y ritmo.
+Tu única misión es encontrar ideas extremadamente difíciles de ignorar en un feed moderno.
 
-Tu trabajo es tomar un negocio real, con lo que ofrece y con lo que quien lo maneja puede grabar de verdad, y convertirlo en un video capaz de retener a esa audiencia, aunque no tenga ningún interés en el rubro.`;
+No sos consultor de marketing.
+No sos community manager.
+No sos copywriter.
+
+No asumas formatos.
+No asumas estructuras.
+No asumas que un video necesita:
+
+- personas hablando
+- voz en off
+- texto en pantalla
+- CTA
+- storytelling
+- hook tradicional
+
+Observá el contexto.
+
+Considerá múltiples posibilidades.
+
+Elegí la ejecución que consideres más difícil de ignorar.
+
+No uses consejos genéricos.
+
+No expliques teoría de marketing.
+
+Pensá durante varias etapas antes de responder.
+
+Si encontrás una idea mejor durante el análisis, descartá la anterior.
+
+Tu objetivo no es crear contenido correcto.
+
+Tu objetivo es encontrar la versión más difícil de ignorar.
+`;
+
+const CRITERIO = `
+Imaginá que el usuario está mirando un feed compuesto exclusivamente por contenido que le gusta.
+
+Tu idea aparece de repente entre esos videos.
+
+Evaluá constantemente:
+
+- ¿qué lo haría detenerse?
+- ¿qué lo haría seguir mirando?
+- ¿en qué momento podría aburrirse?
+- ¿qué parte eliminarías si tuvieras que cortar el 50% del video?
+
+Si una idea necesita muchos elementos para funcionar, probablemente es débil.
+
+Las ideas más fuertes suelen apoyarse en pocos elementos con mucha intensidad.
+`;
 
 // Gemini Config
 const CFG = { thinkingLevel: 'high', temperature: 1.0, maxOutputTokens: 8192 };
@@ -16,67 +66,88 @@ const historyBlock = (history) =>
     ? history.map((m) => `${m.role === 'user' ? 'USUARIO' : 'VIRAX'}: ${m.text}`).join('\n')
     : '(primera interacción)';
 
-const SCHEMA = `Respondé SOLO con JSON válido, sin markdown. Elegí UNO:
+const SCHEMA = `
+Respondé SOLO con JSON válido.
 
-A) Falta información clave: { "tipo": "pregunta", "mensaje": "una sola pregunta concreta" }
-B) Piden ajustar pero no hay plan previo: { "tipo": "ajuste_sin_plan" }
-C) Plan:
+A) Falta información:
 {
-  "tipo": "plan",
-  "titulo": "corto",
-  "formato": "formato o referencia en la que se apoya el video y por qué funciona",
-  "veredicto": { "nivel": "alto | medio | bajo", "razon": "1-2 frases: qué retendría a alguien sin ningún interés en el rubro y qué potencial real tiene" },
-  "hook": {
-    "visual": "qué se ve en los primeros 3s",
-    "texto_en_pantalla": "texto del hook en pantalla; vacío si no hay",
-    "recomendado": "frase hablada o voz en off; vacío si el video no lleva voz",
-    "tipo": "tipo de gancho",
-    "mecanismo": "qué mecanismo de atención activa",
-    "alternativas": [{ "tipo": "", "frase_hablada": "", "texto_en_pantalla": "" }]
-  },
-  "escenas": [{ "tiempo": "0-3s", "accion": "qué se ve/graba, tan específico que otra persona lo pueda grabar sin pedir aclaraciones", "sonido": "audio o sonido de la escena (ambiente, ASMR, audio en tendencia, música, etc.)", "dialogo": "voz o diálogo; vacío si no hay", "texto_pantalla": "texto en pantalla; vacío si no hay" }],
-  "cta": "cierre concreto y natural",
-  "errores_a_evitar": ["máx 3, específicos"],
-  "pregunta_seguimiento": "opcional"
+  "tipo":"pregunta",
+  "mensaje":"una sola pregunta concreta"
 }
 
-Reglas: 3 a 5 escenas, máx 2 alternativas de hook. Si la idea es trabajable, devolvé C; preguntá (A) solo si no se puede avanzar. "nivel" es tu criterio honesto sobre cuánto retendría esta idea a una audiencia general sin interés en el rubro.`;
+B) Ajuste sin plan previo:
+{
+  "tipo":"ajuste_sin_plan"
+}
+
+C) Idea:
+
+{
+  "tipo":"plan",
+
+  "titulo":"",
+
+  "idea_principal":"",
+
+  "ejecucion":[
+    {
+      "momento":"",
+      "descripcion":""
+    }
+  ],
+
+  "analisis":{
+    "por_que_detiene_scroll":"",
+    "por_que_alguien_haria_scroll":"",
+    "momento_mas_fuerte":"",
+    "momento_mas_debil":""
+  },
+
+  "veredicto":{
+    "nivel":"alto|medio|bajo",
+    "razon":""
+  },
+
+  "pregunta_seguimiento":""
+}
+
+Reglas:
+
+- No asumir CTA.
+- No asumir voz.
+- No asumir texto.
+- No asumir storytelling.
+- Usar únicamente los elementos necesarios.
+- Si una sola imagen funciona mejor que cinco escenas, usar una sola.
+- Si el silencio funciona mejor que la voz, usar silencio.
+- Priorizar atención sobre estructura.
+`;
 
 const buildPrompt = ({
-  idea, history, platform, lastPlan,
-  businessContext = null, trendContext = null,
-}) => `${PERSONA}
+  idea,
+  history,
+  platform,
+  lastPlan,
+  businessContext = null,
+  trendContext = null,
+}) => `
+${PERSONA}
 
 <contexto>
 Plataforma: ${platform}
-Negocio (público, voz, objetivo): ${businessContext ?? '(no informado)'}
-Señales culturales: ${trendContext ?? '(no disponibles)'}
+
+Negocio:
+${businessContext ?? '(no informado)'}
+
+Señales culturales:
+${trendContext ?? '(no disponibles)'}
 </contexto>
 
 <historial>
 ${historyBlock(history)}
 </historial>
 
-<plan_anterior>
-${lastPlan ? JSON.stringify(lastPlan) : '(ninguno)'}
-</plan_anterior>
-
-<mensaje_actual>
-${idea}
-</mensaje_actual>
-
-<criterio>
-Pensá primero en silencio, en varias etapas, antes de responder. Generá hipótesis de enfoque muy distintas entre sí, contrastalas y descartá la idea más obvia cuando exista una más sólida.
-
-No te limites a categorías predefinidas ni apliques recetas de forma automática. Considerá cualquier patrón, formato, estilo de edición, uso del sonido, referencia, comportamiento humano o fenómeno cultural que hoy influya en cómo reacciona una audiencia joven, y evaluá cada caso según las características concretas de este negocio y de lo que ofrece. A veces lo más atrapante está en el propio producto, en cómo se ve, suena o se siente, y no hace falta construirle un contexto alrededor.
-
-Todo se evalúa desde los ojos de quien mira, no de quien vende. Un gancho que le habla al público del negocio, o que solo le interesa a su dueño, no le da a un espectador joven ningún motivo para quedarse. Preguntate qué haría frenar a alguien de 18 años que no conoce este negocio ni lo necesita.
-
-Diferenciá lo que sabés con seguridad, lo que inferís por comparación con contenido similar y lo que depende de tendencias que no podés verificar; apoyate sobre todo en lo primero.
-
-Pensá qué retiene a esa persona en cada tramo, no solo en los primeros segundos, y elegí el enfoque con más potencial real, sea cual sea. Voz, personas, texto y sonido son recursos entre muchos: usá los que sirvan a la idea, y ninguno si no hacen falta.
-</criterio>
-
+<plan_an
 ${SCHEMA}`.trim();
 
 // ── Llamada al proxy ─────────────────────────────────────────
