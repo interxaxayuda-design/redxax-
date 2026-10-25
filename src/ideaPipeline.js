@@ -1,4 +1,4 @@
-// ideaPipeline.js — Pipeline de refinamiento de ideas short-form (v6: máx. 5 preguntas + anti-truncamiento)
+// ideaPipeline.js — Pipeline de refinamiento de ideas short-form (v7: pocas preguntas, solo si son imprescindibles)
 
 // ── Persona ──────────────────────────────────────────────────
 const PERSONA = `
@@ -64,7 +64,11 @@ Las ideas más fuertes suelen apoyarse en pocos elementos con mucha intensidad.
 const CFG = { thinkingLevel: 'high', temperature: 1.0, maxOutputTokens: 24576 };
 
 // Máximo de preguntas que VIRAX puede hacer en toda la conversación.
-export const MAX_PREGUNTAS = 5;
+// Bajalo a 1 (o 0) si querés que casi nunca pregunte.
+export const MAX_PREGUNTAS = 2;
+
+// Si el mensaje del usuario es más largo que esto, se considera que ya trae contexto suficiente.
+const MIN_CHARS_IDEA_SUFICIENTE = 25;
 
 // Cantidad de intentos si la respuesta viene cortada o inválida.
 const MAX_INTENTOS = 2;
@@ -72,8 +76,25 @@ const MAX_INTENTOS = 2;
 // ── Conteo de preguntas ──────────────────────────────────────
 // Cuenta los mensajes de VIRAX que son preguntas (terminan en "?").
 // Si tu front ya lleva la cuenta, pasá `questionsAsked` a runIdeaPipeline y se usa ese valor.
+// Se ignoran los mensajes largos (planes que terminan con "pregunta_seguimiento"), que no son preguntas del pipeline.
 const countQuestions = (history) =>
-  history.filter((m) => m.role !== 'user' && /\?\s*$/.test(String(m.text ?? '').trim())).length;
+  history.filter((m) => {
+    if (m.role === 'user') return false;
+    const t = String(m.text ?? '').trim();
+    return t.length <= 300 && /\?\s*$/.test(t);
+  }).length;
+
+// Decide si VIRAX tiene permitido preguntar en este turno.
+// Regla: solo se pregunta si NO hay plan previo, quedan preguntas y el mensaje es demasiado pobre para trabajar.
+const puedePreguntar = ({ asked, lastPlan, idea, businessContext }) => {
+  if (asked >= MAX_PREGUNTAS) return false;
+  if (lastPlan) return false; // refinando un plan: ajustar, nunca interrogar
+  const ideaTexto = String(idea ?? '').trim();
+  const tieneContexto = Boolean(businessContext && String(businessContext).trim());
+  if (tieneContexto && ideaTexto.length >= MIN_CHARS_IDEA_SUFICIENTE) return false;
+  if (ideaTexto.length >= MIN_CHARS_IDEA_SUFICIENTE * 3) return false; // idea ya detallada
+  return true;
+};
 
 // ── Prompt Builder ───────────────────────────────────────────
 const historyBlock = (history) =>
@@ -82,7 +103,7 @@ const historyBlock = (history) =>
     : '(primera interacción)';
 
 const SCHEMA_PREGUNTA = `
-A) Falta información SIN LA CUAL la idea sería genérica:
+A) Imposible avanzar: no se entiende qué producto, negocio o tema es el video:
 {
   "tipo":"pregunta",
   "mensaje":"una sola pregunta concreta"
@@ -152,15 +173,28 @@ const preguntasBlock = (asked, canAsk) =>
   canAsk
     ? `
 <limite_preguntas>
-Ya hiciste ${asked} de ${MAX_PREGUNTAS} preguntas posibles en esta conversación.
-Preguntar cuesta tiempo al usuario. Por defecto, NO preguntes: asumí lo más razonable con el contexto disponible y entregá un plan.
-Preguntá solo si sin esa respuesta cualquier idea sería genérica. Nunca más de una pregunta por mensaje.
+Preguntas ya hechas: ${asked} de ${MAX_PREGUNTAS} permitidas.
+Cada pregunta le cuesta tiempo al usuario. LA RESPUESTA POR DEFECTO ES UN PLAN, NO UNA PREGUNTA.
+
+Solo podés preguntar si NO se entiende qué producto, negocio o tema es el video, y sin eso es imposible proponer algo concreto.
+
+NUNCA preguntes por:
+- formato, duración, estilo, tono, voz, texto, música o CTA (decidilo vos)
+- plataforma (ya la tenés en <contexto>)
+- público objetivo, objetivos o métricas
+- presupuesto, recursos, equipo o equipamiento
+- datos que podés inferir del negocio, del historial o del mensaje
+- preferencias del usuario ("¿preferís A o B?"): elegí vos la mejor opción
+
+Ante cualquier duda, asumí lo más razonable y entregá el plan; si hiciste una suposición importante, mencionala en "razon" del veredicto.
+Si preguntás: una sola pregunta, corta y concreta.
 </limite_preguntas>`
     : `
 <limite_preguntas>
-Ya agotaste las ${MAX_PREGUNTAS} preguntas permitidas. PROHIBIDO preguntar.
+PROHIBIDO preguntar en este turno.
 Usá todo lo que ya sabés, asumí lo que falte con criterio y respondé SIEMPRE con un plan (tipo "plan").
 Si hay datos faltantes, resolvelos con la mejor suposición y mencionala brevemente en "razon" del veredicto.
+Si hay un plan anterior y el usuario pide un cambio, aplicalo y devolvé el plan completo actualizado.
 </limite_preguntas>`;
 
 const buildPrompt = ({
@@ -171,8 +205,8 @@ const buildPrompt = ({
   businessContext = null,
   trendContext = null,
   questionsAsked = 0,
+  canAsk = true,
 }) => {
-  const canAsk = questionsAsked < MAX_PREGUNTAS;
   return `
 ${PERSONA}
 
@@ -283,7 +317,7 @@ export const runIdeaPipeline = async ({
   const total = () => trace.reduce((s, t) => s + t.tokens, 0);
 
   const asked = questionsAsked ?? countQuestions(history);
-  const canAsk = asked < MAX_PREGUNTAS;
+  const canAsk = puedePreguntar({ asked, lastPlan, idea, businessContext });
 
   const ask = async (stage, extraNote = '') => {
     try {
@@ -293,6 +327,7 @@ export const runIdeaPipeline = async ({
         text: buildPrompt({
           idea, history, platform, lastPlan, businessContext, trendContext,
           questionsAsked: asked,
+          canAsk,
         }) + extraNote,
       });
       trace.push({ stage, tokens: r.tokens });
