@@ -67,15 +67,15 @@ const historyBlock = (history) =>
     : '(primera interacción)';
 
 const SCHEMA = `
-Respondé SOLO con JSON válido.
+Respondé SOLO con JSON válido, sin texto antes ni después, sin bloques de código.
 
-A) Falta información:
+A) Falta información imprescindible para trabajar:
 {
   "tipo":"pregunta",
   "mensaje":"una sola pregunta concreta"
 }
 
-B) Ajuste sin plan previo:
+B) El usuario pide un ajuste/cambio pero no hay plan previo:
 {
   "tipo":"ajuste_sin_plan"
 }
@@ -121,6 +121,8 @@ Reglas:
 - Si una sola imagen funciona mejor que cinco escenas, usar una sola.
 - Si el silencio funciona mejor que la voz, usar silencio.
 - Priorizar atención sobre estructura.
+- "ejecucion" debe tener al menos un elemento.
+- "veredicto.nivel" debe ser exactamente "alto", "medio" o "bajo".
 `;
 
 const buildPrompt = ({
@@ -132,6 +134,8 @@ const buildPrompt = ({
   trendContext = null,
 }) => `
 ${PERSONA}
+
+${CRITERIO}
 
 <contexto>
 Plataforma: ${platform}
@@ -147,7 +151,14 @@ ${trendContext ?? '(no disponibles)'}
 ${historyBlock(history)}
 </historial>
 
-<plan_an
+<plan_anterior>
+${lastPlan ? JSON.stringify(lastPlan) : '(ninguno)'}
+</plan_anterior>
+
+<mensaje_usuario>
+${idea}
+</mensaje_usuario>
+
 ${SCHEMA}`.trim();
 
 // ── Llamada al proxy ─────────────────────────────────────────
@@ -198,11 +209,15 @@ const callGemini = async (supabase, body) => {
 
 const NIVELES = ['alto', 'medio', 'bajo'];
 
-// Un video sin voz ni texto es válido: alcanza con que el hook tenga visual, texto o frase hablada.
+// Un plan es válido si tiene idea principal y al menos un momento de ejecución.
 const validPlan = (o) =>
   o?.tipo === 'plan' &&
-  (o.hook?.recomendado || o.hook?.texto_en_pantalla || o.hook?.visual) &&
-  Array.isArray(o.escenas) && o.escenas.length > 0;
+  typeof o.idea_principal === 'string' && o.idea_principal.trim().length > 0 &&
+  Array.isArray(o.ejecucion) && o.ejecucion.length > 0;
+
+function norm(s) {
+  return String(s ?? '').toLowerCase().trim();
+}
 
 // ── Pipeline ─────────────────────────────────────────────────
 
@@ -243,12 +258,10 @@ export const runIdeaPipeline = async ({
       plan: {
         tipo: 'plan',
         titulo: out.titulo,
-        formato: out.formato,
+        idea_principal: out.idea_principal,
+        ejecucion: out.ejecucion.slice(0, 8),
+        analisis: out.analisis ?? null,
         veredicto: { nivel, razon: out.veredicto?.razon ?? out.veredicto?.['razón'] },
-        hook: out.hook,
-        escenas: out.escenas.slice(0, 5),
-        cta: out.cta,
-        errores_a_evitar: (out.errores_a_evitar ?? []).slice(0, 3),
         pregunta_seguimiento: out.pregunta_seguimiento,
       },
       tokens: total(),
@@ -259,7 +272,3 @@ export const runIdeaPipeline = async ({
     throw e;
   }
 };
-
-function norm(s) {
-  return String(s ?? '').toLowerCase().trim();
-}
