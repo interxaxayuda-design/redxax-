@@ -1,4 +1,4 @@
-// ideaPipeline.js — Pipeline de refinamiento de ideas short-form (v5: máximo 5 preguntas)
+// ideaPipeline.js — Pipeline de refinamiento de ideas short-form (v6: máx. 5 preguntas + anti-truncamiento)
 
 // ── Persona ──────────────────────────────────────────────────
 const PERSONA = `
@@ -58,10 +58,16 @@ Las ideas más fuertes suelen apoyarse en pocos elementos con mucha intensidad.
 `;
 
 // Gemini Config
-const CFG = { thinkingLevel: 'high', temperature: 1.0, maxOutputTokens: 8192 };
+// Los tokens de razonamiento (thinking) cuentan dentro de maxOutputTokens.
+// Con un tope bajo, el JSON del plan se corta a mitad de camino. Por eso el margen es amplio.
+// Si seguís viendo cortes, bajá thinkingLevel a 'low'.
+const CFG = { thinkingLevel: 'high', temperature: 1.0, maxOutputTokens: 24576 };
 
 // Máximo de preguntas que VIRAX puede hacer en toda la conversación.
 export const MAX_PREGUNTAS = 5;
+
+// Cantidad de intentos si la respuesta viene cortada o inválida.
+const MAX_INTENTOS = 2;
 
 // ── Conteo de preguntas ──────────────────────────────────────
 // Cuenta los mensajes de VIRAX que son preguntas (terminan en "?").
@@ -130,7 +136,10 @@ Reglas:
 - Si una sola imagen funciona mejor que cinco escenas, usar una sola.
 - Si el silencio funciona mejor que la voz, usar silencio.
 - Priorizar atención sobre estructura.
-- "ejecucion" debe tener al menos un elemento.
+- "ejecucion" debe tener al menos un elemento y como máximo 5.
+- Cada "descripcion" de "ejecucion": máximo 2 frases cortas.
+- Cada campo de "analisis" y "veredicto.razon": máximo 2 frases.
+- El JSON completo debe ser conciso. Cerrá siempre todas las llaves y corchetes.
 - "veredicto.nivel" debe ser exactamente "alto", "medio" o "bajo".
 `;
 
@@ -220,21 +229,31 @@ const callGemini = async (supabase, body) => {
   const cand = data?.candidates?.[0];
   const raw = cand?.content?.parts?.map((p) => p.text).filter(Boolean).join('') ?? data?.text ?? '';
   const tokens = data?.usageMetadata?.totalTokenCount ?? Math.ceil((body.text.length + raw.length) / 4);
+  const truncated = cand?.finishReason === 'MAX_TOKENS';
 
-  const fail = (message) => { const e = new Error(message); e.tokens = tokens; throw e; };
+  // `retryable` marca errores que vale la pena reintentar (respuesta cortada o mal formada).
+  const fail = (message, retryable = false) => {
+    const e = new Error(message);
+    e.tokens = tokens;
+    e.retryable = retryable;
+    throw e;
+  };
 
   if (cand?.finishReason && cand.finishReason !== 'STOP') {
     console.warn('Gemini finishReason:', cand.finishReason, data?.usageMetadata);
   }
   if (!raw) {
-    fail(cand?.finishReason === 'MAX_TOKENS'
-      ? 'La respuesta se cortó por longitud. Probá con una idea más puntual.'
-      : (data?.promptFeedback?.blockReason ?? 'Respuesta vacía de la IA'));
+    fail(
+      truncated
+        ? 'La respuesta se cortó por longitud. Probá con una idea más puntual.'
+        : (data?.promptFeedback?.blockReason ?? 'Respuesta vacía de la IA'),
+      truncated
+    );
   }
   const json = parseJson(raw);
   if (!json) {
-    console.warn('RAW (no parseable):', raw.slice(0, 800));
-    fail('La IA devolvió un formato inesperado. Probá de nuevo.');
+    console.warn('RAW (no parseable):', raw.slice(0, 800), '| finishReason:', cand?.finishReason);
+    fail('La IA devolvió un formato inesperado. Probá de nuevo.', true);
   }
   return { json, tokens };
 };
@@ -267,43 +286,73 @@ export const runIdeaPipeline = async ({
   const canAsk = asked < MAX_PREGUNTAS;
 
   const ask = async (stage, extraNote = '') => {
-    const r = await callGemini(supabase, {
-      ...CFG,
-      model,
-      text: buildPrompt({
-        idea, history, platform, lastPlan, businessContext, trendContext,
-        questionsAsked: asked,
-      }) + extraNote,
-    });
-    trace.push({ stage, tokens: r.tokens });
-    return r.json;
+    try {
+      const r = await callGemini(supabase, {
+        ...CFG,
+        model,
+        text: buildPrompt({
+          idea, history, platform, lastPlan, businessContext, trendContext,
+          questionsAsked: asked,
+        }) + extraNote,
+      });
+      trace.push({ stage, tokens: r.tokens });
+      return r.json;
+    } catch (e) {
+      // Contar los tokens gastados aunque el intento haya fallado.
+      trace.push({ stage: `${stage}_fail`, tokens: e.tokens ?? 0 });
+      e.tokens = 0; // ya quedó registrado en el trace; evita contarlo dos veces
+      throw e;
+    }
   };
 
+  const NOTA_REINTENTO =
+    '\n\nIMPORTANTE: tu respuesta anterior se cortó o fue inválida. ' +
+    'Respondé con UN solo JSON completo y MÁS CONCISO: máximo 4 momentos en "ejecucion", ' +
+    'descripciones de una sola frase, y pensá menos antes de responder.';
+
   try {
-    let out = await ask('coach');
+    let out = null;
+    let lastErr = null;
 
-    // Red de seguridad: si ya no puede preguntar pero el modelo igual preguntó, reintentar una vez forzando un plan.
-    if (!canAsk && (out.tipo === 'pregunta' || out.tipo === 'ajuste_sin_plan')) {
-      out = await ask(
-        'coach_retry',
-        '\n\nIMPORTANTE: no podés hacer más preguntas. Respondé ahora con un objeto de tipo "plan".'
-      );
+    for (let intento = 0; intento < MAX_INTENTOS; intento++) {
+      try {
+        out = await ask(
+          intento === 0 ? 'coach' : 'coach_retry',
+          intento === 0 ? '' : NOTA_REINTENTO
+        );
+
+        // Ya no puede preguntar pero el modelo preguntó: forzar plan.
+        if (!canAsk && (out.tipo === 'pregunta' || out.tipo === 'ajuste_sin_plan')) {
+          out = await ask(
+            'coach_force_plan',
+            '\n\nIMPORTANTE: no podés hacer más preguntas. Respondé ahora con un objeto de tipo "plan".'
+          );
+        }
+
+        if (out.tipo === 'pregunta' && canAsk) {
+          return { plan: { tipo: 'pregunta', mensaje: out.mensaje }, tokens: total(), trace };
+        }
+        if (out.tipo === 'ajuste_sin_plan' && canAsk) {
+          return {
+            plan: { tipo: 'pregunta', mensaje: '¿Sobre qué video querés trabajar? Contame la idea y armo el plan.' },
+            tokens: total(),
+            trace,
+          };
+        }
+        if (validPlan(out)) break;
+
+        console.warn('Plan inválido, JSON recibido:', JSON.stringify(out).slice(0, 800));
+        lastErr = new Error('La IA devolvió un formato inesperado. Probá de nuevo.');
+        out = null;
+      } catch (e) {
+        lastErr = e;
+        out = null;
+        // Solo reintentar si el error es de formato/corte; los errores de red o auth se propagan ya.
+        if (!e.retryable) break;
+      }
     }
 
-    if (out.tipo === 'pregunta' && canAsk) {
-      return { plan: { tipo: 'pregunta', mensaje: out.mensaje }, tokens: total(), trace };
-    }
-    if (out.tipo === 'ajuste_sin_plan' && canAsk) {
-      return {
-        plan: { tipo: 'pregunta', mensaje: '¿Sobre qué video querés trabajar? Contame la idea y armo el plan.' },
-        tokens: total(),
-        trace,
-      };
-    }
-    if (!validPlan(out)) {
-      console.warn('Plan inválido, JSON recibido:', JSON.stringify(out).slice(0, 800));
-      throw new Error('La IA devolvió un formato inesperado. Probá de nuevo.');
-    }
+    if (!out) throw lastErr ?? new Error('La IA devolvió un formato inesperado. Probá de nuevo.');
 
     const nivel = NIVELES.includes(norm(out.veredicto?.nivel)) ? norm(out.veredicto.nivel) : 'medio';
 
