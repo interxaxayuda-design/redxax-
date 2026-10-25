@@ -16,20 +16,21 @@ const SUGGESTIONS = [
   { icon: UtensilsCrossed, label: 'Promocionar un restaurante', hint: 'Sin que parezca un anuncio', text: 'Idea para promocionar mi restaurante sin parecer anuncio' },
 ];
 
-const THINKING_STEPS = ['Pensando el gancho', 'Armando las escenas', 'Puliendo el cierre'];
+// Cantidad máxima de caracteres del pensamiento visible en la burbuja.
+// El texto más antiguo se descarta para evitar que crezca infinito.
+const MAX_THINKING_VISIBLE = 600;
+
 const MAX_HISTORY_TURNS = 6;
 const SESSION_TOKEN_LIMIT = 80000;
 
-// Entrada escalonada: cada elemento aparece un paso después del anterior
 const step = (i) => ({ '--i': i });
 
-// ── Lógica (sin cambios de comportamiento) ──
+// ── Lógica (sin cambios) ─────────────────────────────────────
 const pick = (o, keys) => {
   for (const k of keys) if (o?.[k] != null && o[k] !== '') return o[k];
   return undefined;
 };
 
-// La respuesta puede llegar como objeto, como texto con JSON, dentro de ```json o envuelta en otra clave
 const parseMaybeJson = (v) => {
   if (typeof v !== 'string') return v;
   const t = v.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
@@ -66,6 +67,7 @@ const normalizePlan = (raw) => {
   if (!base) return null;
   const plan = { ...base };
 
+  // Soporte legado (hook/escenas) + nuevo formato (idea_principal/ejecucion)
   plan.hook = plan.hook ?? plan.gancho;
   if (typeof plan.hook === 'string') plan.hook = { recomendado: plan.hook };
   if (plan.hook?.alternativas) {
@@ -104,9 +106,11 @@ const normalizePlan = (raw) => {
   }
 
   const msg = pick(plan, ['mensaje', 'pregunta', 'pregunta_seguimiento']);
-  const hasPlanBody = Boolean(plan.hook) || plan.escenas?.length > 0;
+
+  // Detecta si es pregunta o plan
+  const hasPlanBody = Boolean(plan.hook) || plan.escenas?.length > 0 || plan.idea_principal || plan.ejecucion?.length > 0;
   if (plan.tipo === 'pregunta' || !hasPlanBody) {
-    plan.tipo = 'pregunta';
+    plan.tipo    = 'pregunta';
     plan.mensaje = plan.mensaje ?? msg;
   } else if (!plan.tipo) {
     plan.tipo = 'plan';
@@ -114,7 +118,7 @@ const normalizePlan = (raw) => {
   return plan;
 };
 
-const isRenderable = (p) => Boolean(p && (p.mensaje || p.hook || p.escenas?.length));
+const isRenderable = (p) => Boolean(p && (p.mensaje || p.hook || p.escenas?.length || p.idea_principal || p.ejecucion?.length));
 
 const planToText = (p) => {
   if (!p) return '';
@@ -124,6 +128,7 @@ const planToText = (p) => {
   if (p.veredicto) {
     L.push(`Potencial ${p.veredicto.nivel ?? ''}${p.veredicto.razon ? `: ${p.veredicto.razon}` : ''}`.trim(), '');
   }
+  if (p.idea_principal) L.push('IDEA', p.idea_principal, '');
   if (p.hook) {
     L.push('HOOK');
     const frase = p.hook.recomendado || p.hook.frase_hablada;
@@ -137,13 +142,25 @@ const planToText = (p) => {
     }
     L.push('');
   }
+  if (p.ejecucion?.length) {
+    L.push('EJECUCIÓN');
+    p.ejecucion.forEach((e, i) => L.push(`${i + 1}. [${e.momento ?? ''}] ${e.descripcion ?? ''}`));
+    L.push('');
+  }
   if (p.escenas?.length) {
     L.push('ESCENAS');
     p.escenas.forEach((e, i) =>
-      L.push(`${i + 1}. [${e.tiempo}] ${e.accion}${e.dialogo ? ` — “${e.dialogo}”` : ''}`));
+      L.push(`${i + 1}. [${e.tiempo}] ${e.accion}${e.dialogo ? ` — "${e.dialogo}"` : ''}`));
     L.push('');
   }
   if (p.cta) L.push(`CTA: ${p.cta}`, '');
+  if (p.analisis) {
+    L.push('ANÁLISIS');
+    if (p.analisis.por_que_detiene_scroll) L.push(`Por qué detiene: ${p.analisis.por_que_detiene_scroll}`);
+    if (p.analisis.momento_mas_fuerte)     L.push(`Momento más fuerte: ${p.analisis.momento_mas_fuerte}`);
+    if (p.analisis.momento_mas_debil)      L.push(`Momento más débil: ${p.analisis.momento_mas_debil}`);
+    L.push('');
+  }
   if (p.errores_a_evitar?.length) L.push('EVITA', ...p.errores_a_evitar.map((x) => `- ${x}`), '');
   return L.join('\n').trim();
 };
@@ -165,7 +182,7 @@ const friendlyError = (err) => {
   return msg || 'Se cortó la conexión. Inténtalo de nuevo.';
 };
 
-// ── Dictado por voz ──
+// ── Dictado por voz ──────────────────────────────────────────
 const SpeechRecognitionAPI =
   typeof window !== 'undefined' && (window.SpeechRecognition || window.webkitSpeechRecognition);
 
@@ -231,15 +248,12 @@ function useDictation(onText) {
   return { supported: Boolean(SpeechRecognitionAPI), listening, voiceError, start, stop };
 }
 
-// ── Piezas de interfaz ──
-// Avatar mínimo: círculo chico con el logo (o una "V" si no hay logo)
+// ── Piezas de interfaz ───────────────────────────────────────
 const Avatar = ({ logo }) => (
   <div className="cs-in mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 text-[12px] font-semibold text-neutral-300">
     {logo ? <img src={logo} alt="VIRAX" className="h-4 w-4 object-contain" /> : 'V'}
   </div>
 );
-
-const H = ({ children }) => <h4 className="mb-1.5 text-[15px] font-semibold text-white">{children}</h4>;
 
 function CopyBtn({ text, label }) {
   const [ok, setOk] = useState(false);
@@ -261,31 +275,49 @@ function CopyBtn({ text, label }) {
   );
 }
 
-function Thinking({ logo }) {
-  const [i, setI] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setI((n) => (n + 1) % THINKING_STEPS.length), 2200);
-    return () => clearInterval(t);
-  }, []);
+// ── Thinking con streaming real ──────────────────────────────
+// Muestra el pensamiento real de Gemini en lugar de frases fijas.
+// Mientras no llega el primer chunk, muestra tres puntitos animados.
+// Una vez que empieza a llegar texto, lo va mostrando con un cursor parpadeante.
+// Se limita a MAX_THINKING_VISIBLE caracteres para no crecer infinito.
+function Thinking({ text, logo }) {
+  const visible = text.length > MAX_THINKING_VISIBLE
+    ? '…' + text.slice(-MAX_THINKING_VISIBLE)
+    : text;
+
   return (
     <div className="flex items-start gap-3">
       <Avatar logo={logo} />
-      <div style={step(1)} className="cs-in flex items-center gap-2.5 pt-2">
-        <span className="flex gap-1">
-          {[0, 1, 2].map((k) => (
-            <span key={k} className="cs-dot" style={{ animationDelay: `${k * 0.16}s` }} />
-          ))}
-        </span>
-        <span className="text-[14px] text-neutral-400">{THINKING_STEPS[i]}…</span>
+      <div style={step(1)} className="cs-in min-w-0 flex-1 pt-1">
+        {visible ? (
+          <p className="whitespace-pre-wrap text-[13px] leading-6 text-neutral-500">
+            {visible}
+            {/* cursor parpadeante mientras sigue llegando texto */}
+            <span
+              aria-hidden="true"
+              className="ml-0.5 inline-block h-3.5 w-px animate-pulse bg-neutral-500 align-middle"
+            />
+          </p>
+        ) : (
+          // Fallback: puntitos mientras no llega el primer chunk de thinking
+          <div className="flex items-center gap-2.5 pt-1">
+            <span className="flex gap-1" aria-hidden="true">
+              {[0, 1, 2].map((k) => (
+                <span key={k} className="cs-dot" style={{ animationDelay: `${k * 0.16}s` }} />
+              ))}
+            </span>
+            <span className="text-[13px] text-neutral-500">Pensando…</span>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 const LEVELS = {
-  bajo: { n: 1, bar: 'bg-red-400', text: 'text-red-300' },
-  medio: { n: 2, bar: 'bg-amber-400', text: 'text-amber-300' },
-  alto: { n: 3, bar: 'bg-emerald-400', text: 'text-emerald-300' },
+  bajo:  { n: 1, bar: 'bg-red-400',     text: 'text-red-300' },
+  medio: { n: 2, bar: 'bg-amber-400',   text: 'text-amber-300' },
+  alto:  { n: 3, bar: 'bg-emerald-400', text: 'text-emerald-300' },
 };
 
 const Section = ({ title, meta, i = 0, children }) => (
@@ -299,21 +331,22 @@ const Section = ({ title, meta, i = 0, children }) => (
 );
 
 function PlanCard({ plan }) {
-  const { hook, escenas, cta, errores_a_evitar, veredicto } = plan;
+  const { hook, escenas, cta, errores_a_evitar, veredicto, idea_principal, ejecucion, analisis } = plan;
   const [showAlt, setShowAlt] = useState(false);
   const alternativas = hook?.alternativas ?? [];
   const level = LEVELS[String(veredicto?.nivel ?? '').toLowerCase()];
   const frase = hook?.recomendado || hook?.frase_hablada;
-  // Videos sin voz: el gancho es el texto en pantalla
   const destacado = frase || hook?.texto_en_pantalla;
   const mecanismo = hook?.mecanismo ?? hook?.por_que_funciona;
-  let k = 2; // el primer paso lo ocupa el mensaje que acompaña al plan
+  let k = 2;
   const nx = () => k++;
 
   return (
     <div className="space-y-3.5 text-[15px] leading-7 text-neutral-200">
       {plan.titulo && (
-        <h3 style={step(nx())} className="cs-in text-[20px] font-semibold leading-snug tracking-tight text-white">{plan.titulo}</h3>
+        <h3 style={step(nx())} className="cs-in text-[20px] font-semibold leading-snug tracking-tight text-white">
+          {plan.titulo}
+        </h3>
       )}
 
       {veredicto && (
@@ -332,11 +365,66 @@ function PlanCard({ plan }) {
         </div>
       )}
 
+      {/* Nuevo formato: idea_principal + ejecucion */}
+      {idea_principal && (
+        <Section i={nx()} title="Idea">
+          <p className="p-4 text-[15px] leading-6 text-neutral-200">{idea_principal}</p>
+        </Section>
+      )}
+
+      {ejecucion?.length > 0 && (
+        <Section i={nx()} title="Ejecución" meta={`${ejecucion.length} ${ejecucion.length === 1 ? 'momento' : 'momentos'}`}>
+          <ol className="divide-y divide-white/[0.06]">
+            {ejecucion.map((e, i) => (
+              <li key={i} style={step(nx())} className="cs-in flex gap-4 px-4 py-3.5">
+                <div className="w-14 flex-shrink-0 pt-0.5">
+                  <span className="block text-[14px] font-semibold tabular-nums text-white">{i + 1}</span>
+                  {e.momento && <span className="text-[12px] text-neutral-500">{e.momento}</span>}
+                </div>
+                <p className="min-w-0 flex-1 text-[15px] leading-6 text-neutral-200">{e.descripcion}</p>
+              </li>
+            ))}
+          </ol>
+        </Section>
+      )}
+
+      {analisis && (
+        <Section i={nx()} title="Análisis">
+          <dl className="divide-y divide-white/[0.06]">
+            {analisis.por_que_detiene_scroll && (
+              <div className="px-4 py-3">
+                <dt className="mb-1 text-[12px] text-neutral-500">Por qué detiene el scroll</dt>
+                <dd className="text-[14px] leading-6 text-neutral-300">{analisis.por_que_detiene_scroll}</dd>
+              </div>
+            )}
+            {analisis.por_que_alguien_haria_scroll && (
+              <div className="px-4 py-3">
+                <dt className="mb-1 text-[12px] text-neutral-500">Por qué alguien haría scroll</dt>
+                <dd className="text-[14px] leading-6 text-neutral-300">{analisis.por_que_alguien_haria_scroll}</dd>
+              </div>
+            )}
+            {analisis.momento_mas_fuerte && (
+              <div className="px-4 py-3">
+                <dt className="mb-1 text-[12px] text-neutral-500">Momento más fuerte</dt>
+                <dd className="text-[14px] leading-6 text-neutral-300">{analisis.momento_mas_fuerte}</dd>
+              </div>
+            )}
+            {analisis.momento_mas_debil && (
+              <div className="px-4 py-3">
+                <dt className="mb-1 text-[12px] text-neutral-500">Momento más débil</dt>
+                <dd className="text-[14px] leading-6 text-neutral-300">{analisis.momento_mas_debil}</dd>
+              </div>
+            )}
+          </dl>
+        </Section>
+      )}
+
+      {/* Formato legado: hook + escenas */}
       {hook && (
         <Section i={nx()} title="Gancho" meta={`0–3 s${hook.tipo ? ` · ${hook.tipo}` : ''}`}>
           <div className="space-y-3 p-4">
             {destacado && (
-              <p className="border-l-2 border-emerald-400 pl-4 text-[17px] leading-snug text-white">“{destacado}”</p>
+              <p className="border-l-2 border-emerald-400 pl-4 text-[17px] leading-snug text-white">"{destacado}"</p>
             )}
             {((frase && hook.texto_en_pantalla) || hook.visual) && (
               <dl className="grid grid-cols-[92px_1fr] gap-x-3 gap-y-1.5 text-[14px] leading-6">
@@ -372,7 +460,7 @@ function PlanCard({ plan }) {
                   {alternativas.map((a, i) => (
                     <li key={i} className="text-[14px] leading-6 text-neutral-300">
                       {a.tipo && <span className="mr-2 text-[12px] text-neutral-500">{a.tipo}</span>}
-                      “{a.frase_hablada || a.texto_en_pantalla}”
+                      "{a.frase_hablada || a.texto_en_pantalla}"
                       {a.frase_hablada && a.texto_en_pantalla && (
                         <span className="block text-[13px] text-neutral-500">En pantalla: {a.texto_en_pantalla}</span>
                       )}
@@ -397,7 +485,7 @@ function PlanCard({ plan }) {
                 <div className="min-w-0 flex-1 space-y-1.5">
                   <p className="text-[15px] leading-6 text-neutral-200">{e.accion}</p>
                   {e.dialogo && (
-                    <p className="border-l-2 border-white/15 pl-3 text-[14px] leading-6 text-neutral-400">“{e.dialogo}”</p>
+                    <p className="border-l-2 border-white/15 pl-3 text-[14px] leading-6 text-neutral-400">"{e.dialogo}"</p>
                   )}
                   {e.texto_pantalla && (
                     <p className="text-[13px] text-neutral-500">En pantalla: {e.texto_pantalla}</p>
@@ -428,19 +516,22 @@ function PlanCard({ plan }) {
         </Section>
       )}
 
-      {plan.pregunta_seguimiento && <p style={step(nx())} className="cs-in text-neutral-400">{plan.pregunta_seguimiento}</p>}
+      {plan.pregunta_seguimiento && (
+        <p style={step(nx())} className="cs-in text-neutral-400">{plan.pregunta_seguimiento}</p>
+      )}
 
       <div style={step(nx())} className="cs-in flex flex-wrap gap-2 pt-1">
         <CopyBtn label="Copiar plan" text={planToText(plan)} />
         {destacado && <CopyBtn label="Copiar gancho" text={destacado} />}
+        {idea_principal && <CopyBtn label="Copiar idea" text={idea_principal} />}
       </div>
     </div>
   );
 }
 
-// ── Cartel de introducción (una sola vez) ──
+// ── Cartel de introducción ───────────────────────────────────
 const INTRO_KEY = 'virax_ideas_intro_seen';
-const readIntroSeen = () => { try { return localStorage.getItem(INTRO_KEY) === '1'; } catch { return false; } };
+const readIntroSeen  = () => { try { return localStorage.getItem(INTRO_KEY) === '1'; } catch { return false; } };
 const writeIntroSeen = () => { try { localStorage.setItem(INTRO_KEY, '1'); } catch { /* storage bloqueado */ } };
 
 function IdeasIntroModal({ onClose }) {
@@ -452,13 +543,16 @@ function IdeasIntroModal({ onClose }) {
       aria-labelledby="ideas-intro-title"
     >
       <div className="cs-in w-full max-w-sm rounded-2xl bg-[#141414] p-6 shadow-2xl">
-        <h2 id="ideas-intro-title" style={step(1)} className="cs-in mb-2 text-lg font-semibold text-white">Convierte tu idea en un video</h2>
+        <h2 id="ideas-intro-title" style={step(1)} className="cs-in mb-2 text-lg font-semibold text-white">
+          Convierte tu idea en un video
+        </h2>
         <p style={step(2)} className="cs-in text-[14px] leading-relaxed text-neutral-300">
           Cuéntale a VIRAX qué quieres grabar y te arma el gancho, el guion escena por escena y el cierre.
         </p>
         <button
           onClick={onClose}
-          style={step(3)} className="cs-in mt-5 w-full rounded-full bg-white py-3 text-[14px] font-semibold text-black transition-opacity hover:opacity-90 active:scale-[0.98]"
+          style={step(3)}
+          className="cs-in mt-5 w-full rounded-full bg-white py-3 text-[14px] font-semibold text-black transition-opacity hover:opacity-90 active:scale-[0.98]"
         >
           Entendido
         </button>
@@ -468,38 +562,41 @@ function IdeasIntroModal({ onClose }) {
   );
 }
 
-// ── Pantalla principal ──
+// ── Pantalla principal ───────────────────────────────────────
 export default function ChatScreen({
   supabase,
-  userIcon, // se usa como logo de VIRAX en los mensajes del asistente
+  userIcon,
   onBack,
   onBeforeSend,
   businessContext = null,
-  gems = null, // opcional: saldo para mostrarlo en el encabezado
-  messageCost = 25, // opcional: debe coincidir con lo que descuenta onBeforeSend
+  gems = null,
+  messageCost = 25,
 }) {
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [platform, setPlatform] = useState('tiktok');
-  const [tokensUsed, setTokensUsed] = useState(0);
-  const [showIntro, setShowIntro] = useState(() => !readIntroSeen());
+  const [messages,     setMessages]     = useState([]);
+  const [input,        setInput]        = useState('');
+  const [loading,      setLoading]      = useState(false);
+  const [platform,     setPlatform]     = useState('tiktok');
+  const [tokensUsed,   setTokensUsed]   = useState(0);
+  const [showIntro,    setShowIntro]    = useState(() => !readIntroSeen());
+  const [thinkingText, setThinkingText] = useState(''); // ← pensamiento en streaming
+
   const limitReached = tokensUsed >= SESSION_TOKEN_LIMIT;
-  const tokenPct = Math.min(100, Math.round((tokensUsed / SESSION_TOKEN_LIMIT) * 100));
-  const listRef = useRef(null);
-  const taRef = useRef(null);
-  const dictation = useDictation(setInput);
-  const isEmpty = messages.length === 0 && !loading;
+  const tokenPct     = Math.min(100, Math.round((tokensUsed / SESSION_TOKEN_LIMIT) * 100));
+  const listRef      = useRef(null);
+  const taRef        = useRef(null);
+  const dictation    = useDictation(setInput);
+  const isEmpty      = messages.length === 0 && !loading;
 
   const dismissIntro = () => { writeIntroSeen(); setShowIntro(false); };
-  const resetChat = () => { setMessages([]); setTokensUsed(0); setInput(''); };
+  const resetChat    = () => { setMessages([]); setTokensUsed(0); setInput(''); setThinkingText(''); };
 
-  // Scroll dentro de la lista (scrollIntoView podía mover toda la página)
+  // Scroll suave dentro del contenedor
   useEffect(() => {
     const el = listRef.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-  }, [messages, loading]);
+  }, [messages, loading, thinkingText]);
 
+  // Auto-altura del textarea
   useEffect(() => {
     const ta = taRef.current;
     if (!ta) return;
@@ -520,6 +617,7 @@ export default function ChatScreen({
     const next = [...messages, { role: 'user', text: content }];
     setMessages(next);
     setInput('');
+    setThinkingText(''); // limpia pensamiento anterior
     setLoading(true);
 
     try {
@@ -533,13 +631,16 @@ export default function ChatScreen({
 
       const out = await runIdeaPipeline({
         supabase,
-        model: REVIEW_CONFIG.coach.model,
-        idea: content,
+        model:           REVIEW_CONFIG.coach.model,
+        idea:            content,
         history,
         platform,
         lastPlan,
         businessContext,
-        trendContext: null,
+        trendContext:    null,
+        // ↓ callback que recibe cada chunk de thinking de Gemini
+        onThinking: (chunk) =>
+          setThinkingText((prev) => prev + chunk),
       });
 
       const rawPlan = out?.plan ?? out?.resultado ?? out?.result ?? out?.data ?? out?.response ?? out?.respuesta ?? out?.text;
@@ -551,12 +652,22 @@ export default function ChatScreen({
         console.error('Formato inesperado. Salida cruda del pipeline:', out);
         throw new Error('La IA devolvió un formato inesperado. Inténtalo de nuevo.');
       }
+
+      setThinkingText(''); // limpia al mostrar el plan
       setMessages([...next, { role: 'bot', plan: parsed, text: parsed.mensaje ?? '' }]);
     } catch (err) {
       console.error('ChatScreen error:', err);
       if (err.tokens) setTokensUsed((t) => t + err.tokens);
-      setInput(content); // el texto vuelve al cuadro para no perderlo
-      setMessages([...next, { role: 'bot', text: `${friendlyError(err)} Tu mensaje quedó en el cuadro para reenviarlo.`, isError: true }]);
+      setThinkingText(''); // limpia también en error
+      setInput(content);  // devuelve el texto al cuadro para no perderlo
+      setMessages([
+        ...next,
+        {
+          role: 'bot',
+          text: `${friendlyError(err)} Tu mensaje quedó en el cuadro para reenviarlo.`,
+          isError: true,
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -622,6 +733,7 @@ export default function ChatScreen({
       {/* Mensajes */}
       <div ref={listRef} className="cs-scroll flex-1 overflow-y-auto">
         <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-7 px-4 py-6">
+
           {isEmpty && (
             <div className="my-auto flex flex-col items-center py-8 text-center">
               <div style={step(1)} className="cs-in mb-6 flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-[22px] bg-[#161616] shadow-lg shadow-black/30 ring-1 ring-white/10">
@@ -631,7 +743,9 @@ export default function ChatScreen({
                   <span className="text-3xl font-semibold text-white">V</span>
                 )}
               </div>
-              <h2 style={step(2)} className="cs-in text-[28px] font-semibold leading-tight tracking-tight text-white">¿Qué quieres grabar hoy?</h2>
+              <h2 style={step(2)} className="cs-in text-[28px] font-semibold leading-tight tracking-tight text-white">
+                ¿Qué quieres grabar hoy?
+              </h2>
               <p style={step(3)} className="cs-in mt-2 max-w-sm text-[15px] leading-6 text-neutral-400">
                 Cuéntame tu idea y te armo el gancho, las escenas y el cierre.
               </p>
@@ -666,14 +780,19 @@ export default function ChatScreen({
                 </div>
               );
             }
-            const isFullPlan = Boolean(m.plan?.hook || m.plan?.escenas?.length);
+            const isFullPlan = Boolean(
+              m.plan?.hook || m.plan?.escenas?.length ||
+              m.plan?.idea_principal || m.plan?.ejecucion?.length
+            );
             return (
               <div key={i} className="flex items-start gap-3">
                 <Avatar logo={userIcon} />
                 <div className="min-w-0 flex-1">
                   {isFullPlan ? (
                     <>
-                      {m.text && <p style={step(1)} className="cs-in mb-4 text-[15px] leading-7 text-neutral-200">{m.text}</p>}
+                      {m.text && (
+                        <p style={step(1)} className="cs-in mb-4 text-[15px] leading-7 text-neutral-200">{m.text}</p>
+                      )}
                       <PlanCard plan={m.plan} />
                     </>
                   ) : (
@@ -691,18 +810,26 @@ export default function ChatScreen({
             );
           })}
 
-          {loading && <Thinking logo={userIcon} />}
+          {/* Burbuja de thinking con texto real de Gemini */}
+          {loading && <Thinking text={thinkingText} logo={userIcon} />}
         </div>
       </div>
 
       {/* Cuadro de escritura */}
-      <div className="cs-in px-3 pt-1" style={{ '--i': 8, paddingBottom: 'max(10px, env(safe-area-inset-bottom, 0px))' }}>
+      <div
+        className="cs-in px-3 pt-1"
+        style={{ '--i': 8, paddingBottom: 'max(10px, env(safe-area-inset-bottom, 0px))' }}
+      >
         <div className="mx-auto w-full max-w-3xl">
-          {dictation.voiceError && <p className="mb-2 px-3 text-[12px] text-red-300">{dictation.voiceError}</p>}
+          {dictation.voiceError && (
+            <p className="mb-2 px-3 text-[12px] text-red-300">{dictation.voiceError}</p>
+          )}
 
           {limitReached ? (
             <div className="flex flex-col items-center gap-3 rounded-3xl bg-[#1a1a1a] px-5 py-4 text-center">
-              <p className="text-[14px] text-neutral-300">Esta conversación llegó a su límite. Empieza una nueva para seguir.</p>
+              <p className="text-[14px] text-neutral-300">
+                Esta conversación llegó a su límite. Empieza una nueva para seguir.
+              </p>
               <button
                 onClick={resetChat}
                 className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[13px] font-semibold text-black transition-opacity hover:opacity-90 active:scale-95"
@@ -712,7 +839,6 @@ export default function ChatScreen({
             </div>
           ) : (
             <>
-
               <div className="flex items-end gap-1 rounded-[28px] bg-[#1a1a1a] p-2 pl-5 ring-1 ring-white/[0.07] transition-shadow focus-within:ring-white/20">
                 <textarea
                   ref={taRef}
@@ -720,7 +846,10 @@ export default function ChatScreen({
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); }
+                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                      e.preventDefault();
+                      send();
+                    }
                   }}
                   placeholder={dictation.listening ? 'Escuchando…' : 'Escribe tu idea'}
                   className="flex-1 resize-none border-none bg-transparent py-2.5 text-[16px] leading-snug text-white outline-none placeholder:text-neutral-500"
@@ -732,7 +861,9 @@ export default function ChatScreen({
                     disabled={loading}
                     aria-label={dictation.listening ? 'Detener dictado' : 'Dictar por voz'}
                     className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors disabled:opacity-30 ${
-                      dictation.listening ? 'animate-pulse bg-red-500/20 text-red-300' : 'text-neutral-400 hover:bg-white/10 hover:text-white'
+                      dictation.listening
+                        ? 'animate-pulse bg-red-500/20 text-red-300'
+                        : 'text-neutral-400 hover:bg-white/10 hover:text-white'
                     }`}
                   >
                     {dictation.listening ? <Square className="h-4 w-4" /> : <Mic className="h-5 w-5" />}

@@ -1,4 +1,4 @@
-// ideaPipeline.js — Pipeline de refinamiento de ideas short-form (v7: pocas preguntas, solo si son imprescindibles)
+// ideaPipeline.js — Pipeline de refinamiento de ideas short-form (v8: streaming thinking)
 
 // ── Persona ──────────────────────────────────────────────────
 const PERSONA = `
@@ -58,13 +58,9 @@ Las ideas más fuertes suelen apoyarse en pocos elementos con mucha intensidad.
 `;
 
 // Gemini Config
-// Los tokens de razonamiento (thinking) cuentan dentro de maxOutputTokens.
-// Con un tope bajo, el JSON del plan se corta a mitad de camino. Por eso el margen es amplio.
-// Si seguís viendo cortes, bajá thinkingLevel a 'low'.
 const CFG = { thinkingLevel: 'high', temperature: 1.0, maxOutputTokens: 24576 };
 
 // Máximo de preguntas que VIRAX puede hacer en toda la conversación.
-// Bajalo a 1 (o 0) si querés que casi nunca pregunte.
 export const MAX_PREGUNTAS = 2;
 
 // Si el mensaje del usuario es más largo que esto, se considera que ya trae contexto suficiente.
@@ -74,9 +70,6 @@ const MIN_CHARS_IDEA_SUFICIENTE = 25;
 const MAX_INTENTOS = 2;
 
 // ── Conteo de preguntas ──────────────────────────────────────
-// Cuenta los mensajes de VIRAX que son preguntas (terminan en "?").
-// Si tu front ya lleva la cuenta, pasá `questionsAsked` a runIdeaPipeline y se usa ese valor.
-// Se ignoran los mensajes largos (planes que terminan con "pregunta_seguimiento"), que no son preguntas del pipeline.
 const countQuestions = (history) =>
   history.filter((m) => {
     if (m.role === 'user') return false;
@@ -84,15 +77,13 @@ const countQuestions = (history) =>
     return t.length <= 300 && /\?\s*$/.test(t);
   }).length;
 
-// Decide si VIRAX tiene permitido preguntar en este turno.
-// Regla: solo se pregunta si NO hay plan previo, quedan preguntas y el mensaje es demasiado pobre para trabajar.
 const puedePreguntar = ({ asked, lastPlan, idea, businessContext }) => {
   if (asked >= MAX_PREGUNTAS) return false;
-  if (lastPlan) return false; // refinando un plan: ajustar, nunca interrogar
+  if (lastPlan) return false;
   const ideaTexto = String(idea ?? '').trim();
   const tieneContexto = Boolean(businessContext && String(businessContext).trim());
   if (tieneContexto && ideaTexto.length >= MIN_CHARS_IDEA_SUFICIENTE) return false;
-  if (ideaTexto.length >= MIN_CHARS_IDEA_SUFICIENTE * 3) return false; // idea ya detallada
+  if (ideaTexto.length >= MIN_CHARS_IDEA_SUFICIENTE * 3) return false;
   return true;
 };
 
@@ -238,9 +229,9 @@ ${preguntasBlock(questionsAsked, canAsk)}
 ${buildSchema(canAsk)}`.trim();
 };
 
-// ── Llamada al proxy ─────────────────────────────────────────
-
+// ── Parsing ──────────────────────────────────────────────────
 const parseJson = (raw) => {
+  if (!raw || typeof raw !== 'string') return null;
   const s = raw.replace(/```json|```/g, '').trim();
   const a = s.indexOf('{');
   const b = s.lastIndexOf('}');
@@ -248,55 +239,87 @@ const parseJson = (raw) => {
   try { return JSON.parse(s.slice(a, b + 1)); } catch { return null; }
 };
 
-const callGemini = async (supabase, body) => {
-  const { data, error } = await supabase.functions.invoke('gemini-proxy', {
-    body: { ...body, expectsJson: true },
+// ── Llamada streaming ────────────────────────────────────────
+// Llama a la Edge Function con stream:true y consume el SSE.
+// onThinking(chunk: string) se dispara con cada fragmento de pensamiento real de Gemini.
+// Devuelve { json, tokens } igual que callGemini, para que el pipeline no cambie.
+const callGeminiStream = async (supabase, body, { onThinking } = {}) => {
+  // supabase.functions.invoke no soporta streaming,
+  // así que hacemos fetch directo a la URL de la Edge Function.
+  const projectUrl = supabase.supabaseUrl; // ej: https://xyzxyz.supabase.co
+  const session    = await supabase.auth.getSession();
+  const token      = session?.data?.session?.access_token ?? '';
+
+  const res = await fetch(`${projectUrl}/functions/v1/gemini-proxy`, {
+    method:  'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${token}`,
+      // supabase.supabaseKey es la anon key pública, necesaria para la Edge Function
+      'apikey': supabase.supabaseKey,
+    },
+    body: JSON.stringify({ ...body, stream: true }),
   });
 
-  if (error) {
-    let msg = '';
-    try { msg = await error.context?.text?.(); } catch (_) {}
-    throw new Error(msg || error.message);
+  if (!res.ok) {
+    const msg = await res.text().catch(() => '');
+    const err = new Error(`gemini-proxy stream ${res.status}: ${msg.slice(0, 200)}`);
+    err.retryable = res.status >= 500;
+    throw err;
   }
-  if (data?.error) throw new Error(`${data.error} ${data.message ?? ''}`);
 
-  const cand = data?.candidates?.[0];
-  const raw = cand?.content?.parts?.map((p) => p.text).filter(Boolean).join('') ?? data?.text ?? '';
-  const tokens = data?.usageMetadata?.totalTokenCount ?? Math.ceil((body.text.length + raw.length) / 4);
-  const truncated = cand?.finishReason === 'MAX_TOKENS';
+  const reader  = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf      = '';
+  let jsonText = ''; // acumula los chunks type:"text" (el JSON final de Gemini)
+  let tokens   = 0;
 
-  // `retryable` marca errores que vale la pena reintentar (respuesta cortada o mal formada).
-  const fail = (message, retryable = false) => {
-    const e = new Error(message);
-    e.tokens = tokens;
-    e.retryable = retryable;
-    throw e;
-  };
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
 
-  if (cand?.finishReason && cand.finishReason !== 'STOP') {
-    console.warn('Gemini finishReason:', cand.finishReason, data?.usageMetadata);
+    buf += decoder.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop() ?? '';
+
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      try {
+        const chunk = JSON.parse(line.slice(6));
+
+        if (chunk.type === 'thinking' && chunk.text) {
+          // Pensamiento real de Gemini → lo mostramos en la UI
+          onThinking?.(chunk.text);
+        } else if (chunk.type === 'text' && chunk.text) {
+          // Fragmento del JSON final → lo acumulamos silenciosamente
+          jsonText += chunk.text;
+        } else if (chunk.type === 'done') {
+          tokens = chunk.tokens ?? 0;
+        } else if (chunk.type === 'error') {
+          throw new Error(chunk.message ?? 'Error en el stream de Gemini');
+        }
+      } catch (parseErr) {
+        // Línea SSE incompleta o malformada — se ignora
+        if (parseErr.message?.includes('stream')) throw parseErr; // re-lanza errores reales
+      }
+    }
   }
-  if (!raw) {
-    fail(
-      truncated
-        ? 'La respuesta se cortó por longitud. Probá con una idea más puntual.'
-        : (data?.promptFeedback?.blockReason ?? 'Respuesta vacía de la IA'),
-      truncated
-    );
-  }
-  const json = parseJson(raw);
+
+  const json = parseJson(jsonText);
   if (!json) {
-    console.warn('RAW (no parseable):', raw.slice(0, 800), '| finishReason:', cand?.finishReason);
-    fail('La IA devolvió un formato inesperado. Probá de nuevo.', true);
+    console.warn('Stream: JSON no parseable. Texto acumulado:', jsonText.slice(0, 500));
+    const err = new Error('La IA devolvió un formato inesperado. Probá de nuevo.');
+    err.tokens    = tokens;
+    err.retryable = true;
+    throw err;
   }
+
   return { json, tokens };
 };
 
 // ── Validación ───────────────────────────────────────────────
-
 const NIVELES = ['alto', 'medio', 'bajo'];
 
-// Un plan es válido si tiene idea principal y al menos un momento de ejecución.
 const validPlan = (o) =>
   o?.tipo === 'plan' &&
   typeof o.idea_principal === 'string' && o.idea_principal.trim().length > 0 &&
@@ -307,35 +330,45 @@ function norm(s) {
 }
 
 // ── Pipeline ─────────────────────────────────────────────────
-
 export const runIdeaPipeline = async ({
-  supabase, model, idea, history = [], platform = 'tiktok',
-  lastPlan = null, businessContext = null, trendContext = null,
-  questionsAsked = null, // opcional: si tu front lleva la cuenta, pasala acá
+  supabase,
+  model,
+  idea,
+  history       = [],
+  platform      = 'tiktok',
+  lastPlan      = null,
+  businessContext = null,
+  trendContext  = null,
+  questionsAsked = null,
+  onThinking    = null, // (chunk: string) => void — callback de UI para el pensamiento en vivo
 }) => {
   const trace = [];
   const total = () => trace.reduce((s, t) => s + t.tokens, 0);
 
-  const asked = questionsAsked ?? countQuestions(history);
+  const asked  = questionsAsked ?? countQuestions(history);
   const canAsk = puedePreguntar({ asked, lastPlan, idea, businessContext });
 
+  // ask(): llama al modelo vía stream y registra tokens en el trace
   const ask = async (stage, extraNote = '') => {
     try {
-      const r = await callGemini(supabase, {
-        ...CFG,
-        model,
-        text: buildPrompt({
-          idea, history, platform, lastPlan, businessContext, trendContext,
-          questionsAsked: asked,
-          canAsk,
-        }) + extraNote,
-      });
+      const r = await callGeminiStream(
+        supabase,
+        {
+          ...CFG,
+          model,
+          text: buildPrompt({
+            idea, history, platform, lastPlan, businessContext, trendContext,
+            questionsAsked: asked,
+            canAsk,
+          }) + extraNote,
+        },
+        { onThinking }
+      );
       trace.push({ stage, tokens: r.tokens });
       return r.json;
     } catch (e) {
-      // Contar los tokens gastados aunque el intento haya fallado.
       trace.push({ stage: `${stage}_fail`, tokens: e.tokens ?? 0 });
-      e.tokens = 0; // ya quedó registrado en el trace; evita contarlo dos veces
+      e.tokens = 0; // ya quedó en el trace; evita contarlo doble
       throw e;
     }
   };
@@ -346,7 +379,7 @@ export const runIdeaPipeline = async ({
     'descripciones de una sola frase, y pensá menos antes de responder.';
 
   try {
-    let out = null;
+    let out     = null;
     let lastErr = null;
 
     for (let intento = 0; intento < MAX_INTENTOS; intento++) {
@@ -356,7 +389,7 @@ export const runIdeaPipeline = async ({
           intento === 0 ? '' : NOTA_REINTENTO
         );
 
-        // Ya no puede preguntar pero el modelo preguntó: forzar plan.
+        // El modelo preguntó cuando no podía → forzar plan
         if (!canAsk && (out.tipo === 'pregunta' || out.tipo === 'ajuste_sin_plan')) {
           out = await ask(
             'coach_force_plan',
@@ -381,8 +414,7 @@ export const runIdeaPipeline = async ({
         out = null;
       } catch (e) {
         lastErr = e;
-        out = null;
-        // Solo reintentar si el error es de formato/corte; los errores de red o auth se propagan ya.
+        out     = null;
         if (!e.retryable) break;
       }
     }
@@ -393,12 +425,12 @@ export const runIdeaPipeline = async ({
 
     return {
       plan: {
-        tipo: 'plan',
-        titulo: out.titulo,
-        idea_principal: out.idea_principal,
-        ejecucion: out.ejecucion.slice(0, 8),
-        analisis: out.analisis ?? null,
-        veredicto: { nivel, razon: out.veredicto?.razon ?? out.veredicto?.['razón'] },
+        tipo:            'plan',
+        titulo:          out.titulo,
+        idea_principal:  out.idea_principal,
+        ejecucion:       out.ejecucion.slice(0, 8),
+        analisis:        out.analisis ?? null,
+        veredicto:       { nivel, razon: out.veredicto?.razon ?? out.veredicto?.['razón'] },
         pregunta_seguimiento: out.pregunta_seguimiento,
       },
       tokens: total(),
