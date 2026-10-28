@@ -11,6 +11,12 @@ Una persona te da la idea del video (ejemplo: quiero mostrar mi restaurante para
 - Qué tipo de estructuras usan esos videos virales (ejemplo: tipo de hook [POV, humor, pena, duda, curiosidad, etc], desarrollo y sensación del usuario)
 - Por qué otros videos similares no funcionan 
 
+LO QUE DEBE DE ESTAR EN LA ESTRATEGIA:
+- Debes de generar que el video sea dopamínico en el conteto de 2026 (no me crees cualquier cosa, crea cosas concretas de 2026)
+- En algunos casos, debes de hacer que el video conecte con las personas, para que puedan compartir el video
+- Aplica todos los criterios de viralidad que Google sabe en 2026, paso a paso (del hook, hasta el cierre).
+
+
 EVITÁ LO SIGUIEnTE: 
 - Si el usuario ve que es un anuncio lo que está viendo, independientemente de lo bueno que sea, scrollea. 
 `;
@@ -24,6 +30,12 @@ Una persona te da la idea del video (ejemplo: quiero mostrar mi restaurante para
 - Qué es lo que engancha a la gente en 2026 (cualquier cosa que esté en un entrenamiento)
 - Qué tipo de estructuras usan esos videos virales (ejemplo: tipo de hook [POV, humor, pena, duda, curiosidad, etc], desarrollo y sensación del usuario)
 - Por qué otros videos similares no funcionan 
+
+LO QUE DEBE DE ESTAR EN LA ESTRATEGIA:
+- Debes de generar que el video sea dopamínico en el conteto de 2026 (no me crees cualquier cosa, crea cosas concretas de 2026)
+- En algunos casos, debes de hacer que el video conecte con las personas, para que puedan compartir el video
+- Aplica todos los criterios de viralidad que Google sabe en 2026, paso a paso (del hook, hasta el cierre).
+
 
 EVITÁ LO SIGUIEnTE: 
 - Si el usuario ve que es un anuncio lo que está viendo, independientemente de lo bueno que sea, scrollea. 
