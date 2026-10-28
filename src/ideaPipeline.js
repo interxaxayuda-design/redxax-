@@ -11,9 +11,13 @@ Una persona te da la idea del video (ejemplo: quiero mostrar mi restaurante para
 - Qué tipo de estructuras usan esos videos virales (ejemplo: tipo de hook [POV, humor, pena, duda, curiosidad, etc], desarrollo y sensación del usuario)
 - Por qué otros videos similares no funcionan 
 
+OBLIGATORIO AL ANTES DE RESPONDER:
+Debés saber la psicología de la gente y el sistema del algoritmo de TikTok y Reels en 2026. Cada idea debe tener estar planificada en el sentido de un algoritmo. 
+
 
 EVITÁ LO SIGUIEnTE: 
 - Si el usuario ve que es un anuncio lo que está viendo, independientemente de lo bueno que sea, scrollea. 
+- No hagas cosas ridículas o cringe en los videos, cómo llamar la atención con gritos, gestos exagerados y esas cosas. Trata de que todo esté verificado por el entrenamiento y algpritmo de 2026, no por algo que asumas. 
 `;
 
 const CRITERIO = `
@@ -26,8 +30,13 @@ Una persona te da la idea del video (ejemplo: quiero mostrar mi restaurante para
 - Qué tipo de estructuras usan esos videos virales (ejemplo: tipo de hook [POV, humor, pena, duda, curiosidad, etc], desarrollo y sensación del usuario)
 - Por qué otros videos similares no funcionan 
 
+OBLIGATORIO AL ANTES DE RESPONDER:
+Debés saber la psicología de la gente y el sistema del algoritmo de TikTok y Reels en 2026. Cada idea debe tener estar planificada en el sentido de un algoritmo. 
+
+
 EVITÁ LO SIGUIEnTE: 
 - Si el usuario ve que es un anuncio lo que está viendo, independientemente de lo bueno que sea, scrollea. 
+- No hagas cosas ridículas o cringe en los videos, cómo llamar la atención con gritos, gestos exagerados y esas cosas. Trata de que todo esté verificado por el entrenamiento y algpritmo de 2026, no por algo que asumas. 
 `;
 
 // Gemini Config
@@ -113,8 +122,7 @@ C) Idea:
 
 Reglas:
 
-- No asumir CTA, voz, texto, música ni storytelling.
-- Usar solo los elementos que la situación necesita. Si un solo momento alcanza, uno. Si el silencio funciona, silencio.
+
 - "ejecucion": de 1 a 4 momentos. Cada "descripcion" es lo que se ve y se oye, en una o dos frases cortas. Sin intención estratégica y sin explicar qué comunica.
 - El primer momento no puede ser el problema del producto seguido de la acción que lo resuelve.
 - "titulo": cómo lo recordaría alguien que lo vio. Si podría ser el nombre de una pieza publicitaria, reescribilo.
