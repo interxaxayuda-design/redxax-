@@ -1,4 +1,9 @@
-// ideaPipeline.js — v8.2
+// ideaPipeline.js — v8.3
+// Cambios vs v8.2:
+//  - fetchTrendSignals: si no hubo búsqueda real (sin searchQueries), se descartan las señales y NO se cachean
+//    (evita señales "de memoria" que contradicen SIN DATOS INVENTADOS). Requiere proxy >= v5.4.
+//  - includeThoughts solo se pide cuando hay onThinking (requiere proxy >= v5.4)
+//  - El trace guarda el modelo que realmente respondió (útil con CHAT_MODEL y su fallback)
 // Cambios vs v8.1:
 //  - PERSONA + CRITERIO (duplicados) -> un solo SYSTEM_PROMPT, sin formato markdown que choque con el JSON
 //  - El system prompt viaja como systemInstruction (el proxy debe reenviarlo; ver SYSTEM_SEPARATE)
@@ -252,6 +257,7 @@ const callGeminiStream = async (supabase, body, { onThinking } = {}) => {
   let tokens = 0;
   let usedSearch = false;
   let searchQueries = [];
+  let modelUsed = null;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -280,6 +286,7 @@ const callGeminiStream = async (supabase, body, { onThinking } = {}) => {
         tokens = chunk.tokens ?? 0;
         usedSearch = chunk.usedSearch === true;
         searchQueries = Array.isArray(chunk.searchQueries) ? chunk.searchQueries : [];
+        modelUsed = typeof chunk.model === "string" ? chunk.model : null;
       } else if (chunk.type === "error") {
         throw new Error(chunk.message ?? "Error en el stream de Gemini");
       }
@@ -295,7 +302,7 @@ const callGeminiStream = async (supabase, body, { onThinking } = {}) => {
     throw err;
   }
 
-  return { json, tokens, usedSearch, searchQueries };
+  return { json, tokens, usedSearch, searchQueries, modelUsed };
 };
 
 // ── Señales de tendencia (búsqueda aislada + caché) ──────────
@@ -332,6 +339,19 @@ Respondé SOLO con JSON válido, sin bloques de código: {"senales":["...","..."
     text,
   });
 
+  // Sin búsqueda real (p. ej. el proxy cayó al fallback sin search), las señales saldrían
+  // de la memoria del modelo: se descartan y NO se cachean.
+  if (!r.searchQueries.length) {
+    console.warn("[trends] no hubo búsqueda real; descarto señales");
+    return {
+      text: null,
+      tokens: r.tokens,
+      queries: [],
+      modelUsed: r.modelUsed,
+      cached: false,
+    };
+  }
+
   const senales = Array.isArray(r.json?.senales)
     ? r.json.senales.map((s) => String(s).trim()).filter(Boolean).slice(0, 5)
     : [];
@@ -340,6 +360,7 @@ Respondé SOLO con JSON válido, sin bloques de código: {"senales":["...","..."
     text: senales.length ? senales.map((s) => `- ${s}`).join("\n") : null,
     tokens: r.tokens,
     queries: r.searchQueries,
+    modelUsed: r.modelUsed,
     at: Date.now(),
   };
   if (entry.text) trendCache.set(key, entry);
@@ -363,7 +384,7 @@ function norm(s) {
 // ── Pipeline ─────────────────────────────────────────────────
 export const runIdeaPipeline = async ({
   supabase,
-  model,
+  model, // dejalo undefined para que el proxy use CHAT_MODEL; si lo mandás, le gana al secret
   idea,
   history = [],
   platform = "tiktok",
@@ -386,7 +407,13 @@ export const runIdeaPipeline = async ({
     try {
       const t = await fetchTrendSignals({ supabase, model, platform, businessContext });
       signals = t.text;
-      trace.push({ stage: "trends", tokens: t.tokens, cached: t.cached, queries: t.queries });
+      trace.push({
+        stage: "trends",
+        tokens: t.tokens,
+        cached: t.cached,
+        queries: t.queries,
+        model: t.modelUsed ?? null,
+      });
       console.info("[trends] queries:", t.queries, t.cached ? "(caché)" : "");
     } catch (e) {
       trace.push({ stage: "trends_fail", tokens: 0 });
@@ -412,13 +439,14 @@ export const runIdeaPipeline = async ({
           ...CFG,
           ...cfg,
           useSearch: false, // la generación NUNCA busca
+          includeThoughts: typeof onThinking === "function", // solo si la UI muestra el razonamiento
           model,
           ...(SYSTEM_SEPARATE ? { systemInstruction: SYSTEM_PROMPT } : {}),
           text: (SYSTEM_SEPARATE ? "" : `${SYSTEM_PROMPT}\n\n`) + prompt + note,
         },
         { onThinking }
       );
-      trace.push({ stage, tokens: r.tokens, usedSearch: r.usedSearch });
+      trace.push({ stage, tokens: r.tokens, usedSearch: r.usedSearch, model: r.modelUsed });
       return r.json;
     } catch (e) {
       trace.push({ stage: `${stage}_fail`, tokens: e.tokens ?? 0 });
