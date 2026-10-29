@@ -1,90 +1,45 @@
-// ideaPipeline.js — Pipeline de refinamiento de ideas short-form (v8.1: streaming + googleSearch)
+// ideaPipeline.js — v8.2
+// Cambios vs v8.1:
+//  - PERSONA + CRITERIO (duplicados) -> un solo SYSTEM_PROMPT, sin formato markdown que choque con el JSON
+//  - El system prompt viaja como systemInstruction (el proxy debe reenviarlo; ver SYSTEM_SEPARATE)
+//  - googleSearch sale de la llamada de generación: fetchTrendSignals (query controlada + caché + log de queries)
+//  - Fix: errores del stream ({type:"error"}) ya no se tragan en el catch del parseo
+//  - Reintento con thinkingLevel "low" (antes seguía en "high" y se volvía a cortar)
 
-// ── Persona ──────────────────────────────────────────────────
-const PERSONA = `
-Sos VIRAX, un estratega de contenido corto extremadamente agresivo y obsesionado con la retención. Tu único trabajo es crear ideas de video que detengan el scroll en menos de 1.5 segundos y mantengan la atención hasta el final. Trabajas con datos reales de rendimiento de TikTok, Reels y Shorts en 2026.
+// ── System prompt (único) ────────────────────────────────────
+const SYSTEM_PROMPT = `
+Sos VIRAX, guionista de video corto ORGÁNICO (TikTok, Reels, Shorts) para negocios reales. Estás obsesionado con la retención: tus ideas frenan el scroll en 1.5 segundos y se ven hasta el final.
 
-REGLA DE ORO:
-Si la idea se podría publicar en un canal corporativo o en un blog de “mejores prácticas”, está mal. Tiene que generar una reacción inmediata (sorpresa, confusión, tensión o deseo de entender).
+QUÉ PRODUCÍS (y qué no)
+- Contenido de creador, no publicidad. Nunca propongas anuncios, spots, campañas, branding, embudos ni estética de comercial.
+- El negocio es el contexto, no el protagonista. El protagonista es una persona, una situación o una tensión reconocible. El producto o servicio aparece tarde, de costado o como consecuencia.
+- Situación primero, beneficio después. Si el video sigue teniendo sentido sin nombrar el producto, la idea es buena.
+- Alcanzable: se filma con un celular y con lo que el negocio ya tiene.
 
-PROCESO OBLIGATORIO (pensá esto antes de responder):
+CÓMO PENSAR (en silencio, antes de responder)
 1. Buscá el ángulo más contraintuitivo o incómodo que todavía sea creíble.
-2. Preguntate: “¿Esto detendría el dedo de alguien que está scrolleando a las 1 a.m. medio dormido?”. Si la respuesta no es un sí rotundo, descartala.
-3. Priorizá contraste visual fuerte + frase que genere pregunta mental inmediata.
-4. Evitá cualquier estructura que se sienta “educativa” o “de valor”. El valor tiene que llegar disfrazado de drama, rareza o revelación.
+2. Probá cada candidata con esta pregunta: ¿frena el dedo de alguien que scrollea a la 1 a.m., medio dormido? Si no es un sí rotundo, descartala.
+3. Priorizá un contraste visual fuerte y una frase que abra una pregunta mental inmediata.
+4. El valor llega disfrazado de drama, rareza o revelación; nunca con tono educativo.
 
-PROHIBICIONES ABSOLUTAS:
-- Nada de “curiosidades de industria” suaves.
-- Nada de procesos bonitos o estéticos sin tensión.
-- Nada de ideas que se resuelvan con “mirá qué calidad tenemos”.
-- Nada que suene a anuncio o a contenido corporativo disfrazado.
+SIN DATOS INVENTADOS
+No cites métricas, porcentajes ni "datos de rendimiento". Las señales culturales vienen en <contexto>; si no hay, no las simules.
 
-FORMATO DE RESPUESTA OBLIGATORIO:
+EJEMPLO DE NIVEL (ilustra forma y calidad; no copies el tema)
+Negocio: panadería de barrio.
+Mala: "Mostrá el proceso artesanal de tus medialunas y destacá su calidad." (es un anuncio)
+Buena: título "El cliente que pide lo mismo desde 2009"; idea_principal "Un hombre entra sin decir nada y el panadero ya tiene la bolsa lista; recién al final se ve qué hay adentro."
+`.trim();
 
-**ÁNGULO BRUTAL**
-Una sola frase que resuma el gancho más fuerte posible.
+// true  -> se envía como body.systemInstruction (requiere que el proxy lo reenvíe a Gemini)
+// false -> se antepone al texto del prompt (compatible con el proxy actual)
+const SYSTEM_SEPARATE = true;
 
-**HOOK (0-1.5s)**
-Qué se ve + qué texto/audio aparece exactamente. Tiene que generar una pregunta mental inmediata.
-
-**ESTRUCTURA (escena por escena)**
-- 0-3s: ...
-- 3-8s: ...
-- 8-15s: ...
-(Sé muy concreto con planos, sonidos y texto)
-
-**POR QUÉ FUNCIONA**
-Explicación corta y directa de por qué este enfoque genera retención (sin palabras bonitas).
-
-**VERSIÓN MÁS AGRESIVA (opcional)**
-Una variante todavía más extrema de la misma idea.
-`;
-
-const CRITERIO = `
-Sos VIRAX, un estratega de contenido corto extremadamente agresivo y obsesionado con la retención. Tu único trabajo es crear ideas de video que detengan el scroll en menos de 1.5 segundos y mantengan la atención hasta el final. Trabajas con datos reales de rendimiento de TikTok, Reels y Shorts en 2026.
-
-REGLA DE ORO:
-Si la idea se podría publicar en un canal corporativo o en un blog de “mejores prácticas”, está mal. Tiene que generar una reacción inmediata (sorpresa, confusión, tensión o deseo de entender).
-
-PROCESO OBLIGATORIO (pensá esto antes de responder):
-1. Buscá el ángulo más contraintuitivo o incómodo que todavía sea creíble.
-2. Preguntate: “¿Esto detendría el dedo de alguien que está scrolleando a las 1 a.m. medio dormido?”. Si la respuesta no es un sí rotundo, descartala.
-3. Priorizá contraste visual fuerte + frase que genere pregunta mental inmediata.
-4. Evitá cualquier estructura que se sienta “educativa” o “de valor”. El valor tiene que llegar disfrazado de drama, rareza o revelación.
-
-PROHIBICIONES ABSOLUTAS:
-- Nada de “curiosidades de industria” suaves.
-- Nada de procesos bonitos o estéticos sin tensión.
-- Nada de ideas que se resuelvan con “mirá qué calidad tenemos”.
-- Nada que suene a anuncio o a contenido corporativo disfrazado.
-
-FORMATO DE RESPUESTA OBLIGATORIO:
-
-**ÁNGULO BRUTAL**
-Una sola frase que resuma el gancho más fuerte posible.
-
-**HOOK (0-1.5s)**
-Qué se ve + qué texto/audio aparece exactamente. Tiene que generar una pregunta mental inmediata.
-
-**ESTRUCTURA (escena por escena)**
-- 0-3s: ...
-- 3-8s: ...
-- 8-15s: ...
-(Sé muy concreto con planos, sonidos y texto)
-
-**POR QUÉ FUNCIONA**
-Explicación corta y directa de por qué este enfoque genera retención (sin palabras bonitas).
-
-**VERSIÓN MÁS AGRESIVA (opcional)**
-Una variante todavía más extrema de la misma idea.
-`;
-
-// Gemini Config
+// Gemini Config (la búsqueda ya NO va acá)
 const CFG = {
   thinkingLevel: "high",
   temperature: 1.0,
   maxOutputTokens: 24576,
-  useSearch: true, // ← habilita Google Search por defecto
 };
 
 // Máximo de preguntas que VIRAX puede hacer en toda la conversación.
@@ -227,10 +182,6 @@ const buildPrompt = ({
   canAsk = true,
 }) => {
   return `
-${PERSONA}
-
-${CRITERIO}
-
 <contexto>
 Plataforma: ${platform}
 
@@ -300,6 +251,7 @@ const callGeminiStream = async (supabase, body, { onThinking } = {}) => {
   let jsonText = "";
   let tokens = 0;
   let usedSearch = false;
+  let searchQueries = [];
 
   while (true) {
     const { done, value } = await reader.read();
@@ -311,21 +263,25 @@ const callGeminiStream = async (supabase, body, { onThinking } = {}) => {
 
     for (const line of lines) {
       if (!line.startsWith("data: ")) continue;
-      try {
-        const chunk = JSON.parse(line.slice(6));
 
-        if (chunk.type === "thinking" && chunk.text) {
-          onThinking?.(chunk.text);
-        } else if (chunk.type === "text" && chunk.text) {
-          jsonText += chunk.text;
-        } else if (chunk.type === "done") {
-          tokens = chunk.tokens ?? 0;
-          usedSearch = chunk.usedSearch === true;
-        } else if (chunk.type === "error") {
-          throw new Error(chunk.message ?? "Error en el stream de Gemini");
-        }
-      } catch (parseErr) {
-        if (parseErr.message?.includes("stream")) throw parseErr;
+      // Parseo aislado: solo un JSON roto se ignora. Los errores del stream SÍ se propagan.
+      let chunk;
+      try {
+        chunk = JSON.parse(line.slice(6));
+      } catch {
+        continue;
+      }
+
+      if (chunk.type === "thinking" && chunk.text) {
+        onThinking?.(chunk.text);
+      } else if (chunk.type === "text" && chunk.text) {
+        jsonText += chunk.text;
+      } else if (chunk.type === "done") {
+        tokens = chunk.tokens ?? 0;
+        usedSearch = chunk.usedSearch === true;
+        searchQueries = Array.isArray(chunk.searchQueries) ? chunk.searchQueries : [];
+      } else if (chunk.type === "error") {
+        throw new Error(chunk.message ?? "Error en el stream de Gemini");
       }
     }
   }
@@ -339,7 +295,55 @@ const callGeminiStream = async (supabase, body, { onThinking } = {}) => {
     throw err;
   }
 
-  return { json, tokens, usedSearch };
+  return { json, tokens, usedSearch, searchQueries };
+};
+
+// ── Señales de tendencia (búsqueda aislada + caché) ──────────
+// La búsqueda va en su propia llamada, con una consigna controlada, para que el modelo
+// no arme queries de "marketing/ads viral" (que devuelven casos de marcas tipo Temu).
+const TREND_TTL_MS = 6 * 60 * 60 * 1000;
+const trendCache = new Map();
+
+const rubroDe = (businessContext) =>
+  String(businessContext ?? "").replace(/\s+/g, " ").trim().slice(0, 120);
+
+const fetchTrendSignals = async ({ supabase, model, platform, businessContext }) => {
+  const rubro = rubroDe(businessContext);
+  const key = `${platform}|${rubro}`;
+  const hit = trendCache.get(key);
+  if (hit && Date.now() - hit.at < TREND_TTL_MS) return { ...hit, tokens: 0, cached: true };
+
+  const text = `
+Tarea: detectar señales culturales ORGÁNICAS que están funcionando ahora en ${platform}: formatos narrativos, estructuras de video, tipos de sonido, humor y conflictos cotidianos. Sirven de inspiración para un negocio de este rubro: ${rubro || "(rubro no informado)"}.
+
+Reglas de búsqueda:
+- Buscá tendencias de formato y contenido de creadores y comunidades (memes, sonidos, estructuras narrativas), sumando el rubro cuando ayude.
+- Ignorá notas de marketing, publicidad, casos de estudio de marcas y consejos para "hacer crecer tu negocio".
+- Cada señal describe un patrón de video en una frase, sin nombrar marcas ni productos concretos.
+
+Respondé SOLO con JSON válido, sin bloques de código: {"senales":["...","..."]} con 3 a 5 señales.`.trim();
+
+  const r = await callGeminiStream(supabase, {
+    ...CFG,
+    thinkingLevel: "low",
+    maxOutputTokens: 2048,
+    useSearch: true,
+    model,
+    text,
+  });
+
+  const senales = Array.isArray(r.json?.senales)
+    ? r.json.senales.map((s) => String(s).trim()).filter(Boolean).slice(0, 5)
+    : [];
+
+  const entry = {
+    text: senales.length ? senales.map((s) => `- ${s}`).join("\n") : null,
+    tokens: r.tokens,
+    queries: r.searchQueries,
+    at: Date.now(),
+  };
+  if (entry.text) trendCache.set(key, entry);
+  return { ...entry, cached: false };
 };
 
 // ── Validación ───────────────────────────────────────────────
@@ -368,7 +372,7 @@ export const runIdeaPipeline = async ({
   trendContext = null,
   questionsAsked = null,
   onThinking = null,
-  useSearch = true, // ← se puede apagar por llamada si hace falta
+  useSearch = true, // true: si no pasás trendContext, se buscan señales (con caché de 6 h)
 }) => {
   const trace = [];
   const total = () => trace.reduce((s, t) => s + t.tokens, 0);
@@ -376,25 +380,41 @@ export const runIdeaPipeline = async ({
   const asked = questionsAsked ?? countQuestions(history);
   const canAsk = puedePreguntar({ asked, lastPlan, idea, businessContext });
 
-  const ask = async (stage, extraNote = "") => {
+  // Etapa 0: señales de tendencia (no fatal si falla)
+  let signals = trendContext;
+  if (!signals && useSearch) {
     try {
+      const t = await fetchTrendSignals({ supabase, model, platform, businessContext });
+      signals = t.text;
+      trace.push({ stage: "trends", tokens: t.tokens, cached: t.cached, queries: t.queries });
+      console.info("[trends] queries:", t.queries, t.cached ? "(caché)" : "");
+    } catch (e) {
+      trace.push({ stage: "trends_fail", tokens: 0 });
+      console.warn("[trends] falló, sigo sin señales:", e.message);
+    }
+  }
+
+  const ask = async (stage, { note = "", cfg = {} } = {}) => {
+    try {
+      const prompt = buildPrompt({
+        idea,
+        history,
+        platform,
+        lastPlan,
+        businessContext,
+        trendContext: signals,
+        questionsAsked: asked,
+        canAsk,
+      });
       const r = await callGeminiStream(
         supabase,
         {
           ...CFG,
-          useSearch, // respeta el flag de la llamada (default true)
+          ...cfg,
+          useSearch: false, // la generación NUNCA busca
           model,
-          text:
-            buildPrompt({
-              idea,
-              history,
-              platform,
-              lastPlan,
-              businessContext,
-              trendContext,
-              questionsAsked: asked,
-              canAsk,
-            }) + extraNote,
+          ...(SYSTEM_SEPARATE ? { systemInstruction: SYSTEM_PROMPT } : {}),
+          text: (SYSTEM_SEPARATE ? "" : `${SYSTEM_PROMPT}\n\n`) + prompt + note,
         },
         { onThinking }
       );
@@ -410,7 +430,7 @@ export const runIdeaPipeline = async ({
   const NOTA_REINTENTO =
     "\n\nIMPORTANTE: tu respuesta anterior se cortó o fue inválida. " +
     'Respondé con UN solo JSON completo y MÁS CONCISO: máximo 4 momentos en "ejecucion", ' +
-    "descripciones de una sola frase, y pensá menos antes de responder.";
+    "descripciones de una sola frase.";
 
   try {
     let out = null;
@@ -418,16 +438,15 @@ export const runIdeaPipeline = async ({
 
     for (let intento = 0; intento < MAX_INTENTOS; intento++) {
       try {
-        out = await ask(
-          intento === 0 ? "coach" : "coach_retry",
-          intento === 0 ? "" : NOTA_REINTENTO
-        );
+        out =
+          intento === 0
+            ? await ask("coach")
+            : await ask("coach_retry", { note: NOTA_REINTENTO, cfg: { thinkingLevel: "low" } });
 
         if (!canAsk && (out.tipo === "pregunta" || out.tipo === "ajuste_sin_plan")) {
-          out = await ask(
-            "coach_force_plan",
-            '\n\nIMPORTANTE: no podés hacer más preguntas. Respondé ahora con un objeto de tipo "plan".'
-          );
+          out = await ask("coach_force_plan", {
+            note: '\n\nIMPORTANTE: no podés hacer más preguntas. Respondé ahora con un objeto de tipo "plan".',
+          });
         }
 
         if (out.tipo === "pregunta" && canAsk) {
