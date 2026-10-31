@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowUp, Building2, Check, ChevronDown, Copy, Gem, Mic, RotateCcw, ShoppingBag, Square, UtensilsCrossed, X } from 'lucide-react';
+import { ArrowLeft, ArrowUp, Check, Copy, Gem, Mic, RotateCcw, Square } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { runIdeaPipeline } from './ideaPipeline.js';
@@ -11,15 +11,13 @@ const PLATFORMS = [
 ];
 
 const SUGGESTIONS = [
-  { icon: ShoppingBag, label: 'Vender un producto', hint: 'Skincare, ropa, accesorios…', text: 'Quiero vender un producto de skincare con un video corto' },
-  { icon: Building2, label: 'Mostrar una propiedad', hint: 'Recorridos y ventas inmobiliarias', text: 'Tengo una inmobiliaria y no sé cómo mostrar una propiedad' },
-  { icon: UtensilsCrossed, label: 'Promocionar un restaurante', hint: 'Sin que parezca un anuncio', text: 'Idea para promocionar mi restaurante sin parecer anuncio' },
+  { label: 'Vender un producto', hint: 'Skincare, ropa, accesorios…', text: 'Quiero vender un producto de skincare con un video corto' },
+  { label: 'Mostrar una propiedad', hint: 'Recorridos y ventas inmobiliarias', text: 'Tengo una inmobiliaria y no sé cómo mostrar una propiedad' },
+  { label: 'Promocionar un restaurante', hint: 'Sin que parezca un anuncio', text: 'Idea para promocionar mi restaurante sin parecer anuncio' },
 ];
 
-// Cantidad máxima de caracteres del pensamiento visible en la burbuja.
-// El texto más antiguo se descarta para evitar que crezca infinito.
+// Máximo de caracteres del pensamiento visible en la burbuja (lo más viejo se descarta).
 const MAX_THINKING_VISIBLE = 600;
-
 const MAX_HISTORY_TURNS = 6;
 const SESSION_TOKEN_LIMIT = 80000;
 
@@ -48,10 +46,7 @@ const unwrapPlan = (raw, depth = 0) => {
   if (Array.isArray(p)) p = p.find((x) => x && typeof x === 'object') ?? p.find((x) => typeof x === 'string');
   if (typeof p === 'string') return p.trim() ? { tipo: 'pregunta', mensaje: p.trim() } : null;
   if (!p || typeof p !== 'object') return null;
-  // FIX: el formato nuevo (idea_principal/ejecucion) también cuenta como contenido conocido
-  const known =
-    p.hook || p.gancho || p.escenas || p.scenes || p.guion || p.mensaje || p.pregunta ||
-    p.idea_principal || p.ejecucion;
+  const known = p.idea_principal || p.ejecucion || p.mensaje || p.pregunta;
   if (!known && depth < 3) {
     for (const k of WRAPPERS) {
       if (p[k] != null) {
@@ -63,8 +58,6 @@ const unwrapPlan = (raw, depth = 0) => {
   return p;
 };
 
-const asText = (v, keys) => (typeof v === 'string' ? v : v && typeof v === 'object' ? pick(v, keys) : undefined);
-
 const normalizePlan = (raw) => {
   const base = unwrapPlan(raw);
   if (!base) return null;
@@ -72,29 +65,6 @@ const normalizePlan = (raw) => {
 
   plan.tipo_hook = plan.tipo_hook ?? plan.tipoHook;
 
-  // Soporte legado (hook/escenas) + nuevo formato (idea_principal/ejecucion)
-  plan.hook = plan.hook ?? plan.gancho;
-  if (typeof plan.hook === 'string') plan.hook = { recomendado: plan.hook };
-  if (plan.hook?.alternativas) {
-    plan.hook = {
-      ...plan.hook,
-      alternativas: plan.hook.alternativas.map((a) => (typeof a === 'string' ? { frase_hablada: a } : a)),
-    };
-  }
-
-  const scenes = plan.escenas ?? plan.scenes ?? plan.guion;
-  if (Array.isArray(scenes)) {
-    plan.escenas = scenes.filter(Boolean).map((e) =>
-      typeof e === 'string'
-        ? { accion: e }
-        : {
-            ...e,
-            accion: pick(e, ['accion', 'acción', 'descripcion', 'descripción', 'escena', 'visual']),
-            tiempo: pick(e, ['tiempo', 'duracion', 'duración', 'segundos']),
-          });
-  }
-
-  // Nuevo formato: se normalizan los momentos de ejecución
   const ej = plan.ejecucion ?? plan.momentos;
   if (Array.isArray(ej)) {
     plan.ejecucion = ej
@@ -110,14 +80,6 @@ const normalizePlan = (raw) => {
       .filter((e) => e.descripcion);
   }
 
-  plan.cta = asText(plan.cta ?? pick(plan, ['cierre', 'llamado_a_la_accion', 'llamado_a_la_acción', 'call_to_action']),
-    ['texto', 'frase', 'mensaje', 'accion', 'acción']);
-
-  const errs = plan.errores_a_evitar ?? plan.errores;
-  if (Array.isArray(errs)) {
-    plan.errores_a_evitar = errs.map((x) => asText(x, ['texto', 'error', 'descripcion', 'descripción'])).filter(Boolean);
-  }
-
   if (typeof plan.veredicto === 'string') plan.veredicto = { razon: plan.veredicto };
   if (plan.veredicto && typeof plan.veredicto === 'object') {
     plan.veredicto = {
@@ -126,69 +88,44 @@ const normalizePlan = (raw) => {
     };
   }
 
-  const msg = pick(plan, ['mensaje', 'pregunta', 'pregunta_seguimiento']);
-
-  // Detecta si es pregunta o plan
-  const hasPlanBody = Boolean(plan.hook) || plan.escenas?.length > 0 || plan.idea_principal || plan.ejecucion?.length > 0;
+  const hasPlanBody = Boolean(plan.idea_principal) || plan.ejecucion?.length > 0;
   if (plan.tipo === 'pregunta' || !hasPlanBody) {
-    plan.tipo    = 'pregunta';
-    plan.mensaje = plan.mensaje ?? msg;
+    plan.tipo = 'pregunta';
+    plan.mensaje = plan.mensaje ?? pick(plan, ['pregunta', 'pregunta_seguimiento']);
   } else if (!plan.tipo) {
     plan.tipo = 'plan';
   }
   return plan;
 };
 
-const isRenderable = (p) => Boolean(p && (p.mensaje || p.hook || p.escenas?.length || p.idea_principal || p.ejecucion?.length));
+const isRenderable = (p) => Boolean(p && (p.mensaje || p.idea_principal || p.ejecucion?.length));
 
 const planToText = (p) => {
   if (!p) return '';
   if (p.tipo === 'pregunta') return p.mensaje ?? '';
   const L = [];
   if (p.titulo) L.push(p.titulo, '');
+  if (p.tipo_hook) L.push(`Hook elegido: ${p.tipo_hook}`, '');
   if (p.veredicto) {
     L.push(`Potencial ${p.veredicto.nivel ?? ''}${p.veredicto.razon ? `: ${p.veredicto.razon}` : ''}`.trim(), '');
   }
-  if (p.tipo_hook) L.push(`HOOK ELEGIDO: ${p.tipo_hook}`, '');
   if (p.idea_principal) L.push('IDEA', p.idea_principal, '');
-  if (p.hook) {
-    L.push('HOOK');
-    const frase = p.hook.recomendado || p.hook.frase_hablada;
-    if (frase) L.push(`Dicho: ${frase}`);
-    if (p.hook.texto_en_pantalla) L.push(`Pantalla: ${p.hook.texto_en_pantalla}`);
-    if (p.hook.visual) L.push(`Visual: ${p.hook.visual}`);
-    if (p.hook.alternativas?.length) {
-      L.push('Alternativas:');
-      p.hook.alternativas.forEach((a) =>
-        L.push(`- (${a.tipo}) ${a.frase_hablada || a.texto_en_pantalla || ''}${a.frase_hablada && a.texto_en_pantalla ? ` | Pantalla: ${a.texto_en_pantalla}` : ''}`));
-    }
-    L.push('');
-  }
   if (p.ejecucion?.length) {
     L.push('EJECUCIÓN');
     p.ejecucion.forEach((e, i) => L.push(`${i + 1}. [${e.momento ?? ''}] ${e.descripcion ?? ''}`));
     L.push('');
   }
-  if (p.escenas?.length) {
-    L.push('ESCENAS');
-    p.escenas.forEach((e, i) =>
-      L.push(`${i + 1}. [${e.tiempo}] ${e.accion}${e.dialogo ? ` — "${e.dialogo}"` : ''}`));
-    L.push('');
-  }
-  if (p.cta) L.push(`CTA: ${p.cta}`, '');
   if (p.analisis) {
     L.push('ANÁLISIS');
-    if (p.analisis.por_que_detiene_scroll) L.push(`Por qué detiene: ${p.analisis.por_que_detiene_scroll}`);
-    if (p.analisis.momento_mas_fuerte)     L.push(`Momento más fuerte: ${p.analisis.momento_mas_fuerte}`);
-    if (p.analisis.momento_mas_debil)      L.push(`Momento más débil: ${p.analisis.momento_mas_debil}`);
-    L.push('');
+    if (p.analisis.por_que_detiene_scroll) L.push(`Por qué detiene el scroll: ${p.analisis.por_que_detiene_scroll}`);
+    if (p.analisis.por_que_alguien_haria_scroll) L.push(`Por qué alguien haría scroll: ${p.analisis.por_que_alguien_haria_scroll}`);
+    if (p.analisis.momento_mas_fuerte) L.push(`Momento más fuerte: ${p.analisis.momento_mas_fuerte}`);
+    if (p.analisis.momento_mas_debil) L.push(`Momento más débil: ${p.analisis.momento_mas_debil}`);
   }
-  if (p.errores_a_evitar?.length) L.push('EVITA', ...p.errores_a_evitar.map((x) => `- ${x}`), '');
   return L.join('\n').trim();
 };
 
-// Resumen corto de cada mensaje para el historial que viaja al modelo.
-// Incluye el tipo de hook para que el modelo pueda variarlo si el usuario pide otro enfoque.
+// Resumen corto de cada mensaje para el historial que viaja al modelo (incluye el tipo de hook).
 const historyText = (m) => {
   if (m.role !== 'bot') return m.text;
   if (m.plan?.tipo === 'plan') {
@@ -276,7 +213,7 @@ function useDictation(onText) {
 
 // ── Piezas de interfaz ───────────────────────────────────────
 const Avatar = ({ logo }) => (
-  <div className="cs-in mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 text-[12px] font-semibold text-neutral-300">
+  <div className="cs-in mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 text-[12px] font-semibold text-neutral-400">
     {logo ? <img src={logo} alt="VIRAX" className="h-4 w-4 object-contain" /> : 'V'}
   </div>
 );
@@ -293,7 +230,7 @@ function CopyBtn({ text, label }) {
   return (
     <button
       onClick={copy}
-      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3.5 py-2 text-[12px] font-medium text-neutral-300 transition-colors hover:bg-white/[0.06] hover:text-white"
+      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3.5 py-1.5 text-[12px] font-medium text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-white"
     >
       {ok ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
       {ok ? 'Copiado' : label}
@@ -301,30 +238,21 @@ function CopyBtn({ text, label }) {
   );
 }
 
-// ── Thinking con streaming real ──────────────────────────────
-// Muestra el pensamiento real de Gemini en lugar de frases fijas.
-// Mientras no llega el primer chunk, muestra tres puntitos animados.
-// Se limita a MAX_THINKING_VISIBLE caracteres para no crecer infinito.
+// Pensamiento real de Gemini en streaming; puntitos + "Pensando…" mientras no llega nada.
 function Thinking({ text, logo }) {
-  const visible = text.length > MAX_THINKING_VISIBLE
-    ? '…' + text.slice(-MAX_THINKING_VISIBLE)
-    : text;
-
+  const visible = text.length > MAX_THINKING_VISIBLE ? '…' + text.slice(-MAX_THINKING_VISIBLE) : text;
   return (
     <div className="flex items-start gap-3">
       <Avatar logo={logo} />
-      <div style={step(1)} className="cs-in min-w-0 flex-1 pt-1">
+      <div className="min-w-0 flex-1 pt-1.5">
         {visible ? (
           <p className="whitespace-pre-wrap text-[13px] leading-6 text-neutral-500">
             {visible}
-            <span
-              aria-hidden="true"
-              className="ml-0.5 inline-block h-3.5 w-px animate-pulse bg-neutral-500 align-middle"
-            />
+            <span aria-hidden="true" className="ml-0.5 inline-block h-3.5 w-px animate-pulse bg-neutral-500 align-middle" />
           </p>
         ) : (
-          <div className="flex items-center gap-2.5 pt-1">
-            <span className="flex gap-1" aria-hidden="true">
+          <div className="flex items-center gap-2.5">
+            <span className="flex gap-1.5" aria-hidden="true">
               {[0, 1, 2].map((k) => (
                 <span key={k} className="cs-dot" style={{ animationDelay: `${k * 0.16}s` }} />
               ))}
@@ -343,7 +271,8 @@ const LEVELS = {
   alto:  { n: 3, bar: 'bg-emerald-400', text: 'text-emerald-300' },
 };
 
-const Section = ({ title, meta, i = 0, children }) => (
+// Tarjeta con encabezado (título + meta a la derecha), como en el diseño nuevo.
+const Card = ({ title, meta, i = 0, children }) => (
   <section style={step(i)} className="cs-in overflow-hidden rounded-2xl bg-[#111111] ring-1 ring-white/[0.06]">
     <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-2.5">
       <h4 className="text-[14px] font-semibold text-white">{title}</h4>
@@ -354,18 +283,19 @@ const Section = ({ title, meta, i = 0, children }) => (
 );
 
 function PlanCard({ plan }) {
-  const { hook, escenas, cta, errores_a_evitar, veredicto, idea_principal, ejecucion, analisis, tipo_hook } = plan;
-  const [showAlt, setShowAlt] = useState(false);
-  const alternativas = hook?.alternativas ?? [];
-  const level = LEVELS[String(veredicto?.nivel ?? '').toLowerCase()];
-  const frase = hook?.recomendado || hook?.frase_hablada;
-  const destacado = frase || hook?.texto_en_pantalla;
-  const mecanismo = hook?.mecanismo ?? hook?.por_que_funciona;
-  let k = 2;
+  const { veredicto, idea_principal, ejecucion, analisis, tipo_hook } = plan;
+  const level = LEVELS[String(veredicto?.nivel ?? '').toLowerCase()] ?? LEVELS.medio;
+  const rows = [
+    ['Por qué detiene el scroll', analisis?.por_que_detiene_scroll],
+    ['Por qué alguien haría scroll', analisis?.por_que_alguien_haria_scroll],
+    ['Momento más fuerte', analisis?.momento_mas_fuerte],
+    ['Momento más débil', analisis?.momento_mas_debil],
+  ].filter((r) => r[1]);
+  let k = 1;
   const nx = () => k++;
 
   return (
-    <div className="space-y-3.5 text-[15px] leading-7 text-neutral-200">
+    <div className="flex flex-col gap-3.5 text-[15px] leading-7 text-neutral-200">
       {plan.titulo && (
         <h3 style={step(nx())} className="cs-in text-[20px] font-semibold leading-snug tracking-tight text-white">
           {plan.titulo}
@@ -375,12 +305,12 @@ function PlanCard({ plan }) {
       {veredicto && (
         <div style={step(nx())} className="cs-in rounded-2xl bg-[#111111] p-4 ring-1 ring-white/[0.06]">
           <div className="flex items-center justify-between">
-            <span className={`text-[14px] font-semibold ${level?.text ?? 'text-white'}`}>
+            <span className={`text-[14px] font-semibold ${level.text}`}>
               {veredicto.nivel ? `Potencial ${veredicto.nivel}` : 'Potencial'}
             </span>
             <div className="flex gap-1" aria-hidden="true">
               {[1, 2, 3].map((n) => (
-                <span key={n} className={`h-1.5 w-6 rounded-full ${level && n <= level.n ? level.bar : 'bg-white/10'}`} />
+                <span key={n} className={`h-1.5 w-6 rounded-full ${n <= level.n ? level.bar : 'bg-white/10'}`} />
               ))}
             </div>
           </div>
@@ -388,18 +318,17 @@ function PlanCard({ plan }) {
         </div>
       )}
 
-      {/* Formato nuevo: idea_principal + ejecucion (el tipo de hook lo elige la IA) */}
       {idea_principal && (
-        <Section i={nx()} title="Idea" meta={tipo_hook ? `Hook: ${tipo_hook}` : undefined}>
+        <Card i={nx()} title="Idea" meta={tipo_hook ? `Hook elegido: ${tipo_hook}` : undefined}>
           <p className="p-4 text-[15px] leading-6 text-neutral-200">{idea_principal}</p>
-        </Section>
+        </Card>
       )}
 
       {ejecucion?.length > 0 && (
-        <Section i={nx()} title="Ejecución" meta={`${ejecucion.length} ${ejecucion.length === 1 ? 'momento' : 'momentos'}`}>
+        <Card i={nx()} title="Ejecución" meta={`${ejecucion.length} ${ejecucion.length === 1 ? 'momento' : 'momentos'}`}>
           <ol className="divide-y divide-white/[0.06]">
             {ejecucion.map((e, i) => (
-              <li key={i} style={step(nx())} className="cs-in flex gap-4 px-4 py-3.5">
+              <li key={i} className="flex gap-4 px-4 py-3.5">
                 <div className="w-14 flex-shrink-0 pt-0.5">
                   <span className="block text-[14px] font-semibold tabular-nums text-white">{i + 1}</span>
                   {e.momento && <span className="text-[12px] text-neutral-500">{e.momento}</span>}
@@ -408,144 +337,28 @@ function PlanCard({ plan }) {
               </li>
             ))}
           </ol>
-        </Section>
+        </Card>
       )}
 
-      {analisis && (
-        <Section i={nx()} title="Análisis">
+      {rows.length > 0 && (
+        <Card i={nx()} title="Análisis">
           <dl className="divide-y divide-white/[0.06]">
-            {analisis.por_que_detiene_scroll && (
-              <div className="px-4 py-3">
-                <dt className="mb-1 text-[12px] text-neutral-500">Por qué detiene el scroll</dt>
-                <dd className="text-[14px] leading-6 text-neutral-300">{analisis.por_que_detiene_scroll}</dd>
+            {rows.map(([label, text]) => (
+              <div key={label} className="px-4 py-3">
+                <dt className="text-[12px] text-neutral-500">{label}</dt>
+                <dd className="mt-0.5 text-[14px] leading-6 text-neutral-300">{text}</dd>
               </div>
-            )}
-            {analisis.por_que_alguien_haria_scroll && (
-              <div className="px-4 py-3">
-                <dt className="mb-1 text-[12px] text-neutral-500">Por qué alguien haría scroll</dt>
-                <dd className="text-[14px] leading-6 text-neutral-300">{analisis.por_que_alguien_haria_scroll}</dd>
-              </div>
-            )}
-            {analisis.momento_mas_fuerte && (
-              <div className="px-4 py-3">
-                <dt className="mb-1 text-[12px] text-neutral-500">Momento más fuerte</dt>
-                <dd className="text-[14px] leading-6 text-neutral-300">{analisis.momento_mas_fuerte}</dd>
-              </div>
-            )}
-            {analisis.momento_mas_debil && (
-              <div className="px-4 py-3">
-                <dt className="mb-1 text-[12px] text-neutral-500">Momento más débil</dt>
-                <dd className="text-[14px] leading-6 text-neutral-300">{analisis.momento_mas_debil}</dd>
-              </div>
-            )}
+            ))}
           </dl>
-        </Section>
-      )}
-
-      {/* Formato legado: hook + escenas */}
-      {hook && (
-        <Section i={nx()} title="Gancho" meta={`0–3 s${hook.tipo ? ` · ${hook.tipo}` : ''}`}>
-          <div className="space-y-3 p-4">
-            {destacado && (
-              <p className="border-l-2 border-emerald-400 pl-4 text-[17px] leading-snug text-white">"{destacado}"</p>
-            )}
-            {((frase && hook.texto_en_pantalla) || hook.visual) && (
-              <dl className="grid grid-cols-[92px_1fr] gap-x-3 gap-y-1.5 text-[14px] leading-6">
-                {frase && hook.texto_en_pantalla && (
-                  <>
-                    <dt className="text-neutral-500">En pantalla</dt>
-                    <dd className="text-neutral-300">{hook.texto_en_pantalla}</dd>
-                  </>
-                )}
-                {hook.visual && (
-                  <>
-                    <dt className="text-neutral-500">Visual</dt>
-                    <dd className="text-neutral-300">{hook.visual}</dd>
-                  </>
-                )}
-              </dl>
-            )}
-            {mecanismo && <p className="text-[13px] leading-6 text-neutral-500">{mecanismo}</p>}
-          </div>
-
-          {alternativas.length > 0 && (
-            <div className="border-t border-white/[0.06]">
-              <button
-                onClick={() => setShowAlt((v) => !v)}
-                aria-expanded={showAlt}
-                className="flex w-full items-center justify-between px-4 py-3 text-[14px] text-neutral-300 transition-colors hover:bg-white/[0.03]"
-              >
-                Otros ganchos ({alternativas.length})
-                <ChevronDown className={`h-4 w-4 text-neutral-500 transition-transform ${showAlt ? 'rotate-180' : ''}`} />
-              </button>
-              {showAlt && (
-                <ul className="space-y-3 px-4 pb-4">
-                  {alternativas.map((a, i) => (
-                    <li key={i} className="text-[14px] leading-6 text-neutral-300">
-                      {a.tipo && <span className="mr-2 text-[12px] text-neutral-500">{a.tipo}</span>}
-                      "{a.frase_hablada || a.texto_en_pantalla}"
-                      {a.frase_hablada && a.texto_en_pantalla && (
-                        <span className="block text-[13px] text-neutral-500">En pantalla: {a.texto_en_pantalla}</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          )}
-        </Section>
-      )}
-
-      {escenas?.length > 0 && (
-        <Section i={nx()} title="Guion" meta={`${escenas.length} ${escenas.length === 1 ? 'escena' : 'escenas'}`}>
-          <ol className="divide-y divide-white/[0.06]">
-            {escenas.map((e, i) => (
-              <li key={i} style={step(nx())} className="cs-in flex gap-4 px-4 py-3.5">
-                <div className="w-14 flex-shrink-0 pt-0.5">
-                  <span className="block text-[14px] font-semibold tabular-nums text-white">{i + 1}</span>
-                  {e.tiempo && <span className="text-[12px] text-neutral-500">{e.tiempo}</span>}
-                </div>
-                <div className="min-w-0 flex-1 space-y-1.5">
-                  <p className="text-[15px] leading-6 text-neutral-200">{e.accion}</p>
-                  {e.dialogo && (
-                    <p className="border-l-2 border-white/15 pl-3 text-[14px] leading-6 text-neutral-400">"{e.dialogo}"</p>
-                  )}
-                  {e.texto_pantalla && (
-                    <p className="text-[13px] text-neutral-500">En pantalla: {e.texto_pantalla}</p>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ol>
-        </Section>
-      )}
-
-      {cta && (
-        <Section i={nx()} title="Cierre">
-          <p className="p-4 text-[15px] leading-6 text-neutral-200">{cta}</p>
-        </Section>
-      )}
-
-      {errores_a_evitar?.length > 0 && (
-        <Section i={nx()} title="Evita esto">
-          <ul className="space-y-2 p-4">
-            {errores_a_evitar.map((x, i) => (
-              <li key={i} className="flex gap-2.5 text-[14px] leading-6 text-neutral-300">
-                <X className="mt-1 h-4 w-4 flex-shrink-0 text-red-400" />
-                {x}
-              </li>
-            ))}
-          </ul>
-        </Section>
+        </Card>
       )}
 
       {plan.pregunta_seguimiento && (
         <p style={step(nx())} className="cs-in text-neutral-400">{plan.pregunta_seguimiento}</p>
       )}
 
-      <div style={step(nx())} className="cs-in flex flex-wrap gap-2 pt-1">
+      <div style={step(nx())} className="cs-in flex flex-wrap gap-2 pt-0.5">
         <CopyBtn label="Copiar plan" text={planToText(plan)} />
-        {destacado && <CopyBtn label="Copiar gancho" text={destacado} />}
         {idea_principal && <CopyBtn label="Copiar idea" text={idea_principal} />}
       </div>
     </div>
@@ -570,7 +383,7 @@ function IdeasIntroModal({ onClose }) {
           Convierte tu idea en un video
         </h2>
         <p style={step(2)} className="cs-in text-[14px] leading-relaxed text-neutral-300">
-          Cuéntale a VIRAX qué quieres grabar y te arma la idea, el tipo de hook y la ejecución momento a momento.
+          Cuéntale a VIRAX qué quieres grabar: elige el tipo de hook que mejor funciona y te arma la idea y la ejecución.
         </p>
         <button
           onClick={onClose}
@@ -591,7 +404,7 @@ export default function ChatScreen({
   userIcon,
   onBack,
   onBeforeSend,
-  onSendError = null, // opcional: se llama si el envío falla (por ejemplo, para devolver las gemas)
+  onSendError = null, // opcional: se llama si el envío falla (p. ej. para devolver las gemas)
   businessContext = null,
   gems = null,
   messageCost = 25,
@@ -608,9 +421,9 @@ export default function ChatScreen({
   const tokenPct     = Math.min(100, Math.round((tokensUsed / SESSION_TOKEN_LIMIT) * 100));
   const listRef      = useRef(null);
   const taRef        = useRef(null);
-  const sendingRef   = useRef(false);   // evita doble envío antes de que React actualice `loading`
-  const chatIdRef    = useRef(0);       // identifica la conversación: respuestas viejas se descartan
-  const abortRef     = useRef(null);    // cancela la llamada en curso al reiniciar o desmontar
+  const sendingRef   = useRef(false); // evita doble envío antes de que React actualice `loading`
+  const chatIdRef    = useRef(0);     // identifica la conversación: las respuestas viejas se descartan
+  const abortRef     = useRef(null);  // cancela la llamada en curso al reiniciar o desmontar
   const dictation    = useDictation(setInput);
   const isEmpty      = messages.length === 0 && !loading;
 
@@ -628,16 +441,13 @@ export default function ChatScreen({
     setLoading(false);
   };
 
-  // Al desmontar, se cancela cualquier llamada en curso
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  // Scroll suave dentro del contenedor
   useEffect(() => {
     const el = listRef.current;
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, [messages, loading, thinkingText]);
 
-  // Auto-altura del textarea
   useEffect(() => {
     const ta = taRef.current;
     if (!ta) return;
@@ -669,7 +479,6 @@ export default function ChatScreen({
     setLoading(true);
 
     try {
-      // Historial: sin errores, últimos turnos, sin el mensaje actual (viaja aparte como `idea`)
       const history = prevMessages
         .filter((m) => !m.isError)
         .slice(-MAX_HISTORY_TURNS)
@@ -677,7 +486,7 @@ export default function ChatScreen({
 
       const lastPlan = [...prevMessages].reverse().find((m) => m.plan?.tipo === 'plan')?.plan ?? null;
 
-      // FIX: las preguntas se cuentan sobre TODO el chat; el historial recortado las perdía
+      // Las preguntas se cuentan sobre TODO el chat (el historial recortado las perdía)
       const questionsAsked = prevMessages.filter((m) => m.plan?.tipo === 'pregunta').length;
 
       const out = await runIdeaPipeline({
@@ -711,20 +520,15 @@ export default function ChatScreen({
       setThinkingText('');
       setMessages([...next, { role: 'bot', plan: parsed, text: parsed.mensaje ?? '' }]);
     } catch (err) {
-      if (err?.name === 'AbortError' || chatIdRef.current !== myChat) return; // cancelado: sin mensaje de error
+      if (err?.name === 'AbortError' || chatIdRef.current !== myChat) return;
       console.error('ChatScreen error:', err);
       if (err.tokens) setTokensUsed((t) => t + err.tokens);
       setThinkingText('');
-      setInput(content); // devuelve el texto al cuadro para no perderlo
+      setInput(content); // el texto vuelve al cuadro; el mensaje fallido sale de la lista para no duplicarse
       try { onSendError?.(err); } catch (e) { console.error('onSendError error:', e); }
-      // FIX: el mensaje fallido se saca de la lista (vuelve al cuadro); si no, al reenviar quedaba duplicado
       setMessages([
         ...prevMessages,
-        {
-          role: 'bot',
-          text: `${friendlyError(err)} Tu mensaje quedó en el cuadro para reenviarlo.`,
-          isError: true,
-        },
+        { role: 'bot', text: `${friendlyError(err)} Tu mensaje quedó en el cuadro para reenviarlo.`, isError: true },
       ]);
     } finally {
       if (chatIdRef.current === myChat) {
@@ -734,7 +538,6 @@ export default function ChatScreen({
     }
   };
 
-  // FIX: renombrada (el prefijo "use" hacía que ESLint la tratara como un Hook)
   const pickSuggestion = (text) => {
     setInput(text);
     taRef.current?.focus();
@@ -748,83 +551,86 @@ export default function ChatScreen({
       {showIntro && <IdeasIntroModal onClose={dismissIntro} />}
       <style>{`
         @keyframes cs-dot { 0%, 80%, 100% { opacity: .25; transform: scale(.8) } 40% { opacity: 1; transform: scale(1) } }
-        .cs-dot { width: 6px; height: 6px; border-radius: 9999px; background: #a3a3a3; animation: cs-dot 1.2s ease-in-out infinite; }
-        .cs-in { animation: cs-in .6s cubic-bezier(.22,1,.36,1) both; animation-delay: calc(min(var(--i, 0), 16) * 80ms); }
-        @keyframes cs-in { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: translateY(0) } }
+        .cs-dot { width: 6px; height: 6px; border-radius: 9999px; background: #8c8c8c; animation: cs-dot 1.2s ease-in-out infinite; }
+        .cs-in { animation: cs-in .5s cubic-bezier(.22,1,.36,1) both; animation-delay: calc(min(var(--i, 0), 12) * 70ms); }
+        @keyframes cs-in { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
         .cs-scroll::-webkit-scrollbar { width: 6px }
         .cs-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 10px }
         @media (prefers-reduced-motion: reduce) { .cs-dot, .cs-in { animation: none } }
       `}</style>
 
-      {/* Encabezado */}
-      <header className="cs-in flex items-center gap-1 border-b border-white/[0.05] px-2 py-2">
+      {/* Encabezado: volver + plataforma + nuevo chat */}
+      <header className="flex items-center gap-1 border-b border-white/[0.07] px-2 py-2">
         <button
           onClick={onBack}
           aria-label="Volver"
-          className="flex h-10 w-10 items-center justify-center rounded-full text-neutral-300 transition-colors hover:bg-white/10"
+          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-neutral-300 transition-colors hover:bg-white/10"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
 
-        <div className="flex flex-1 items-center">
-          <div className="inline-flex rounded-full bg-white/[0.06] p-0.5" role="tablist" aria-label="Plataforma">
-            {PLATFORMS.map((p) => (
-              <button
-                key={p.id}
-                role="tab"
-                aria-selected={platform === p.id}
-                onClick={() => setPlatform(p.id)}
-                className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors ${
-                  platform === p.id ? 'bg-[#262626] text-white' : 'text-neutral-400 hover:text-neutral-200'
-                }`}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
+        <div className="inline-flex min-w-0 max-w-[280px] flex-1 rounded-full bg-[#111111] p-0.5 ring-1 ring-white/[0.06]" role="tablist" aria-label="Plataforma">
+          {PLATFORMS.map((p) => (
+            <button
+              key={p.id}
+              role="tab"
+              aria-selected={platform === p.id}
+              onClick={() => setPlatform(p.id)}
+              className={`flex-1 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors ${
+                platform === p.id ? 'bg-[#262626] text-white' : 'text-neutral-500 hover:text-neutral-200'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
         </div>
 
-        {gems != null && (
-          <div className="mr-2 flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1.5 text-[13px] text-neutral-200">
-            <Gem className="h-3.5 w-3.5 text-emerald-400" fill="currentColor" />
-            <span className="tabular-nums">{gems}</span>
-          </div>
-        )}
+        <div className="ml-auto flex items-center gap-1">
+          {!isEmpty && (
+            <button
+              onClick={resetChat}
+              className="rounded-full px-3 py-1.5 text-[13px] text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-neutral-200"
+            >
+              Nuevo chat
+            </button>
+          )}
+          {gems != null && (
+            <div className="mr-1 flex items-center gap-1.5 rounded-full bg-[#111111] px-3 py-1.5 text-[13px] text-neutral-200 ring-1 ring-white/[0.06]">
+              <Gem className="h-3.5 w-3.5 text-emerald-400" fill="currentColor" />
+              <span className="tabular-nums">{gems}</span>
+            </div>
+          )}
+        </div>
       </header>
 
       {/* Mensajes */}
       <div ref={listRef} className="cs-scroll flex-1 overflow-y-auto">
-        <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-7 px-4 py-6">
+        <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-[26px] px-4 py-6">
 
           {isEmpty && (
-            <div className="my-auto flex flex-col items-center py-8 text-center">
-              <div style={step(1)} className="cs-in mb-6 flex h-[72px] w-[72px] items-center justify-center overflow-hidden rounded-[22px] bg-[#161616] shadow-lg shadow-black/30 ring-1 ring-white/10">
+            <div className="my-auto py-6 text-center">
+              <div style={step(1)} className="cs-in mx-auto mb-[22px] flex h-[68px] w-[68px] items-center justify-center overflow-hidden rounded-[20px] bg-[#111111] ring-1 ring-white/10">
                 {userIcon ? (
-                  <img src={userIcon} alt="VIRAX" className="h-11 w-11 object-contain" />
+                  <img src={userIcon} alt="VIRAX" className="h-10 w-10 object-contain" />
                 ) : (
-                  <span className="text-3xl font-semibold text-white">V</span>
+                  <span className="text-[28px] font-bold text-white">V</span>
                 )}
               </div>
-              <h2 style={step(2)} className="cs-in text-[28px] font-semibold leading-tight tracking-tight text-white">
-                ¿Qué quieres grabar hoy?
+              <h2 style={step(2)} className="cs-in text-[27px] font-semibold leading-tight tracking-tight text-white">
+                ¿Qué querés grabar hoy?
               </h2>
-              <p style={step(3)} className="cs-in mt-2 max-w-sm text-[15px] leading-6 text-neutral-400">
-                Cuéntame tu idea y elijo el tipo de hook que mejor funciona para armarte la ejecución.
+              <p style={step(3)} className="cs-in mx-auto mt-2 max-w-sm text-[15px] leading-6 text-neutral-500">
+                Contame tu idea: VIRAX elige el tipo de hook y te arma el plan.
               </p>
-              <ul style={step(4)} className="cs-in mt-9 w-full max-w-md divide-y divide-white/[0.06] overflow-hidden rounded-2xl bg-[#111111] text-left ring-1 ring-white/[0.06]">
-                {SUGGESTIONS.map((s, i) => (
-                  <li key={s.label} style={step(5 + i)} className="cs-in">
+              <ul style={step(4)} className="cs-in mx-auto mt-[30px] max-w-[430px] divide-y divide-white/[0.06] overflow-hidden rounded-2xl bg-[#111111] text-left ring-1 ring-white/[0.06]">
+                {SUGGESTIONS.map((s) => (
+                  <li key={s.label}>
                     <button
                       onClick={() => pickSuggestion(s.text)}
-                      className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors hover:bg-white/[0.04]"
+                      className="block w-full px-4 py-3.5 text-left transition-colors hover:bg-white/[0.04]"
                     >
-                      <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-emerald-400">
-                        <s.icon className="h-[18px] w-[18px]" />
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-[14px] font-medium text-white">{s.label}</span>
-                        <span className="block truncate text-[13px] text-neutral-500">{s.hint}</span>
-                      </span>
+                      <span className="block text-[14px] font-semibold text-white">{s.label}</span>
+                      <span className="block text-[13px] text-neutral-500">{s.hint}</span>
                     </button>
                   </li>
                 ))}
@@ -836,31 +642,22 @@ export default function ChatScreen({
             if (m.role === 'user') {
               return (
                 <div key={i} className="cs-in flex justify-end">
-                  <p className="max-w-[85%] whitespace-pre-wrap rounded-3xl bg-[#1a1a1a] px-4 py-2.5 text-[15px] leading-relaxed text-white">
+                  <p className="max-w-[85%] whitespace-pre-wrap rounded-[22px] bg-[#1a1a1a] px-4 py-2.5 text-[15px] leading-relaxed text-white">
                     {m.text}
                   </p>
                 </div>
               );
             }
-            const isFullPlan = Boolean(
-              m.plan?.hook || m.plan?.escenas?.length ||
-              m.plan?.idea_principal || m.plan?.ejecucion?.length
-            );
+            const isPlan = Boolean(m.plan?.idea_principal || m.plan?.ejecucion?.length);
             return (
               <div key={i} className="flex items-start gap-3">
                 <Avatar logo={userIcon} />
                 <div className="min-w-0 flex-1">
-                  {isFullPlan ? (
-                    <>
-                      {m.text && (
-                        <p style={step(1)} className="cs-in mb-4 text-[15px] leading-7 text-neutral-200">{m.text}</p>
-                      )}
-                      <PlanCard plan={m.plan} />
-                    </>
+                  {isPlan ? (
+                    <PlanCard plan={m.plan} />
                   ) : (
                     <p
-                      style={step(1)}
-                      className={`cs-in whitespace-pre-wrap pt-0.5 text-[15px] leading-7 ${
+                      className={`cs-in whitespace-pre-wrap pt-1 text-[15px] leading-7 ${
                         m.isError ? 'text-red-300' : 'text-neutral-200'
                       }`}
                     >
@@ -872,16 +669,12 @@ export default function ChatScreen({
             );
           })}
 
-          {/* Burbuja de thinking con texto real de Gemini */}
           {loading && <Thinking text={thinkingText} logo={userIcon} />}
         </div>
       </div>
 
       {/* Cuadro de escritura */}
-      <div
-        className="cs-in px-3 pt-1"
-        style={{ '--i': 8, paddingBottom: 'max(10px, env(safe-area-inset-bottom, 0px))' }}
-      >
+      <div className="px-3 pt-1" style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom, 0px))' }}>
         <div className="mx-auto w-full max-w-3xl">
           {dictation.voiceError && (
             <p className="mb-2 px-3 text-[12px] text-red-300">{dictation.voiceError}</p>
@@ -901,14 +694,13 @@ export default function ChatScreen({
             </div>
           ) : (
             <>
-              <div className="flex items-end gap-1 rounded-[28px] bg-[#1a1a1a] p-2 pl-5 ring-1 ring-white/[0.07] transition-shadow focus-within:ring-white/20">
+              <div className="flex items-end gap-1.5 rounded-[28px] bg-[#1a1a1a] py-2 pl-5 pr-2 ring-1 ring-white/[0.07] transition-shadow focus-within:ring-white/25">
                 <textarea
                   ref={taRef}
                   rows={1}
                   value={input}
                   onChange={(e) => {
-                    // FIX: si el usuario escribe a mano mientras dicta, se frena el dictado (si no, pisaba lo escrito)
-                    if (dictation.listening) dictation.stop();
+                    if (dictation.listening) dictation.stop(); // si escribe a mano, se frena el dictado
                     setInput(e.target.value);
                   }}
                   onKeyDown={(e) => {
@@ -917,8 +709,8 @@ export default function ChatScreen({
                       send();
                     }
                   }}
-                  placeholder={dictation.listening ? 'Escuchando…' : 'Escribe tu idea'}
-                  className="flex-1 resize-none border-none bg-transparent py-2.5 text-[16px] leading-snug text-white outline-none placeholder:text-neutral-500"
+                  placeholder={dictation.listening ? 'Escuchando…' : 'Escribí tu idea'}
+                  className="max-h-40 flex-1 resize-none border-none bg-transparent py-2.5 text-[16px] leading-snug text-white outline-none placeholder:text-neutral-500"
                 />
                 {dictation.supported && (
                   <button
@@ -939,7 +731,7 @@ export default function ChatScreen({
                   onClick={send}
                   disabled={loading || !input.trim()}
                   aria-label="Enviar"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-400 text-black transition-opacity active:scale-95 disabled:bg-neutral-600 disabled:text-neutral-400"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-400 text-black transition-opacity active:scale-95 disabled:bg-neutral-700 disabled:text-neutral-500"
                 >
                   <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
                 </button>
