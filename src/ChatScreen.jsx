@@ -211,11 +211,94 @@ function useDictation(onText) {
   return { supported: Boolean(SpeechRecognitionAPI), listening, voiceError, start, stop };
 }
 
+// ── Estilos (réplica exacta del diseño del artifact, con la paleta de la app) ──
+// Todo va con prefijo "vx-" y dentro de .vx para no chocar con el CSS ni con Tailwind del resto de la app.
+const CSS = `
+.vx{--bg:#000;--card:#111111;--bubble:#1a1a1a;--ink:#f2f2f2;--mut:#8c8c8c;--line:rgba(255,255,255,.07);--ok:#34d399;--warn:#fbbf24;--bad:#f87171;
+position:fixed;inset:0;z-index:90;display:flex;flex-direction:column;height:100dvh;padding-top:env(safe-area-inset-top,0px);
+background:var(--bg);color:var(--ink);line-height:1.6}
+.vx *,.vx *::before,.vx *::after{box-sizing:border-box}
+.vx button{font:inherit;color:inherit;cursor:pointer}
+.vx-hd{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line)}
+.vx-back{flex:none;width:36px;height:36px;border:0;background:none;border-radius:50%;display:grid;place-items:center;color:var(--mut)}
+.vx-back:hover{background:var(--card);color:var(--ink)}
+.vx-tabs{display:inline-flex;min-width:0;flex:1;max-width:280px;background:var(--card);border-radius:999px;padding:2px}
+.vx-tabs button{flex:1;border:0;background:none;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500;color:var(--mut)}
+.vx-tabs button[aria-selected="true"]{background:var(--bubble);color:var(--ink)}
+.vx-right{margin-left:auto;display:flex;align-items:center;gap:4px}
+.vx-reset{border:0;background:none;color:var(--mut);font-size:13px;padding:6px 10px;border-radius:999px}
+.vx-reset:hover{background:var(--card)}
+.vx-gems{display:flex;align-items:center;gap:6px;background:var(--card);border-radius:999px;padding:5px 12px;font-size:13px}
+.vx-list{flex:1;overflow-y:auto;padding:24px 16px}
+.vx-list::-webkit-scrollbar{width:6px}.vx-list::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:10px}
+.vx-col{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:26px;min-height:100%}
+.vx-in{animation:vx-in .5s cubic-bezier(.22,1,.36,1) both;animation-delay:calc(min(var(--i,0),12)*70ms)}
+@keyframes vx-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.vx-empty{margin:auto;text-align:center;padding:24px 0}
+.vx-logo{width:68px;height:68px;border-radius:20px;background:var(--card);border:1px solid var(--line);display:grid;place-items:center;font-size:28px;font-weight:700;margin:0 auto 22px;overflow:hidden}
+.vx-logo img{width:40px;height:40px;object-fit:contain}
+.vx-h2{font-size:27px;margin:0;letter-spacing:-.02em;line-height:1.2;font-weight:700}
+.vx-empty p{color:var(--mut);margin:8px auto 0;max-width:380px;font-size:16px}
+.vx-sug{list-style:none;margin:30px auto 0;padding:0;max-width:430px;background:var(--card);border-radius:16px;overflow:hidden;text-align:left;border:1px solid var(--line)}
+.vx-sug li+li{border-top:1px solid var(--line)}
+.vx-sug button{display:block;width:100%;background:none;border:0;text-align:left;padding:13px 16px}
+.vx-sug button:hover{background:var(--bubble)}
+.vx-sug b{display:block;font-size:14px;font-weight:600}
+.vx-sug span{font-size:13px;color:var(--mut)}
+.vx-u{align-self:flex-end;max-width:85%;background:var(--bubble);padding:10px 16px;border-radius:22px;white-space:pre-wrap;font-size:16px}
+.vx-b{display:flex;gap:12px;align-items:flex-start}
+.vx-av{flex:none;margin-top:4px;width:28px;height:28px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:600;color:var(--mut);overflow:hidden}
+.vx-av img{width:16px;height:16px;object-fit:contain}
+.vx-bc{min-width:0;flex:1;font-size:16px}
+.vx-err{color:var(--bad);margin:4px 0 0}
+.vx-txt{margin:4px 0 0;white-space:pre-wrap}
+.vx-dots{display:flex;gap:10px;align-items:center;color:var(--mut);font-size:13px;padding-top:6px}
+.vx-dots i{width:6px;height:6px;border-radius:50%;background:var(--mut);animation:vx-d 1.2s infinite}
+.vx-dots i:nth-child(2){animation-delay:.16s}.vx-dots i:nth-child(3){animation-delay:.32s}
+@keyframes vx-d{0%,80%,100%{opacity:.25;transform:scale(.8)}40%{opacity:1;transform:none}}
+.vx-think{margin:0;padding-top:6px;color:var(--mut);font-size:13px;line-height:1.6;white-space:pre-wrap}
+.vx-plan{display:flex;flex-direction:column;gap:14px;font-size:16px}
+.vx-plan h3{font-size:20px;line-height:1.3;margin:0;letter-spacing:-.01em;font-weight:700}
+.vx-card{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.vx-ch{display:flex;justify-content:space-between;gap:10px;padding:9px 16px;border-bottom:1px solid var(--line);font-size:14px;font-weight:600}
+.vx-ch span{font-weight:400;font-size:12px;color:var(--mut);text-align:right}
+.vx-pad{padding:14px 16px}
+.vx-vt{display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:14px}
+.vx-bars{display:flex;gap:4px}.vx-bars i{width:24px;height:6px;border-radius:3px;background:var(--line)}
+.vx-ver p{margin:8px 0 0;color:var(--mut);font-size:14px}
+.vx-mo{display:flex;gap:16px;padding:13px 16px}.vx-mo+.vx-mo{border-top:1px solid var(--line)}
+.vx-mo .n{flex:none;width:56px}.vx-mo .n b{display:block;font-size:14px}.vx-mo .n span{font-size:12px;color:var(--mut)}
+.vx-mo p{margin:0}
+.vx-an div{padding:11px 16px}.vx-an div+div{border-top:1px solid var(--line)}
+.vx-an small{display:block;font-size:12px;color:var(--mut)}
+.vx-an p{margin:2px 0 0;font-size:14px;opacity:.85}
+.vx-fq{color:var(--mut);margin:0}
+.vx-acts{display:flex;gap:8px;flex-wrap:wrap}
+.vx-cp{display:flex;align-items:center;gap:6px;border:1px solid var(--line);background:none;border-radius:999px;padding:7px 14px;font-size:12px;font-weight:500;color:var(--mut)}
+.vx-cp:hover{background:var(--card);color:var(--ink)}
+.vx-dock{padding:4px 12px;padding-bottom:max(10px,env(safe-area-inset-bottom,0px))}
+.vx-box{max-width:760px;margin:0 auto;display:flex;align-items:flex-end;gap:6px;background:var(--bubble);border-radius:28px;padding:8px 8px 8px 20px;border:1px solid var(--line)}
+.vx-box:focus-within{border-color:var(--mut)}
+.vx-box textarea{flex:1;resize:none;border:0;background:none;outline:0;color:var(--ink);font:inherit;font-size:16px;line-height:1.4;padding:9px 0;max-height:160px}
+.vx-box textarea::placeholder{color:var(--mut)}
+.vx-mic{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:none;display:grid;place-items:center;color:var(--mut)}
+.vx-mic:hover{color:var(--ink)}.vx-mic:disabled{opacity:.3;cursor:default}
+.vx-mic.on{background:rgba(248,113,113,.18);color:var(--bad);animation:vx-pulse 1.4s infinite}
+@keyframes vx-pulse{50%{opacity:.55}}
+.vx-send{flex:none;width:40px;height:40px;border-radius:50%;border:0;background:var(--ok);color:#000;display:grid;place-items:center}
+.vx-send:disabled{background:var(--line);color:var(--mut);cursor:default}
+.vx-note{display:flex;justify-content:center;align-items:center;gap:10px;text-align:center;font-size:12px;color:var(--mut);margin:8px 0 0;flex-wrap:wrap}
+.vx-note svg{vertical-align:-2px}
+.vx-limit{max-width:760px;margin:0 auto;background:var(--bubble);border-radius:24px;padding:16px 20px;text-align:center;font-size:14px}
+.vx-limit p{margin:0 0 12px}
+.vx-limit button{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:999px;background:#fff;color:#000;padding:10px 20px;font-size:13px;font-weight:600}
+.vx-vmsg{color:var(--bad);font-size:12px;margin:0 0 8px;padding:0 12px;text-align:center}
+@media (prefers-reduced-motion:reduce){.vx-in,.vx-dots i,.vx-mic.on{animation:none}}
+`;
+
 // ── Piezas de interfaz ───────────────────────────────────────
 const Avatar = ({ logo }) => (
-  <div className="cs-in mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 text-[12px] font-semibold text-neutral-400">
-    {logo ? <img src={logo} alt="VIRAX" className="h-4 w-4 object-contain" /> : 'V'}
-  </div>
+  <div className="vx-av vx-in">{logo ? <img src={logo} alt="VIRAX" /> : 'V'}</div>
 );
 
 function CopyBtn({ text, label }) {
@@ -228,11 +311,8 @@ function CopyBtn({ text, label }) {
     } catch { /* sin permiso de portapapeles */ }
   };
   return (
-    <button
-      onClick={copy}
-      className="flex items-center gap-1.5 rounded-full border border-white/10 px-3.5 py-1.5 text-[12px] font-medium text-neutral-400 transition-colors hover:bg-white/[0.06] hover:text-white"
-    >
-      {ok ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+    <button className="vx-cp" onClick={copy}>
+      {ok ? <Check size={14} /> : <Copy size={14} />}
       {ok ? 'Copiado' : label}
     </button>
   );
@@ -242,23 +322,13 @@ function CopyBtn({ text, label }) {
 function Thinking({ text, logo }) {
   const visible = text.length > MAX_THINKING_VISIBLE ? '…' + text.slice(-MAX_THINKING_VISIBLE) : text;
   return (
-    <div className="flex items-start gap-3">
+    <div className="vx-b">
       <Avatar logo={logo} />
-      <div className="min-w-0 flex-1 pt-1.5">
+      <div className="vx-bc">
         {visible ? (
-          <p className="whitespace-pre-wrap text-[13px] leading-6 text-neutral-500">
-            {visible}
-            <span aria-hidden="true" className="ml-0.5 inline-block h-3.5 w-px animate-pulse bg-neutral-500 align-middle" />
-          </p>
+          <p className="vx-think">{visible}</p>
         ) : (
-          <div className="flex items-center gap-2.5">
-            <span className="flex gap-1.5" aria-hidden="true">
-              {[0, 1, 2].map((k) => (
-                <span key={k} className="cs-dot" style={{ animationDelay: `${k * 0.16}s` }} />
-              ))}
-            </span>
-            <span className="text-[13px] text-neutral-500">Pensando…</span>
-          </div>
+          <div className="vx-dots"><i /><i /><i /><span>Pensando…</span></div>
         )}
       </div>
     </div>
@@ -266,21 +336,10 @@ function Thinking({ text, logo }) {
 }
 
 const LEVELS = {
-  bajo:  { n: 1, bar: 'bg-red-400',     text: 'text-red-300' },
-  medio: { n: 2, bar: 'bg-amber-400',   text: 'text-amber-300' },
-  alto:  { n: 3, bar: 'bg-emerald-400', text: 'text-emerald-300' },
+  bajo:  { n: 1, color: 'var(--bad)' },
+  medio: { n: 2, color: 'var(--warn)' },
+  alto:  { n: 3, color: 'var(--ok)' },
 };
-
-// Tarjeta con encabezado (título + meta a la derecha), como en el diseño nuevo.
-const Card = ({ title, meta, i = 0, children }) => (
-  <section style={step(i)} className="cs-in overflow-hidden rounded-2xl bg-[#111111] ring-1 ring-white/[0.06]">
-    <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-2.5">
-      <h4 className="text-[14px] font-semibold text-white">{title}</h4>
-      {meta && <span className="text-right text-[12px] text-neutral-500">{meta}</span>}
-    </div>
-    {children}
-  </section>
-);
 
 function PlanCard({ plan }) {
   const { veredicto, idea_principal, ejecucion, analisis, tipo_hook } = plan;
@@ -292,72 +351,55 @@ function PlanCard({ plan }) {
     ['Momento más débil', analisis?.momento_mas_debil],
   ].filter((r) => r[1]);
   let k = 1;
-  const nx = () => k++;
+  const nx = () => step(k++);
 
   return (
-    <div className="flex flex-col gap-3.5 text-[15px] leading-7 text-neutral-200">
-      {plan.titulo && (
-        <h3 style={step(nx())} className="cs-in text-[20px] font-semibold leading-snug tracking-tight text-white">
-          {plan.titulo}
-        </h3>
-      )}
+    <div className="vx-plan">
+      {plan.titulo && <h3 className="vx-in" style={nx()}>{plan.titulo}</h3>}
 
       {veredicto && (
-        <div style={step(nx())} className="cs-in rounded-2xl bg-[#111111] p-4 ring-1 ring-white/[0.06]">
-          <div className="flex items-center justify-between">
-            <span className={`text-[14px] font-semibold ${level.text}`}>
-              {veredicto.nivel ? `Potencial ${veredicto.nivel}` : 'Potencial'}
+        <div className="vx-card vx-ver vx-in" style={{ ...nx(), padding: '14px 16px' }}>
+          <div className="vx-vt">
+            <span style={{ color: level.color }}>{veredicto.nivel ? `Potencial ${veredicto.nivel}` : 'Potencial'}</span>
+            <span className="vx-bars" aria-hidden="true">
+              {[1, 2, 3].map((n) => <i key={n} style={n <= level.n ? { background: level.color } : undefined} />)}
             </span>
-            <div className="flex gap-1" aria-hidden="true">
-              {[1, 2, 3].map((n) => (
-                <span key={n} className={`h-1.5 w-6 rounded-full ${n <= level.n ? level.bar : 'bg-white/10'}`} />
-              ))}
-            </div>
           </div>
-          {veredicto.razon && <p className="mt-2 text-[14px] leading-6 text-neutral-400">{veredicto.razon}</p>}
+          {veredicto.razon && <p>{veredicto.razon}</p>}
         </div>
       )}
 
       {idea_principal && (
-        <Card i={nx()} title="Idea" meta={tipo_hook ? `Hook elegido: ${tipo_hook}` : undefined}>
-          <p className="p-4 text-[15px] leading-6 text-neutral-200">{idea_principal}</p>
-        </Card>
+        <div className="vx-card vx-in" style={nx()}>
+          <div className="vx-ch">Idea{tipo_hook && <span>Hook elegido: {tipo_hook}</span>}</div>
+          <div className="vx-pad">{idea_principal}</div>
+        </div>
       )}
 
       {ejecucion?.length > 0 && (
-        <Card i={nx()} title="Ejecución" meta={`${ejecucion.length} ${ejecucion.length === 1 ? 'momento' : 'momentos'}`}>
-          <ol className="divide-y divide-white/[0.06]">
-            {ejecucion.map((e, i) => (
-              <li key={i} className="flex gap-4 px-4 py-3.5">
-                <div className="w-14 flex-shrink-0 pt-0.5">
-                  <span className="block text-[14px] font-semibold tabular-nums text-white">{i + 1}</span>
-                  {e.momento && <span className="text-[12px] text-neutral-500">{e.momento}</span>}
-                </div>
-                <p className="min-w-0 flex-1 text-[15px] leading-6 text-neutral-200">{e.descripcion}</p>
-              </li>
-            ))}
-          </ol>
-        </Card>
+        <div className="vx-card vx-in" style={nx()}>
+          <div className="vx-ch">Ejecución<span>{ejecucion.length} {ejecucion.length === 1 ? 'momento' : 'momentos'}</span></div>
+          {ejecucion.map((e, i) => (
+            <div className="vx-mo" key={i}>
+              <div className="n"><b>{i + 1}</b>{e.momento && <span>{e.momento}</span>}</div>
+              <p>{e.descripcion}</p>
+            </div>
+          ))}
+        </div>
       )}
 
       {rows.length > 0 && (
-        <Card i={nx()} title="Análisis">
-          <dl className="divide-y divide-white/[0.06]">
-            {rows.map(([label, text]) => (
-              <div key={label} className="px-4 py-3">
-                <dt className="text-[12px] text-neutral-500">{label}</dt>
-                <dd className="mt-0.5 text-[14px] leading-6 text-neutral-300">{text}</dd>
-              </div>
-            ))}
-          </dl>
-        </Card>
+        <div className="vx-card vx-an vx-in" style={nx()}>
+          <div className="vx-ch">Análisis</div>
+          {rows.map(([label, text]) => (
+            <div key={label}><small>{label}</small><p>{text}</p></div>
+          ))}
+        </div>
       )}
 
-      {plan.pregunta_seguimiento && (
-        <p style={step(nx())} className="cs-in text-neutral-400">{plan.pregunta_seguimiento}</p>
-      )}
+      {plan.pregunta_seguimiento && <p className="vx-fq vx-in" style={nx()}>{plan.pregunta_seguimiento}</p>}
 
-      <div style={step(nx())} className="cs-in flex flex-wrap gap-2 pt-0.5">
+      <div className="vx-acts vx-in" style={nx()}>
         <CopyBtn label="Copiar plan" text={planToText(plan)} />
         {idea_principal && <CopyBtn label="Copiar idea" text={idea_principal} />}
       </div>
@@ -378,17 +420,16 @@ function IdeasIntroModal({ onClose }) {
       aria-modal="true"
       aria-labelledby="ideas-intro-title"
     >
-      <div className="cs-in w-full max-w-sm rounded-2xl bg-[#141414] p-6 shadow-2xl">
-        <h2 id="ideas-intro-title" style={step(1)} className="cs-in mb-2 text-lg font-semibold text-white">
+      <div className="w-full max-w-sm rounded-2xl bg-[#141414] p-6 shadow-2xl">
+        <h2 id="ideas-intro-title" className="mb-2 text-lg font-semibold text-white">
           Convierte tu idea en un video
         </h2>
-        <p style={step(2)} className="cs-in text-[14px] leading-relaxed text-neutral-300">
+        <p className="text-[14px] leading-relaxed text-neutral-300">
           Cuéntale a VIRAX qué quieres grabar: elige el tipo de hook que mejor funciona y te arma la idea y la ejecución.
         </p>
         <button
           onClick={onClose}
-          style={step(3)}
-          className="cs-in mt-5 w-full rounded-full bg-white py-3 text-[14px] font-semibold text-black transition-opacity hover:opacity-90 active:scale-[0.98]"
+          className="mt-5 w-full rounded-full bg-white py-3 text-[14px] font-semibold text-black transition-opacity hover:opacity-90 active:scale-[0.98]"
         >
           Entendido
         </button>
@@ -544,93 +585,47 @@ export default function ChatScreen({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[90] flex flex-col bg-black text-neutral-100"
-      style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)' }}
-    >
+    <div className="vx">
+      <style>{CSS}</style>
       {showIntro && <IdeasIntroModal onClose={dismissIntro} />}
-      <style>{`
-        @keyframes cs-dot { 0%, 80%, 100% { opacity: .25; transform: scale(.8) } 40% { opacity: 1; transform: scale(1) } }
-        .cs-dot { width: 6px; height: 6px; border-radius: 9999px; background: #8c8c8c; animation: cs-dot 1.2s ease-in-out infinite; }
-        .cs-in { animation: cs-in .5s cubic-bezier(.22,1,.36,1) both; animation-delay: calc(min(var(--i, 0), 12) * 70ms); }
-        @keyframes cs-in { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: translateY(0) } }
-        .cs-scroll::-webkit-scrollbar { width: 6px }
-        .cs-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 10px }
-        @media (prefers-reduced-motion: reduce) { .cs-dot, .cs-in { animation: none } }
-      `}</style>
 
-      {/* Encabezado: volver + plataforma + nuevo chat */}
-      <header className="flex items-center gap-1 border-b border-white/[0.07] px-2 py-2">
-        <button
-          onClick={onBack}
-          aria-label="Volver"
-          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-neutral-300 transition-colors hover:bg-white/10"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-
-        <div className="inline-flex min-w-0 max-w-[280px] flex-1 rounded-full bg-[#111111] p-0.5 ring-1 ring-white/[0.06]" role="tablist" aria-label="Plataforma">
+      {/* Encabezado */}
+      <header className="vx-hd">
+        <button className="vx-back" onClick={onBack} aria-label="Volver"><ArrowLeft size={20} /></button>
+        <div className="vx-tabs" role="tablist" aria-label="Plataforma">
           {PLATFORMS.map((p) => (
-            <button
-              key={p.id}
-              role="tab"
-              aria-selected={platform === p.id}
-              onClick={() => setPlatform(p.id)}
-              className={`flex-1 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors ${
-                platform === p.id ? 'bg-[#262626] text-white' : 'text-neutral-500 hover:text-neutral-200'
-              }`}
-            >
+            <button key={p.id} role="tab" aria-selected={platform === p.id} onClick={() => setPlatform(p.id)}>
               {p.label}
             </button>
           ))}
         </div>
-
-        <div className="ml-auto flex items-center gap-1">
-          {!isEmpty && (
-            <button
-              onClick={resetChat}
-              className="rounded-full px-3 py-1.5 text-[13px] text-neutral-500 transition-colors hover:bg-white/[0.06] hover:text-neutral-200"
-            >
-              Nuevo chat
-            </button>
-          )}
+        <div className="vx-right">
+          <button className="vx-reset" onClick={resetChat}>Nuevo chat</button>
           {gems != null && (
-            <div className="mr-1 flex items-center gap-1.5 rounded-full bg-[#111111] px-3 py-1.5 text-[13px] text-neutral-200 ring-1 ring-white/[0.06]">
-              <Gem className="h-3.5 w-3.5 text-emerald-400" fill="currentColor" />
-              <span className="tabular-nums">{gems}</span>
+            <div className="vx-gems">
+              <Gem size={14} fill="currentColor" style={{ color: 'var(--ok)' }} />
+              <span style={{ fontVariantNumeric: 'tabular-nums' }}>{gems}</span>
             </div>
           )}
         </div>
       </header>
 
       {/* Mensajes */}
-      <div ref={listRef} className="cs-scroll flex-1 overflow-y-auto">
-        <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-[26px] px-4 py-6">
-
+      <div className="vx-list" ref={listRef}>
+        <div className="vx-col">
           {isEmpty && (
-            <div className="my-auto py-6 text-center">
-              <div style={step(1)} className="cs-in mx-auto mb-[22px] flex h-[68px] w-[68px] items-center justify-center overflow-hidden rounded-[20px] bg-[#111111] ring-1 ring-white/10">
-                {userIcon ? (
-                  <img src={userIcon} alt="VIRAX" className="h-10 w-10 object-contain" />
-                ) : (
-                  <span className="text-[28px] font-bold text-white">V</span>
-                )}
+            <div className="vx-empty">
+              <div className="vx-logo vx-in">
+                {userIcon ? <img src={userIcon} alt="VIRAX" /> : 'V'}
               </div>
-              <h2 style={step(2)} className="cs-in text-[27px] font-semibold leading-tight tracking-tight text-white">
-                ¿Qué querés grabar hoy?
-              </h2>
-              <p style={step(3)} className="cs-in mx-auto mt-2 max-w-sm text-[15px] leading-6 text-neutral-500">
-                Contame tu idea: VIRAX elige el tipo de hook y te arma el plan.
-              </p>
-              <ul style={step(4)} className="cs-in mx-auto mt-[30px] max-w-[430px] divide-y divide-white/[0.06] overflow-hidden rounded-2xl bg-[#111111] text-left ring-1 ring-white/[0.06]">
+              <h2 className="vx-h2 vx-in" style={step(1)}>¿Qué querés grabar hoy?</h2>
+              <p className="vx-in" style={step(2)}>Contame tu idea: VIRAX elige el tipo de hook y te arma el plan.</p>
+              <ul className="vx-sug vx-in" style={step(3)}>
                 {SUGGESTIONS.map((s) => (
                   <li key={s.label}>
-                    <button
-                      onClick={() => pickSuggestion(s.text)}
-                      className="block w-full px-4 py-3.5 text-left transition-colors hover:bg-white/[0.04]"
-                    >
-                      <span className="block text-[14px] font-semibold text-white">{s.label}</span>
-                      <span className="block text-[13px] text-neutral-500">{s.hint}</span>
+                    <button onClick={() => pickSuggestion(s.text)}>
+                      <b>{s.label}</b>
+                      <span>{s.hint}</span>
                     </button>
                   </li>
                 ))}
@@ -639,30 +634,16 @@ export default function ChatScreen({
           )}
 
           {messages.map((m, i) => {
-            if (m.role === 'user') {
-              return (
-                <div key={i} className="cs-in flex justify-end">
-                  <p className="max-w-[85%] whitespace-pre-wrap rounded-[22px] bg-[#1a1a1a] px-4 py-2.5 text-[15px] leading-relaxed text-white">
-                    {m.text}
-                  </p>
-                </div>
-              );
-            }
+            if (m.role === 'user') return <div key={i} className="vx-u vx-in">{m.text}</div>;
             const isPlan = Boolean(m.plan?.idea_principal || m.plan?.ejecucion?.length);
             return (
-              <div key={i} className="flex items-start gap-3">
+              <div key={i} className="vx-b">
                 <Avatar logo={userIcon} />
-                <div className="min-w-0 flex-1">
+                <div className="vx-bc">
                   {isPlan ? (
                     <PlanCard plan={m.plan} />
                   ) : (
-                    <p
-                      className={`cs-in whitespace-pre-wrap pt-1 text-[15px] leading-7 ${
-                        m.isError ? 'text-red-300' : 'text-neutral-200'
-                      }`}
-                    >
-                      {m.text}
-                    </p>
+                    <p className={`vx-txt vx-in ${m.isError ? 'vx-err' : ''}`}>{m.text}</p>
                   )}
                 </div>
               </div>
@@ -674,79 +655,56 @@ export default function ChatScreen({
       </div>
 
       {/* Cuadro de escritura */}
-      <div className="px-3 pt-1" style={{ paddingBottom: 'max(10px, env(safe-area-inset-bottom, 0px))' }}>
-        <div className="mx-auto w-full max-w-3xl">
-          {dictation.voiceError && (
-            <p className="mb-2 px-3 text-[12px] text-red-300">{dictation.voiceError}</p>
-          )}
+      <div className="vx-dock">
+        {dictation.voiceError && <p className="vx-vmsg">{dictation.voiceError}</p>}
 
-          {limitReached ? (
-            <div className="flex flex-col items-center gap-3 rounded-3xl bg-[#1a1a1a] px-5 py-4 text-center">
-              <p className="text-[14px] text-neutral-300">
-                Esta conversación llegó a su límite. Empieza una nueva para seguir.
-              </p>
-              <button
-                onClick={resetChat}
-                className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-[13px] font-semibold text-black transition-opacity hover:opacity-90 active:scale-95"
-              >
-                <RotateCcw className="h-3.5 w-3.5" /> Nueva conversación
+        {limitReached ? (
+          <div className="vx-limit">
+            <p>Esta conversación llegó a su límite. Empieza una nueva para seguir.</p>
+            <button onClick={resetChat}><RotateCcw size={14} /> Nueva conversación</button>
+          </div>
+        ) : (
+          <>
+            <div className="vx-box">
+              <textarea
+                ref={taRef}
+                rows={1}
+                value={input}
+                onChange={(e) => {
+                  if (dictation.listening) dictation.stop(); // si escribe a mano, se frena el dictado
+                  setInput(e.target.value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    send();
+                  }
+                }}
+                placeholder={dictation.listening ? 'Escuchando…' : 'Escribí tu idea'}
+              />
+              {dictation.supported && (
+                <button
+                  type="button"
+                  className={`vx-mic ${dictation.listening ? 'on' : ''}`}
+                  onClick={() => (dictation.listening ? dictation.stop() : dictation.start(input))}
+                  disabled={loading}
+                  aria-label={dictation.listening ? 'Detener dictado' : 'Dictar por voz'}
+                >
+                  {dictation.listening ? <Square size={16} /> : <Mic size={20} />}
+                </button>
+              )}
+              <button className="vx-send" onClick={send} disabled={loading || !input.trim()} aria-label="Enviar">
+                <ArrowUp size={20} strokeWidth={2.5} />
               </button>
             </div>
-          ) : (
-            <>
-              <div className="flex items-end gap-1.5 rounded-[28px] bg-[#1a1a1a] py-2 pl-5 pr-2 ring-1 ring-white/[0.07] transition-shadow focus-within:ring-white/25">
-                <textarea
-                  ref={taRef}
-                  rows={1}
-                  value={input}
-                  onChange={(e) => {
-                    if (dictation.listening) dictation.stop(); // si escribe a mano, se frena el dictado
-                    setInput(e.target.value);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
-                      e.preventDefault();
-                      send();
-                    }
-                  }}
-                  placeholder={dictation.listening ? 'Escuchando…' : 'Escribí tu idea'}
-                  className="max-h-40 flex-1 resize-none border-none bg-transparent py-2.5 text-[16px] leading-snug text-white outline-none placeholder:text-neutral-500"
-                />
-                {dictation.supported && (
-                  <button
-                    type="button"
-                    onClick={() => (dictation.listening ? dictation.stop() : dictation.start(input))}
-                    disabled={loading}
-                    aria-label={dictation.listening ? 'Detener dictado' : 'Dictar por voz'}
-                    className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors disabled:opacity-30 ${
-                      dictation.listening
-                        ? 'animate-pulse bg-red-500/20 text-red-300'
-                        : 'text-neutral-400 hover:bg-white/10 hover:text-white'
-                    }`}
-                  >
-                    {dictation.listening ? <Square className="h-4 w-4" /> : <Mic className="h-5 w-5" />}
-                  </button>
-                )}
-                <button
-                  onClick={send}
-                  disabled={loading || !input.trim()}
-                  aria-label="Enviar"
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-400 text-black transition-opacity active:scale-95 disabled:bg-neutral-700 disabled:text-neutral-500"
-                >
-                  <ArrowUp className="h-5 w-5" strokeWidth={2.5} />
-                </button>
-              </div>
 
-              <p className="flex items-center justify-center gap-3 pt-2 text-[12px] text-neutral-500">
-                <span className="flex items-center gap-1">
-                  <Gem className="h-3 w-3" fill="currentColor" /> {messageCost} por mensaje
-                </span>
-                <span aria-hidden="true">·</span>
-                <span className={tokenPct >= 85 ? 'text-red-300' : ''}>Sesión {tokenPct}%</span>
-              </p>
-            </>
-          )}
-        </div>
+            <div className="vx-note">
+              {isEmpty && <span>VIRAX elige por vos el tipo de hook y arma el plan.</span>}
+              <span><Gem size={12} fill="currentColor" /> {messageCost} por mensaje</span>
+              <span style={tokenPct >= 85 ? { color: 'var(--bad)' } : undefined}>Sesión {tokenPct}%</span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
