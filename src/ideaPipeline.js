@@ -1,73 +1,39 @@
-// ideaPipeline.js — v8.4
-// Cambios vs v8.3:
-//  - SYSTEM_PROMPT: deja de pedir "ideas virales/dopamínicas" (activa fórmulas baratas).
-//    Pasa a proceso: detectar MECANISMO de retención → abstraer → aplicar al negocio.
-//    Sin fijar emoción (risa, shock, ASMR, etc.): cualquier forma vale si el mecanismo es fuerte.
-//  - Filtro anti-demo: si se resume en "problema → producto → mejora", se descarta.
-//  - SCHEMA + validPlan + return: soportan patron_origen (opcional pero preferido).
-//  - fetchTrendSignals: busca mecanismos/estructuras de retención, no tips de marketing.
-//  - Correcciones de typos y consistencia SYSTEM vs SCHEMA.
-// Hereda de v8.3:
-//  - trends con searchQueries reales o se descartan; includeThoughts solo con onThinking;
-//    systemInstruction separado; generación sin search; retry con thinkingLevel low.
+// ideaPipeline.js — v9.1 (solo prompt: sin ejemplos, sin biblioteca de formatos, sin controles extra)
+// Cambios vs v8.1:
+//  - PERSONA + CRITERIO (duplicados) -> un solo SYSTEM_PROMPT, sin formato markdown que choque con el JSON
+//  - El system prompt viaja como systemInstruction (el proxy debe reenviarlo; ver SYSTEM_SEPARATE)
+//  - googleSearch sale de la llamada de generación: fetchTrendSignals (query controlada + caché + log de queries)
+//  - Fix: errores del stream ({type:"error"}) ya no se tragan en el catch del parseo
+//  - Reintento con thinkingLevel "low" (antes seguía en "high" y se volvía a cortar)
 
 // ── System prompt (único) ────────────────────────────────────
 const SYSTEM_PROMPT = `
-Sos VIRAX, guionista de video corto orgánico (TikTok, Reels, Shorts) para negocios reales.
+Sos VIRAX, una IA profesional en crear ideas virales para videos en redes sociales.
 
-Tu trabajo no es inventar "algo que parezca viral". Es detectar por qué un formato retiene atención, abstraer ese mecanismo y aplicarlo al negocio del usuario. La forma puede ser cualquiera (humor, silencio, rareza, reconocimiento, dato, tensión): no hay un solo estilo correcto.
+Conoces perfectamente cómo es un video viral. Investiga como son los videos virales actuales y más recientes.
 
-QUÉ PRODUCÍS
-- Contenido de creador, no publicidad. Cero anuncios, spots, branding, embudos o estética de comercial.
-- El negocio es contexto, no protagonista. Protagoniza una persona, una situación o una tensión. El producto aparece tarde, de costado o como consecuencia.
-- Filmable con celular y con lo que el negocio ya tiene.
-- Situación primero. Si el video sigue teniendo sentido sin nombrar el producto, la idea es buena.
-
-PROCESO (en silencio, antes de responder)
-1) MECANISMO, NO DISFRAZ
-   A partir de las señales en <contexto> (o de patrones de short-form que conozcas), identificá 1 mecanismo de retención transferible.
-   Mecanismo = la razón por la que alguien no scrollea (ej. mal diagnóstico con causa obvia; rutina muda que implica historia; pregunta que no se resuelve en 2s).
-   No copies el tema ni el tono del ejemplo original: solo el mecanismo.
-
-2) TRADUCCIÓN AL NEGOCIO
-   Aplicá ese mecanismo al rubro del usuario con detalle concreto y creíble.
-   Nichos similares sirven de puente, no de plantilla.
-
-3) FILTRO DURO (si falla, descartá y regenerá)
-   - ¿En los primeros 1.5–2s queda algo irresuelto o reconocible con fuerza, más allá de "se ve lindo"?
-   - ¿Si saco el producto, el video sigue teniendo sentido?
-   - ¿Se puede resumir como "se ve el problema → se aplica el producto → se ve la mejora"? Si sí, es demo/anuncio: DESCARTALA.
-   - ¿Se filma con un celular y recursos reales del negocio?
-
-4) DIVERSIDAD DE FORMA
-   No fuerces risa, gritos, destrucción, ASMR ni "ángulo brutal".
-   Elegí la forma que mejor transporte el mecanismo a este negocio.
-
-SIN DATOS INVENTADOS
-No cites métricas, % ni "datos de rendimiento". Las señales culturales vienen en <contexto>; si no hay, no las simules.
-
-CÓMO DESCRIBÍS
-Escenas concretas: qué se ve y qué se oye. Frases simples. El usuario tiene que poder imaginar cada plano.
-
-EJEMPLO DE NIVEL (solo calidad de criterio; no copies el tema)
-Negocio: panadería de barrio.
-Mala: "Mostrá el proceso de las medialunas y su calidad." (anuncio)
-También mala: "Dedo en la medialuna antes/después de manteca." (demo de beneficio)
-Buena: título "El que pide sin hablar"; idea_principal "Entra alguien, hace un gesto mínimo y el panadero ya arma la bolsa; el espectador no sabe qué pidió hasta el final."
+TU OBJETIVO: Tu objetivo es generar un plan de idea viral para el video que el usuario te pida. La idea se basa en que sean negocios. Normalmente, si el usuario detecta que es un anuncio, se va en menos de 2 milisegundos.
+La idea es que adaptes temas virales de ahora y los combines con el video, asi la gente lo mira de todas formas y no se va. 
 `.trim();
 
-// true  -> body.systemInstruction (proxy debe reenviarlo)
-// false -> se antepone al texto del prompt
+// true  -> se envía como body.systemInstruction (requiere que el proxy lo reenvíe a Gemini)
+// false -> se antepone al texto del prompt (compatible con el proxy actual)
 const SYSTEM_SEPARATE = true;
 
+// Gemini Config (la búsqueda ya NO va acá)
 const CFG = {
   thinkingLevel: "high",
   temperature: 1.0,
   maxOutputTokens: 24576,
 };
 
+// Máximo de preguntas que VIRAX puede hacer en toda la conversación.
 export const MAX_PREGUNTAS = 2;
+
+// Si el mensaje del usuario es más largo que esto, se considera que ya trae contexto suficiente.
 const MIN_CHARS_IDEA_SUFICIENTE = 25;
+
+// Cantidad de intentos si la respuesta viene cortada o inválida.
 const MAX_INTENTOS = 2;
 
 // ── Conteo de preguntas ──────────────────────────────────────
@@ -109,33 +75,40 @@ B) El usuario pide un ajuste/cambio pero no hay plan previo:
 }
 
 C) Idea:
+
 {
   "tipo":"plan",
-  "patron_origen":{
-    "nicho_similar":"nichos de donde salió el mecanismo (breve)",
-    "patron_2026":"el mecanismo de retención en una frase (no el tema decorativo)",
-    "por_que_encaja":"por qué ese mecanismo tiene sentido en ESTE negocio (1 frase)"
-  },
+
   "titulo":"",
+
   "idea_principal":"",
+
   "ejecucion":[
-    { "momento":"", "descripcion":"" }
+    {
+      "momento":"",
+      "descripcion":""
+    }
   ],
+
   "analisis":{
     "por_que_detiene_scroll":"",
     "por_que_alguien_haria_scroll":"",
     "momento_mas_fuerte":"",
     "momento_mas_debil":""
   },
+
   "veredicto":{
     "nivel":"alto|medio|bajo",
     "razon":""
   },
+
   "pregunta_seguimiento":""
 }
 
 Reglas:
-- "patron_origen": obligatorio en tipo plan. Habla del MECANISMO, no de marcas ni de tips de marketing.
+
+
+- El primer momento de "ejecucion" incluye, entre comillas, el texto en pantalla exacto del hook.
 - "ejecucion": de 1 a 4 momentos. Cada "descripcion" es lo que se ve y se oye, en una o dos frases cortas. Sin intención estratégica y sin explicar qué comunica.
 - El primer momento no puede ser el problema del producto seguido de la acción que lo resuelve.
 - "titulo": cómo lo recordaría alguien que lo vio. Si podría ser el nombre de una pieza publicitaria, reescribilo.
@@ -265,7 +238,6 @@ const callGeminiStream = async (supabase, body, { onThinking } = {}) => {
   let tokens = 0;
   let usedSearch = false;
   let searchQueries = [];
-  let modelUsed = null;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -278,6 +250,7 @@ const callGeminiStream = async (supabase, body, { onThinking } = {}) => {
     for (const line of lines) {
       if (!line.startsWith("data: ")) continue;
 
+      // Parseo aislado: solo un JSON roto se ignora. Los errores del stream SÍ se propagan.
       let chunk;
       try {
         chunk = JSON.parse(line.slice(6));
@@ -293,7 +266,6 @@ const callGeminiStream = async (supabase, body, { onThinking } = {}) => {
         tokens = chunk.tokens ?? 0;
         usedSearch = chunk.usedSearch === true;
         searchQueries = Array.isArray(chunk.searchQueries) ? chunk.searchQueries : [];
-        modelUsed = typeof chunk.model === "string" ? chunk.model : null;
       } else if (chunk.type === "error") {
         throw new Error(chunk.message ?? "Error en el stream de Gemini");
       }
@@ -309,10 +281,12 @@ const callGeminiStream = async (supabase, body, { onThinking } = {}) => {
     throw err;
   }
 
-  return { json, tokens, usedSearch, searchQueries, modelUsed };
+  return { json, tokens, usedSearch, searchQueries };
 };
 
 // ── Señales de tendencia (búsqueda aislada + caché) ──────────
+// La búsqueda va en su propia llamada, con una consigna controlada, para que el modelo
+// no arme queries de "marketing/ads viral" (que devuelven casos de marcas tipo Temu).
 const TREND_TTL_MS = 6 * 60 * 60 * 1000;
 const trendCache = new Map();
 
@@ -326,16 +300,12 @@ const fetchTrendSignals = async ({ supabase, model, platform, businessContext })
   if (hit && Date.now() - hit.at < TREND_TTL_MS) return { ...hit, tokens: 0, cached: true };
 
   const text = `
-Tarea: detectar MECANISMOS de retención que estén vivos ahora en ${platform} (estructuras de video, no tips de marketing). Sirven de inspiración para un negocio de este rubro: ${rubro || "(rubro no informado)"}.
+Tarea: detectar señales culturales ORGÁNICAS que están funcionando ahora en ${platform}: formatos narrativos, estructuras de video, tipos de sonido, humor y conflictos cotidianos. Sirven de inspiración para un negocio de este rubro: ${rubro || "(rubro no informado)"}.
 
-Qué buscáis:
-- Patrones de formato y narrativa de creadores/comunidades (cómo arranca el video, qué queda irresuelto, qué tipo de giro o reconocimiento usa).
-- Estructuras transferibles entre nichos (no el tema superficial).
-
-Ignorá:
-- Notas de marketing, ads, casos de marca, "cómo hacer crecer tu negocio", rankeos de hooks genéricos.
-
-Cada señal = una frase que nombra el MECANISMO (ej. "problema que todos culpan a X y la causa era Y obvia"), no un producto ni una marca.
+Reglas de búsqueda:
+- Buscá tendencias de formato y contenido de creadores y comunidades (memes, sonidos, estructuras narrativas), sumando el rubro cuando ayude.
+- Ignorá notas de marketing, publicidad, casos de estudio de marcas y consejos para "hacer crecer tu negocio".
+- Cada señal describe un patrón de video en una frase, sin nombrar marcas ni productos concretos.
 
 Respondé SOLO con JSON válido, sin bloques de código: {"senales":["...","..."]} con 3 a 5 señales.`.trim();
 
@@ -348,16 +318,8 @@ Respondé SOLO con JSON válido, sin bloques de código: {"senales":["...","..."
     text,
   });
 
-  if (!r.searchQueries.length) {
-    console.warn("[trends] no hubo búsqueda real; descarto señales");
-    return {
-      text: null,
-      tokens: r.tokens,
-      queries: [],
-      modelUsed: r.modelUsed,
-      cached: false,
-    };
-  }
+  // Si el proxy cayó al fallback "sin search" (400), las señales saldrían de la memoria del modelo: no se usan ni se cachean.
+  if (!r.usedSearch) return { text: null, tokens: r.tokens, queries: [], cached: false };
 
   const senales = Array.isArray(r.json?.senales)
     ? r.json.senales.map((s) => String(s).trim()).filter(Boolean).slice(0, 5)
@@ -367,7 +329,6 @@ Respondé SOLO con JSON válido, sin bloques de código: {"senales":["...","..."
     text: senales.length ? senales.map((s) => `- ${s}`).join("\n") : null,
     tokens: r.tokens,
     queries: r.searchQueries,
-    modelUsed: r.modelUsed,
     at: Date.now(),
   };
   if (entry.text) trendCache.set(key, entry);
@@ -400,7 +361,7 @@ export const runIdeaPipeline = async ({
   trendContext = null,
   questionsAsked = null,
   onThinking = null,
-  useSearch = true,
+  useSearch = true, // true: si no pasás trendContext, se buscan señales (con caché de 6 h)
 }) => {
   const trace = [];
   const total = () => trace.reduce((s, t) => s + t.tokens, 0);
@@ -408,18 +369,13 @@ export const runIdeaPipeline = async ({
   const asked = questionsAsked ?? countQuestions(history);
   const canAsk = puedePreguntar({ asked, lastPlan, idea, businessContext });
 
+  // Etapa 0: señales de tendencia (no fatal si falla)
   let signals = trendContext;
   if (!signals && useSearch) {
     try {
       const t = await fetchTrendSignals({ supabase, model, platform, businessContext });
       signals = t.text;
-      trace.push({
-        stage: "trends",
-        tokens: t.tokens,
-        cached: t.cached,
-        queries: t.queries,
-        model: t.modelUsed ?? null,
-      });
+      trace.push({ stage: "trends", tokens: t.tokens, cached: t.cached, queries: t.queries });
       console.info("[trends] queries:", t.queries, t.cached ? "(caché)" : "");
     } catch (e) {
       trace.push({ stage: "trends_fail", tokens: 0 });
@@ -444,15 +400,14 @@ export const runIdeaPipeline = async ({
         {
           ...CFG,
           ...cfg,
-          useSearch: false,
-          includeThoughts: typeof onThinking === "function",
+          useSearch: false, // la generación NUNCA busca
           model,
           ...(SYSTEM_SEPARATE ? { systemInstruction: SYSTEM_PROMPT } : {}),
           text: (SYSTEM_SEPARATE ? "" : `${SYSTEM_PROMPT}\n\n`) + prompt + note,
         },
         { onThinking }
       );
-      trace.push({ stage, tokens: r.tokens, usedSearch: r.usedSearch, model: r.modelUsed });
+      trace.push({ stage, tokens: r.tokens, usedSearch: r.usedSearch });
       return r.json;
     } catch (e) {
       trace.push({ stage: `${stage}_fail`, tokens: e.tokens ?? 0 });
@@ -521,7 +476,6 @@ export const runIdeaPipeline = async ({
     return {
       plan: {
         tipo: "plan",
-        patron_origen: out.patron_origen ?? null,
         titulo: out.titulo,
         idea_principal: out.idea_principal,
         ejecucion: out.ejecucion.slice(0, 8),
