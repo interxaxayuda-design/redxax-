@@ -25,7 +25,7 @@ const SESSION_TOKEN_LIMIT = 80000;
 
 const step = (i) => ({ '--i': i });
 
-// ── Lógica (sin cambios) ─────────────────────────────────────
+// ── Lógica ───────────────────────────────────────────────────
 const pick = (o, keys) => {
   for (const k of keys) if (o?.[k] != null && o[k] !== '') return o[k];
   return undefined;
@@ -48,7 +48,10 @@ const unwrapPlan = (raw, depth = 0) => {
   if (Array.isArray(p)) p = p.find((x) => x && typeof x === 'object') ?? p.find((x) => typeof x === 'string');
   if (typeof p === 'string') return p.trim() ? { tipo: 'pregunta', mensaje: p.trim() } : null;
   if (!p || typeof p !== 'object') return null;
-  const known = p.hook || p.gancho || p.escenas || p.scenes || p.guion || p.mensaje || p.pregunta;
+  // FIX: el formato nuevo (idea_principal/ejecucion) también cuenta como contenido conocido
+  const known =
+    p.hook || p.gancho || p.escenas || p.scenes || p.guion || p.mensaje || p.pregunta ||
+    p.idea_principal || p.ejecucion;
   if (!known && depth < 3) {
     for (const k of WRAPPERS) {
       if (p[k] != null) {
@@ -66,6 +69,8 @@ const normalizePlan = (raw) => {
   const base = unwrapPlan(raw);
   if (!base) return null;
   const plan = { ...base };
+
+  plan.tipo_hook = plan.tipo_hook ?? plan.tipoHook;
 
   // Soporte legado (hook/escenas) + nuevo formato (idea_principal/ejecucion)
   plan.hook = plan.hook ?? plan.gancho;
@@ -87,6 +92,22 @@ const normalizePlan = (raw) => {
             accion: pick(e, ['accion', 'acción', 'descripcion', 'descripción', 'escena', 'visual']),
             tiempo: pick(e, ['tiempo', 'duracion', 'duración', 'segundos']),
           });
+  }
+
+  // Nuevo formato: se normalizan los momentos de ejecución
+  const ej = plan.ejecucion ?? plan.momentos;
+  if (Array.isArray(ej)) {
+    plan.ejecucion = ej
+      .filter(Boolean)
+      .map((e) =>
+        typeof e === 'string'
+          ? { descripcion: e }
+          : {
+              ...e,
+              momento: pick(e, ['momento', 'tiempo']),
+              descripcion: pick(e, ['descripcion', 'descripción', 'accion', 'acción']),
+            })
+      .filter((e) => e.descripcion);
   }
 
   plan.cta = asText(plan.cta ?? pick(plan, ['cierre', 'llamado_a_la_accion', 'llamado_a_la_acción', 'call_to_action']),
@@ -128,6 +149,7 @@ const planToText = (p) => {
   if (p.veredicto) {
     L.push(`Potencial ${p.veredicto.nivel ?? ''}${p.veredicto.razon ? `: ${p.veredicto.razon}` : ''}`.trim(), '');
   }
+  if (p.tipo_hook) L.push(`HOOK ELEGIDO: ${p.tipo_hook}`, '');
   if (p.idea_principal) L.push('IDEA', p.idea_principal, '');
   if (p.hook) {
     L.push('HOOK');
@@ -165,9 +187,13 @@ const planToText = (p) => {
   return L.join('\n').trim();
 };
 
+// Resumen corto de cada mensaje para el historial que viaja al modelo.
+// Incluye el tipo de hook para que el modelo pueda variarlo si el usuario pide otro enfoque.
 const historyText = (m) => {
   if (m.role !== 'bot') return m.text;
-  if (m.plan?.tipo === 'plan') return `(Plan entregado: ${m.plan.titulo ?? 'sin título'})`;
+  if (m.plan?.tipo === 'plan') {
+    return `(Plan entregado: ${m.plan.titulo ?? 'sin título'}${m.plan.tipo_hook ? `; hook: ${m.plan.tipo_hook}` : ''})`;
+  }
   return m.plan ? planToText(m.plan) : m.text;
 };
 
@@ -278,7 +304,6 @@ function CopyBtn({ text, label }) {
 // ── Thinking con streaming real ──────────────────────────────
 // Muestra el pensamiento real de Gemini en lugar de frases fijas.
 // Mientras no llega el primer chunk, muestra tres puntitos animados.
-// Una vez que empieza a llegar texto, lo va mostrando con un cursor parpadeante.
 // Se limita a MAX_THINKING_VISIBLE caracteres para no crecer infinito.
 function Thinking({ text, logo }) {
   const visible = text.length > MAX_THINKING_VISIBLE
@@ -292,14 +317,12 @@ function Thinking({ text, logo }) {
         {visible ? (
           <p className="whitespace-pre-wrap text-[13px] leading-6 text-neutral-500">
             {visible}
-            {/* cursor parpadeante mientras sigue llegando texto */}
             <span
               aria-hidden="true"
               className="ml-0.5 inline-block h-3.5 w-px animate-pulse bg-neutral-500 align-middle"
             />
           </p>
         ) : (
-          // Fallback: puntitos mientras no llega el primer chunk de thinking
           <div className="flex items-center gap-2.5 pt-1">
             <span className="flex gap-1" aria-hidden="true">
               {[0, 1, 2].map((k) => (
@@ -322,16 +345,16 @@ const LEVELS = {
 
 const Section = ({ title, meta, i = 0, children }) => (
   <section style={step(i)} className="cs-in overflow-hidden rounded-2xl bg-[#111111] ring-1 ring-white/[0.06]">
-    <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-2.5">
+    <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-2.5">
       <h4 className="text-[14px] font-semibold text-white">{title}</h4>
-      {meta && <span className="text-[12px] text-neutral-500">{meta}</span>}
+      {meta && <span className="text-right text-[12px] text-neutral-500">{meta}</span>}
     </div>
     {children}
   </section>
 );
 
 function PlanCard({ plan }) {
-  const { hook, escenas, cta, errores_a_evitar, veredicto, idea_principal, ejecucion, analisis } = plan;
+  const { hook, escenas, cta, errores_a_evitar, veredicto, idea_principal, ejecucion, analisis, tipo_hook } = plan;
   const [showAlt, setShowAlt] = useState(false);
   const alternativas = hook?.alternativas ?? [];
   const level = LEVELS[String(veredicto?.nivel ?? '').toLowerCase()];
@@ -365,9 +388,9 @@ function PlanCard({ plan }) {
         </div>
       )}
 
-      {/* Nuevo formato: idea_principal + ejecucion */}
+      {/* Formato nuevo: idea_principal + ejecucion (el tipo de hook lo elige la IA) */}
       {idea_principal && (
-        <Section i={nx()} title="Idea">
+        <Section i={nx()} title="Idea" meta={tipo_hook ? `Hook: ${tipo_hook}` : undefined}>
           <p className="p-4 text-[15px] leading-6 text-neutral-200">{idea_principal}</p>
         </Section>
       )}
@@ -547,7 +570,7 @@ function IdeasIntroModal({ onClose }) {
           Convierte tu idea en un video
         </h2>
         <p style={step(2)} className="cs-in text-[14px] leading-relaxed text-neutral-300">
-          Cuéntale a VIRAX qué quieres grabar y te arma el gancho, el guion escena por escena y el cierre.
+          Cuéntale a VIRAX qué quieres grabar y te arma la idea, el tipo de hook y la ejecución momento a momento.
         </p>
         <button
           onClick={onClose}
@@ -568,6 +591,7 @@ export default function ChatScreen({
   userIcon,
   onBack,
   onBeforeSend,
+  onSendError = null, // opcional: se llama si el envío falla (por ejemplo, para devolver las gemas)
   businessContext = null,
   gems = null,
   messageCost = 25,
@@ -578,17 +602,34 @@ export default function ChatScreen({
   const [platform,     setPlatform]     = useState('tiktok');
   const [tokensUsed,   setTokensUsed]   = useState(0);
   const [showIntro,    setShowIntro]    = useState(() => !readIntroSeen());
-  const [thinkingText, setThinkingText] = useState(''); // ← pensamiento en streaming
+  const [thinkingText, setThinkingText] = useState('');
 
   const limitReached = tokensUsed >= SESSION_TOKEN_LIMIT;
   const tokenPct     = Math.min(100, Math.round((tokensUsed / SESSION_TOKEN_LIMIT) * 100));
   const listRef      = useRef(null);
   const taRef        = useRef(null);
+  const sendingRef   = useRef(false);   // evita doble envío antes de que React actualice `loading`
+  const chatIdRef    = useRef(0);       // identifica la conversación: respuestas viejas se descartan
+  const abortRef     = useRef(null);    // cancela la llamada en curso al reiniciar o desmontar
   const dictation    = useDictation(setInput);
   const isEmpty      = messages.length === 0 && !loading;
 
   const dismissIntro = () => { writeIntroSeen(); setShowIntro(false); };
-  const resetChat    = () => { setMessages([]); setTokensUsed(0); setInput(''); setThinkingText(''); };
+
+  const resetChat = () => {
+    abortRef.current?.abort();
+    chatIdRef.current += 1;
+    sendingRef.current = false;
+    dictation.stop();
+    setMessages([]);
+    setTokensUsed(0);
+    setInput('');
+    setThinkingText('');
+    setLoading(false);
+  };
+
+  // Al desmontar, se cancela cualquier llamada en curso
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   // Scroll suave dentro del contenedor
   useEffect(() => {
@@ -606,28 +647,38 @@ export default function ChatScreen({
 
   const send = async () => {
     const content = input.trim();
-    if (!content || loading || limitReached) return;
+    if (!content || loading || limitReached || sendingRef.current) return;
+    sendingRef.current = true;
     dictation.stop();
 
     if (onBeforeSend) {
-      const ok = await onBeforeSend();
-      if (!ok) return;
+      let ok = false;
+      try { ok = await onBeforeSend(); } catch (e) { console.error('onBeforeSend error:', e); }
+      if (!ok) { sendingRef.current = false; return; }
     }
 
-    const next = [...messages, { role: 'user', text: content }];
+    const myChat = chatIdRef.current;
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
+    const prevMessages = messages;
+    const next = [...prevMessages, { role: 'user', text: content }];
     setMessages(next);
     setInput('');
-    setThinkingText(''); // limpia pensamiento anterior
+    setThinkingText('');
     setLoading(true);
 
     try {
-      const history = next
-        .slice(0, -1)
+      // Historial: sin errores, últimos turnos, sin el mensaje actual (viaja aparte como `idea`)
+      const history = prevMessages
         .filter((m) => !m.isError)
         .slice(-MAX_HISTORY_TURNS)
         .map((m) => ({ role: m.role, text: historyText(m) }));
 
-      const lastPlan = [...messages].reverse().find((m) => m.plan?.tipo === 'plan')?.plan ?? null;
+      const lastPlan = [...prevMessages].reverse().find((m) => m.plan?.tipo === 'plan')?.plan ?? null;
+
+      // FIX: las preguntas se cuentan sobre TODO el chat; el historial recortado las perdía
+      const questionsAsked = prevMessages.filter((m) => m.plan?.tipo === 'pregunta').length;
 
       const out = await runIdeaPipeline({
         supabase,
@@ -638,10 +689,14 @@ export default function ChatScreen({
         lastPlan,
         businessContext,
         trendContext:    null,
-        // ↓ callback que recibe cada chunk de thinking de Gemini
-        onThinking: (chunk) =>
-          setThinkingText((prev) => prev + chunk),
+        questionsAsked,
+        signal:          ctrl.signal,
+        onThinking: (chunk) => {
+          if (chatIdRef.current === myChat) setThinkingText((prev) => prev + chunk);
+        },
       });
+
+      if (chatIdRef.current !== myChat) return; // el chat se reinició mientras esperaba
 
       const rawPlan = out?.plan ?? out?.resultado ?? out?.result ?? out?.data ?? out?.response ?? out?.respuesta ?? out?.text;
       setTokensUsed((t) => t + (Number(out?.tokens) || 0));
@@ -653,15 +708,18 @@ export default function ChatScreen({
         throw new Error('La IA devolvió un formato inesperado. Inténtalo de nuevo.');
       }
 
-      setThinkingText(''); // limpia al mostrar el plan
+      setThinkingText('');
       setMessages([...next, { role: 'bot', plan: parsed, text: parsed.mensaje ?? '' }]);
     } catch (err) {
+      if (err?.name === 'AbortError' || chatIdRef.current !== myChat) return; // cancelado: sin mensaje de error
       console.error('ChatScreen error:', err);
       if (err.tokens) setTokensUsed((t) => t + err.tokens);
-      setThinkingText(''); // limpia también en error
-      setInput(content);  // devuelve el texto al cuadro para no perderlo
+      setThinkingText('');
+      setInput(content); // devuelve el texto al cuadro para no perderlo
+      try { onSendError?.(err); } catch (e) { console.error('onSendError error:', e); }
+      // FIX: el mensaje fallido se saca de la lista (vuelve al cuadro); si no, al reenviar quedaba duplicado
       setMessages([
-        ...next,
+        ...prevMessages,
         {
           role: 'bot',
           text: `${friendlyError(err)} Tu mensaje quedó en el cuadro para reenviarlo.`,
@@ -669,11 +727,15 @@ export default function ChatScreen({
         },
       ]);
     } finally {
-      setLoading(false);
+      if (chatIdRef.current === myChat) {
+        sendingRef.current = false;
+        setLoading(false);
+      }
     }
   };
 
-  const useSuggestion = (text) => {
+  // FIX: renombrada (el prefijo "use" hacía que ESLint la tratara como un Hook)
+  const pickSuggestion = (text) => {
     setInput(text);
     taRef.current?.focus();
   };
@@ -747,13 +809,13 @@ export default function ChatScreen({
                 ¿Qué quieres grabar hoy?
               </h2>
               <p style={step(3)} className="cs-in mt-2 max-w-sm text-[15px] leading-6 text-neutral-400">
-                Cuéntame tu idea y te armo el gancho, las escenas y el cierre.
+                Cuéntame tu idea y elijo el tipo de hook que mejor funciona para armarte la ejecución.
               </p>
               <ul style={step(4)} className="cs-in mt-9 w-full max-w-md divide-y divide-white/[0.06] overflow-hidden rounded-2xl bg-[#111111] text-left ring-1 ring-white/[0.06]">
                 {SUGGESTIONS.map((s, i) => (
                   <li key={s.label} style={step(5 + i)} className="cs-in">
                     <button
-                      onClick={() => useSuggestion(s.text)}
+                      onClick={() => pickSuggestion(s.text)}
                       className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors hover:bg-white/[0.04]"
                     >
                       <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-emerald-400">
@@ -844,7 +906,11 @@ export default function ChatScreen({
                   ref={taRef}
                   rows={1}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => {
+                    // FIX: si el usuario escribe a mano mientras dicta, se frena el dictado (si no, pisaba lo escrito)
+                    if (dictation.listening) dictation.stop();
+                    setInput(e.target.value);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
                       e.preventDefault();
