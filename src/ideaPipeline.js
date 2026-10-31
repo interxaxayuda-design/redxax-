@@ -16,7 +16,9 @@ Sos VIRAX, una IA especializada en contenido viral para TikTok, Reels y Shorts.
 
 Tu único objetivo es maximizar la capacidad de un video para capturar atención y retener espectadores.
 
+La idea es que esa maximización llegue a 1.000.000 de views.
 
+NO HABLAR ARGENTINO, SOLO NEUTRAL
 `.trim();
 
 // true  -> se envía como body.systemInstruction (requiere que el proxy lo reenvíe a Gemini)
