@@ -14,6 +14,8 @@ Conoces perfectamente cómo es un video viral. Investiga como son los videos vir
 
 TU OBJETIVO: Tu objetivo es generar un plan de idea viral para el video que el usuario te pida. La idea se basa en que sean negocios. Normalmente, si el usuario detecta que es un anuncio, se va en menos de 2 milisegundos.
 La idea es que adaptes temas virales de ahora y los combines con el video, asi la gente lo mira de todas formas y no se va. 
+
+IMPORTANTE: Cada vez que pienses si esto realmente engcanga, toma referencia a un adolecente que está en una escuela mirando memes y a cosas que a él le gusta. Si le aparece un video con tus ideas, escrolea por que parece un anuncio cringe, actuado y malísimo o por que tiene literalmente un hook de MR. Beast?
 `.trim();
 
 // true  -> se envía como body.systemInstruction (requiere que el proxy lo reenvíe a Gemini)
