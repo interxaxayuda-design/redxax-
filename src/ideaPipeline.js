@@ -1,5 +1,7 @@
-
-// ideaPipeline.js — v9.2
+// ideaPipeline.js — v9.3
+// Cambios vs v9.2:
+//  - FIX: "ReferenceError: outliers is not defined" -> SYSTEM_PROMPT pasó a ser buildSystemPrompt(outliers)
+//  - NUEVO: runIdeaPipeline acepta el parámetro "outliers" (string o array). Si no hay, se omite el bloque <referencias_reales>
 // Cambios vs v9.1:
 //  - NUEVO: la IA elige el tipo de hook (campo "tipo_hook") entre cientos de mecanismos posibles, sin lista cerrada
 //  - NUEVO: si el usuario pide otro enfoque, el tipo de hook cambia respecto del plan anterior
@@ -11,8 +13,30 @@
 //  - FIX: una "pregunta" sin mensaje ya no se devuelve vacía; los momentos de "ejecucion" se filtran/normalizan
 //  - FIX: letras A/B/C del schema reemplazadas por nombres (cuando no se puede preguntar, el listado empezaba en "B")
 
-// ── System prompt (único) ────────────────────────────────────
-const SYSTEM_PROMPT = `
+// ── System prompt (se arma por llamada, porque depende de los outliers) ──
+const formatOutliers = (outliers) => {
+  if (Array.isArray(outliers)) {
+    return outliers
+      .map((o) => (typeof o === "string" ? o : JSON.stringify(o)))
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join("\n");
+  }
+  return String(outliers ?? "").trim();
+};
+
+const buildSystemPrompt = (outliers) => {
+  const refsText = formatOutliers(outliers);
+  const referencias = refsText
+    ? `<referencias_reales>
+Videos reales con rendimiento muy por encima del promedio de su cuenta. Los conceptos se apoyan en ellos sin reproducir ninguno.
+${refsText}
+</referencias_reales>
+
+`
+    : "";
+
+  return `
 <tarea>
 Recibís los datos de un negocio y, opcionalmente, una idea. Devolvés 3 conceptos de video grabables con celular.
 En cada concepto el video trata de algo que vale la pena mirar por sí mismo. El negocio aparece como lugar, persona o consecuencia, nunca como el tema.
@@ -49,12 +73,7 @@ Sin saludos, sin presentaciones, sin logo ni nombre del negocio en los primeros 
 Si falta información, no preguntes: asumí lo más razonable y listalo en "supuestos".
 </restricciones>
 
-<referencias_reales>
-Videos reales con rendimiento muy por encima del promedio de su cuenta. Los conceptos se apoyan en ellos sin reproducir ninguno.
-${outliers}
-</referencias_reales>
-
-<casos>
+${referencias}<casos>
 <caso>
 negocio: restaurante de comida india en Bristol
 portador: parodias actuadas por el personal
@@ -118,7 +137,8 @@ JSON válido sin texto afuera:
   ]
 }
 </formato_de_salida>
-`.trim(); 
+`.trim();
+};
 
 // true  -> se envía como body.systemInstruction (requiere que el proxy lo reenvíe a Gemini)
 // false -> se antepone al texto del prompt (compatible con el proxy actual)
@@ -487,6 +507,7 @@ export const runIdeaPipeline = async ({
   lastPlan = null,
   businessContext = null,
   trendContext = null,
+  outliers = null, // string o array de strings/objetos con videos de referencia; si falta, se omite el bloque
   questionsAsked = null,
   onThinking = null,
   signal = null, // AbortSignal opcional (cancelar al reiniciar el chat)
@@ -497,6 +518,7 @@ export const runIdeaPipeline = async ({
 
   const asked = questionsAsked ?? countQuestions(history);
   const canAsk = puedePreguntar({ asked, lastPlan, idea, businessContext });
+  const systemPrompt = buildSystemPrompt(outliers);
 
   // Etapa 0: señales de tendencia (no fatal si falla, salvo que se cancele)
   let signals = trendContext;
@@ -532,8 +554,8 @@ export const runIdeaPipeline = async ({
           ...cfg,
           useSearch: false, // la generación NUNCA busca
           model,
-          ...(SYSTEM_SEPARATE ? { systemInstruction: SYSTEM_PROMPT } : {}),
-          text: (SYSTEM_SEPARATE ? "" : `${SYSTEM_PROMPT}\n\n`) + prompt + note,
+          ...(SYSTEM_SEPARATE ? { systemInstruction: systemPrompt } : {}),
+          text: (SYSTEM_SEPARATE ? "" : `${systemPrompt}\n\n`) + prompt + note,
         },
         { onThinking, signal }
       );
