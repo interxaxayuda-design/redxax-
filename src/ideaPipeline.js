@@ -66,9 +66,11 @@ const countQuestions = (history = []) =>
     (m) => m && m.role !== "user" && typeof m.text === "string" && m.text.includes("?")
   ).length;
 
-// Permite hasta 2 rondas de preguntas, y ninguna si el usuario está iterando un plan.
-const puedePreguntar = ({ asked = 0, lastPlan = null } = {}) =>
-  !lastPlan && asked < 2;
+// Una sola ronda de preguntas; ninguna si itera un plan o si pide que se genere igual.
+const puedePreguntar = ({ asked = 0, lastPlan = null, idea = "" } = {}) =>
+  !lastPlan &&
+  asked < 1 &&
+  !/gener[aá]\s+igual|sin preguntas|ya te (lo )?dije|no preguntes/i.test(String(idea));
 
 // Convierte los outliers a texto. Usa los campos que existan.
 const formatOutliers = (outliers) => {
@@ -238,7 +240,7 @@ Cuatro reglas firmes:
 1. Todo dato concreto (precios, horarios, productos, nombres, cifras, procesos, clientes) sale del material que te paso. Las escenas pueden armarse y dramatizarse, pero no se inventan hechos que el negocio no pueda confirmar. Si falta un dato, armá la escena con los que sí hay.
 2. Todo lo que se ve tiene que poder grabarse esta semana con lo que el negocio ya tiene y con gente real.
 3. El negocio aparece después de que la situación ya enganchó.
-4. Describí el video, no su rendimiento: nada de cifras de alcance, predicciones ni explicaciones sobre cómo funciona una plataforma o una IA.
+4. No inventes resultados ni cifras del producto del negocio (usuarios, aciertos, porcentajes, alcance). Si el negocio vende una herramienta de análisis o predicción, el video muestra a una persona usándola y lo que le pasa, no una promesa de resultados.
 
 Escribí como se lo contarías a un amigo que filma con el celular.
 `.trim();
@@ -347,9 +349,10 @@ Si se entiende el negocio:
 }
 
 Reglas:
-- "fuente": "usuario" si lo dijo en el chat o en el historial; "contexto" si viene del perfil del negocio; "inferencia" si lo deducís del rubro.
+- "fuente": "usuario" si lo dijo en el chat o en el historial (lo que dice el mensaje actual cuenta: qué es el producto, para quién es, qué hace); "contexto" si viene del perfil del negocio; "inferencia" si lo deducís del rubro.
 - "lo_mas_raro": los 2 o 3 hechos más específicos, los que solo podrían ser de este negocio.
-- "preguntas_para_el_dueno": hasta 3 preguntas que pidan una anécdota o un dato concreto, por ejemplo "¿Qué fue lo más raro que te pidió un cliente este mes?" o "¿Qué hacés todos los días que a la gente le sorprendería?". Dejalo vacío si ya hay material de sobra.
+- "preguntas_para_el_dueno": hasta 3 preguntas. Cada una tiene que nombrar algo propio de ESTE rubro (un objeto, una herramienta, un tipo de cliente, un momento del día, un error típico) y pedir un episodio o un detalle concreto, no una opinión. Tienen que sonar como las haría alguien que conoce el rubro, y no pueden servir tal cual para otro negocio.
+- Si hay menos de 2 hechos con fuente "usuario" o "contexto", las preguntas son obligatorias. Si ya hay material de sobra, dejalo vacío.
 `;
 
 const historyBlock = (history) =>
@@ -403,21 +406,23 @@ const buildMaterialBlock = (m) => {
   return `Hechos:\n${hechos}\n\nLo más específico:\n${raros || "(ninguno destacado)"}`;
 };
 
-const buildInterviewMessage = (preguntas = []) => {
+const buildInterviewMessage = (preguntas = [], rubro = "") => {
   const qs = preguntas
     .map((q) => String(q ?? "").trim())
     .filter(Boolean)
     .slice(0, 3);
 
+  // Fallback: solo si el modelo no devolvió preguntas propias.
   const lista = qs.length
     ? qs
     : [
-        "¿Qué fue lo más raro que te pidió o te dijo un cliente este mes?",
-        "¿Qué hacés todos los días en el negocio que a la gente le sorprendería ver?",
+        rubro
+          ? `Contame algo que haya pasado en tu negocio (${rubro}) esta semana y que no le pase a cualquiera.`
+          : "Contame algo que haya pasado esta semana en tu negocio y que no le pase a cualquiera.",
       ];
 
   return (
-    "Para que las ideas sean tuyas y no de cualquier negocio del rubro, contame algo real (con una respuesta corta alcanza):\n" +
+    "Me falta un dato real tuyo para que no salga una idea que sirva para cualquier negocio. Una respuesta corta alcanza (o escribí \"generá igual\" y sigo con lo que tengo):\n" +
     lista.map((q, i) => `${i + 1}. ${q}`).join("\n")
   );
 };
@@ -542,9 +547,7 @@ const DESCARTAR_PATTERNS = [
   /game changer/i,
   /cambi(é|a) tu vida/i,
   /lo que nadie te cuenta/i,
-  /\b(potencial viral|viralidad|retención|algoritmo)\b/i,
   /\b\d{1,3}\s?%\s?(viral|retención|probabilidad|más views)/i,
-  /\b(la ia|el algoritmo)\s+(dice|detecta|elige|predice|recomienda)/i,
 ];
 
 const ideaText = (it) =>
@@ -1127,7 +1130,10 @@ export const runIdeaPipeline = async ({
       return {
         plan: {
           tipo: "pregunta",
-          mensaje: buildInterviewMessage(materialOut.preguntas_para_el_dueno),
+          mensaje: buildInterviewMessage(
+            materialOut.preguntas_para_el_dueno,
+            rubroDe(businessContext)
+          ),
         },
         tokens: total(),
         trace,
@@ -1182,7 +1188,10 @@ export const runIdeaPipeline = async ({
     if (!ideas.length) {
       if (canAsk) {
         return {
-          plan: { tipo: "pregunta", mensaje: buildInterviewMessage([]) },
+          plan: {
+            tipo: "pregunta",
+            mensaje: buildInterviewMessage([], rubroDe(businessContext)),
+          },
           tokens: total(),
           trace,
         };
