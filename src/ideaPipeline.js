@@ -1,14 +1,10 @@
 // ============================================================================
 // ideaPipeline.js  (v2)
 //
-// Reemplaza TODO lo que va desde `buildReferencesBlock` hasta el final de tu
-// archivo. Lo de arriba (imports y constantes) se queda como está.
-//
-// Este módulo usa, de lo que ya tenías arriba (yo no lo vi, lo asumo igual):
-//   CFG, CFG_SELECT, SYSTEM_SEPARATE, MAX_INTENTOS, CANTIDAD_FINALISTAS (opcional),
-//   formatOutliers, formatBusinessContext, countQuestions, puedePreguntar, isAbort
-//
-// Ya NO se usan (los podés borrar): CANTIDAD_HOOKS, CANTIDAD_ANGULOS, MECANISMOS.
+// Archivo AUTOCONTENIDO: incluye versiones de reemplazo de los helpers y
+// constantes que estaban en tu archivo original (ver sección "Helpers").
+// Si todavía tenés los originales, borrá los de acá y usá los tuyos: los
+// míos son suposiciones razonables, no copias.
 //
 // Qué cambió respecto a v1 (resumen):
 //  1. Se analizan los outliers de verdad (hook textual, primer cuadro, cuándo paga)
@@ -24,6 +20,84 @@
 //     en vez de puntajes inventados. Se usa de verdad el ganador.
 //  7. Filtros regex mínimos (solo clichés y métricas inventadas).
 // ============================================================================
+
+// ── Helpers y constantes (reemplazos de los que faltaban) ───
+// Suposiciones mías sobre tu código original. Si tenés los tuyos, usá los tuyos.
+
+// Config base que se manda al proxy. Sin thinkingLevel = nivel por defecto del modelo.
+const CFG = { maxOutputTokens: 16384 };
+const CFG_SELECT = { thinkingLevel: "low", maxOutputTokens: 8192 };
+
+// false = el system prompt se antepone al texto (funciona con cualquier proxy).
+const SYSTEM_SEPARATE = false;
+
+const MAX_INTENTOS = 2;
+const CANTIDAD_FINALISTAS = 3;
+
+const isAbort = (e) =>
+  e?.name === "AbortError" || e?.code === 20 || /aborted/i.test(e?.message ?? "");
+
+// businessContext puede venir como string u objeto del perfil del negocio.
+const formatBusinessContext = (raw) => {
+  if (!raw) return null;
+
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    return t || null;
+  }
+
+  if (typeof raw === "object") {
+    const lines = Object.entries(raw)
+      .filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== "")
+      .map(([k, v]) => {
+        const val = Array.isArray(v) ? v.join(", ") : typeof v === "object" ? JSON.stringify(v) : String(v);
+        return `${k.replace(/_/g, " ")}: ${val}`;
+      });
+
+    return lines.length ? lines.join("\n") : null;
+  }
+
+  return String(raw);
+};
+
+// Cuenta cuántas veces ya le preguntó algo al usuario (mensajes del asistente con "?").
+const countQuestions = (history = []) =>
+  history.filter(
+    (m) => m && m.role !== "user" && typeof m.text === "string" && m.text.includes("?")
+  ).length;
+
+// Permite hasta 2 rondas de preguntas, y ninguna si el usuario está iterando un plan.
+const puedePreguntar = ({ asked = 0, lastPlan = null } = {}) =>
+  !lastPlan && asked < 2;
+
+// Convierte los outliers a texto. Usa los campos que existan.
+const formatOutliers = (outliers) => {
+  if (!outliers) return "";
+
+  const list = Array.isArray(outliers) ? outliers : [outliers];
+
+  return list
+    .map((o, i) => {
+      if (typeof o === "string") return `${i + 1}. ${o}`;
+      if (!o || typeof o !== "object") return "";
+
+      const campos = [
+        ["Título", o.title ?? o.titulo],
+        ["Hook", o.hook ?? o.hook_text],
+        ["Transcripción", o.transcript ?? o.transcripcion],
+        ["Descripción", o.description ?? o.descripcion],
+        ["Vistas", o.views ?? o.vistas],
+        ["Duración (s)", o.duration ?? o.duracion],
+        ["URL", o.url ?? o.videoUrl],
+      ]
+        .filter(([, v]) => v !== null && v !== undefined && String(v).trim() !== "")
+        .map(([k, v]) => `   ${k}: ${v}`);
+
+      return campos.length ? `${i + 1}.\n${campos.join("\n")}` : "";
+    })
+    .filter(Boolean)
+    .join("\n\n");
+};
 
 // ── Utilidades ──────────────────────────────────────────────
 const shuffle = (arr) => {
@@ -46,8 +120,7 @@ const N_LENTES = 4; // llamadas paralelas de generación
 const IDEAS_POR_LENTE = 4; // ideas que pide cada llamada
 const EJEMPLOS_POR_LLAMADA = 4; // ejemplos que rotan en cada llamada
 const MIN_HECHOS_REALES = 2; // por debajo de esto, se entrevista al dueño
-const FINALISTAS =
-  typeof CANTIDAD_FINALISTAS === "number" ? CANTIDAD_FINALISTAS : 3;
+const FINALISTAS = CANTIDAD_FINALISTAS;
 
 // ── Ángulos de apertura (se sortean N_LENTES por corrida) ───
 const LENTES = [
@@ -1234,4 +1307,3 @@ export const runIdeaPipeline = async ({
     throw e;
   }
 };
-
