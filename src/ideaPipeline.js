@@ -113,6 +113,8 @@ const shuffle = (arr) => {
 
 const pick = (arr, n) => shuffle(arr).slice(0, n);
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
 const norm = (s) => String(s ?? "").toLowerCase().trim();
 
 const NIVELES = ["alto", "medio", "bajo"];
@@ -493,49 +495,94 @@ HECHO DEL NEGOCIO: el dato del material en el que se apoya
 ENTRA EL NEGOCIO: en qué segundo y a través de qué objeto, acción o detalle
 `.trim();
 
+const normLabel = (s) =>
+  String(s ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+
 const LABEL_MAP = {
-  "TÍTULO": "titulo",
   "TITULO": "titulo",
   "PRIMER CUADRO": "primer_cuadro",
-  DICE: "primera_frase",
+  "DICE": "primera_frase",
   "TEXTO EN PANTALLA": "texto_pantalla",
-  "QUÉ PASA DESPUÉS": "desarrollo",
   "QUE PASA DESPUES": "desarrollo",
   "HECHO DEL NEGOCIO": "hecho_usado",
   "ENTRA EL NEGOCIO": "entrada_marca",
 };
 
+// "DICE (en off)", "Texto en pantalla (máx 8)", etc.
+const resolveLabelKey = (label) => {
+  const n = normLabel(label);
+  if (LABEL_MAP[n]) return LABEL_MAP[n];
+
+  for (const k of Object.keys(LABEL_MAP)) {
+    if (n.startsWith(k + " ")) return LABEL_MAP[k];
+  }
+
+  return null;
+};
+
+const HEADER_RE = /^[ \t]*(?:#{1,6}[ \t]*)?[*_]*[ \t]*IDEA[ \t]*#?\d+[^\n]*$/gim;
+const LABEL_LINE_RE =
+  /^\s*(?:[-*•>]+\s*)?(?:\d+[.)]\s*)?[*_]*\s*([^:\n]{3,40}?)\s*[*_]*\s*:\s*[*_]*\s*(.*)$/;
+
+const splitIdeaBlocks = (text) => {
+  const heads = [...text.matchAll(HEADER_RE)];
+
+  if (heads.length) {
+    return heads.map((h, i) => ({
+      header: h[0],
+      body: text.slice(
+        h.index + h[0].length,
+        i + 1 < heads.length ? heads[i + 1].index : text.length
+      ),
+    }));
+  }
+
+  // Sin encabezados "IDEA n": cortar cada vez que aparece una línea TÍTULO:
+  return text
+    .split(/^(?=[ \t]*(?:[-*•>]+[ \t]*)?[*_]*[ \t]*T[ÍI]TULO[*_ \t]*:)/gim)
+    .filter((part) => part.trim())
+    .map((part) => ({ header: "", body: part }));
+};
+
 const parseIdeas = (rawText, lenteId, startId = 1) => {
-  const text = String(rawText ?? "").replace(/```[a-z]*|```/g, "");
-  const blocks = text.split(/^\s*#{2,4}\s*IDEA\b/im).slice(1);
+  const text = String(rawText ?? "")
+    .replace(/\r/g, "")
+    .replace(/```[a-z]*|```/g, "");
+
   const ideas = [];
 
-  blocks.forEach((block) => {
-    const pMatch = block.match(/\(\s*p\s*=\s*([0-9]+[.,]?[0-9]*)\s*\)/i);
+  for (const { header, body } of splitIdeaBlocks(text)) {
+    const pMatch = `${header}\n${body}`.match(/\bp\s*=\s*([0-9]+[.,]?[0-9]*)/i);
     const p = pMatch ? Number(pMatch[1].replace(",", ".")) : null;
 
     const idea = { lente: lenteId, p: Number.isFinite(p) ? p : null };
     let current = null;
 
-    for (const line of block.split("\n")) {
-      const m = line.match(/^\s*\**\s*([A-ZÁÉÍÓÚÑ ]{3,24}?)\s*\**\s*:\s*\**\s*(.*)$/);
-      const key = m ? LABEL_MAP[m[1].trim().toUpperCase()] : null;
+    for (const line of body.split("\n")) {
+      const m = line.match(LABEL_LINE_RE);
+      const key = m ? resolveLabelKey(m[1]) : null;
 
       if (key) {
         current = key;
-        idea[key] = m[2].trim();
+        idea[key] = m[2].replace(/[*_]+$/g, "").trim();
       } else if (current && line.trim()) {
         idea[current] = `${idea[current] ?? ""} ${line.trim()}`.trim();
       }
     }
 
-    if (
-      String(idea.primer_cuadro ?? "").trim().length >= 10 &&
-      String(idea.desarrollo ?? "").trim().length >= 15
-    ) {
-      ideas.push(idea);
-    }
-  });
+    const tienePrimerCuadro = String(idea.primer_cuadro ?? "").trim().length >= 10;
+    const tieneDesarrollo =
+      String(idea.desarrollo ?? "").trim().length >= 15 ||
+      String(idea.primera_frase ?? "").trim().length >= 5;
+
+    if (tienePrimerCuadro && tieneDesarrollo) ideas.push(idea);
+  }
 
   return ideas.map((it, i) => ({ id: startId + i, ...it }));
 };
@@ -753,7 +800,7 @@ const callGeminiStream = async (
   if (!res.ok) {
     const msg = await res.text().catch(() => "");
     const err = new Error(`gemini-proxy stream ${res.status}: ${msg.slice(0, 200)}`);
-    err.retryable = res.status >= 500;
+    err.retryable = res.status >= 500 || res.status === 429 || res.status === 408;
     throw err;
   }
 
@@ -1024,7 +1071,9 @@ export const runIdeaPipeline = async ({
         lastErr = askError();
       } catch (e) {
         lastErr = e;
+        console.warn(`[${stage}] intento ${intento + 1} falló:`, e?.message);
         if (isAbort(e) || !e.retryable) break;
+        await sleep(700 * (intento + 1));
       }
     }
 
@@ -1173,6 +1222,12 @@ export const runIdeaPipeline = async ({
       (r) => r.status === "rejected" && isAbort(r.reason)
     );
     if (aborted) throw aborted.reason;
+
+    settled.forEach((r, i) => {
+      if (r.status === "rejected") {
+        console.error(`[ideas_${lentes[i].id}] sin resultado:`, r.reason?.message ?? r.reason);
+      }
+    });
 
     let nextId = 1;
     const ideas = [];
