@@ -12,7 +12,7 @@
 //  - FIX: letras A/B/C del schema reemplazadas por nombres (cuando no se puede preguntar, el listado empezaba en "B")
 
 // ── System prompt (único) ────────────────────────────────────
-const buildSystemPrompt = ({ outliers }) => `
+const SYSTEM_PROMPT = `
 <tarea>
 Recibís los datos de un negocio y, opcionalmente, una idea. Devolvés 3 conceptos de video grabables con celular.
 En cada concepto el video trata de algo que vale la pena mirar por sí mismo. El negocio aparece como lugar, persona o consecuencia, nunca como el tema.
@@ -119,6 +119,7 @@ JSON válido sin texto afuera:
 }
 </formato_de_salida>
 `.trim();
+
 // true  -> se envía como body.systemInstruction (requiere que el proxy lo reenvíe a Gemini)
 // false -> se antepone al texto del prompt (compatible con el proxy actual)
 const SYSTEM_SEPARATE = true;
