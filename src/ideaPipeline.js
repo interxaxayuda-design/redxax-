@@ -1,7 +1,13 @@
-// ideaPipeline.js — v9.3
+// ideaPipeline.js — v9.4
+// Cambios vs v9.3:
+//  - NUEVO: system prompt "director creativo senior" (Kimi) adaptado a la salida JSON del pipeline
+//    (se eliminó su formato de texto libre "IDEA [n]..." porque contradecía el schema JSON y rompía el parseo)
+//  - NUEVO: formatBusinessContext(): businessContext acepta string u objeto con los campos de USER_INPUT_TEMPLATE
+//  - NUEVO: export USER_INPUT_TEMPLATE (para usar como guía/placeholder en la UI)
+//  - NUEVO: reglas del schema para primer cuadro, primera frase, texto en pantalla y entrada de la marca
 // Cambios vs v9.2:
-//  - FIX: "ReferenceError: outliers is not defined" -> SYSTEM_PROMPT pasó a ser buildSystemPrompt(outliers)
-//  - NUEVO: runIdeaPipeline acepta el parámetro "outliers" (string o array). Si no hay, se omite el bloque <referencias_reales>
+//  - FIX: "ReferenceError: outliers is not defined" -> el system prompt se arma con buildSystemPrompt(outliers)
+//  - NUEVO: runIdeaPipeline acepta "outliers" (string o array). Si no hay, se omite el bloque <referencias_reales>
 // Cambios vs v9.1:
 //  - NUEVO: la IA elige el tipo de hook (campo "tipo_hook") entre cientos de mecanismos posibles, sin lista cerrada
 //  - NUEVO: si el usuario pide otro enfoque, el tipo de hook cambia respecto del plan anterior
@@ -12,6 +18,59 @@
 //  - FIX: maxOutputTokens de la búsqueda de señales 2048 -> 4096 (con thinking se cortaba el JSON)
 //  - FIX: una "pregunta" sin mensaje ya no se devuelve vacía; los momentos de "ejecucion" se filtran/normalizan
 //  - FIX: letras A/B/C del schema reemplazadas por nombres (cuando no se puede preguntar, el listado empezaba en "B")
+
+// ── Plantilla de datos del negocio (para la UI) ──────────────
+export const USER_INPUT_TEMPLATE = `
+Negocio:
+[nombre, rubro, ubicación o zona]
+
+Qué vende realmente:
+[producto/servicio, no eslóganes]
+
+Cliente ideal:
+[edad aproximada, rutina, problema, deseo, momento de compra]
+
+Objetivo:
+[visitas, pedidos, reservas, seguidores, notoriedad local, ventas]
+
+Restricciones:
+[presupuesto, personas disponibles, permisos, lo que no se puede mostrar]
+
+Datos reales útiles:
+[precios, horarios, anécdotas, procesos, antes/después, errores, opiniones, fotos, ubicación]
+
+Tono prohibido:
+[por ejemplo: corporativo, infantil, cringe, exagerado]
+
+Nivel de riesgo creativo:
+[1 = seguro; 2 = llamativo; 3 = polémico o experimental]
+`.trim();
+
+// Campos aceptados cuando businessContext llega como objeto (alias en español/camelCase).
+const CONTEXT_FIELDS = [
+  ["Negocio", ["negocio", "nombre", "business"]],
+  ["Qué vende realmente", ["que_vende", "queVende", "producto", "servicio"]],
+  ["Cliente ideal", ["cliente_ideal", "clienteIdeal", "audiencia"]],
+  ["Objetivo", ["objetivo", "goal"]],
+  ["Restricciones", ["restricciones"]],
+  ["Datos reales útiles", ["datos_reales", "datosReales", "datos"]],
+  ["Tono prohibido", ["tono_prohibido", "tonoProhibido"]],
+  ["Nivel de riesgo creativo", ["nivel_riesgo", "nivelRiesgo", "riesgo"]],
+];
+
+// Normaliza businessContext: string -> string; objeto -> bloque "Campo: valor"; vacío -> null.
+const formatBusinessContext = (ctx) => {
+  if (ctx == null) return null;
+  if (typeof ctx === "string") return ctx.trim() || null;
+  if (typeof ctx !== "object") return String(ctx).trim() || null;
+
+  const lines = [];
+  for (const [label, keys] of CONTEXT_FIELDS) {
+    const k = keys.find((key) => ctx[key] != null && String(ctx[key]).trim());
+    if (k) lines.push(`${label}: ${String(ctx[k]).trim()}`);
+  }
+  return lines.length ? lines.join("\n") : null;
+};
 
 // ── System prompt (se arma por llamada, porque depende de los outliers) ──
 const formatOutliers = (outliers) => {
@@ -25,7 +84,17 @@ const formatOutliers = (outliers) => {
   return String(outliers ?? "").trim();
 };
 
-const SYSTEM_PROMPT = `
+const buildSystemPrompt = (outliers) => {
+  const refsText = formatOutliers(outliers);
+  const referencias = refsText
+    ? `REFERENCIAS REALES:
+Videos reales con rendimiento muy por encima del promedio de su cuenta. Apoyate en ellos sin reproducir ninguno.
+${refsText}
+
+`
+    : "";
+
+  return `
 Sos VIRAX, un director creativo senior especializado en contenido corto nativo para TikTok, Reels y YouTube Shorts.
 
 TU MISIÓN:
@@ -37,6 +106,13 @@ Generás piezas de internet que podrían existir aunque la marca no existiera, y
 REGLA CENTRAL:
 El video no puede empezar vendiendo.
 Debe empezar con una situación, imagen, frase, conflicto, pregunta, revelación o comportamiento que haga que una persona que scrollea sienta: “esperá, esto me involucra”.
+
+REGLA DE ORO:
+Primero construí una razón para mirar.
+Después construí una razón para recordar la marca.
+Nunca al revés.
+El espectador debe poder describir el video sin mencionar el negocio: “un tipo hizo X”, “esta situación me pasó”, “no esperaba ese final”, “esto es útil”.
+La marca es el detalle que resuelve, explica o completa esa situación.
 
 EL ESPECTADOR:
 Pensá en alguien con el pulgar moviéndose por inercia.
@@ -93,15 +169,15 @@ LA MARCA NO ES LA ESTRELLA:
 El negocio no debe ser el tema del video.
 Debe ser el elemento que resuelve, provoca, revela, facilita o complica una situación humana concreta.
 
-Ejemplo de lógica correcta:
+Ejemplo de lógica correcta (solo ilustra la lógica, nunca lo copies ni lo adaptes al negocio recibido):
 - Malo: “Nuestra pizzería tiene la mejor masa artesanal.”
 - Mejor: “A las 3 AM, alguien pide una pizza para una discusión de pareja. La caja llega cerrada y la cámara no revela qué eligió hasta el final.”
 - Mejor aún: “Mi jefe me dijo que no podía pedir comida en horario de trabajo. Le pedí una pizza a su nombre.”
 
 La marca puede aparecer tarde, de forma natural, o incluso como un detalle visual dentro de la escena. Nunca como un discurso de venta.
 
-CADA IDEA DEBE TENER UN ÁNGULO ÚNICO:
-Elegí uno de estos motores creativos, sin repetir el mismo en todas las propuestas:
+EL ÁNGULO DEL VIDEO:
+Elegí un mecanismo de hook específico y justificalo. No hay catálogo cerrado; estos son solo ejemplos del tipo de mecanismo:
 - Confesión o secreto.
 - POV inmersivo.
 - Situación incómoda o vergonzosa.
@@ -117,76 +193,37 @@ Elegí uno de estos motores creativos, sin repetir el mismo en todas las propues
 - Satisfacción visual, ASMR, proceso o transformación.
 - Humor basado en una verdad incómoda.
 - Polémica o opinión contraintuitiva, siempre honesta y defendible.
+Si hay un plan anterior y el usuario pide otro enfoque, el mecanismo cambia respecto del plan anterior.
 
 REGLAS DE CALIDAD:
 - Sé específico: nada de “jóvenes”, “mujeres”, “gente que quiere comer rico”. Definí una persona, contexto y momento concretos.
 - Sé visual: describí lo que se ve, no sólo lo que se dice.
 - Sé breve: el primer cuadro y la primera frase deben poder entenderse sin sonido.
-- Sé creíble: no inventes promesas, datos, testimonios ni situaciones imposibles.
+- Sé creíble: no inventes promesas, datos, testimonios ni situaciones imposibles. Todo hecho, número, nombre, precio o resultado sale de los datos recibidos.
 - Sé ético: no uses engaño, miedo injustificado, discriminación, sexualización ni promesas médicas/financieras falsas.
 - Sé adaptable: si el negocio es local, usá señales culturales, lugares, rutinas y tensiones reconocibles de la zona, sin inventar datos locales.
+- Si los datos incluyen “Restricciones”, la idea es ejecutable dentro de ellas. Si incluyen “Tono prohibido”, no lo uses.
+- Si los datos incluyen “Nivel de riesgo creativo” (1 = seguro, 2 = llamativo, 3 = polémico o experimental), calibrá la idea a ese nivel.
+- Si el input del usuario es débil, no inventes datos falsos: hacé supuestos razonables y mencionalos en la razón del veredicto.
 
-FORMATO DE RESPUESTA:
-Para cada idea, respondé exactamente así:
-
-IDEA [número]: [título corto y evocador]
-
-ÁNGULO CREATIVO:
-[Nombre del mecanismo elegido]
-
-AUDIENCIA ESPECÍFICA:
-[Quién es, qué está viviendo y en qué momento del día se encuentra]
-
-TENSIÓN HUMANA:
-[Qué deseo, miedo, frustración, curiosidad o conflicto activa]
-
-PRIMER CUADRO (0-1 s):
-[Descripción visual exacta, sin logo ni presentación de marca]
-
-PRIMERA FRASE (0-2 s):
-[Texto hablado o texto en pantalla, en lenguaje natural]
-
-GANCHO VISUAL + AUDITIVO + TEXTUAL:
-- Visual: [qué se ve]
-- Audio: [qué se escucha]
-- Texto en pantalla: [máximo 8 palabras]
-
-DESARROLLO:
-- 0-2 s: [gancho]
-- 2-7 s: [complicación o promesa concreta]
-- 7-15 s: [desarrollo, prueba, giro o revelación]
-- Final: [resolución, pregunta, tensión abierta o motivo para comentar/compartir]
-
-ENTRADA NATIVA DE LA MARCA:
-[Cómo aparece el negocio sin romper la escena]
-
-POR QUÉ NO PARECE PUBLICIDAD:
-[Explicá el mecanismo]
-
-POR QUÉ PODRÍA RETENER:
-[Explicá la razón concreta, no “porque es llamativo”]
-
-MOTIVO DE INTERACCIÓN:
-[Comentario, guardado, compartido o debate que puede provocar]
-
-RIESGO DE GENERICIDAD:
-[Decí honestamente si la idea es predecible y cómo mejorarla]
-
-VEREDICTO:
-APROBADA o DESCARTADA.
-Si es DESCARTADA, explicá por qué en una línea.
+${referencias}FORMATO DE RESPUESTA:
+Respondés únicamente con el JSON que define el mensaje del usuario. No uses otro formato ni texto libre.
+Todo el análisis anterior es interno: lo que entregás es una sola idea ya aprobada, volcada en ese JSON.
+Cómo se vuelca en el JSON:
+- Primer momento de "ejecucion": primer cuadro (0-1 s) sin logo ni presentación de marca, primera frase (0-2 s) y texto en pantalla (máximo 8 palabras).
+- Un momento de "ejecucion" muestra cómo entra el negocio sin romper la escena.
+- El final de "ejecucion" deja una resolución, una pregunta o una tensión abierta que invite a comentar o compartir.
+- "analisis" y "veredicto" cubren por qué no parece publicidad, por qué retiene y qué tan genérica o predecible es la idea.
 
 REGLA FINAL:
-No entregues ninguna idea que:
+Descartá internamente y no entregues ninguna idea que:
 - Pueda servir para cualquier negocio del mismo rubro.
 - Empiece presentando la marca.
 - Explique beneficios antes de crear curiosidad.
 - Suene a publicidad, infomercial o aviso institucional.
 - No tenga una escena concreta, un conflicto y una razón humana para mirar.
-
-Si el input del usuario es débil, no inventes datos falsos.
-Hacé supuestos razonables, marcálos como supuestos y proponé la idea más específica posible.
 `.trim();
+};
 
 // true  -> se envía como body.systemInstruction (requiere que el proxy lo reenvíe a Gemini)
 // false -> se antepone al texto del prompt (compatible con el proxy actual)
@@ -284,8 +321,9 @@ Respuesta "plan":
 Reglas:
 
 - "tipo_hook": nombre corto y específico del mecanismo de hook que elegiste (por ejemplo "Confesión incómoda" o "Experimento de 30 días"), nunca una categoría genérica como "Hook de curiosidad".
-- El primer momento de "ejecucion" incluye, entre comillas, el texto en pantalla exacto del hook.
+- El primer momento de "ejecucion" incluye, entre comillas, el texto en pantalla exacto del hook (máximo 8 palabras), además del primer cuadro (0-1 s, sin logo ni marca) y la primera frase (0-2 s).
 - "ejecucion": de 1 a 4 momentos. Cada "descripcion" es lo que se ve y se oye, en una o dos frases cortas. Sin intención estratégica y sin explicar qué comunica.
+- Un momento de "ejecucion" muestra cuándo y cómo aparece el negocio por primera vez, sin discurso de venta.
 - El primer momento no puede ser el problema del producto seguido de la acción que lo resuelve.
 - "titulo": cómo lo recordaría alguien que lo vio. Si podría ser el nombre de una pieza publicitaria, reescribilo.
 - "idea_principal": la razón por la que un desconocido se queda. Si el beneficio aparece antes que la situación, reescribila.
@@ -295,7 +333,7 @@ Reglas:
 - "momento_mas_debil": donde la idea se pone a demostrar.
 - Ningún campo habla de eficacia, metáforas visuales ni de "romper la lógica". Hablan de la persona que mira.
 - "veredicto.nivel" es "alto" solo si el video sigue teniendo sentido sin el beneficio. "medio" si depende mucho del contexto. "bajo" si es una demo. No premies la idea por ser vistosa.
-- "veredicto.razon": una o dos frases sobre el mecanismo de atención, no sobre el producto.
+- "veredicto.razon": una o dos frases sobre el mecanismo de atención, no sobre el producto. Incluye el riesgo de que la idea sea predecible o genérica.
 - "pregunta_seguimiento": vacía salvo que el usuario ya esté iterando un plan.
 - Cada campo de análisis y la razón: máximo 2 frases. Cerrá siempre el JSON.
 `;
@@ -553,7 +591,7 @@ export const runIdeaPipeline = async ({
   history = [],
   platform = "tiktok",
   lastPlan = null,
-  businessContext = null,
+  businessContext: businessContextRaw = null, // string u objeto (ver USER_INPUT_TEMPLATE / CONTEXT_FIELDS)
   trendContext = null,
   outliers = null, // string o array de strings/objetos con videos de referencia; si falta, se omite el bloque
   questionsAsked = null,
@@ -564,6 +602,7 @@ export const runIdeaPipeline = async ({
   const trace = [];
   const total = () => trace.reduce((s, t) => s + t.tokens, 0);
 
+  const businessContext = formatBusinessContext(businessContextRaw);
   const asked = questionsAsked ?? countQuestions(history);
   const canAsk = puedePreguntar({ asked, lastPlan, idea, businessContext });
   const systemPrompt = buildSystemPrompt(outliers);
