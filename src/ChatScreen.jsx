@@ -1,8 +1,8 @@
 import { ArrowLeft, ArrowUp, Check, Copy, Gem, Mic, RotateCcw, Square } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { runIdeaPipeline } from './ideaPipeline.js';
 import { REVIEW_CONFIG } from './prompts.js';
+import { runIdeaPipeline } from './viraxPipeline.js';
 
 const PLATFORMS = [
   { id: 'tiktok', label: 'TikTok' },
