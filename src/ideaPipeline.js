@@ -1,13 +1,9 @@
 // ============================================================================
-// ideaPipeline.js  (v3 — un solo prompt)
+// ideaPipeline.js  (v4 — un solo prompt, salida JSON estricta)
 //
-// Una única llamada al modelo. El único prompt del archivo es
-// buildSystemPrompt(); el mensaje de usuario lleva SOLO datos (material,
-// historial, plan anterior, pedido), sin instrucciones.
-//
-// Se mantiene la firma de runIdeaPipeline y el shape { plan, tokens, trace }.
-// Parámetros aceptados pero ignorados: judgeModel, platform, trendContext,
-// outliers, questionsAsked, useSearch.
+// Una única llamada al modelo. El único prompt es buildSystemPrompt(), que
+// incluye el formato de salida. El mensaje de usuario lleva SOLO datos.
+// El resultado se parsea a { titulo, idea_principal, ejecucion[] }.
 // ============================================================================
 
 // ── Config ──────────────────────────────────────────────────
@@ -18,6 +14,7 @@ const SYSTEM_SEPARATE = false;
 
 const MAX_INTENTOS = 2;
 const MIN_CHARS_RESPUESTA = 30;
+const MAX_PASOS = 8;
 
 // ── Utilidades ──────────────────────────────────────────────
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -59,20 +56,34 @@ const historyBlock = (history) =>
         .join("\n")
     : "(primera interacción)";
 
-// ── EL prompt ───────────────────────────────────────────────
+// ── EL prompt (tu texto + bloque de formato) ────────────────
 const buildSystemPrompt = () =>
   `
 Si fueras un asistente de IA que ayuda a un humano a generar un plan de acción para una idea de negocio para que su video se haga viral, ¿qué harías?
 
 - Analizá la idea y el contexto del negocio.
 - Generá un plan de acción con título, idea principal y pasos de ejecución.
+- Trata que sea algo como los videos virales de ahora, no necesariamente de negocios, si no trata de tener una base de como son estos. Investiga en internet.
 
+Respondé SOLO con un objeto JSON válido (no un array), sin texto antes ni después y sin bloques de código, con exactamente esta forma:
+{
+  "titulo": "string corto",
+  "idea_principal": "string de 1 o 2 frases",
+  "ejecucion": [
+    { "momento": "rango de tiempo, ej: 0-3s", "descripcion": "qué se ve y qué se dice" }
+  ]
+}
+Entre 3 y 6 elementos en "ejecucion". Todos los valores son strings. No agregues claves extra.
 `.trim();
 
 // ── Mensaje de usuario: solo datos, cero instrucciones ──────
 const buildUserMessage = ({ idea, history, lastPlan, businessContext }) => {
   const prev = lastPlan
-    ? `\n<plan_anterior>\n${lastPlan.guion_texto ?? JSON.stringify(lastPlan)}\n</plan_anterior>\n`
+    ? `\n<plan_anterior>\n${JSON.stringify({
+        titulo: lastPlan.titulo,
+        idea_principal: lastPlan.idea_principal,
+        ejecucion: lastPlan.ejecucion,
+      })}\n</plan_anterior>\n`
     : "";
 
   return `
@@ -87,6 +98,29 @@ ${prev}
 <pedido>
 ${idea}
 </pedido>`.trim();
+};
+
+// ── Parsing ─────────────────────────────────────────────────
+const parseJson = (raw) => {
+  if (!raw || typeof raw !== "string") return null;
+
+  const s = raw.replace(/```json|```/g, "").trim();
+  const a = s.indexOf("{");
+  const b = s.lastIndexOf("}");
+
+  if (a === -1 || b === -1) return null;
+
+  try {
+    return JSON.parse(s.slice(a, b + 1));
+  } catch {
+    return null;
+  }
+};
+
+const formatError = () => {
+  const err = new Error("La IA devolvió un formato inesperado. Probá de nuevo.");
+  err.retryable = true;
+  return err;
 };
 
 // ── Streaming (solo texto) ──────────────────────────────────
@@ -179,31 +213,37 @@ const callGeminiStream = async (supabase, body, { onThinking, signal } = {}) => 
   return { text, tokens, usedSearch };
 };
 
-// ── Texto libre -> plan (sin segunda llamada al modelo) ─────
-// Envuelve la respuesta en el shape que consume la UI. Los campos de
-// análisis/veredicto quedan neutros porque ya no hay etapa que los genere.
+// ── JSON del modelo -> plan para la UI ──────────────────────
+// Si el JSON no tiene idea_principal o ejecucion, lanza error reintentable.
 const toPlan = (rawText) => {
-  const clean = String(rawText ?? "").replace(/```[a-z]*|```/g, "").trim();
+  const json = parseJson(rawText);
+  const o = Array.isArray(json) ? json[0] : json;
 
-  const paragraphs = clean
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean);
+  const ejecucion = (Array.isArray(o?.ejecucion) ? o.ejecucion : [])
+    .map((e) =>
+      typeof e === "string"
+        ? { momento: "", descripcion: e.trim() }
+        : {
+            momento: String(e?.momento ?? "").trim(),
+            descripcion: String(e?.descripcion ?? "").trim(),
+          }
+    )
+    .filter((e) => e.descripcion)
+    .slice(0, MAX_PASOS);
 
-  const titulo = (paragraphs[0] ?? "")
-    .split("\n")[0]
-    .replace(/^[#>*_\-\s]+|[*_\s]+$/g, "")
-    .slice(0, 100);
+  const idea_principal = String(o?.idea_principal ?? "").trim();
+
+  if (!idea_principal || !ejecucion.length) throw formatError();
 
   return {
     tipo: "plan",
-    titulo,
-    idea_principal: paragraphs[0] ?? clean,
-    ejecucion: paragraphs.map((descripcion) => ({ momento: "", descripcion })),
+    titulo: String(o.titulo ?? "").trim(),
+    idea_principal,
+    ejecucion,
+    // Placeholders neutros: ya no hay etapa que genere análisis ni veredicto.
     analisis: null,
     veredicto: { nivel: "medio", razon: "" },
     pregunta_seguimiento: "",
-    guion_texto: clean,
   };
 };
 
@@ -217,6 +257,7 @@ export const runIdeaPipeline = async ({
   businessContext: businessContextRaw = null,
   onThinking = null,
   signal = null,
+  useSearch = true, // tu prompt dice "Investiga en internet": sin esto no busca
 }) => {
   const trace = [];
   const total = () => trace.reduce((s, t) => s + t.tokens, 0);
@@ -238,7 +279,7 @@ export const runIdeaPipeline = async ({
         {
           ...CFG,
           ...(intento > 0 ? { thinkingLevel: "low" } : {}),
-          useSearch: false,
+          useSearch,
           model,
           ...(SYSTEM_SEPARATE ? { systemInstruction: system } : {}),
           text: (SYSTEM_SEPARATE ? "" : `${system}\n\n`) + userMessage,
