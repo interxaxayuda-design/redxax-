@@ -1,173 +1,175 @@
-// viraxPrompt.js — prompt, contexto y validación del plan de VIRAX
-// Contrato con gemini-proxy (modo stream): { stream, systemInstruction, text, thinkingLevel }
+// src/viraxPipeline.js
+// Conecta ChatScreen con viraxPrompt.js y la Edge Function "gemini-proxy".
+//
+// Contrato (lo que ChatScreen ya espera):
+//   runIdeaPipeline({ supabase, model, idea, history, platform, lastPlan, signal, onThinking })
+//     → { plan, tokens }
+//   Los errores pueden traer err.tokens (ChatScreen los suma al límite de sesión).
 
-const MAX_HISTORY_TURNS = 6;
-const MAX_CHARS_PER_TURN = 600;
-const MAX_CHARS_LAST_PLAN = 3000;
+import { buildChatRequest, parsePlan } from "./viraxPrompt.js";
 
-// Evita que el texto del usuario cierre o abra etiquetas del prompt
-const neutralize = (s = "") =>
-  String(s).replace(
-    /<\/?(idea_del_usuario|historial|contexto|plataforma|duracion_objetivo_s)>/gi,
-    ""
-  );
+const PROXY_FN = "gemini-proxy";
 
-// Planes viejos del bot (JSON) → una línea. Ahorra tokens.
-const compactBotText = (text = "") => {
-  try {
-    const p = JSON.parse(text);
-    if (p && typeof p.titulo === "string") {
-      return `[plan previo] ${p.titulo} — ${p.idea_principal ?? ""}`;
-    }
-  } catch {
-    /* no era JSON */
-  }
-  return text;
+const PLATFORM_LABELS = {
+  tiktok: "TikTok",
+  reels: "Instagram Reels",
+  shorts: "YouTube Shorts",
 };
 
-// Pasale el historial SIN el mensaje actual (la idea va aparte).
-// El último mensaje del bot se conserva completo para poder iterar sobre él.
-const historyBlock = (history = []) => {
-  const recent = history.slice(-MAX_HISTORY_TURNS);
-  if (!recent.length) return "(primera interacción)";
+const estimateTokens = (s) => Math.ceil(String(s ?? "").length / 4);
 
-  let lastBotIdx = -1;
-  recent.forEach((m, i) => {
-    if (m.role !== "user") lastBotIdx = i;
-  });
-
-  return recent
-    .map((m, i) => {
-      const isUser = m.role === "user";
-      const raw = String(m.text ?? "");
-      const isLastBot = i === lastBotIdx;
-      const text = isUser || isLastBot ? raw : compactBotText(raw);
-      const limit = isLastBot ? MAX_CHARS_LAST_PLAN : MAX_CHARS_PER_TURN;
-      return `${isUser ? "USUARIO" : "VIRAX"}: ${neutralize(text.slice(0, limit))}`;
-    })
-    .join("\n");
-};
-
-// Estático → va en systemInstruction (cacheable de forma implícita)
-const SYSTEM_PROMPT = `
-<rol>
-Sos VIRAX, estratega de video corto (TikTok, Reels, Shorts) especializado en retención de los primeros 3 segundos. No opinás: entregás un guion ejecutable para la idea del usuario. Respondé en español.
-</rol>
-
-<criterios>
-1. ESPECIFICIDAD: cada afirmación lleva un dato concreto (número, objeto, situación, nicho). Si una línea serviría para cualquier negocio, reescribila.
-2. GANCHO (primer elemento, 0-3s): máx. 15 palabras habladas. Primer estímulo visual y primera palabra en el instante 0, sin saludo ni presentación. Usá UN solo mecanismo: brecha de curiosidad, afirmación contraintuitiva, número específico o error personal.
-3. INTERRUPCIÓN DE PATRÓN: el gancho incluye un cambio visual o sonoro concreto (corte seco, zoom, contraste, sonido).
-4. RETENCIÓN: cada segmento abre una pregunta o promesa que se resuelve en el siguiente. El último cierra el loop con CTA o con un final que invite a re-ver.
-5. MARCO: PAS (problema → agitación → solución) por defecto; AIDA si el objetivo es venta directa.
-</criterios>
-
-<prohibido>
-- Aperturas: "Hola", "En este video", "Hoy te voy a mostrar", "¿Sabías que...?".
-- Adjetivos vacíos ("increíble", "revolucionario") sin dato que los respalde.
-- Consejos aplicables a cualquier negocio.
-- Rangos de tiempo sin acción visual concreta.
-</prohibido>
-
-<proceso_interno>
-Antes de responder, generá mentalmente 3 ganchos distintos, descartá los que podrían aplicarse a otro negocio y desarrollá el más específico. No muestres este razonamiento.
-</proceso_interno>
-
-<seguimiento>
-Si el historial contiene un plan previo y el usuario pide un ajuste (más corto, otro tono, otro gancho, otro nicho), devolvé el plan COMPLETO actualizado en el mismo formato JSON, conservando lo que no pidió cambiar. Si pide una idea nueva, ignorá el plan previo.
-</seguimiento>
-
-<datos_faltantes>
-No hagas preguntas. Si falta un dato crítico (nicho, público), asumí lo más probable y declaralo en la última frase de "idea_principal".
-</datos_faltantes>
-
-<formato>
-Respondé SOLO con un objeto JSON válido (no un array), sin texto antes ni después y sin bloques de código:
-{
-  "titulo": "máx. 8 palabras, nombra el ángulo (no el rubro)",
-  "idea_principal": "1-2 frases: ángulo + a quién + por qué retiene",
-  "ejecucion": [
-    { "momento": "0-3s", "descripcion": "VISUAL: ... | DICE: \\"...\\" | TEXTO EN PANTALLA: ..." }
-  ]
-}
-Reglas: entre 3 y 6 elementos; el primero empieza en "0-"; rangos contiguos sin solaparse; duración total según <duracion_objetivo_s>. Todos los valores son strings. No agregues claves extra.
-</formato>
-
-<ejemplo>
-Entrada: "Vendo velas de soja artesanales por Instagram"
-Salida:
-{"titulo":"La vela de $3.000 que dura 40 horas","idea_principal":"Contrastar en vivo una vela de supermercado que se apaga en 8 h con una de soja medida con cronómetro, para compradoras que deciden por precio. Retiene porque promete un resultado medible al final. Supuesto: público femenino 25-45.","ejecucion":[{"momento":"0-3s","descripcion":"VISUAL: dos velas encendidas, cronómetro en 00:00 entre ambas, corte seco a la barata derretida | DICE: \\"Esta vela de $1.500 murió en 8 horas. Mirá la mía.\\" | TEXTO EN PANTALLA: 8h vs 40h"},{"momento":"3-10s","descripcion":"VISUAL: timelapse de ambas velas con el cronómetro corriendo | DICE: \\"La de parafina te suelta hollín. La de soja arde limpia y más lenta.\\" | TEXTO EN PANTALLA: Hollín vs llama limpia"},{"momento":"10-20s","descripcion":"VISUAL: cronómetro en 40:00 con la vela de soja aún encendida | DICE: \\"Cuarenta horas. Menos de la mitad del costo por hora.\\" | TEXTO EN PANTALLA: $75/h vs $187/h"},{"momento":"20-25s","descripcion":"VISUAL: mano apagando la vela, plano del frasco con la etiqueta | DICE: \\"Link en bio. ¿Querés ver qué pasa a las 41 horas?\\" | TEXTO EN PANTALLA: Link en bio"}]}
-El ejemplo marca el nivel de especificidad esperado; no copies su tema ni su contenido.
-</ejemplo>
-`.trim();
-
-// Mantiene el nombre que ya usa ChatScreen
-const buildSystemPrompt = () => SYSTEM_PROMPT;
-
-// Variable → va en el mensaje de usuario
-const buildUserMessage = ({
-  idea,
-  history = [],
-  plataforma = "TikTok/Reels",
-  duracionS = 30,
-}) =>
-  `<contexto>
-<plataforma>${neutralize(plataforma)}</plataforma>
-<duracion_objetivo_s>${Number(duracionS) || 30}</duracion_objetivo_s>
-<historial>
-${historyBlock(history)}
-</historial>
-</contexto>
-<idea_del_usuario>
-${neutralize(idea)}
-</idea_del_usuario>`;
-
-// Body listo para enviar a gemini-proxy (sin temperature: 3.8 Flash y Argon la ignoran)
-const buildChatRequest = ({
-  idea,
-  history = [],
-  plataforma,
-  duracionS,
-  thinkingLevel = "medium",
-}) => ({
-  stream: true,
-  systemInstruction: buildSystemPrompt(),
-  text: buildUserMessage({ idea, history, plataforma, duracionS }),
-  thinkingLevel,
+// ── Último plan completo ─────────────────────────────────────
+// ChatScreen resume los planes viejos en una línea ("(Plan entregado: …)").
+// Para iterar ("hazlo más corto") el modelo necesita el último plan completo.
+const slimPlan = (p) => ({
+  titulo: p.titulo,
+  idea_principal: p.idea_principal,
+  ejecucion: (p.ejecucion ?? []).map(({ momento, descripcion }) => ({ momento, descripcion })),
 });
 
-// Extrae y valida el plan. Lanza Error si no cumple → reintentá 1 vez.
-const extractJson = (raw) => {
-  const clean = String(raw ?? "")
-    .trim()
-    .replace(/^```(?:json)?\s*|\s*```$/g, "");
+const withLastPlan = (history, lastPlan) => {
+  if (!lastPlan?.idea_principal) return history;
+  const json = JSON.stringify(slimPlan(lastPlan));
+  const idx = history.findLastIndex((m) => m.role !== "user");
+  if (idx === -1) return [...history, { role: "bot", text: json }];
+  return history.map((m, i) => (i === idx ? { ...m, text: json } : m));
+};
+
+// ── Parser del stream ────────────────────────────────────────
+// Acepta SSE estilo Gemini:  data: {"candidates":[{"content":{"parts":[{"text","thought"}]}}]}
+// Si el proxy devuelve texto plano, usa el texto completo como respuesta.
+function createStreamParser(onThinking) {
+  let buffer = "";
+  let raw = "";
+  let answer = "";
+  let sawSSE = false;
+  let tokens = 0;
+
+  const handleEvent = (evt) => {
+    const usage = evt?.usageMetadata;
+    if (usage?.totalTokenCount) tokens = usage.totalTokenCount;
+    const parts = evt?.candidates?.[0]?.content?.parts ?? [];
+    for (const part of parts) {
+      if (typeof part?.text !== "string" || !part.text) continue;
+      if (part.thought) onThinking?.(part.text);
+      else answer += part.text;
+    }
+  };
+
+  const handleLine = (line) => {
+    const l = line.trim();
+    if (!l.startsWith("data:")) return;
+    sawSSE = true;
+    const data = l.slice(5).trim();
+    if (!data || data === "[DONE]") return;
+    try {
+      handleEvent(JSON.parse(data));
+    } catch {
+      /* evento parcial o no-JSON */
+    }
+  };
+
+  return {
+    push(chunk) {
+      raw += chunk;
+      buffer += chunk;
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+      lines.forEach(handleLine);
+    },
+    end() {
+      if (buffer) handleLine(buffer);
+      return { answer: sawSSE ? answer : raw, tokens };
+    },
+  };
+}
+
+async function readStream(stream, parser, signal) {
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
   try {
-    return JSON.parse(clean);
-  } catch {
-    const match = clean.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("La respuesta no contiene JSON");
-    return JSON.parse(match[0]);
+    for (;;) {
+      if (signal?.aborted) throw new DOMException("Cancelado", "AbortError");
+      const { done, value } = await reader.read();
+      if (done) break;
+      parser.push(decoder.decode(value, { stream: true }));
+    }
+    parser.push(decoder.decode());
+  } finally {
+    reader.cancel().catch(() => {});
   }
-};
+}
 
-const parsePlan = (raw) => {
-  const plan = extractJson(raw);
-  const ok =
-    plan &&
-    typeof plan.titulo === "string" &&
-    typeof plan.idea_principal === "string" &&
-    Array.isArray(plan.ejecucion) &&
-    plan.ejecucion.length >= 3 &&
-    plan.ejecucion.length <= 6 &&
-    plan.ejecucion.every(
-      (e) => typeof e?.momento === "string" && typeof e?.descripcion === "string"
-    ) &&
-    /^0\s*-/.test(plan.ejecucion[0].momento);
-  if (!ok) throw new Error("Plan inválido");
-  return plan;
-};
+// ── Llamada al proxy ─────────────────────────────────────────
+// supabase.functions.invoke devuelve: Response (si es text/event-stream),
+// string (texto plano), Blob o un objeto (JSON). Se cubren todos.
+async function callProxy(supabase, body, { signal, onThinking }) {
+  const { data, error } = await supabase.functions.invoke(PROXY_FN, { body, signal });
+  if (signal?.aborted) throw new DOMException("Cancelado", "AbortError");
+  if (error) throw error; // mensaje "non-2xx…" → friendlyError de ChatScreen lo traduce
 
-export {
-  buildChatRequest, buildSystemPrompt,
-  buildUserMessage, historyBlock, parsePlan, SYSTEM_PROMPT
-};
+  const parser = createStreamParser(onThinking);
+
+  if (data instanceof Response && data.body) await readStream(data.body, parser, signal);
+  else if (data instanceof ReadableStream) await readStream(data, parser, signal);
+  else if (data instanceof Blob) parser.push(await data.text());
+  else if (typeof data === "string") parser.push(data);
+  else if (data && typeof data === "object") {
+    const text = typeof data.text === "string" ? data.text : JSON.stringify(data);
+    return { answer: text, tokens: Number(data.tokens ?? data.usage?.totalTokens) || 0 };
+  } else {
+    throw new Error("Respuesta vacía del proxy");
+  }
+  return parser.end();
+}
+
+// ── API pública ──────────────────────────────────────────────
+export async function runIdeaPipeline({
+  supabase,
+  model,
+  idea,
+  history = [],
+  platform = "tiktok",
+  lastPlan = null,
+  signal,
+  onThinking,
+}) {
+  const body = {
+    ...buildChatRequest({
+      idea,
+      history: withLastPlan(history, lastPlan),
+      plataforma: PLATFORM_LABELS[platform], // undefined → default de buildUserMessage
+    }),
+    ...(model ? { model } : {}),
+  };
+
+  const inputTokens = estimateTokens(body.systemInstruction + body.text);
+  let tokens = 0;
+
+  // Máx. 2 intentos, SOLO si la respuesta llegó pero no valida.
+  // Errores de red/HTTP/cancelación suben directo (no se reintenta un 402).
+  for (let attempt = 0; attempt < 2; attempt++) {
+    let res;
+    try {
+      res = await callProxy(supabase, body, {
+        signal,
+        onThinking: attempt === 0 ? onThinking : undefined, // el reintento no duplica el pensamiento en la UI
+      });
+    } catch (err) {
+      if (tokens && err && typeof err === "object") err.tokens = tokens;
+      throw err;
+    }
+
+    tokens += res.tokens || inputTokens + estimateTokens(res.answer);
+
+    try {
+      return { plan: parsePlan(res.answer), tokens };
+    } catch (err) {
+      console.warn(`[viraxPipeline] intento ${attempt + 1} inválido: ${err.message}`, res.answer.slice(0, 300));
+    }
+  }
+
+  const err = new Error("La IA devolvió un formato inesperado. Inténtalo de nuevo.");
+  err.tokens = tokens;
+  throw err;
+}
