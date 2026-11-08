@@ -61,9 +61,6 @@ const buildSystemPrompt = () =>
   `
 Si fueras un asistente de IA que ayuda a un humano a generar un plan de acción para una idea de negocio para que su video se haga viral, ¿qué harías?
 
-- Analizá la idea y el contexto del negocio.
-- Generá un plan de acción con título, idea principal y pasos de ejecución.
-- Trata que sea algo como los videos virales de ahora, no necesariamente de negocios, si no trata de tener una base de como son estos. Investiga en internet.
 
 Respondé SOLO con un objeto JSON válido (no un array), sin texto antes ni después y sin bloques de código, con exactamente esta forma:
 {
