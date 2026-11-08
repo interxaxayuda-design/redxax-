@@ -1,9 +1,9 @@
 // ============================================================================
-// ideaPipeline.js  (v4 — un solo prompt, salida JSON estricta)
+// ideaPipeline.js  (v5 — un solo prompt, salida JSON estricta)
 //
-// Una única llamada al modelo. El único prompt es buildSystemPrompt(), que
-// incluye el formato de salida. El mensaje de usuario lleva SOLO datos.
-// El resultado se parsea a { titulo, idea_principal, ejecucion[] }.
+// Una única llamada al modelo. El único prompt es SYSTEM_PROMPT. El mensaje de
+// usuario lleva SOLO datos. El resultado se parsea a { titulo, idea_principal,
+// ejecucion[] } y se adapta al formato que espera ChatScreen.
 // ============================================================================
 
 // ── Config ──────────────────────────────────────────────────
@@ -12,9 +12,20 @@ const CFG = { maxOutputTokens: 16384 };
 // false = el system prompt se antepone al texto (funciona con cualquier proxy).
 const SYSTEM_SEPARATE = false;
 
+// true = pide al proxy responseMimeType "application/json" (solo se envía
+// cuando useSearch es false, porque Gemini no permite JSON mode con búsqueda).
+// Si tu gemini-proxy rechaza ese campo, ponelo en false.
+const JSON_MODE = true;
+
 const MAX_INTENTOS = 2;
 const MIN_CHARS_RESPUESTA = 30;
 const MAX_PASOS = 8;
+
+const PLATFORM_LABELS = {
+  tiktok: "TikTok",
+  reels: "Instagram Reels",
+  shorts: "YouTube Shorts",
+};
 
 // ── Utilidades ──────────────────────────────────────────────
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -56,7 +67,17 @@ const historyBlock = (history = []) =>
         .join("\n")
     : "(primera interacción)";
 
-// Estático → va primero y es cacheable (ahorra tokens)
+// Versión compacta del plan anterior (para no gastar tokens de más).
+const compactPlan = (plan) => {
+  if (!plan) return null;
+  return JSON.stringify({
+    titulo: plan.titulo,
+    idea_principal: plan.idea_principal,
+    ejecucion: plan.ejecucion,
+  });
+};
+
+// ── Prompt (estático → va primero y es cacheable) ───────────
 const SYSTEM_PROMPT = `
 <rol>
 Sos VIRAX, estratega de video corto (TikTok, Reels, Shorts) especializado en retención de los primeros 3 segundos. No opinás: entregás un guion ejecutable para la idea del usuario.
@@ -85,6 +106,10 @@ Antes de responder, generá mentalmente 3 ganchos distintos, descartá los que p
 No hagas preguntas. Si falta un dato crítico (nicho, público), asumí lo más probable y declaralo en la última frase de "idea_principal".
 </datos_faltantes>
 
+<contexto_opcional>
+Si el mensaje trae <negocio>, usalo para que el guion sea específico de ese negocio. Si trae <plan_anterior>, el usuario quiere ajustar o iterar ese plan: devolvé el plan completo actualizado, no solo los cambios.
+</contexto_opcional>
+
 <formato>
 Respondé SOLO con un objeto JSON válido (no un array), sin texto antes ni después y sin bloques de código:
 {
@@ -94,7 +119,7 @@ Respondé SOLO con un objeto JSON válido (no un array), sin texto antes ni desp
     { "momento": "0-3s", "descripcion": "VISUAL: ... | DICE: \\"...\\" | TEXTO EN PANTALLA: ..." }
   ]
 }
-Reglas: entre 3 y 6 elementos; el primero empieza en "0-"; rangos contiguos sin solaparse; duración total según <duracion_objetivo_s>. Todos los valores son strings. No agregues claves extra.
+Reglas: entre 3 y 6 elementos; el primero empieza en "0-"; rangos contiguos sin solaparse; duración total según <duracion_objetivo_s>. Todos los valores son strings. No agregues claves extra. Nunca respondas en prosa: aunque la idea del usuario sea vaga, entregá el JSON con tu mejor suposición.
 </formato>
 
 <ejemplo>
@@ -105,57 +130,72 @@ El ejemplo marca el nivel de especificidad esperado; no copies su tema ni su con
 </ejemplo>
 `.trim();
 
-const buildUserMessage = ({ idea, history = [], plataforma = "TikTok/Reels", duracionS = 30 }) =>
-  `<contexto>
-<plataforma>${plataforma}</plataforma>
+const buildSystemPrompt = () => SYSTEM_PROMPT;
+
+// El mensaje de usuario lleva SOLO datos.
+const buildUserMessage = ({
+  idea,
+  history = [],
+  platform = "TikTok/Reels",
+  duracionS = 30,
+  businessContext = null,
+  lastPlan = null,
+}) => {
+  const negocio = businessContext ? `<negocio>\n${businessContext}\n</negocio>\n` : "";
+  const previo = lastPlan ? `<plan_anterior>\n${compactPlan(lastPlan)}\n</plan_anterior>\n` : "";
+
+  return `<contexto>
+<plataforma>${platform}</plataforma>
 <duracion_objetivo_s>${duracionS}</duracion_objetivo_s>
-<historial>
+${negocio}${previo}<historial>
 ${historyBlock(history)}
 </historial>
 </contexto>
 <idea_del_usuario>
 ${idea}
 </idea_del_usuario>`;
-
-// Validación estricta post-respuesta (reintentá 1 vez si falla)
-const parsePlan = (raw) => {
-  const plan = JSON.parse(raw.trim().replace(/^```(?:json)?\s*|\s*```$/g, ""));
-  const ok =
-    typeof plan.titulo === "string" &&
-    typeof plan.idea_principal === "string" &&
-    Array.isArray(plan.ejecucion) &&
-    plan.ejecucion.length >= 3 &&
-    plan.ejecucion.length <= 6 &&
-    plan.ejecucion.every(
-      (e) => typeof e.momento === "string" && typeof e.descripcion === "string"
-    ) &&
-    /^0\s*-/.test(plan.ejecucion[0].momento);
-  if (!ok) throw new Error("Plan inválido");
-  return plan;
 };
 
-
-
 // ── Parsing ─────────────────────────────────────────────────
+// Tolera bloques de código, texto antes/después y arrays con un objeto.
 const parseJson = (raw) => {
   if (!raw || typeof raw !== "string") return null;
 
-  const s = raw.replace(/```json|```/g, "").trim();
-  const a = s.indexOf("{");
-  const b = s.lastIndexOf("}");
-
-  if (a === -1 || b === -1) return null;
+  const s = raw.replace(/```(?:json)?/gi, "").trim();
 
   try {
-    return JSON.parse(s.slice(a, b + 1));
+    return JSON.parse(s);
   } catch {
-    return null;
+    /* sigue */
   }
+
+  const a = s.indexOf("{");
+  const b = s.lastIndexOf("}");
+  if (a !== -1 && b > a) {
+    try {
+      return JSON.parse(s.slice(a, b + 1));
+    } catch {
+      /* sigue */
+    }
+  }
+
+  const c = s.indexOf("[");
+  const d = s.lastIndexOf("]");
+  if (c !== -1 && d > c) {
+    try {
+      return JSON.parse(s.slice(c, d + 1));
+    } catch {
+      /* sigue */
+    }
+  }
+
+  return null;
 };
 
-const formatError = () => {
+const formatError = (rawText = "") => {
   const err = new Error("La IA devolvió un formato inesperado. Probá de nuevo.");
   err.retryable = true;
+  err.raw = rawText;
   return err;
 };
 
@@ -250,12 +290,18 @@ const callGeminiStream = async (supabase, body, { onThinking, signal } = {}) => 
 };
 
 // ── JSON del modelo -> plan para la UI ──────────────────────
-// Si el JSON no tiene idea_principal o ejecucion, lanza error reintentable.
+// Valida la estructura. Si falta idea_principal o ejecucion, lanza un error
+// reintentable que lleva la respuesta cruda para poder diagnosticar.
 const toPlan = (rawText) => {
   const json = parseJson(rawText);
   const o = Array.isArray(json) ? json[0] : json;
 
-  const ejecucion = (Array.isArray(o?.ejecucion) ? o.ejecucion : [])
+  if (!o || typeof o !== "object") {
+    console.warn("[idea] sin JSON en la respuesta:", String(rawText).slice(0, 600));
+    throw formatError(rawText);
+  }
+
+  const ejecucion = (Array.isArray(o.ejecucion) ? o.ejecucion : [])
     .map((e) =>
       typeof e === "string"
         ? { momento: "", descripcion: e.trim() }
@@ -267,18 +313,21 @@ const toPlan = (rawText) => {
     .filter((e) => e.descripcion)
     .slice(0, MAX_PASOS);
 
-  const idea_principal = String(o?.idea_principal ?? "").trim();
+  const idea_principal = String(o.idea_principal ?? "").trim();
 
-  if (!idea_principal || !ejecucion.length) throw formatError();
+  if (!idea_principal || !ejecucion.length) {
+    console.warn("[idea] JSON incompleto:", String(rawText).slice(0, 600));
+    throw formatError(rawText);
+  }
 
   return {
     tipo: "plan",
     titulo: String(o.titulo ?? "").trim(),
     idea_principal,
     ejecucion,
-    // Placeholders neutros: ya no hay etapa que genere análisis ni veredicto.
+    // Sin etapa de análisis ni veredicto: null para que la UI no dibuje esas tarjetas.
     analisis: null,
-    veredicto: { nivel: "medio", razon: "" },
+    veredicto: null,
     pregunta_seguimiento: "",
   };
 };
@@ -289,19 +338,25 @@ export const runIdeaPipeline = async ({
   model,
   idea,
   history = [],
+  platform = "tiktok", // id ("tiktok" | "reels" | "shorts") o texto libre
+  duracionS = 30,
   lastPlan = null,
   businessContext: businessContextRaw = null,
   onThinking = null,
   signal = null,
-  useSearch = true, // tu prompt dice "Investiga en internet": sin esto no busca
+  // Con búsqueda activa Gemini no admite JSON mode y tiende a responder en prosa.
+  // Dejalo en false salvo que realmente necesites datos de internet.
+  useSearch = false,
 }) => {
   const trace = [];
-  const total = () => trace.reduce((s, t) => s + t.tokens, 0);
+  const total = () => trace.reduce((s, t) => s + (t.tokens || 0), 0);
 
   const system = buildSystemPrompt();
   const userMessage = buildUserMessage({
     idea,
     history,
+    platform: PLATFORM_LABELS[platform] ?? platform,
+    duracionS,
     lastPlan,
     businessContext: formatBusinessContext(businessContextRaw),
   });
@@ -309,6 +364,11 @@ export const runIdeaPipeline = async ({
   let lastErr = null;
 
   for (let intento = 0; intento < MAX_INTENTOS; intento++) {
+    const recordatorio =
+      intento > 0
+        ? "\n\nRECORDATORIO: respondé SOLO con el objeto JSON, sin texto adicional ni bloques de código."
+        : "";
+
     try {
       const r = await callGeminiStream(
         supabase,
@@ -316,9 +376,10 @@ export const runIdeaPipeline = async ({
           ...CFG,
           ...(intento > 0 ? { thinkingLevel: "low" } : {}),
           useSearch,
+          ...(JSON_MODE && !useSearch ? { responseMimeType: "application/json" } : {}),
           model,
           ...(SYSTEM_SEPARATE ? { systemInstruction: system } : {}),
-          text: (SYSTEM_SEPARATE ? "" : `${system}\n\n`) + userMessage,
+          text: (SYSTEM_SEPARATE ? "" : `${system}\n\n`) + userMessage + recordatorio,
         },
         { onThinking, signal }
       );
