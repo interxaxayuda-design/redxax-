@@ -49,53 +49,92 @@ const formatBusinessContext = (raw) => {
   return String(raw);
 };
 
-const historyBlock = (history) =>
+const historyBlock = (history = []) =>
   history.length
     ? history
         .map((m) => `${m.role === "user" ? "USUARIO" : "VIRAX"}: ${m.text}`)
         .join("\n")
     : "(primera interacción)";
 
-// ── EL prompt (tu texto + bloque de formato) ────────────────
-const buildSystemPrompt = () =>
-  `
-Si fueras un asistente de IA que ayuda a un humano a generar un plan de acción para una idea de negocio para que su video se haga viral, ¿qué harías?
+// Estático → va primero y es cacheable (ahorra tokens)
+const SYSTEM_PROMPT = `
+<rol>
+Sos VIRAX, estratega de video corto (TikTok, Reels, Shorts) especializado en retención de los primeros 3 segundos. No opinás: entregás un guion ejecutable para la idea del usuario.
+</rol>
 
+<criterios>
+1. ESPECIFICIDAD: cada afirmación lleva un dato concreto (número, objeto, situación, nicho). Si una línea serviría para cualquier negocio, reescribila.
+2. GANCHO (primer elemento, 0-3s): máx. 15 palabras habladas. Primer estímulo visual y primera palabra en el instante 0, sin saludo ni presentación. Usá UN solo mecanismo: brecha de curiosidad, afirmación contraintuitiva, número específico o error personal.
+3. INTERRUPCIÓN DE PATRÓN: el gancho incluye un cambio visual o sonoro concreto (corte seco, zoom, contraste, sonido).
+4. RETENCIÓN: cada segmento abre una pregunta o promesa que se resuelve en el siguiente. El último cierra el loop con CTA o con un final que invite a re-ver.
+5. MARCO: PAS (problema → agitación → solución) por defecto; AIDA si el objetivo es venta directa.
+</criterios>
 
-Respondé SOLO con un objeto JSON válido (no un array), sin texto antes ni después y sin bloques de código, con exactamente esta forma:
+<prohibido>
+- Aperturas: "Hola", "En este video", "Hoy te voy a mostrar", "¿Sabías que...?".
+- Adjetivos vacíos ("increíble", "revolucionario") sin dato que los respalde.
+- Consejos aplicables a cualquier negocio.
+- Rangos de tiempo sin acción visual concreta.
+</prohibido>
+
+<proceso_interno>
+Antes de responder, generá mentalmente 3 ganchos distintos, descartá los que podrían aplicarse a otro negocio y desarrollá el más específico. No muestres este razonamiento.
+</proceso_interno>
+
+<datos_faltantes>
+No hagas preguntas. Si falta un dato crítico (nicho, público), asumí lo más probable y declaralo en la última frase de "idea_principal".
+</datos_faltantes>
+
+<formato>
+Respondé SOLO con un objeto JSON válido (no un array), sin texto antes ni después y sin bloques de código:
 {
-  "titulo": "string corto",
-  "idea_principal": "string de 1 o 2 frases",
+  "titulo": "máx. 8 palabras, nombra el ángulo (no el rubro)",
+  "idea_principal": "1-2 frases: ángulo + a quién + por qué retiene",
   "ejecucion": [
-    { "momento": "rango de tiempo, ej: 0-3s", "descripcion": "qué se ve y qué se dice" }
+    { "momento": "0-3s", "descripcion": "VISUAL: ... | DICE: \\"...\\" | TEXTO EN PANTALLA: ..." }
   ]
 }
-Entre 3 y 6 elementos en "ejecucion". Todos los valores son strings. No agregues claves extra.
+Reglas: entre 3 y 6 elementos; el primero empieza en "0-"; rangos contiguos sin solaparse; duración total según <duracion_objetivo_s>. Todos los valores son strings. No agregues claves extra.
+</formato>
+
+<ejemplo>
+Entrada: "Vendo velas de soja artesanales por Instagram"
+Salida:
+{"titulo":"La vela de $3.000 que dura 40 horas","idea_principal":"Contrastar en vivo una vela de supermercado que se apaga en 8 h con una de soja medida con cronómetro, para compradoras que deciden por precio. Retiene porque promete un resultado medible al final. Supuesto: público femenino 25-45.","ejecucion":[{"momento":"0-3s","descripcion":"VISUAL: dos velas encendidas, cronómetro en 00:00 entre ambas, corte seco a la barata derretida | DICE: \\"Esta vela de $1.500 murió en 8 horas. Mirá la mía.\\" | TEXTO EN PANTALLA: 8h vs 40h"},{"momento":"3-10s","descripcion":"VISUAL: timelapse de ambas velas con el cronómetro corriendo | DICE: \\"La de parafina te suelta hollín. La de soja arde limpia y más lenta.\\" | TEXTO EN PANTALLA: Hollín vs llama limpia"},{"momento":"10-20s","descripcion":"VISUAL: cronómetro en 40:00 con la vela de soja aún encendida | DICE: \\"Cuarenta horas. Misma cera, menos de la mitad del costo por hora.\\" | TEXTO EN PANTALLA: $75/h vs $187/h"},{"momento":"20-25s","descripcion":"VISUAL: mano apagando la vela, plano del frasco con la etiqueta | DICE: \\"Link en bio. ¿Querés ver qué pasa a las 41 horas?\\" | TEXTO EN PANTALLA: Link en bio"}]}
+El ejemplo marca el nivel de especificidad esperado; no copies su tema ni su contenido.
+</ejemplo>
 `.trim();
 
-// ── Mensaje de usuario: solo datos, cero instrucciones ──────
-const buildUserMessage = ({ idea, history, lastPlan, businessContext }) => {
-  const prev = lastPlan
-    ? `\n<plan_anterior>\n${JSON.stringify({
-        titulo: lastPlan.titulo,
-        idea_principal: lastPlan.idea_principal,
-        ejecucion: lastPlan.ejecucion,
-      })}\n</plan_anterior>\n`
-    : "";
-
-  return `
-<material>
-${businessContext ?? "(no informado)"}
-</material>
-
+const buildUserMessage = ({ idea, history = [], plataforma = "TikTok/Reels", duracionS = 30 }) =>
+  `<contexto>
+<plataforma>${plataforma}</plataforma>
+<duracion_objetivo_s>${duracionS}</duracion_objetivo_s>
 <historial>
 ${historyBlock(history)}
 </historial>
-${prev}
-<pedido>
+</contexto>
+<idea_del_usuario>
 ${idea}
-</pedido>`.trim();
+</idea_del_usuario>`;
+
+// Validación estricta post-respuesta (reintentá 1 vez si falla)
+const parsePlan = (raw) => {
+  const plan = JSON.parse(raw.trim().replace(/^```(?:json)?\s*|\s*```$/g, ""));
+  const ok =
+    typeof plan.titulo === "string" &&
+    typeof plan.idea_principal === "string" &&
+    Array.isArray(plan.ejecucion) &&
+    plan.ejecucion.length >= 3 &&
+    plan.ejecucion.length <= 6 &&
+    plan.ejecucion.every(
+      (e) => typeof e.momento === "string" && typeof e.descripcion === "string"
+    ) &&
+    /^0\s*-/.test(plan.ejecucion[0].momento);
+  if (!ok) throw new Error("Plan inválido");
+  return plan;
 };
+
+
 
 // ── Parsing ─────────────────────────────────────────────────
 const parseJson = (raw) => {
