@@ -1,13 +1,19 @@
 // ============================================================================
-// ideaPipeline.js  (v6 — generar → seleccionar → planificar)
+// ideaPipeline.js  (v7 — generación libre + diagnóstico completo)
 //
-// Tres llamadas, cada una con un único prompt y salida JSON estricta:
+// Tres etapas, cada una con un único prompt y salida JSON estricta:
 //   1. GENERAR      (temperatura alta, N llamadas en paralelo)  → conceptos
 //   2. SELECCIONAR  (temperatura baja)                          → ranking + elegido
 //   3. PLANIFICAR   (temperatura media)                         → { titulo, idea_principal, ejecucion[] }
 //
-// Si ya hay un plan anterior (modo "refinar") se saltean 1 y 2 y solo se
-// aplica el cambio pedido sobre ese plan.
+// Cambios de la v7:
+//   - Pozo obvio APAGADO por defecto (USAR_POZO = false). Generación y selección
+//     sin reglas que limiten al modelo. Con usarPozo = true vuelve la versión anterior.
+//   - Diagnóstico: cada llamada guarda el prompt exacto, el pensamiento del modelo,
+//     la salida cruda y lo que el modelo cuenta sobre cómo leyó las instrucciones.
+//     Sale en result.diagnostico, en la consola y en window.__ultimoDiagnostico.
+//
+// Si ya hay un plan anterior (modo "refinar") se saltean 1 y 2.
 // ============================================================================
 
 // ── Config ──────────────────────────────────────────────────
@@ -16,9 +22,14 @@ const CFG = { maxOutputTokens: 16384 };
 // Temperatura por etapa. El proxy tiene que reenviar "temperature" a Gemini.
 const TEMP = { generar: 1.2, seleccionar: 0.3, plan: 0.7 };
 
-// Cuántas llamadas de generación van en paralelo y cuántos conceptos pide cada una.
 const GEN_PARALLEL = 2;
 const CONCEPTOS_POR_LLAMADA = 12;
+
+// false = generación libre. true = versión anterior con "pozo obvio" y reglas.
+const USAR_POZO = false;
+
+// true = arma y publica el diagnóstico de cada corrida.
+const DIAG = true;
 
 // false = el system prompt se antepone al texto (funciona con cualquier proxy).
 const SYSTEM_SEPARATE = false;
@@ -90,8 +101,38 @@ const compactPlan = (plan) => {
 // PROMPTS
 // ═════════════════════════════════════════════════════════════
 
-// ── 1. GENERAR ──────────────────────────────────────────────
-const GENERATOR_PROMPT = `
+// Párrafo común: pide al modelo que cuente cómo leyó las instrucciones. Va SIEMPRE
+// al final del JSON para que escribirlo no condicione las decisiones anteriores.
+const PEDIDO_LECTURA = `En el campo final "lectura_de_las_instrucciones", completado después de todo lo demás, contá con honestidad cómo interpretaste lo que se te pidió y si algo de estas instrucciones o del mensaje te limitó, te empujó o te condicionó. Si no notaste nada de eso, decilo.`;
+
+// ── 1a. GENERAR — libre ─────────────────────────────────────
+const GENERATOR_LIBRE = `
+Sos un director creativo de contenido audiovisual de formato corto, con años de experiencia observando qué hace que la gente se quede mirando un video en TikTok, Reels y Shorts.
+
+Tu objetivo es idear conceptos de video para el negocio, producto, lugar o idea que indique el usuario. Un concepto es una premisa filmable completa: qué se ve y se escucha en el primer segundo, qué se pregunta quien lo ve y cómo se resuelve.
+
+Pensá con total libertad. No hay fórmulas, formatos ni categorías que debas seguir o evitar. Usá todo lo que sabés sobre cultura de internet, humor, narrativa, comportamiento humano y contenido que se difunde de forma orgánica, de cualquier nicho y época. Elegí las ideas que, a tu criterio, sean las mejores, sean conocidas o no.
+
+Generá ${CONCEPTOS_POR_LLAMADA} conceptos.
+
+${PEDIDO_LECTURA}
+
+Respondé SOLO con un objeto JSON con esta forma exacta:
+{
+  "conceptos": [
+    {
+      "primer_segundo": "...",
+      "pregunta_del_espectador": "...",
+      "resolucion": "...",
+      "porque": "por qué creés que este concepto retiene a la gente"
+    }
+  ],
+  "lectura_de_las_instrucciones": "..."
+}
+`.trim();
+
+// ── 1b. GENERAR — con pozo (versión anterior) ───────────────
+const GENERATOR_CON_POZO = `
 Sos un director creativo de contenido audiovisual de formato corto, con años de experiencia en negocios pequeños y medianos.
 
 Tu tarea es idear conceptos de video para el negocio, producto, lugar o idea que indique el usuario.
@@ -112,6 +153,8 @@ Seguí este proceso, en este orden, y respetá ese mismo orden en el JSON:
 
 5. La resolución tiene que existir realmente en el video. No se puede abrir una pregunta que el video no responde.
 
+${PEDIDO_LECTURA}
+
 Respondé SOLO con un objeto JSON con esta forma exacta:
 {
   "pozo_obvio": ["...", "..."],
@@ -120,14 +163,16 @@ Respondé SOLO con un objeto JSON con esta forma exacta:
       "familia": "el mecanismo en pocas palabras",
       "primer_segundo": "qué se ve y qué se escucha en el primer segundo",
       "pregunta_del_espectador": "qué se pregunta quien lo ve",
-      "resolucion": "cómo y cuándo la responde el video"
+      "resolucion": "cómo y cuándo la responde el video",
+      "porque": "por qué creés que este concepto retiene a la gente"
     }
-  ]
+  ],
+  "lectura_de_las_instrucciones": "..."
 }
 `.trim();
 
 // ── 2. SELECCIONAR ──────────────────────────────────────────
-const SELECTOR_PROMPT = `
+const SELECTOR_BASE = `
 Sos un analista experto en difusión de contenido audiovisual y comportamiento de audiencias en internet.
 
 Vas a evaluar conceptos de video corto que todavía no fueron filmados. Tu objetivo es estimar cuál tiene mayor potencial de difusión orgánica, considerando el contenido de cada concepto y cualquier contexto cultural, social, emocional o audiovisual relevante que reconozcas.
@@ -140,12 +185,18 @@ Diferenciá claramente:
 - Lo que depende de contexto externo o tendencias que no podés verificar.
 
 No apliques reglas generales de forma automática. Evaluá cada concepto según sus características concretas y la audiencia que probablemente lo consumiría.
+`.trim();
 
+const SELECTOR_POZO = `
 Recibís además un "pozo_obvio": las ideas que cualquiera propondría primero para este caso. Descartá los conceptos que se parezcan a ese pozo, los que se parezcan entre sí (quedate con el mejor de cada grupo) y los que no pueda filmar el propio negocio con un celular.
+`.trim();
 
+const SELECTOR_CIERRE = `
 Pensá en silencio durante varias etapas antes de responder. Contrastá hipótesis alternativas y evitá la explicación más obvia cuando haya una más sólida.
 
-Respondé SOLO con un objeto JSON con esta forma exacta, con los 3 mejores conceptos ordenados de mayor a menor potencial:
+${PEDIDO_LECTURA}
+
+Respondé SOLO con un objeto JSON con esta forma exacta, con los 3 mejores conceptos en "ranking" ordenados de mayor a menor potencial:
 {
   "ranking": [
     {
@@ -157,9 +208,18 @@ Respondé SOLO con un objeto JSON con esta forma exacta, con los 3 mejores conce
       "comparable": "contenido similar que haya funcionado, aunque sea de otro nicho"
     }
   ],
-  "elegido": "c3"
+  "elegido": "c3",
+  "por_que_este_y_no_otros": "...",
+  "descartados_destacados": [
+    { "id": "c7", "motivo": "..." }
+  ],
+  "lectura_de_las_instrucciones": "..."
 }
+En "descartados_destacados" incluí hasta 5 conceptos que consideraste seriamente y no quedaron entre los 3 primeros.
 `.trim();
+
+const buildSelectorPrompt = (usarPozo) =>
+  [SELECTOR_BASE, usarPozo ? SELECTOR_POZO : "", SELECTOR_CIERRE].filter(Boolean).join("\n\n");
 
 // ── 3. PLANIFICAR ───────────────────────────────────────────
 const PLAN_PROMPT = `
@@ -178,13 +238,16 @@ Reglas:
 - La duración objetivo es un tope, no una meta. El video dura lo que necesita la premisa: si se resuelve antes, el plan es más corto. No agregues pasos de relleno ni de explicación que la premisa no necesite. Máximo ${MAX_PASOS} pasos.
 - Usá el contexto del negocio para que el plan hable de este negocio y no de uno cualquiera.
 
+${PEDIDO_LECTURA}
+
 Respondé SOLO con un objeto JSON con esta forma exacta:
 {
   "titulo": "...",
   "idea_principal": "...",
   "ejecucion": [
     { "momento": "0-1s", "descripcion": "..." }
-  ]
+  ],
+  "lectura_de_las_instrucciones": "..."
 }
 `.trim();
 
@@ -206,16 +269,22 @@ const buildGeneratorMessage = (ctx, idea) =>
 ${idea}
 </idea_del_usuario>`;
 
+// El selector recibe solo la premisa de cada concepto: sin "porque" ni "familia",
+// para que no lo influya la defensa que cada concepto hace de sí mismo.
 const buildSelectorMessage = (ctx, idea, pozo, conceptos) =>
   `${contextoBlock(ctx)}
 <idea_del_usuario>
 ${idea}
 </idea_del_usuario>
-<pozo_obvio>
-${JSON.stringify(pozo)}
-</pozo_obvio>
-<conceptos>
-${JSON.stringify(conceptos)}
+${pozo?.length ? `<pozo_obvio>\n${JSON.stringify(pozo)}\n</pozo_obvio>\n` : ""}<conceptos>
+${JSON.stringify(
+    conceptos.map((c) => ({
+      id: c.id,
+      primer_segundo: c.primer_segundo,
+      pregunta_del_espectador: c.pregunta_del_espectador,
+      resolucion: c.resolucion,
+    }))
+  )}
 </conceptos>`;
 
 const buildPlanMessageNuevo = (ctx, idea, concepto) =>
@@ -301,6 +370,7 @@ const parseGeneracion = (rawText) => {
       familia: str(c?.familia),
       pregunta_del_espectador: str(c?.pregunta_del_espectador),
       resolucion: str(c?.resolucion),
+      porque: str(c?.porque),
     }))
     .filter((c) => c.primer_segundo && c.resolucion);
 
@@ -313,7 +383,7 @@ const parseGeneracion = (rawText) => {
     throw formatError(rawText);
   }
 
-  return { conceptos, pozo_obvio };
+  return { conceptos, pozo_obvio, lectura: str(o.lectura_de_las_instrucciones) };
 };
 
 const parseSeleccion = (rawText, idsValidos) => {
@@ -337,7 +407,17 @@ const parseSeleccion = (rawText, idsValidos) => {
 
   const elegido = idsValidos.has(str(o.elegido)) ? str(o.elegido) : ranking[0].id;
 
-  return { ranking, elegido };
+  const descartados = (Array.isArray(o.descartados_destacados) ? o.descartados_destacados : [])
+    .map((d) => ({ id: str(d?.id), motivo: str(d?.motivo) }))
+    .filter((d) => idsValidos.has(d.id) && d.motivo);
+
+  return {
+    ranking,
+    elegido,
+    por_que_este_y_no_otros: str(o.por_que_este_y_no_otros),
+    descartados_destacados: descartados,
+    lectura: str(o.lectura_de_las_instrucciones),
+  };
 };
 
 const parsePlan = (rawText) => {
@@ -359,7 +439,12 @@ const parsePlan = (rawText) => {
     throw formatError(rawText);
   }
 
-  return { titulo: str(o.titulo), idea_principal, ejecucion };
+  return {
+    titulo: str(o.titulo),
+    idea_principal,
+    ejecucion,
+    lectura: str(o.lectura_de_las_instrucciones),
+  };
 };
 
 // ═════════════════════════════════════════════════════════════
@@ -454,7 +539,8 @@ const callGeminiStream = async (supabase, body, { onThinking, signal } = {}) => 
   return { text, tokens, usedSearch };
 };
 
-// Una etapa = una llamada con reintentos + parseo. Devuelve lo que devuelva `parse`.
+// Una etapa = una llamada con reintentos + parseo. Cada intento queda registrado
+// en `diag` con el prompt exacto, el pensamiento y la salida cruda.
 const runStage = async ({
   supabase,
   model,
@@ -462,8 +548,10 @@ const runStage = async ({
   userMessage,
   temperature,
   stage,
+  label,
   parse,
   trace,
+  diag,
   signal,
   onThinking,
 }) => {
@@ -475,8 +563,29 @@ const runStage = async ({
         ? "\n\nRECORDATORIO: respondé SOLO con el objeto JSON, sin texto adicional ni bloques de código."
         : "";
 
+    const userMsg = userMessage + recordatorio;
+    let pensamiento = "";
+    let r = null;
+    const t0 = Date.now();
+
+    const registrar = (err) => {
+      if (!diag) return;
+      diag.push({
+        etapa: label ?? stage,
+        intento: intento + 1,
+        temperatura: temperature ?? null,
+        ms: Date.now() - t0,
+        tokens: r?.tokens ?? err?.tokens ?? 0,
+        system,
+        userMessage: userMsg,
+        pensamiento,
+        salida_cruda: r?.text ?? err?.raw ?? "",
+        error: err ? String(err.message ?? err) : null,
+      });
+    };
+
     try {
-      const r = await callGeminiStream(
+      r = await callGeminiStream(
         supabase,
         {
           ...CFG,
@@ -486,9 +595,15 @@ const runStage = async ({
           ...(temperature != null ? { temperature } : {}),
           model,
           ...(SYSTEM_SEPARATE ? { systemInstruction: system } : {}),
-          text: (SYSTEM_SEPARATE ? "" : `${system}\n\n`) + userMessage + recordatorio,
+          text: (SYSTEM_SEPARATE ? "" : `${system}\n\n`) + userMsg,
         },
-        { onThinking, signal }
+        {
+          signal,
+          onThinking: (t) => {
+            pensamiento += t;
+            onThinking?.(t);
+          },
+        }
       );
 
       trace.push({
@@ -497,9 +612,12 @@ const runStage = async ({
         usedSearch: r.usedSearch,
       });
 
-      return parse(r.text);
+      const parsed = parse(r.text);
+      registrar(null);
+      return parsed;
     } catch (e) {
       trace.push({ stage: `${stage}_fail`, tokens: e.tokens ?? 0 });
+      registrar(e);
       lastErr = e;
       console.warn(`[idea:${stage}] intento ${intento + 1} falló:`, e?.message);
 
@@ -509,6 +627,137 @@ const runStage = async ({
   }
 
   throw lastErr ?? new Error("La IA no pudo completar la etapa. Probá de nuevo.");
+};
+
+// ═════════════════════════════════════════════════════════════
+// DIAGNÓSTICO
+// ═════════════════════════════════════════════════════════════
+const bloque = (t) => "```\n" + (t || "(vacío)") + "\n```";
+
+const conceptoLinea = (c) =>
+  `**${c.id}** — 1er segundo: ${c.primer_segundo}\n  Pregunta: ${c.pregunta_del_espectador}\n  Resolución: ${c.resolucion}` +
+  (c.familia ? `\n  Familia: ${c.familia}` : "") +
+  (c.porque ? `\n  Por qué (según el generador): ${c.porque}` : "");
+
+const diagnosticoMarkdown = (d) => {
+  const L = [];
+
+  L.push("# Diagnóstico de la idea");
+  L.push(`- Fecha: ${d.fecha}`);
+  L.push(`- Modo: ${d.modo}`);
+  L.push(`- Modelo: ${d.config.model ?? "(no indicado)"}`);
+  L.push(`- Pozo obvio: ${d.config.usarPozo ? "ACTIVADO" : "apagado (generación libre)"}`);
+  L.push(
+    `- Temperaturas: generar ${d.config.temperaturas.generar}, seleccionar ${d.config.temperaturas.seleccionar}, plan ${d.config.temperaturas.plan}`
+  );
+  L.push(`- Idea del usuario: ${d.idea}`);
+
+  if (d.lecturasGenerador.length) {
+    L.push("\n## 1. Cómo dice el generador que leyó las instrucciones");
+    d.lecturasGenerador.forEach((t, i) => L.push(`Corrida ${i + 1}: ${t || "(sin respuesta)"}`));
+  }
+
+  if (d.pozo.length) {
+    L.push("\n## Pozo obvio generado");
+    d.pozo.forEach((p) => L.push(`- ${p}`));
+  }
+
+  if (d.conceptos.length) {
+    L.push(`\n## 2. Conceptos generados (${d.conceptos.length})`);
+    d.conceptos.forEach((c) => L.push(conceptoLinea(c)));
+  }
+
+  if (d.seleccion) {
+    const s = d.seleccion;
+    L.push("\n## 3. Selección");
+    L.push(`Elegido: ${s.elegido}`);
+    L.push(`Por qué este y no otros: ${s.por_que_este_y_no_otros || "(sin respuesta)"}`);
+    L.push("\nRanking:");
+    s.ranking.forEach((r, i) =>
+      L.push(
+        `${i + 1}. ${r.id} — ${r.probabilidad}% (confianza ${r.confianza})\n   Funciona: ${r.por_que_funciona}\n   Podría fallar: ${r.por_que_podria_fallar}\n   Comparable: ${r.comparable}`
+      )
+    );
+    if (s.descartados_destacados.length) {
+      L.push("\nDescartados destacados:");
+      s.descartados_destacados.forEach((x) => L.push(`- ${x.id}: ${x.motivo}`));
+    }
+    L.push(`\nCómo dice el selector que leyó las instrucciones: ${s.lectura || "(sin respuesta)"}`);
+  }
+
+  if (d.lecturaPlan) {
+    L.push("\n## 4. Plan");
+    L.push(`Cómo dice el planificador que leyó las instrucciones: ${d.lecturaPlan}`);
+  }
+
+  L.push("\n## 5. Llamadas al modelo (prompt exacto, pensamiento y salida cruda)");
+  const sistemasVistos = new Set();
+
+  d.llamadas.forEach((l, i) => {
+    L.push(
+      `\n### ${i + 1}. ${l.etapa} — intento ${l.intento}, ${l.ms} ms, ${l.tokens} tokens, temperatura ${l.temperatura ?? "por defecto"}`
+    );
+    if (l.error) L.push(`ERROR: ${l.error}`);
+
+    L.push("Pensamiento del modelo:");
+    L.push(
+      l.pensamiento
+        ? bloque(l.pensamiento)
+        : "(vacío: el proxy no envió pensamiento, o el modelo no lo expuso)"
+    );
+
+    L.push("Salida cruda:");
+    L.push(bloque(l.salida_cruda));
+
+    if (sistemasVistos.has(l.system)) {
+      L.push("Prompt del sistema: igual a uno ya listado arriba.");
+    } else {
+      sistemasVistos.add(l.system);
+      L.push("Prompt del sistema:");
+      L.push(bloque(l.system));
+    }
+
+    L.push("Mensaje de usuario:");
+    L.push(bloque(l.userMessage));
+  });
+
+  return L.join("\n");
+};
+
+const construirDiagnostico = (estado, llamadas, { model, idea }) => {
+  const d = {
+    fecha: new Date().toISOString(),
+    modo: estado.modo,
+    idea,
+    config: {
+      model,
+      usarPozo: estado.usarPozo,
+      temperaturas: TEMP,
+      genParalelo: GEN_PARALLEL,
+      conceptosPorLlamada: CONCEPTOS_POR_LLAMADA,
+    },
+    pozo: estado.pozo,
+    conceptos: estado.conceptos,
+    lecturasGenerador: estado.lecturasGen,
+    seleccion: estado.seleccion,
+    lecturaPlan: estado.lecturaPlan,
+    llamadas,
+  };
+
+  d.markdown = diagnosticoMarkdown(d);
+  return d;
+};
+
+const publicarDiagnostico = (d) => {
+  try {
+    console.groupCollapsed(`[idea] diagnóstico (${d.llamadas.length} llamadas)`);
+    console.log(d.markdown);
+    console.groupEnd();
+
+    if (typeof window !== "undefined") window.__ultimoDiagnostico = d;
+  } catch {
+    /* el diagnóstico nunca debe romper el pipeline */
+  }
 };
 
 // ═════════════════════════════════════════════════════════════
@@ -527,11 +776,26 @@ export const runIdeaPipeline = async ({
   // "nueva": ignora el plan anterior y genera conceptos nuevos.
   // "refinar": aplica `idea` como cambio sobre `lastPlan`.
   modo = "auto",
+  // Permite comparar generación libre vs. con pozo sin tocar el archivo.
+  usarPozo = USAR_POZO,
   onThinking = null,
   signal = null,
 }) => {
   const trace = [];
+  const llamadas = DIAG ? [] : null;
   const total = () => trace.reduce((s, t) => s + (t.tokens || 0), 0);
+
+  const refinar = modo === "refinar" || (modo === "auto" && !!lastPlan);
+
+  const estado = {
+    modo: refinar && lastPlan ? "refinar" : "nueva",
+    usarPozo,
+    pozo: [],
+    conceptos: [],
+    lecturasGen: [],
+    seleccion: null,
+    lecturaPlan: "",
+  };
 
   const ctx = {
     platform: PLATFORM_LABELS[platform] ?? platform,
@@ -540,9 +804,14 @@ export const runIdeaPipeline = async ({
     history,
   };
 
-  const common = { supabase, model, trace, signal, onThinking };
+  const common = { supabase, model, trace, diag: llamadas, signal, onThinking };
 
-  const refinar = modo === "refinar" || (modo === "auto" && !!lastPlan);
+  const cerrarDiagnostico = () => {
+    if (!DIAG) return null;
+    const d = construirDiagnostico(estado, llamadas, { model, idea });
+    publicarDiagnostico(d);
+    return d;
+  };
 
   try {
     // ── Refinar: una sola llamada sobre el plan existente ──
@@ -556,20 +825,29 @@ export const runIdeaPipeline = async ({
         parse: parsePlan,
       });
 
-      return { plan: armarPlan(base), tokens: total(), trace };
+      estado.lecturaPlan = base.lectura;
+
+      return {
+        plan: armarPlan(base),
+        tokens: total(),
+        trace,
+        diagnostico: cerrarDiagnostico(),
+      };
     }
 
     // ── 1. Generar (en paralelo) ──
     const genMessage = buildGeneratorMessage(ctx, idea);
+    const genSystem = usarPozo ? GENERATOR_CON_POZO : GENERATOR_LIBRE;
 
     const runs = await Promise.allSettled(
-      Array.from({ length: GEN_PARALLEL }, () =>
+      Array.from({ length: GEN_PARALLEL }, (_, i) =>
         runStage({
           ...common,
-          system: GENERATOR_PROMPT,
+          system: genSystem,
           userMessage: genMessage,
           temperature: TEMP.generar,
           stage: "generar",
+          label: `generar #${i + 1}`,
           parse: parseGeneracion,
         })
       )
@@ -582,30 +860,28 @@ export const runIdeaPipeline = async ({
       throw motivo ?? new Error("La IA no pudo generar conceptos. Probá de nuevo.");
     }
 
-    const pozo = [...new Set(ok.flatMap((r) => r.pozo_obvio))];
-    const conceptos = ok
+    estado.pozo = usarPozo ? [...new Set(ok.flatMap((r) => r.pozo_obvio))] : [];
+    estado.lecturasGen = ok.map((r) => r.lectura);
+    estado.conceptos = ok
       .flatMap((r) => r.conceptos)
       .map((c, i) => ({ id: `c${i + 1}`, ...c }));
 
-    const porId = new Map(conceptos.map((c) => [c.id, c]));
-
-    console.log("[idea] pozo_obvio:", pozo);
-console.log("[idea] conceptos:", conceptos);
+    const porId = new Map(estado.conceptos.map((c) => [c.id, c]));
 
     // ── 2. Seleccionar ──
     const seleccion = await runStage({
       ...common,
-      system: SELECTOR_PROMPT,
-      userMessage: buildSelectorMessage(ctx, idea, pozo, conceptos),
+      system: buildSelectorPrompt(usarPozo),
+      userMessage: buildSelectorMessage(ctx, idea, estado.pozo, estado.conceptos),
       temperature: TEMP.seleccionar,
       stage: "seleccionar",
       parse: (raw) => parseSeleccion(raw, new Set(porId.keys())),
     });
 
+    estado.seleccion = seleccion;
+
     const elegido = porId.get(seleccion.elegido);
     const estimacion = seleccion.ranking.find((r) => r.id === seleccion.elegido);
-
-    console.log("[idea] ranking:", seleccion.ranking, "elegido:", seleccion.elegido);
 
     // ── 3. Planificar ──
     const base = await runStage({
@@ -620,6 +896,8 @@ console.log("[idea] conceptos:", conceptos);
       stage: "plan",
       parse: parsePlan,
     });
+
+    estado.lecturaPlan = base.lectura;
 
     const alternativas = seleccion.ranking
       .filter((r) => r.id !== seleccion.elegido)
@@ -640,9 +918,16 @@ console.log("[idea] conceptos:", conceptos);
       }),
       tokens: total(),
       trace,
+      diagnostico: cerrarDiagnostico(),
     };
   } catch (e) {
     e.tokens = total();
+    // Aun si falla, el diagnóstico parcial muestra hasta dónde llegó.
+    try {
+      e.diagnostico = cerrarDiagnostico();
+    } catch {
+      /* ignorar */
+    }
     throw e;
   }
 };
