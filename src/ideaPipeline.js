@@ -152,6 +152,17 @@ No conocen a tu audiencia mejor que vos. Si les das un tema vago, te dan hooks v
 
 Una vez que hayas leído esto con atención, generá un plan de ejecución para la idea que el usuario te dará.
 
+
+ACLARACIÓN: NO HABLAR IDIOMA RIOPLATENSE.
+
+Ejemplo: 
+Mal: 
+"Che, tenés que venir a este lugar"
+
+Bien
+"Debes de ir a este lugar"
+
+
 ${OUTPUT_CONTRACT}
 `.trim();
 
