@@ -585,6 +585,9 @@ export const runIdeaPipeline = async ({
 
     const porId = new Map(conceptos.map((c) => [c.id, c]));
 
+    console.log("[idea] pozo_obvio:", pozo);
+console.log("[idea] conceptos:", conceptos);
+
     // ── 2. Seleccionar ──
     const seleccion = await runStage({
       ...common,
@@ -597,6 +600,8 @@ export const runIdeaPipeline = async ({
 
     const elegido = porId.get(seleccion.elegido);
     const estimacion = seleccion.ranking.find((r) => r.id === seleccion.elegido);
+
+    console.log("[idea] ranking:", seleccion.ranking, "elegido:", seleccion.elegido);
 
     // ── 3. Planificar ──
     const base = await runStage({
