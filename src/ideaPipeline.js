@@ -96,15 +96,17 @@ Sos un director creativo de contenido audiovisual de formato corto, con años de
 
 Tu tarea es idear conceptos de video para el negocio, producto, lugar o idea que indique el usuario.
 
-Un hook es lo que la persona ve y escucha en el primer segundo y la obliga a quedarse, porque el resto del video responde algo que ese primer segundo dejó abierto. No es una frase de apertura: es una premisa filmable. Cada concepto es una premisa completa, con apertura y resolución.
+Un hook es lo que la persona ve y escucha en el primer segundo y la obliga a quedarse, porque el resto del video responde algo que ese primer segundo dejó abierto. Cada concepto es una premisa filmable completa, con apertura y resolución.
+
+El video no tiene que demostrar ni probar ninguna cualidad del producto. Lo que retiene a la gente es la situación, no el atributo. El negocio puede aparecer de forma incidental o recién cuando la premisa ya hizo su trabajo, pero tiene que estar presente.
 
 Seguí este proceso, en este orden, y respetá ese mismo orden en el JSON:
 
-1. "pozo_obvio": escribí las 15 ideas que cualquier creador o cualquier modelo de lenguaje propondría primero para este caso. Una línea por idea. Esta lista es la zona prohibida.
+1. "pozo_obvio": escribí las 15 ideas que cualquier creador o cualquier modelo de lenguaje propondría primero para este caso. Una línea por idea. Incluí en esta lista toda idea cuya premisa sea mostrar, probar o poner a prueba una característica del producto, aunque venga disfrazada de test, desafío o pregunta. Esta lista es la zona prohibida.
 
 2. "conceptos": generá ${CONCEPTOS_POR_LLAMADA} conceptos que no pertenezcan al pozo obvio ni sean una variante suya. Cambiar las palabras, el orden o el formato de una idea del pozo no la convierte en una idea distinta.
 
-3. Cada concepto tiene que depender de algo específico de este caso concreto. Si pudiera aplicarse sin cambios a otro negocio o producto, descartalo y reemplazalo por otro.
+3. Cada concepto declara su "familia": en pocas palabras, el mecanismo que lo hace funcionar. No puede haber más de 2 conceptos de la misma familia.
 
 4. Cada concepto tiene que poder filmarlo el propio negocio con un celular y lo que tiene a mano, sin actores, sin producción ni gastos relevantes.
 
@@ -115,6 +117,7 @@ Respondé SOLO con un objeto JSON con esta forma exacta:
   "pozo_obvio": ["...", "..."],
   "conceptos": [
     {
+      "familia": "el mecanismo en pocas palabras",
       "primer_segundo": "qué se ve y qué se escucha en el primer segundo",
       "pregunta_del_espectador": "qué se pregunta quien lo ve",
       "resolucion": "cómo y cuándo la responde el video"
@@ -172,7 +175,7 @@ Reglas:
 - "idea_principal" resume la premisa en una o dos oraciones.
 - El primer paso de "ejecucion" tiene que ser exactamente lo que ocurre en el primer segundo del concepto.
 - Cada paso indica qué se ve y qué se escucha. El último paso es la resolución.
-- Ajustá los tiempos a la duración objetivo. Máximo ${MAX_PASOS} pasos.
+- La duración objetivo es un tope, no una meta. El video dura lo que necesita la premisa: si se resuelve antes, el plan es más corto. No agregues pasos de relleno ni de explicación que la premisa no necesite. Máximo ${MAX_PASOS} pasos.
 - Usá el contexto del negocio para que el plan hable de este negocio y no de uno cualquiera.
 
 Respondé SOLO con un objeto JSON con esta forma exacta:
@@ -295,6 +298,7 @@ const parseGeneracion = (rawText) => {
   const conceptos = (Array.isArray(o.conceptos) ? o.conceptos : [])
     .map((c) => ({
       primer_segundo: str(c?.primer_segundo),
+      familia: str(c?.familia),
       pregunta_del_espectador: str(c?.pregunta_del_espectador),
       resolucion: str(c?.resolucion),
     }))
