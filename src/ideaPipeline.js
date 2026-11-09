@@ -1,9 +1,15 @@
 // ============================================================================
-// ideaPipeline.js  (v5 — un solo prompt, salida JSON estricta)
+// ideaPipeline.js  (v6 — un solo prompt, contrato JSON explícito + parser tolerante)
 //
-// Una única llamada al modelo. El único prompt es SYSTEM_PROMPT. El mensaje de
-// usuario lleva SOLO datos. El resultado se parsea a { titulo, idea_principal,
-// ejecucion[] } y se adapta al formato que espera ChatScreen.
+// Causa raíz del error anterior: el prompt NO definía el formato de salida, y
+// con responseMimeType "application/json" Gemini inventaba un esquema distinto
+// en cada llamada (plan_ejecucion, estructura_video, ...). toPlan() esperaba
+// { titulo, idea_principal, ejecucion[] } y descartaba todo.
+//
+// Fix en dos capas:
+//   1) El prompt ahora declara el contrato de salida exacto.
+//   2) toPlan() normaliza variantes de esquema (envoltorios, alias de claves)
+//      como red de seguridad, así un desvío del modelo no tumba la UI.
 // ============================================================================
 
 // ── Config ──────────────────────────────────────────────────
@@ -78,6 +84,24 @@ const compactPlan = (plan) => {
 };
 
 // ── Prompt (estático → va primero y es cacheable) ───────────
+const OUTPUT_CONTRACT = `
+FORMATO DE SALIDA (obligatorio):
+Respondé únicamente con un objeto JSON válido con exactamente estas tres claves, sin envoltorio, sin claves extra, sin texto ni bloques de código alrededor:
+
+{
+  "titulo": "string corto",
+  "idea_principal": "string: el concepto central del video en 1-3 frases",
+  "ejecucion": [
+    { "momento": "string con el rango de tiempo, ej. 0-3s", "descripcion": "string: qué se ve, se dice y se muestra en pantalla en ese tramo" }
+  ]
+}
+
+Reglas del contrato:
+- "ejecucion" tiene entre 3 y ${MAX_PASOS} elementos, en orden cronológico, y sus "momento" cubren la duración objetivo.
+- Todos los valores son strings. Ningún valor es un objeto o un array anidado, salvo "ejecucion".
+- Todo el contenido va en español rioplatense.
+`.trim();
+
 const SYSTEM_PROMPT = `
 Lee esto con atención: 
 "1. Generadores de hooks de texto
@@ -127,6 +151,8 @@ No conocen a tu audiencia mejor que vos. Si les das un tema vago, te dan hooks v
 
 
 Una vez que hayas leído esto con atención, generá un plan de ejecución para la idea que el usuario te dará.
+
+${OUTPUT_CONTRACT}
 `.trim();
 
 const buildSystemPrompt = () => SYSTEM_PROMPT;
@@ -196,6 +222,152 @@ const formatError = (rawText = "") => {
   err.retryable = true;
   err.raw = rawText;
   return err;
+};
+
+// ── Normalización de esquema (red de seguridad) ─────────────
+const norm = (k) =>
+  String(k)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
+
+const KEYS = {
+  titulo: ["titulo", "title", "nombre"],
+  idea: ["ideaprincipal", "idea", "concepto", "conceptocentral", "resumen", "objetivo"],
+  pasos: [
+    "ejecucion",
+    "pasos",
+    "plandeejecucion",
+    "estructuravideo",
+    "estructura",
+    "timeline",
+    "escenas",
+    "guion",
+    "secuencia",
+    "segmentos",
+  ],
+  momento: ["momento", "tiempo", "timestamp", "rango", "segmento", "etapa", "fase", "seccion", "bloque"],
+  descripcion: ["descripcion", "accion", "detalle", "texto", "contenido", "frase", "guion", "instruccion"],
+};
+
+// Busca una clave por alias (ignora mayúsculas, acentos y separadores).
+const pick = (obj, aliases) => {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return undefined;
+  const map = new Map(Object.keys(obj).map((k) => [norm(k), k]));
+  for (const a of aliases) {
+    if (map.has(a)) return obj[map.get(a)];
+  }
+  return undefined;
+};
+
+const isPlainObj = (v) => v && typeof v === "object" && !Array.isArray(v);
+
+// Baja por envoltorios tipo { plan_ejecucion: {...} } hasta encontrar el nivel útil.
+const unwrap = (value, depth = 0) => {
+  let v = Array.isArray(value) ? value[0] : value;
+  if (!isPlainObj(v)) return null;
+  if (depth > 3) return v;
+
+  const hasPasos = pick(v, KEYS.pasos) !== undefined;
+  const hasIdea = pick(v, KEYS.idea) !== undefined;
+  if (hasPasos && hasIdea) return v;
+
+  const keys = Object.keys(v);
+  if (keys.length === 1 && (isPlainObj(v[keys[0]]) || Array.isArray(v[keys[0]]))) {
+    return unwrap(v[keys[0]], depth + 1) ?? v;
+  }
+
+  // Un hijo objeto que sí contiene la estructura útil.
+  for (const k of keys) {
+    if (isPlainObj(v[k]) && pick(v[k], KEYS.pasos) !== undefined) {
+      return { ...v, ...v[k] };
+    }
+  }
+  return v;
+};
+
+// Convierte cualquier valor a texto legible (strings, arrays, objetos simples).
+const toText = (v) => {
+  if (v === null || v === undefined) return "";
+  if (typeof v === "string") return v.trim();
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  if (Array.isArray(v)) return v.map(toText).filter(Boolean).join(" · ");
+  if (typeof v === "object") {
+    return Object.entries(v)
+      .map(([k, val]) => {
+        const t = toText(val);
+        return t ? `${k.replace(/_/g, " ")}: ${t}` : "";
+      })
+      .filter(Boolean)
+      .join(" | ");
+  }
+  return "";
+};
+
+const normalizeStep = (e) => {
+  if (typeof e === "string") return { momento: "", descripcion: e.trim() };
+  if (!isPlainObj(e)) return { momento: "", descripcion: "" };
+
+  const momento = toText(pick(e, KEYS.momento));
+  let descripcion = toText(pick(e, KEYS.descripcion));
+
+  // Si el paso trae otras claves útiles (visual, audio, texto_pantalla...), las suma.
+  if (!descripcion) {
+    descripcion = Object.entries(e)
+      .filter(([k]) => !KEYS.momento.includes(norm(k)))
+      .map(([k, val]) => {
+        const t = toText(val);
+        return t ? `${k.replace(/_/g, " ")}: ${t}` : "";
+      })
+      .filter(Boolean)
+      .join(" | ");
+  }
+
+  return { momento, descripcion };
+};
+
+// ── JSON del modelo -> plan para la UI ──────────────────────
+const toPlan = (rawText) => {
+  const json = parseJson(rawText);
+  const o = unwrap(json);
+
+  if (!o) {
+    console.warn("[idea] sin JSON en la respuesta:", String(rawText).slice(0, 600));
+    throw formatError(rawText);
+  }
+
+  let pasosRaw = pick(o, KEYS.pasos);
+  // Si los pasos vienen como objeto { hook: {...}, desarrollo: {...} }, los aplana.
+  if (isPlainObj(pasosRaw)) {
+    pasosRaw = Object.entries(pasosRaw).map(([k, v]) =>
+      isPlainObj(v) ? { momento: k.replace(/_/g, " "), ...v } : { momento: k.replace(/_/g, " "), descripcion: v }
+    );
+  }
+
+  const ejecucion = (Array.isArray(pasosRaw) ? pasosRaw : [])
+    .map(normalizeStep)
+    .filter((e) => e.descripcion)
+    .slice(0, MAX_PASOS);
+
+  const titulo = toText(pick(o, KEYS.titulo));
+  const idea_principal = toText(pick(o, KEYS.idea)) || titulo;
+
+  if (!idea_principal || !ejecucion.length) {
+    console.warn("[idea] JSON incompleto:", String(rawText).slice(0, 600));
+    throw formatError(rawText);
+  }
+
+  return {
+    tipo: "plan",
+    titulo,
+    idea_principal,
+    ejecucion,
+    // Sin etapa de análisis ni veredicto: null para que la UI no dibuje esas tarjetas.
+    analisis: null,
+    veredicto: null,
+    pregunta_seguimiento: "",
+  };
 };
 
 // ── Streaming (solo texto) ──────────────────────────────────
@@ -288,49 +460,6 @@ const callGeminiStream = async (supabase, body, { onThinking, signal } = {}) => 
   return { text, tokens, usedSearch };
 };
 
-// ── JSON del modelo -> plan para la UI ──────────────────────
-// Valida la estructura. Si falta idea_principal o ejecucion, lanza un error
-// reintentable que lleva la respuesta cruda para poder diagnosticar.
-const toPlan = (rawText) => {
-  const json = parseJson(rawText);
-  const o = Array.isArray(json) ? json[0] : json;
-
-  if (!o || typeof o !== "object") {
-    console.warn("[idea] sin JSON en la respuesta:", String(rawText).slice(0, 600));
-    throw formatError(rawText);
-  }
-
-  const ejecucion = (Array.isArray(o.ejecucion) ? o.ejecucion : [])
-    .map((e) =>
-      typeof e === "string"
-        ? { momento: "", descripcion: e.trim() }
-        : {
-            momento: String(e?.momento ?? "").trim(),
-            descripcion: String(e?.descripcion ?? "").trim(),
-          }
-    )
-    .filter((e) => e.descripcion)
-    .slice(0, MAX_PASOS);
-
-  const idea_principal = String(o.idea_principal ?? "").trim();
-
-  if (!idea_principal || !ejecucion.length) {
-    console.warn("[idea] JSON incompleto:", String(rawText).slice(0, 600));
-    throw formatError(rawText);
-  }
-
-  return {
-    tipo: "plan",
-    titulo: String(o.titulo ?? "").trim(),
-    idea_principal,
-    ejecucion,
-    // Sin etapa de análisis ni veredicto: null para que la UI no dibuje esas tarjetas.
-    analisis: null,
-    veredicto: null,
-    pregunta_seguimiento: "",
-  };
-};
-
 // ── Pipeline ────────────────────────────────────────────────
 export const runIdeaPipeline = async ({
   supabase,
@@ -363,9 +492,10 @@ export const runIdeaPipeline = async ({
   let lastErr = null;
 
   for (let intento = 0; intento < MAX_INTENTOS; intento++) {
+    // En el reintento se repite el contrato completo, no solo un aviso genérico.
     const recordatorio =
       intento > 0
-        ? "\n\nRECORDATORIO: respondé SOLO con el objeto JSON, sin texto adicional ni bloques de código."
+        ? `\n\nRECORDATORIO: la respuesta anterior no cumplió el contrato.\n${OUTPUT_CONTRACT}`
         : "";
 
     try {
