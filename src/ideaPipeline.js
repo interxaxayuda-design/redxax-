@@ -1,26 +1,29 @@
 // ============================================================================
-// ideaPipeline.js  (v6 — un solo prompt, contrato JSON explícito + parser tolerante)
+// ideaPipeline.js  (v6 — generar → seleccionar → planificar)
 //
-// Causa raíz del error anterior: el prompt NO definía el formato de salida, y
-// con responseMimeType "application/json" Gemini inventaba un esquema distinto
-// en cada llamada (plan_ejecucion, estructura_video, ...). toPlan() esperaba
-// { titulo, idea_principal, ejecucion[] } y descartaba todo.
+// Tres llamadas, cada una con un único prompt y salida JSON estricta:
+//   1. GENERAR      (temperatura alta, N llamadas en paralelo)  → conceptos
+//   2. SELECCIONAR  (temperatura baja)                          → ranking + elegido
+//   3. PLANIFICAR   (temperatura media)                         → { titulo, idea_principal, ejecucion[] }
 //
-// Fix en dos capas:
-//   1) El prompt ahora declara el contrato de salida exacto.
-//   2) toPlan() normaliza variantes de esquema (envoltorios, alias de claves)
-//      como red de seguridad, así un desvío del modelo no tumba la UI.
+// Si ya hay un plan anterior (modo "refinar") se saltean 1 y 2 y solo se
+// aplica el cambio pedido sobre ese plan.
 // ============================================================================
 
 // ── Config ──────────────────────────────────────────────────
 const CFG = { maxOutputTokens: 16384 };
 
+// Temperatura por etapa. El proxy tiene que reenviar "temperature" a Gemini.
+const TEMP = { generar: 1.2, seleccionar: 0.3, plan: 0.7 };
+
+// Cuántas llamadas de generación van en paralelo y cuántos conceptos pide cada una.
+const GEN_PARALLEL = 2;
+const CONCEPTOS_POR_LLAMADA = 12;
+
 // false = el system prompt se antepone al texto (funciona con cualquier proxy).
 const SYSTEM_SEPARATE = false;
 
-// true = pide al proxy responseMimeType "application/json" (solo se envía
-// cuando useSearch es false, porque Gemini no permite JSON mode con búsqueda).
-// Si tu gemini-proxy rechaza ese campo, ponelo en false.
+// true = pide al proxy responseMimeType "application/json".
 const JSON_MODE = true;
 
 const MAX_INTENTOS = 2;
@@ -39,7 +42,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const isAbort = (e) =>
   e?.name === "AbortError" || e?.code === 20 || /aborted/i.test(e?.message ?? "");
 
-// businessContext puede venir como string u objeto del perfil del negocio.
+const str = (v) => String(v ?? "").trim();
+
 const formatBusinessContext = (raw) => {
   if (!raw) return null;
 
@@ -73,7 +77,6 @@ const historyBlock = (history = []) =>
         .join("\n")
     : "(primera interacción)";
 
-// Versión compacta del plan anterior (para no gastar tokens de más).
 const compactPlan = (plan) => {
   if (!plan) return null;
   return JSON.stringify({
@@ -83,117 +86,156 @@ const compactPlan = (plan) => {
   });
 };
 
-// ── Prompt (estático → va primero y es cacheable) ───────────
-const OUTPUT_CONTRACT = `
-FORMATO DE SALIDA (obligatorio):
-Respondé únicamente con un objeto JSON válido con exactamente estas tres claves, sin envoltorio, sin claves extra, sin texto ni bloques de código alrededor:
+// ═════════════════════════════════════════════════════════════
+// PROMPTS
+// ═════════════════════════════════════════════════════════════
 
+// ── 1. GENERAR ──────────────────────────────────────────────
+const GENERATOR_PROMPT = `
+Sos un director creativo de contenido audiovisual de formato corto, con años de experiencia en negocios pequeños y medianos.
+
+Tu tarea es idear conceptos de video para el negocio, producto, lugar o idea que indique el usuario.
+
+Un hook es lo que la persona ve y escucha en el primer segundo y la obliga a quedarse, porque el resto del video responde algo que ese primer segundo dejó abierto. No es una frase de apertura: es una premisa filmable. Cada concepto es una premisa completa, con apertura y resolución.
+
+Seguí este proceso, en este orden, y respetá ese mismo orden en el JSON:
+
+1. "pozo_obvio": escribí las 15 ideas que cualquier creador o cualquier modelo de lenguaje propondría primero para este caso. Una línea por idea. Esta lista es la zona prohibida.
+
+2. "conceptos": generá ${CONCEPTOS_POR_LLAMADA} conceptos que no pertenezcan al pozo obvio ni sean una variante suya. Cambiar las palabras, el orden o el formato de una idea del pozo no la convierte en una idea distinta.
+
+3. Cada concepto tiene que depender de algo específico de este caso concreto. Si pudiera aplicarse sin cambios a otro negocio o producto, descartalo y reemplazalo por otro.
+
+4. Cada concepto tiene que poder filmarlo el propio negocio con un celular y lo que tiene a mano, sin actores, sin producción ni gastos relevantes.
+
+5. La resolución tiene que existir realmente en el video. No se puede abrir una pregunta que el video no responde.
+
+Respondé SOLO con un objeto JSON con esta forma exacta:
 {
-  "titulo": "string corto",
-  "idea_principal": "string: el concepto central del video en 1-3 frases",
-  "ejecucion": [
-    { "momento": "string con el rango de tiempo, ej. 0-3s", "descripcion": "string: qué se ve, se dice y se muestra en pantalla en ese tramo" }
+  "pozo_obvio": ["...", "..."],
+  "conceptos": [
+    {
+      "primer_segundo": "qué se ve y qué se escucha en el primer segundo",
+      "pregunta_del_espectador": "qué se pregunta quien lo ve",
+      "resolucion": "cómo y cuándo la responde el video"
+    }
   ]
 }
-
-Reglas del contrato:
-- "ejecucion" tiene entre 3 y ${MAX_PASOS} elementos, en orden cronológico, y sus "momento" cubren la duración objetivo.
-- Todos los valores son strings. Ningún valor es un objeto o un array anidado, salvo "ejecucion".
-- Todo el contenido va en español rioplatense.
 `.trim();
 
-const SYSTEM_PROMPT = `
-Lee esto con atención: 
-"1. Generadores de hooks de texto
-Son los más comunes. Vos ponés tu tema y te devuelven 10-20 frases de apertura.
+// ── 2. SELECCIONAR ──────────────────────────────────────────
+const SELECTOR_PROMPT = `
+Sos un analista experto en difusión de contenido audiovisual y comportamiento de audiencias en internet.
 
-Cómo lo hacen:
+Vas a evaluar conceptos de video corto que todavía no fueron filmados. Tu objetivo es estimar cuál tiene mayor potencial de difusión orgánica, considerando el contenido de cada concepto y cualquier contexto cultural, social, emocional o audiovisual relevante que reconozcas.
 
-Vos ingresás: tema, nicho, a quién le hablás, qué vendés / enseñás, y a veces el guion que ya tenés.
-La app aplica fórmulas probadas: no inventa de cero. Usa más de 50 fórmulas que se repiten en videos virales, como afirmación audaz, dolor identificable, "antes/después", error común, curiosidad abierta, prueba rápida, etc. 
-Un modelo de IA completa la fórmula: por ejemplo, toma la fórmula "Nadie te dice esto sobre [tema], pero..." y la adapta a tu tema, tu tono y tu plataforma.
-Te explica por qué funciona: cada opción viene con la razón psicológica, por ejemplo "genera tensión rápida" o "primero el resultado, luego el cómo". 
-En TikTok suelen ser más cortos y directos, 1-2 segundos, y en Reels un poco más visuales, 1-3 segundos, con subtítulos o lista de pasos. 
+Evaluá como si tuvieras experiencia acumulada viendo grandes cantidades de contenido de distintas plataformas, comunidades y épocas. Considerá cualquier patrón, referencia, dinámica, formato o fenómeno cultural que pueda influir en cómo reacciona la audiencia.
 
-Ejemplo de flujo:
+Diferenciá claramente:
+- Lo que se desprende directamente del concepto.
+- Lo que inferís por comparación con contenido similar.
+- Lo que depende de contexto externo o tendencias que no podés verificar.
 
-Tema: "cómo ahorrar en Berisso" -> Fórmula: Error común -> Hook: "Estás pagando de más en el súper por estos 3 errores"
+No apliques reglas generales de forma automática. Evaluá cada concepto según sus características concretas y la audiencia que probablemente lo consumiría.
 
-2. Creadores de hooks visuales con IA
-Estos no solo te dan la frase, te crean el video del gancho.
+Recibís además un "pozo_obvio": las ideas que cualquiera propondría primero para este caso. Descartá los conceptos que se parezcan a ese pozo, los que se parezcan entre sí (quedate con el mejor de cada grupo) y los que no pueda filmar el propio negocio con un celular.
 
-Cómo lo hacen:
+Pensá en silencio durante varias etapas antes de responder. Contrastá hipótesis alternativas y evitá la explicación más obvia cuando haya una más sólida.
 
-Modo UGC: escribís un guion, elegís un avatar y la app genera un video de una persona hablando tu gancho, sin que grabes vos. 
-Modo Visual Hook Maker: subís un video que ya tenés y la app le agrega al inicio un efecto en tendencia, texto animado, zoom, o una introducción visual que detiene el scroll. 
-Usan texto a video: convertís una indicación de texto en un video corto para TikTok, Reels, anuncios o demostración de producto. 
-Acá el "cómo" es más técnico: el modelo analiza tu video, detecta dónde cortar, agrega captions, música, efectos y genera el avatar con voz sincronizada con los labios.
-
-3. Bibliotecas de hooks transicionales
-Son apps tipo Transitional Hooks. No usan IA para escribir, son una biblioteca de introducciones listas.
-
-Cómo lo hacen:
-
-Tienen cientos de clips cortos animados: gráficos, efectos de sonido, cortes rápidos, transiciones.
-Vos descargás el gancho que te gusta, lo importás en CapCut, Premiere o tu editor, y lo ponés al principio de tu video. 
-La idea es conectar segmentos sin que se sienta cortado, y que se vea pulido y profesional. 
-Entonces, ¿qué pasa "por detrás"?
-En resumen, la mayoría combina 3 cosas:
-
-Base de datos de patrones virales: qué frases, estructuras y efectos retienen más en cada plataforma.
-Tu input como contexto: sin eso, el hook es genérico y no vende.
-IA generativa: para adaptar la fórmula a tu tema, o para crear el video/avatar.
-Algunas más avanzadas dicen usar ciencia cognitiva para generar ganchos que no dependan de la suerte, sino de cómo funciona la atención. 
-
-Lo que NO hacen
-No te garantizan viralidad. El hook te da el clic, pero si el resto del video no cumple la promesa del hook, la gente se va y el algoritmo te castiga.
-No conocen a tu audiencia mejor que vos. Si les das un tema vago, te dan hooks vagos"
-
-
-Una vez que hayas leído esto con atención, generá un plan de ejecución para la idea que el usuario te dará.
-
-
-ACLARACIÓN: NO HABLAR IDIOMA RIOPLATENSE.
-
-Ejemplo: 
-Mal: 
-"Che, tenés que venir a este lugar"
-
-Bien
-"Debes de ir a este lugar"
-
-
-${OUTPUT_CONTRACT}
+Respondé SOLO con un objeto JSON con esta forma exacta, con los 3 mejores conceptos ordenados de mayor a menor potencial:
+{
+  "ranking": [
+    {
+      "id": "c3",
+      "probabilidad": 0,
+      "confianza": "baja | media | alta",
+      "por_que_funciona": "...",
+      "por_que_podria_fallar": "...",
+      "comparable": "contenido similar que haya funcionado, aunque sea de otro nicho"
+    }
+  ],
+  "elegido": "c3"
+}
 `.trim();
 
-const buildSystemPrompt = () => SYSTEM_PROMPT;
+// ── 3. PLANIFICAR ───────────────────────────────────────────
+const PLAN_PROMPT = `
+Sos un director de producción de video corto. Convertís una premisa de video en un plan de ejecución que el propio negocio pueda filmar con un celular.
 
-// El mensaje de usuario lleva SOLO datos.
-const buildUserMessage = ({
-  idea,
-  history = [],
-  platform = "TikTok/Reels",
-  duracionS = 30,
-  businessContext = null,
-  lastPlan = null,
-}) => {
+Recibís uno de estos dos casos:
+- <concepto_elegido>: una premisa nueva. Armá el plan completo a partir de ella.
+- <plan_anterior> junto con <cambio_pedido>: un plan existente al que el usuario le pidió un cambio. Aplicá exactamente ese cambio y conservá todo lo demás, incluida la premisa, salvo que el cambio pida modificarla.
+
+Reglas:
+- No suavices, generalices ni reemplaces la premisa. El mecanismo del concepto es la idea; tu trabajo es bajarlo a pasos filmables.
+- Si algo del concepto es imposible para este negocio, adaptá la forma de filmarlo sin tocar el mecanismo.
+- "idea_principal" resume la premisa en una o dos oraciones.
+- El primer paso de "ejecucion" tiene que ser exactamente lo que ocurre en el primer segundo del concepto.
+- Cada paso indica qué se ve y qué se escucha. El último paso es la resolución.
+- Ajustá los tiempos a la duración objetivo. Máximo ${MAX_PASOS} pasos.
+- Usá el contexto del negocio para que el plan hable de este negocio y no de uno cualquiera.
+
+Respondé SOLO con un objeto JSON con esta forma exacta:
+{
+  "titulo": "...",
+  "idea_principal": "...",
+  "ejecucion": [
+    { "momento": "0-1s", "descripcion": "..." }
+  ]
+}
+`.trim();
+
+// ── Mensajes de usuario (solo datos) ────────────────────────
+const contextoBlock = ({ platform, duracionS, businessContext, history }) => {
   const negocio = businessContext ? `<negocio>\n${businessContext}\n</negocio>\n` : "";
-  const previo = lastPlan ? `<plan_anterior>\n${compactPlan(lastPlan)}\n</plan_anterior>\n` : "";
-
   return `<contexto>
 <plataforma>${platform}</plataforma>
 <duracion_objetivo_s>${duracionS}</duracion_objetivo_s>
-${negocio}${previo}<historial>
+${negocio}<historial>
 ${historyBlock(history)}
 </historial>
-</contexto>
+</contexto>`;
+};
+
+const buildGeneratorMessage = (ctx, idea) =>
+  `${contextoBlock(ctx)}
 <idea_del_usuario>
 ${idea}
 </idea_del_usuario>`;
-};
 
-// ── Parsing ─────────────────────────────────────────────────
-// Tolera bloques de código, texto antes/después y arrays con un objeto.
+const buildSelectorMessage = (ctx, idea, pozo, conceptos) =>
+  `${contextoBlock(ctx)}
+<idea_del_usuario>
+${idea}
+</idea_del_usuario>
+<pozo_obvio>
+${JSON.stringify(pozo)}
+</pozo_obvio>
+<conceptos>
+${JSON.stringify(conceptos)}
+</conceptos>`;
+
+const buildPlanMessageNuevo = (ctx, idea, concepto) =>
+  `${contextoBlock(ctx)}
+<idea_del_usuario>
+${idea}
+</idea_del_usuario>
+<concepto_elegido>
+${JSON.stringify(concepto)}
+</concepto_elegido>`;
+
+const buildPlanMessageRefinar = (ctx, idea, lastPlan) =>
+  `${contextoBlock(ctx)}
+<plan_anterior>
+${compactPlan(lastPlan)}
+</plan_anterior>
+<cambio_pedido>
+${idea}
+</cambio_pedido>`;
+
+// ═════════════════════════════════════════════════════════════
+// PARSING Y VALIDACIÓN
+// ═════════════════════════════════════════════════════════════
 const parseJson = (raw) => {
   if (!raw || typeof raw !== "string") return null;
 
@@ -235,153 +277,90 @@ const formatError = (rawText = "") => {
   return err;
 };
 
-// ── Normalización de esquema (red de seguridad) ─────────────
-const norm = (k) =>
-  String(k)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "");
-
-const KEYS = {
-  titulo: ["titulo", "title", "nombre"],
-  idea: ["ideaprincipal", "idea", "concepto", "conceptocentral", "resumen", "objetivo"],
-  pasos: [
-    "ejecucion",
-    "pasos",
-    "plandeejecucion",
-    "estructuravideo",
-    "estructura",
-    "timeline",
-    "escenas",
-    "guion",
-    "secuencia",
-    "segmentos",
-  ],
-  momento: ["momento", "tiempo", "timestamp", "rango", "segmento", "etapa", "fase", "seccion", "bloque"],
-  descripcion: ["descripcion", "accion", "detalle", "texto", "contenido", "frase", "guion", "instruccion"],
-};
-
-// Busca una clave por alias (ignora mayúsculas, acentos y separadores).
-const pick = (obj, aliases) => {
-  if (!obj || typeof obj !== "object" || Array.isArray(obj)) return undefined;
-  const map = new Map(Object.keys(obj).map((k) => [norm(k), k]));
-  for (const a of aliases) {
-    if (map.has(a)) return obj[map.get(a)];
-  }
-  return undefined;
-};
-
-const isPlainObj = (v) => v && typeof v === "object" && !Array.isArray(v);
-
-// Baja por envoltorios tipo { plan_ejecucion: {...} } hasta encontrar el nivel útil.
-const unwrap = (value, depth = 0) => {
-  let v = Array.isArray(value) ? value[0] : value;
-  if (!isPlainObj(v)) return null;
-  if (depth > 3) return v;
-
-  const hasPasos = pick(v, KEYS.pasos) !== undefined;
-  const hasIdea = pick(v, KEYS.idea) !== undefined;
-  if (hasPasos && hasIdea) return v;
-
-  const keys = Object.keys(v);
-  if (keys.length === 1 && (isPlainObj(v[keys[0]]) || Array.isArray(v[keys[0]]))) {
-    return unwrap(v[keys[0]], depth + 1) ?? v;
-  }
-
-  // Un hijo objeto que sí contiene la estructura útil.
-  for (const k of keys) {
-    if (isPlainObj(v[k]) && pick(v[k], KEYS.pasos) !== undefined) {
-      return { ...v, ...v[k] };
-    }
-  }
-  return v;
-};
-
-// Convierte cualquier valor a texto legible (strings, arrays, objetos simples).
-const toText = (v) => {
-  if (v === null || v === undefined) return "";
-  if (typeof v === "string") return v.trim();
-  if (typeof v === "number" || typeof v === "boolean") return String(v);
-  if (Array.isArray(v)) return v.map(toText).filter(Boolean).join(" · ");
-  if (typeof v === "object") {
-    return Object.entries(v)
-      .map(([k, val]) => {
-        const t = toText(val);
-        return t ? `${k.replace(/_/g, " ")}: ${t}` : "";
-      })
-      .filter(Boolean)
-      .join(" | ");
-  }
-  return "";
-};
-
-const normalizeStep = (e) => {
-  if (typeof e === "string") return { momento: "", descripcion: e.trim() };
-  if (!isPlainObj(e)) return { momento: "", descripcion: "" };
-
-  const momento = toText(pick(e, KEYS.momento));
-  let descripcion = toText(pick(e, KEYS.descripcion));
-
-  // Si el paso trae otras claves útiles (visual, audio, texto_pantalla...), las suma.
-  if (!descripcion) {
-    descripcion = Object.entries(e)
-      .filter(([k]) => !KEYS.momento.includes(norm(k)))
-      .map(([k, val]) => {
-        const t = toText(val);
-        return t ? `${k.replace(/_/g, " ")}: ${t}` : "";
-      })
-      .filter(Boolean)
-      .join(" | ");
-  }
-
-  return { momento, descripcion };
-};
-
-// ── JSON del modelo -> plan para la UI ──────────────────────
-const toPlan = (rawText) => {
+const asObject = (rawText, label) => {
   const json = parseJson(rawText);
-  const o = unwrap(json);
+  const o = Array.isArray(json) ? json[0] : json;
 
-  if (!o) {
-    console.warn("[idea] sin JSON en la respuesta:", String(rawText).slice(0, 600));
+  if (!o || typeof o !== "object") {
+    console.warn(`[idea:${label}] sin JSON en la respuesta:`, String(rawText).slice(0, 600));
     throw formatError(rawText);
   }
 
-  let pasosRaw = pick(o, KEYS.pasos);
-  // Si los pasos vienen como objeto { hook: {...}, desarrollo: {...} }, los aplana.
-  if (isPlainObj(pasosRaw)) {
-    pasosRaw = Object.entries(pasosRaw).map(([k, v]) =>
-      isPlainObj(v) ? { momento: k.replace(/_/g, " "), ...v } : { momento: k.replace(/_/g, " "), descripcion: v }
-    );
+  return o;
+};
+
+const parseGeneracion = (rawText) => {
+  const o = asObject(rawText, "generar");
+
+  const conceptos = (Array.isArray(o.conceptos) ? o.conceptos : [])
+    .map((c) => ({
+      primer_segundo: str(c?.primer_segundo),
+      pregunta_del_espectador: str(c?.pregunta_del_espectador),
+      resolucion: str(c?.resolucion),
+    }))
+    .filter((c) => c.primer_segundo && c.resolucion);
+
+  const pozo_obvio = (Array.isArray(o.pozo_obvio) ? o.pozo_obvio : [])
+    .map(str)
+    .filter(Boolean);
+
+  if (!conceptos.length) {
+    console.warn("[idea:generar] sin conceptos:", String(rawText).slice(0, 600));
+    throw formatError(rawText);
   }
 
-  const ejecucion = (Array.isArray(pasosRaw) ? pasosRaw : [])
-    .map(normalizeStep)
+  return { conceptos, pozo_obvio };
+};
+
+const parseSeleccion = (rawText, idsValidos) => {
+  const o = asObject(rawText, "seleccionar");
+
+  const ranking = (Array.isArray(o.ranking) ? o.ranking : [])
+    .map((r) => ({
+      id: str(r?.id),
+      probabilidad: Number(r?.probabilidad) || 0,
+      confianza: str(r?.confianza),
+      por_que_funciona: str(r?.por_que_funciona),
+      por_que_podria_fallar: str(r?.por_que_podria_fallar),
+      comparable: str(r?.comparable),
+    }))
+    .filter((r) => idsValidos.has(r.id));
+
+  if (!ranking.length) {
+    console.warn("[idea:seleccionar] ranking vacío:", String(rawText).slice(0, 600));
+    throw formatError(rawText);
+  }
+
+  const elegido = idsValidos.has(str(o.elegido)) ? str(o.elegido) : ranking[0].id;
+
+  return { ranking, elegido };
+};
+
+const parsePlan = (rawText) => {
+  const o = asObject(rawText, "plan");
+
+  const ejecucion = (Array.isArray(o.ejecucion) ? o.ejecucion : [])
+    .map((e) =>
+      typeof e === "string"
+        ? { momento: "", descripcion: e.trim() }
+        : { momento: str(e?.momento), descripcion: str(e?.descripcion) }
+    )
     .filter((e) => e.descripcion)
     .slice(0, MAX_PASOS);
 
-  const titulo = toText(pick(o, KEYS.titulo));
-  const idea_principal = toText(pick(o, KEYS.idea)) || titulo;
+  const idea_principal = str(o.idea_principal);
 
   if (!idea_principal || !ejecucion.length) {
-    console.warn("[idea] JSON incompleto:", String(rawText).slice(0, 600));
+    console.warn("[idea:plan] JSON incompleto:", String(rawText).slice(0, 600));
     throw formatError(rawText);
   }
 
-  return {
-    tipo: "plan",
-    titulo,
-    idea_principal,
-    ejecucion,
-    // Sin etapa de análisis ni veredicto: null para que la UI no dibuje esas tarjetas.
-    analisis: null,
-    veredicto: null,
-    pregunta_seguimiento: "",
-  };
+  return { titulo: str(o.titulo), idea_principal, ejecucion };
 };
 
-// ── Streaming (solo texto) ──────────────────────────────────
+// ═════════════════════════════════════════════════════════════
+// STREAMING (solo texto)
+// ═════════════════════════════════════════════════════════════
 const callGeminiStream = async (supabase, body, { onThinking, signal } = {}) => {
   const projectUrl = supabase.supabaseUrl;
   const session = await supabase.auth.getSession();
@@ -471,7 +450,66 @@ const callGeminiStream = async (supabase, body, { onThinking, signal } = {}) => 
   return { text, tokens, usedSearch };
 };
 
-// ── Pipeline ────────────────────────────────────────────────
+// Una etapa = una llamada con reintentos + parseo. Devuelve lo que devuelva `parse`.
+const runStage = async ({
+  supabase,
+  model,
+  system,
+  userMessage,
+  temperature,
+  stage,
+  parse,
+  trace,
+  signal,
+  onThinking,
+}) => {
+  let lastErr = null;
+
+  for (let intento = 0; intento < MAX_INTENTOS; intento++) {
+    const recordatorio =
+      intento > 0
+        ? "\n\nRECORDATORIO: respondé SOLO con el objeto JSON, sin texto adicional ni bloques de código."
+        : "";
+
+    try {
+      const r = await callGeminiStream(
+        supabase,
+        {
+          ...CFG,
+          ...(intento > 0 ? { thinkingLevel: "low" } : {}),
+          useSearch: false,
+          ...(JSON_MODE ? { responseMimeType: "application/json" } : {}),
+          ...(temperature != null ? { temperature } : {}),
+          model,
+          ...(SYSTEM_SEPARATE ? { systemInstruction: system } : {}),
+          text: (SYSTEM_SEPARATE ? "" : `${system}\n\n`) + userMessage + recordatorio,
+        },
+        { onThinking, signal }
+      );
+
+      trace.push({
+        stage: intento === 0 ? stage : `${stage}_retry`,
+        tokens: r.tokens,
+        usedSearch: r.usedSearch,
+      });
+
+      return parse(r.text);
+    } catch (e) {
+      trace.push({ stage: `${stage}_fail`, tokens: e.tokens ?? 0 });
+      lastErr = e;
+      console.warn(`[idea:${stage}] intento ${intento + 1} falló:`, e?.message);
+
+      if (isAbort(e) || !e.retryable) break;
+      await sleep(700 * (intento + 1));
+    }
+  }
+
+  throw lastErr ?? new Error("La IA no pudo completar la etapa. Probá de nuevo.");
+};
+
+// ═════════════════════════════════════════════════════════════
+// PIPELINE
+// ═════════════════════════════════════════════════════════════
 export const runIdeaPipeline = async ({
   supabase,
   model,
@@ -481,67 +519,134 @@ export const runIdeaPipeline = async ({
   duracionS = 30,
   lastPlan = null,
   businessContext: businessContextRaw = null,
+  // "auto": refina si hay plan anterior, si no genera desde cero.
+  // "nueva": ignora el plan anterior y genera conceptos nuevos.
+  // "refinar": aplica `idea` como cambio sobre `lastPlan`.
+  modo = "auto",
   onThinking = null,
   signal = null,
-  // Con búsqueda activa Gemini no admite JSON mode y tiende a responder en prosa.
-  // Dejalo en false salvo que realmente necesites datos de internet.
-  useSearch = false,
 }) => {
   const trace = [];
   const total = () => trace.reduce((s, t) => s + (t.tokens || 0), 0);
 
-  const system = buildSystemPrompt();
-  const userMessage = buildUserMessage({
-    idea,
-    history,
+  const ctx = {
     platform: PLATFORM_LABELS[platform] ?? platform,
     duracionS,
-    lastPlan,
     businessContext: formatBusinessContext(businessContextRaw),
-  });
+    history,
+  };
 
-  let lastErr = null;
+  const common = { supabase, model, trace, signal, onThinking };
 
-  for (let intento = 0; intento < MAX_INTENTOS; intento++) {
-    // En el reintento se repite el contrato completo, no solo un aviso genérico.
-    const recordatorio =
-      intento > 0
-        ? `\n\nRECORDATORIO: la respuesta anterior no cumplió el contrato.\n${OUTPUT_CONTRACT}`
-        : "";
+  const refinar = modo === "refinar" || (modo === "auto" && !!lastPlan);
 
-    try {
-      const r = await callGeminiStream(
-        supabase,
-        {
-          ...CFG,
-          ...(intento > 0 ? { thinkingLevel: "low" } : {}),
-          useSearch,
-          ...(JSON_MODE && !useSearch ? { responseMimeType: "application/json" } : {}),
-          model,
-          ...(SYSTEM_SEPARATE ? { systemInstruction: system } : {}),
-          text: (SYSTEM_SEPARATE ? "" : `${system}\n\n`) + userMessage + recordatorio,
-        },
-        { onThinking, signal }
-      );
-
-      trace.push({
-        stage: intento === 0 ? "idea" : "idea_retry",
-        tokens: r.tokens,
-        usedSearch: r.usedSearch,
+  try {
+    // ── Refinar: una sola llamada sobre el plan existente ──
+    if (refinar && lastPlan) {
+      const base = await runStage({
+        ...common,
+        system: PLAN_PROMPT,
+        userMessage: buildPlanMessageRefinar(ctx, idea, lastPlan),
+        temperature: TEMP.plan,
+        stage: "plan",
+        parse: parsePlan,
       });
 
-      return { plan: toPlan(r.text), tokens: total(), trace };
-    } catch (e) {
-      trace.push({ stage: "idea_fail", tokens: e.tokens ?? 0 });
-      lastErr = e;
-      console.warn(`[idea] intento ${intento + 1} falló:`, e?.message);
-
-      if (isAbort(e) || !e.retryable) break;
-      await sleep(700 * (intento + 1));
+      return { plan: armarPlan(base), tokens: total(), trace };
     }
-  }
 
-  const err = lastErr ?? new Error("La IA no pudo generar la idea. Probá de nuevo.");
-  err.tokens = total();
-  throw err;
+    // ── 1. Generar (en paralelo) ──
+    const genMessage = buildGeneratorMessage(ctx, idea);
+
+    const runs = await Promise.allSettled(
+      Array.from({ length: GEN_PARALLEL }, () =>
+        runStage({
+          ...common,
+          system: GENERATOR_PROMPT,
+          userMessage: genMessage,
+          temperature: TEMP.generar,
+          stage: "generar",
+          parse: parseGeneracion,
+        })
+      )
+    );
+
+    const ok = runs.filter((r) => r.status === "fulfilled").map((r) => r.value);
+
+    if (!ok.length) {
+      const motivo = runs.find((r) => r.status === "rejected")?.reason;
+      throw motivo ?? new Error("La IA no pudo generar conceptos. Probá de nuevo.");
+    }
+
+    const pozo = [...new Set(ok.flatMap((r) => r.pozo_obvio))];
+    const conceptos = ok
+      .flatMap((r) => r.conceptos)
+      .map((c, i) => ({ id: `c${i + 1}`, ...c }));
+
+    const porId = new Map(conceptos.map((c) => [c.id, c]));
+
+    // ── 2. Seleccionar ──
+    const seleccion = await runStage({
+      ...common,
+      system: SELECTOR_PROMPT,
+      userMessage: buildSelectorMessage(ctx, idea, pozo, conceptos),
+      temperature: TEMP.seleccionar,
+      stage: "seleccionar",
+      parse: (raw) => parseSeleccion(raw, new Set(porId.keys())),
+    });
+
+    const elegido = porId.get(seleccion.elegido);
+    const estimacion = seleccion.ranking.find((r) => r.id === seleccion.elegido);
+
+    // ── 3. Planificar ──
+    const base = await runStage({
+      ...common,
+      system: PLAN_PROMPT,
+      userMessage: buildPlanMessageNuevo(ctx, idea, {
+        primer_segundo: elegido.primer_segundo,
+        pregunta_del_espectador: elegido.pregunta_del_espectador,
+        resolucion: elegido.resolucion,
+      }),
+      temperature: TEMP.plan,
+      stage: "plan",
+      parse: parsePlan,
+    });
+
+    const alternativas = seleccion.ranking
+      .filter((r) => r.id !== seleccion.elegido)
+      .map((r) => porId.get(r.id))
+      .filter(Boolean)
+      .map((c) => ({
+        primer_segundo: c.primer_segundo,
+        pregunta_del_espectador: c.pregunta_del_espectador,
+        resolucion: c.resolucion,
+      }));
+
+    return {
+      plan: armarPlan(base, {
+        estimacion: estimacion
+          ? { probabilidad: estimacion.probabilidad, confianza: estimacion.confianza }
+          : null,
+        alternativas,
+      }),
+      tokens: total(),
+      trace,
+    };
+  } catch (e) {
+    e.tokens = total();
+    throw e;
+  }
 };
+
+// Adapta al formato que espera ChatScreen. `estimacion` y `alternativas` son
+// campos extra: la UI puede ignorarlos.
+const armarPlan = (base, extra = {}) => ({
+  tipo: "plan",
+  titulo: base.titulo,
+  idea_principal: base.idea_principal,
+  ejecucion: base.ejecucion,
+  analisis: null,
+  veredicto: null,
+  pregunta_seguimiento: "",
+  ...extra,
+});
